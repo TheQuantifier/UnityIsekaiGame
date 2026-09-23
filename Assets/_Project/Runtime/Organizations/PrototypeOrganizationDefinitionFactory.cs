@@ -22,6 +22,7 @@ namespace UnityIsekaiGame.Organizations
         public static readonly string[] PrototypeOrganizationIds =
         {
             "organization.prototype.guild",
+            "organization.prototype.merchant-guild",
             "organization.prototype.royal-forge",
             "organization.prototype.temple",
             "organization.prototype.university",
@@ -74,6 +75,7 @@ namespace UnityIsekaiGame.Organizations
 
             runtime.Configure(registry, worldId);
             Seed(runtime, "organization.prototype.guild", GuildDefinitionId, "Prototype Adventurers Guild", "Guild", 0d);
+            Seed(runtime, "organization.prototype.merchant-guild", GuildDefinitionId, "Prototype Merchant Guild", "Merchant Guild", 0d);
             Seed(runtime, "organization.prototype.royal-forge", CompanyDefinitionId, "Prototype Royal Forge", "Royal Forge", 0d);
             Seed(runtime, "organization.prototype.temple", ReligiousOrderDefinitionId, "Prototype Temple", "Temple", 0d);
             Seed(runtime, "organization.prototype.university", InstitutionDefinitionId, "Prototype University", "University", 0d);

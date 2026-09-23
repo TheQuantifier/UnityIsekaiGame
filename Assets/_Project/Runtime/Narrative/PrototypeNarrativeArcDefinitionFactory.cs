@@ -118,7 +118,7 @@ namespace UnityIsekaiGame.Narrative
                         StateDependency("dependency.mayor-exposed", PrototypeNarrativeStateDefinitionFactory.MayorInvestigationDefinitionId, PrototypeNarrativeStateDefinitionFactory.MayorStageVariableId, PrototypeNarrativeStateDefinitionFactory.InvestigationExposedValueId)
                     }, quests: new[]
                     {
-                        QuestBinding("binding.civic-investigation", NarrativeArcQuestBindingMode.InstantiateOnStageActivation, PrototypeQuestDefinitionFactory.CivicInvestigationDefinitionId)
+                        QuestBinding("binding.civic-investigation", NarrativeArcQuestBindingMode.InstantiateOnStageActivation, PrototypeQuestDefinitionFactory.CivicInvestigationDefinitionId, "quest-source.prototype.mayor-office-desk")
                     })
                 },
                 tagIds = new[] { "prototype", "mayor", "hidden" }
@@ -270,13 +270,14 @@ namespace UnityIsekaiGame.Narrative
             };
         }
 
-        private static NarrativeArcQuestBindingDefinitionData QuestBinding(string id, NarrativeArcQuestBindingMode mode, string questDefinitionId)
+        private static NarrativeArcQuestBindingDefinitionData QuestBinding(string id, NarrativeArcQuestBindingMode mode, string questDefinitionId, string questSourceId = "")
         {
             return new NarrativeArcQuestBindingDefinitionData
             {
                 bindingDefinitionId = id,
                 mode = mode,
                 questDefinitionId = questDefinitionId,
+                questSourceId = questSourceId ?? string.Empty,
                 required = true
             };
         }

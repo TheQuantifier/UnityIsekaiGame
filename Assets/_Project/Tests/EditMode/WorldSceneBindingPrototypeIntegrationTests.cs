@@ -176,6 +176,28 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void InteractionBindingUsesColliderHitDistanceInsteadOfObjectPivot()
+        {
+            Fixture fixture = CreateFixture();
+            WorldSceneBindingRuntime runtime = CreateBindingRuntime(fixture);
+            InteractionPointSceneBinding counter = InteractionBinding("offset-counter", PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId, "prototype.scene.interaction.offset-counter", fixture.WorldId);
+            BoxCollider collider = counter.gameObject.AddComponent<BoxCollider>();
+            collider.center = new Vector3(6f, 0f, 0f);
+            collider.size = new Vector3(2f, 2f, 1f);
+            GameObject player = new GameObject("scene-binding-test-offset-interactor");
+            player.transform.position = new Vector3(6f, 0f, -2f);
+            Physics.SyncTransforms();
+
+            runtime.Register(counter);
+            bool hit = Physics.Raycast(player.transform.position, Vector3.forward, out RaycastHit raycastHit, 5f, ~0, QueryTriggerInteraction.Collide);
+            bool canInteract = counter.CanInteract(new InteractionContext(player, player.transform, raycastHit));
+
+            Assert.That(hit, Is.True);
+            Assert.That(Vector3.Distance(player.transform.position, counter.transform.position), Is.GreaterThan(3f));
+            Assert.That(canInteract, Is.True);
+        }
+
+        [Test]
         public void RouteAndCheckpointBindingsRemainTransientPresentationMappings()
         {
             Fixture fixture = CreateFixture(includeRoutes: true, includeCheckpoint: true);

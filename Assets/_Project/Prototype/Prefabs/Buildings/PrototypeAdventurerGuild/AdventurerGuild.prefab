@@ -164,62 +164,6 @@ Transform:
   - {fileID: 630038509235936403}
   m_Father: {fileID: 8293058292770082066}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1074042306348098230
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1481227548147679962}
-  - component: {fileID: 5205328348662968133}
-  m_Layer: 0
-  m_Name: Interact - Merchant Guild Counter
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1481227548147679962
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1074042306348098230}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.5, y: 0, z: -11.25}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1096925027916525050}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5205328348662968133
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1074042306348098230}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 732592b521a1bdf4bbfcd81a79f2fe26, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldEntities.WorldEntityIdentity
-  identityKind: 0
-  localAuthoredId: interact.guild.merchant-counter
-  runtimeEntityId: 
-  sceneKey: scene.prototype
-  worldId: local-world
-  ownerScope: 200
-  ownerId: 
-  parentEntityId: 
-  persistenceEligible: 1
-  definitionId: 
-  expectedEntityType: 
-  registerInAwake: 1
 --- !u!1 &1696621284602900872
 GameObject:
   m_ObjectHideFlags: 0
@@ -473,6 +417,91 @@ Transform:
   - {fileID: 5269505285672550653}
   m_Father: {fileID: 2179818510124159233}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2916788286511085146
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1579357740786537673}
+  - component: {fileID: 2337156612698705796}
+  - component: {fileID: 6554014699357663676}
+  m_Layer: 0
+  m_Name: AdventurerGuildCounter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1579357740786537673
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2916788286511085146}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6.75, y: 0.35, z: -11.75}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3172483284547787914}
+  - {fileID: 1963150954222739692}
+  - {fileID: 4309638920281769500}
+  - {fileID: 3747471124915834862}
+  - {fileID: 5232501173282490900}
+  - {fileID: 7407734458002590866}
+  - {fileID: 9162587229175165285}
+  m_Father: {fileID: 1408443073749176680}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2337156612698705796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2916788286511085146}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
+  instanceId: InteractionPointSceneBinding.0eba08f3c90a43ec8ea9ca28f7f01cb1
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: interaction-point.prototype.adventurer-guild-counter
+  bindingKey: prototype.scene.interaction.adventurer-guild-counter
+  displayName: Adventurer Guild Counter
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  interactionRange: 3
+  requirePhysicalRange: 1
+--- !u!114 &6554014699357663676
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2916788286511085146}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e6d400c90999a74391c0e79944bb570, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.PrototypeIntegration.QuestSourceSceneBinding
+  questSourceId: quest-source.prototype.adventurers-guild-counter
+  questSourceDefinitionId: quest-source-definition.prototype.adventurers-guild-counter
+  sceneBindingKey: prototype.scene.quest-source.adventurer-guild-counter
+  sceneKey: scene.prototype
+  worldId: local-world
+  displayName: Adventurer Guild Counter Source
+  hostLocationId: location.prototype.adventurers-guild
+  interactionPointId: interaction-point.prototype.adventurer-guild-counter
+  required: 1
 --- !u!1 &3046396287148874832
 GameObject:
   m_ObjectHideFlags: 0
@@ -483,6 +512,9 @@ GameObject:
   m_Component:
   - component: {fileID: 4168112684829863591}
   - component: {fileID: 7885683607163642682}
+  - component: {fileID: 7351386583107897793}
+  - component: {fileID: 7163834520866149563}
+  - component: {fileID: 2755265151923874800}
   m_Layer: 0
   m_Name: Interact - City Office Records Desk
   m_TagString: Untagged
@@ -529,6 +561,72 @@ MonoBehaviour:
   definitionId: 
   expectedEntityType: 
   registerInAwake: 1
+--- !u!114 &7351386583107897793
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3046396287148874832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
+  instanceId: InteractionPointSceneBinding.f6b57b9edd8c47458807894e035d83f9
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: interaction-point.prototype.city-records-desk
+  bindingKey: prototype.scene.interaction.city-records-desk
+  displayName: City Records Desk
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  interactionRange: 3
+  requirePhysicalRange: 1
+--- !u!114 &7163834520866149563
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3046396287148874832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e6d400c90999a74391c0e79944bb570, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.PrototypeIntegration.QuestSourceSceneBinding
+  questSourceId: quest-source.prototype.city-records-archive
+  questSourceDefinitionId: quest-source-definition.prototype.empty-archive
+  sceneBindingKey: prototype.scene.quest-source.city-records-archive
+  sceneKey: scene.prototype
+  worldId: local-world
+  displayName: City Records Archive Source
+  hostLocationId: location.prototype.civic-office
+  interactionPointId: interaction-point.prototype.city-records-desk
+  required: 1
+--- !u!65 &2755265151923874800
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3046396287148874832}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.2, y: 1.6, z: 1.2}
+  m_Center: {x: 0, y: 0.4, z: 0}
 --- !u!1 &3347702106717137991
 GameObject:
   m_ObjectHideFlags: 0
@@ -539,6 +637,9 @@ GameObject:
   m_Component:
   - component: {fileID: 2481547648455569592}
   - component: {fileID: 9151712618462778169}
+  - component: {fileID: 2522571053762983877}
+  - component: {fileID: 3536570498686221777}
+  - component: {fileID: 7466957445528105946}
   m_Layer: 0
   m_Name: Interact - Mayor Desk
   m_TagString: Untagged
@@ -585,6 +686,72 @@ MonoBehaviour:
   definitionId: 
   expectedEntityType: 
   registerInAwake: 1
+--- !u!114 &2522571053762983877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3347702106717137991}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
+  instanceId: InteractionPointSceneBinding.5f4f7da92cf4403a9de220a4f5f35456
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: interaction-point.prototype.mayor-desk
+  bindingKey: prototype.scene.interaction.mayor-desk
+  displayName: Mayor Desk
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  interactionRange: 3
+  requirePhysicalRange: 1
+--- !u!114 &3536570498686221777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3347702106717137991}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e6d400c90999a74391c0e79944bb570, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.PrototypeIntegration.QuestSourceSceneBinding
+  questSourceId: quest-source.prototype.mayor-office-desk
+  questSourceDefinitionId: quest-source-definition.prototype.mayor-office-desk
+  sceneBindingKey: prototype.scene.quest-source.mayor-office-desk
+  sceneKey: scene.prototype
+  worldId: local-world
+  displayName: Mayor Office Quest Source
+  hostLocationId: location.prototype.mayor-office
+  interactionPointId: interaction-point.prototype.mayor-desk
+  required: 1
+--- !u!65 &7466957445528105946
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3347702106717137991}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.2, y: 1.6, z: 1.2}
+  m_Center: {x: 0, y: 0.4, z: 0}
 --- !u!1 &3994429920704930242
 GameObject:
   m_ObjectHideFlags: 0
@@ -722,8 +889,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6879109336363063143}
-  - {fileID: 7254210541472744297}
-  - {fileID: 1481227548147679962}
   - {fileID: 2481547648455569592}
   - {fileID: 2411790712773782865}
   - {fileID: 4168112684829863591}
@@ -814,62 +979,6 @@ Transform:
   - {fileID: 6911244986448568174}
   m_Father: {fileID: 8293058292770082066}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &4956321035829624687
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7254210541472744297}
-  - component: {fileID: 4225391189617773296}
-  m_Layer: 0
-  m_Name: Interact - Adventurer Guild Counter
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &7254210541472744297
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4956321035829624687}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 6.5, y: 0, z: -11.25}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1096925027916525050}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4225391189617773296
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4956321035829624687}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 732592b521a1bdf4bbfcd81a79f2fe26, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldEntities.WorldEntityIdentity
-  identityKind: 0
-  localAuthoredId: interact.guild.adventurer-counter
-  runtimeEntityId: 
-  sceneKey: scene.prototype
-  worldId: local-world
-  ownerScope: 200
-  ownerId: 
-  parentEntityId: 
-  persistenceEligible: 1
-  definitionId: 
-  expectedEntityType: 
-  registerInAwake: 1
 --- !u!1 &5048807679745012183
 GameObject:
   m_ObjectHideFlags: 0
@@ -1056,6 +1165,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8394930274636959416}
+  - component: {fileID: 7714315101137719264}
   m_Layer: 0
   m_Name: AdventurerGuild
   m_TagString: Untagged
@@ -1087,6 +1197,21 @@ Transform:
   - {fileID: 7999711197648198742}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7714315101137719264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5271844185279579629}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b53ad883bd340739f3c232f2fc1b499, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.WorldSceneBindingBootstrap
+  bootstrapMode: 0
+  registerChildrenOnEnable: 1
+  syncAfterRegister: 1
 --- !u!1 &5289107126966926701
 GameObject:
   m_ObjectHideFlags: 0
@@ -1310,6 +1435,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2411790712773782865}
   - component: {fileID: 6748106840422986269}
+  - component: {fileID: 2716880108775424252}
+  - component: {fileID: 7501536906116240629}
   m_Layer: 0
   m_Name: Interact - Guild Head Desk
   m_TagString: Untagged
@@ -1356,6 +1483,51 @@ MonoBehaviour:
   definitionId: 
   expectedEntityType: 
   registerInAwake: 1
+--- !u!114 &2716880108775424252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6065192242096792717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
+  instanceId: InteractionPointSceneBinding.08b70c00a271471facb593731fd6ceea
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: interaction-point.prototype.guild-head-desk
+  bindingKey: prototype.scene.interaction.guild-head-desk
+  displayName: Guild Head Desk
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  interactionRange: 3
+  requirePhysicalRange: 1
+--- !u!65 &7501536906116240629
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6065192242096792717}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.2, y: 1.6, z: 1.2}
+  m_Center: {x: 0, y: 0.4, z: 0}
 --- !u!1 &6291591689856358009
 GameObject:
   m_ObjectHideFlags: 0
@@ -1718,6 +1890,115 @@ Transform:
   - {fileID: 918943576062240841}
   m_Father: {fileID: 4415857669182916193}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7335703348850716545
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3907843812901854225}
+  - component: {fileID: 4637509910889810967}
+  - component: {fileID: 6675432177377732473}
+  - component: {fileID: 7638865159109326240}
+  m_Layer: 0
+  m_Name: MerchantGuildCounter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3907843812901854225
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7335703348850716545}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.75, y: 0.35, z: -11.75}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4207079844649870261}
+  - {fileID: 102853162475152904}
+  - {fileID: 5273056075774012843}
+  - {fileID: 3251961253342287021}
+  - {fileID: 458430136991686642}
+  - {fileID: 1045297080753574832}
+  - {fileID: 6192556686132508967}
+  m_Father: {fileID: 1408443073749176680}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4637509910889810967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7335703348850716545}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e6d400c90999a74391c0e79944bb570, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.PrototypeIntegration.QuestSourceSceneBinding
+  questSourceId: quest-source.prototype.merchant-guild-counter
+  questSourceDefinitionId: quest-source-definition.prototype.merchant-guild-counter
+  sceneBindingKey: prototype.scene.quest-source.merchant-guild-counter
+  sceneKey: scene.prototype
+  worldId: local-world
+  displayName: Merchant Guild Counter Source
+  hostLocationId: location.prototype.merchant-counter
+  interactionPointId: interaction-point.prototype.merchant-guild-counter
+  required: 1
+--- !u!114 &6675432177377732473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7335703348850716545}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
+  instanceId: InteractionPointSceneBinding.531bdd5b15dd4f399a139eb35c748dc7
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: interaction-point.prototype.merchant-guild-counter
+  bindingKey: prototype.scene.interaction.merchant-guild-counter
+  displayName: Merchant Guild Counter
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  interactionRange: 3
+  requirePhysicalRange: 1
+--- !u!114 &7638865159109326240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7335703348850716545}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
+  instanceId: LocationSceneBinding.ff0207085c194ad58b762ba6982b3050
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: location.prototype.merchant-counter
+  bindingKey: prototype.scene.location.merchant-counter
+  displayName: 
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  locationDefinitionId: location-definition.market-stall
 --- !u!1 &7516797644157564959
 GameObject:
   m_ObjectHideFlags: 0
@@ -1728,6 +2009,8 @@ GameObject:
   m_Component:
   - component: {fileID: 6879109336363063143}
   - component: {fileID: 9082937606431810316}
+  - component: {fileID: 7101574737991751420}
+  - component: {fileID: 5382356726886025211}
   m_Layer: 0
   m_Name: Interact - Prison Cell A Door
   m_TagString: Untagged
@@ -1774,6 +2057,51 @@ MonoBehaviour:
   definitionId: 
   expectedEntityType: 
   registerInAwake: 1
+--- !u!114 &7101574737991751420
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7516797644157564959}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
+  instanceId: InteractionPointSceneBinding.640fab9ac6214c35b74f0d02b71482b0
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: interaction-point.prototype.prison-cell
+  bindingKey: prototype.scene.interaction.prison-cell
+  displayName: Prison Cell
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  interactionRange: 3
+  requirePhysicalRange: 1
+--- !u!65 &5382356726886025211
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7516797644157564959}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.25, y: 2.4, z: 0.6}
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!1 &7629211789380569954
 GameObject:
   m_ObjectHideFlags: 0
@@ -2136,20 +2464,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 3172483284547787914}
-  - {fileID: 1963150954222739692}
-  - {fileID: 4309638920281769500}
-  - {fileID: 3747471124915834862}
-  - {fileID: 5232501173282490900}
-  - {fileID: 4207079844649870261}
-  - {fileID: 102853162475152904}
-  - {fileID: 5273056075774012843}
-  - {fileID: 3251961253342287021}
-  - {fileID: 458430136991686642}
-  - {fileID: 7407734458002590866}
-  - {fileID: 1045297080753574832}
-  - {fileID: 6192556686132508967}
-  - {fileID: 9162587229175165285}
+  - {fileID: 1579357740786537673}
+  - {fileID: 3907843812901854225}
   - {fileID: 8668598900972691345}
   - {fileID: 1289381342386800827}
   - {fileID: 4528149884963357302}
@@ -2259,7 +2575,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7606024803789636005, guid: dfe8c20340324b24e9840d6cf17fe9ca, type: 3}
       propertyPath: m_Name
-      value: Desk01 Variant
+      value: Mayor Desk
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6947,7 +7263,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 1579357740786537673}
     m_Modifications:
     - target: {fileID: 2455766860403861002, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_Name
@@ -6955,15 +7271,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 8.5
+      value: 1.75
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -6992,6 +7308,10 @@ PrefabInstance:
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519833594590306762, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -7133,19 +7453,23 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 1579357740786537673}
     m_Modifications:
+    - target: {fileID: 7499198292386240265, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3.5
+      value: -3.25
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalRotation.w
@@ -7769,7 +8093,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 3907843812901854225}
     m_Modifications:
     - target: {fileID: 2455766860403861002, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_Name
@@ -7777,15 +8101,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -5.5
+      value: -1.75
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12.000001
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -7814,6 +8138,10 @@ PrefabInstance:
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519833594590306762, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -11347,7 +11675,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 1579357740786537673}
     m_Modifications:
     - target: {fileID: 2455766860403861002, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_Name
@@ -11355,15 +11683,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4.75
+      value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -11392,6 +11720,10 @@ PrefabInstance:
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519833594590306762, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -11999,19 +12331,31 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 1579357740786537673}
     m_Modifications:
+    - target: {fileID: 7499198292386240265, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.2499998
+      objectReference: {fileID: 0}
+    - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.2499998
+      objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 9.750001
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12.000001
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalRotation.w
@@ -12019,7 +12363,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalRotation.y
@@ -12027,7 +12371,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -12387,7 +12731,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 3907843812901854225}
     m_Modifications:
     - target: {fileID: 2455766860403861002, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_Name
@@ -12395,15 +12739,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.75
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12.000001
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -12432,6 +12776,10 @@ PrefabInstance:
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519833594590306762, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -12767,7 +13115,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 1579357740786537673}
     m_Modifications:
     - target: {fileID: 2455766860403861002, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_Name
@@ -12775,15 +13123,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 6
+      value: -0.75
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -12812,6 +13160,10 @@ PrefabInstance:
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519833594590306762, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -16193,7 +16545,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 3907843812901854225}
     m_Modifications:
     - target: {fileID: 2455766860403861002, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_Name
@@ -16201,15 +16553,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -3
+      value: 0.75
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12.000001
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -16238,6 +16590,10 @@ PrefabInstance:
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519833594590306762, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -16725,7 +17081,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 3907843812901854225}
     m_Modifications:
     - target: {fileID: 2455766860403861002, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_Name
@@ -16733,15 +17089,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -6.75
+      value: -3
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12.000001
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -16770,6 +17126,10 @@ PrefabInstance:
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519833594590306762, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -17665,13 +18025,93 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8282762999385281450, guid: 6bd6a0d327e58654589dc29b0637e0a3, type: 3}
       propertyPath: m_Name
-      value: WoodenBoard
+      value: Quest Board
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8282762999385281450, guid: 6bd6a0d327e58654589dc29b0637e0a3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4896760206205800697}
+    - targetCorrespondingSourceObject: {fileID: 8282762999385281450, guid: 6bd6a0d327e58654589dc29b0637e0a3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4722051897434530024}
+    - targetCorrespondingSourceObject: {fileID: 8282762999385281450, guid: 6bd6a0d327e58654589dc29b0637e0a3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7411394593701709712}
   m_SourcePrefab: {fileID: 100100000, guid: 6bd6a0d327e58654589dc29b0637e0a3, type: 3}
+--- !u!1 &6106608855532008888 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8282762999385281450, guid: 6bd6a0d327e58654589dc29b0637e0a3, type: 3}
+  m_PrefabInstance: {fileID: 2759934121729238546}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &4896760206205800697
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6106608855532008888}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.7637508, y: 2.5065913, z: 1.3199999}
+  m_Center: {x: -0.00000017881393, y: 1.2532957, z: 0.50000006}
+--- !u!114 &4722051897434530024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6106608855532008888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
+  instanceId: InteractionPointSceneBinding.c9b2a40634f443bf93f645317ae3182d
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: interaction-point.prototype.quest-board
+  bindingKey: prototype.scene.interaction.quest-board
+  displayName: Adventurer Guild Quest Board
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  interactionRange: 3
+  requirePhysicalRange: 1
+--- !u!114 &7411394593701709712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6106608855532008888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e6d400c90999a74391c0e79944bb570, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.PrototypeIntegration.QuestSourceSceneBinding
+  questSourceId: quest-source.prototype.adventurers-guild-board
+  questSourceDefinitionId: quest-source-definition.prototype.adventurers-guild-board
+  sceneBindingKey: prototype.scene.quest-source.adventurer-guild-board
+  sceneKey: scene.prototype
+  worldId: local-world
+  displayName: Adventurer Guild Quest Board
+  hostLocationId: location.prototype.adventurers-guild
+  interactionPointId: interaction-point.prototype.quest-board
+  required: 1
 --- !u!4 &8361592443885916225 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5928735406224815699, guid: 6bd6a0d327e58654589dc29b0637e0a3, type: 3}
@@ -24673,7 +25113,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 1579357740786537673}
     m_Modifications:
     - target: {fileID: 2455766860403861002, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_Name
@@ -24681,15 +25121,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 7.25
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -24718,6 +25158,10 @@ PrefabInstance:
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519833594590306762, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -26319,19 +26763,31 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 3907843812901854225}
     m_Modifications:
+    - target: {fileID: 7499198292386240265, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.2499998
+      objectReference: {fileID: 0}
+    - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.2499998
+      objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.50000006
+      value: 3.25
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalRotation.w
@@ -26339,7 +26795,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalRotation.y
@@ -26347,7 +26803,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -27819,7 +28275,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7606024803789636005, guid: dfe8c20340324b24e9840d6cf17fe9ca, type: 3}
       propertyPath: m_Name
-      value: Desk01 Variant (1)
+      value: Adventurer Guild Head Desk
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -36465,7 +36921,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9043334936633433326, guid: 6b5d2b7bffd63c047874e93c669338aa, type: 3}
       propertyPath: m_Name
-      value: Desk03 Variant
+      value: City Office Records Desk
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -40585,19 +41041,23 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 3907843812901854225}
     m_Modifications:
+    - target: {fileID: 7499198292386240265, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -6.75
+      value: -3
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 7558586799743234635, guid: 13194285bcdbe1d4883e48dd4fd69bc7, type: 3}
       propertyPath: m_LocalRotation.w
@@ -42119,7 +42579,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 1579357740786537673}
     m_Modifications:
     - target: {fileID: 2455766860403861002, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_Name
@@ -42127,15 +42587,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3.5
+      value: -3.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -42164,6 +42624,10 @@ PrefabInstance:
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519833594590306762, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -42515,7 +42979,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1408443073749176680}
+    m_TransformParent: {fileID: 3907843812901854225}
     m_Modifications:
     - target: {fileID: 2455766860403861002, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_Name
@@ -42523,15 +42987,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -4.25
+      value: -0.5
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.34
+      value: -0.00999999
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12.000001
+      value: -0.25
       objectReference: {fileID: 0}
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -42560,6 +43024,10 @@ PrefabInstance:
     - target: {fileID: 2458615043512739922, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519833594590306762, guid: c1da7e42f626eba42ba5549dd14e3e6c, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

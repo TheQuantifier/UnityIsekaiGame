@@ -147,6 +147,7 @@ GameObject:
   - component: {fileID: 343134195}
   - component: {fileID: 343134196}
   - component: {fileID: 343134197}
+  - component: {fileID: 343134198}
   m_Layer: 0
   m_Name: Prototype Player
   m_TagString: Player
@@ -1509,53 +1510,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &154389079
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144306}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
-  instanceId: InteractionPointSceneBinding.a40391c3180b480cbde7db551c10dd03
-  worldId: local-world
-  sceneKey: scene.prototype
-  logicalId: interaction-point.prototype.guild-head-desk
-  bindingKey: prototype.scene.interaction.guild-head-desk
-  displayName: 
-  role: 0
-  required: 0
-  autoRegister: 1
-  anchor: {fileID: 0}
-  interactionRange: 3
-  requirePhysicalRange: 1
---- !u!114 &154389080
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144306}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
-  instanceId: LocationSceneBinding.9ccb64b68bca487b8e89313aa340b3c0
-  worldId: local-world
-  sceneKey: scene.prototype
-  logicalId: location.prototype.guildmaster-office
-  bindingKey: prototype.scene.location.guild-head-office
-  displayName: 
-  role: 1
-  required: 0
-  autoRegister: 1
-  anchor: {fileID: 0}
-  locationDefinitionId: location-definition.office
 --- !u!1 &165616559
 GameObject:
   m_ObjectHideFlags: 0
@@ -3487,6 +3441,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 993542e1e62dbf94cb792e1004d219fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Places.CurrentPlaceTracker
+--- !u!114 &343134198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f76fc3efd344269909619c23389a073, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.WorldEntitySceneBinding
+  instanceId: WorldEntitySceneBinding.671a33cb384c481996ebd2f9d0a1161a
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: Person:local-world:person.prototype.player
+  bindingKey: prototype.scene.entity.player
+  displayName: 
+  role: 0
+  required: 0
+  autoRegister: 1
+  anchor: {fileID: 0}
+  entityType: 1
+  entityId: person.prototype.player
+  snapToGroundAfterMaterialization: 1
+  groundProbeHeight: 25
+  groundProbeDistance: 80
 --- !u!1 &364830257
 GameObject:
   m_ObjectHideFlags: 0
@@ -6903,7 +6884,18 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7351386583107897793, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - {fileID: 2498125123788742122, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - {fileID: 2716880108775424252, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - {fileID: 2522571053762983877, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - {fileID: 7101574737991751420, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - {fileID: 3327090854914206063, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - {fileID: 7314813460868640545, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - {fileID: 8238007991792350759, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - {fileID: 3211269776998842997, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - {fileID: 6675432177377732473, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - {fileID: 4896760206205800697, guid: b2192ba13e83098478985e3919f7f873, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -6913,42 +6905,24 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5271844185279579629, guid: b2192ba13e83098478985e3919f7f873, type: 3}
       insertIndex: -1
       addedObject: {fileID: 665144316}
-    - targetCorrespondingSourceObject: {fileID: 7516797644157564959, guid: b2192ba13e83098478985e3919f7f873, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1840214078}
-    - targetCorrespondingSourceObject: {fileID: 7516797644157564959, guid: b2192ba13e83098478985e3919f7f873, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1840214077}
-    - targetCorrespondingSourceObject: {fileID: 4956321035829624687, guid: b2192ba13e83098478985e3919f7f873, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 665144315}
-    - targetCorrespondingSourceObject: {fileID: 4956321035829624687, guid: b2192ba13e83098478985e3919f7f873, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 665144314}
-    - targetCorrespondingSourceObject: {fileID: 1074042306348098230, guid: b2192ba13e83098478985e3919f7f873, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2124640775}
-    - targetCorrespondingSourceObject: {fileID: 1074042306348098230, guid: b2192ba13e83098478985e3919f7f873, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2124640774}
-    - targetCorrespondingSourceObject: {fileID: 3347702106717137991, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+    - targetCorrespondingSourceObject: {fileID: 7335703348850716545, guid: b2192ba13e83098478985e3919f7f873, type: 3}
       insertIndex: -1
       addedObject: {fileID: 665144313}
+    - targetCorrespondingSourceObject: {fileID: 6106608855532008888, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2031685995}
+    - targetCorrespondingSourceObject: {fileID: 7516797644157564959, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 665144314}
     - targetCorrespondingSourceObject: {fileID: 3347702106717137991, guid: b2192ba13e83098478985e3919f7f873, type: 3}
       insertIndex: -1
       addedObject: {fileID: 665144312}
     - targetCorrespondingSourceObject: {fileID: 6065192242096792717, guid: b2192ba13e83098478985e3919f7f873, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 154389080}
-    - targetCorrespondingSourceObject: {fileID: 6065192242096792717, guid: b2192ba13e83098478985e3919f7f873, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 154389079}
+      addedObject: {fileID: 1036271595}
     - targetCorrespondingSourceObject: {fileID: 3046396287148874832, guid: b2192ba13e83098478985e3919f7f873, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 776851345}
-    - targetCorrespondingSourceObject: {fileID: 3046396287148874832, guid: b2192ba13e83098478985e3919f7f873, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 776851344}
+      addedObject: {fileID: 665144309}
   m_SourcePrefab: {fileID: 100100000, guid: b2192ba13e83098478985e3919f7f873, type: 3}
 --- !u!4 &665144304 stripped
 Transform:
@@ -6972,14 +6946,33 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &665144308 stripped
 GameObject:
-  m_CorrespondingSourceObject: {fileID: 1074042306348098230, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+  m_CorrespondingSourceObject: {fileID: 7335703348850716545, guid: b2192ba13e83098478985e3919f7f873, type: 3}
   m_PrefabInstance: {fileID: 665144303}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &665144309 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4956321035829624687, guid: b2192ba13e83098478985e3919f7f873, type: 3}
-  m_PrefabInstance: {fileID: 665144303}
+--- !u!114 &665144309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 665144305}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
+  instanceId: InteractionPointSceneBinding.1725931d3711409eb444ae6d68249ea3
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: interaction-point.prototype.city-records-desk
+  bindingKey: prototype.scene.interaction.city-records-desk
+  displayName: City Records Desk
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  interactionRange: 3
+  requirePhysicalRange: 1
 --- !u!1 &665144310 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7516797644157564959, guid: b2192ba13e83098478985e3919f7f873, type: 3}
@@ -7002,14 +6995,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
-  instanceId: InteractionPointSceneBinding.338dedae03d140708f48efaad819bd7d
+  instanceId: InteractionPointSceneBinding.5273a1a8b6d74389bb03e88b67ddd4d3
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: interaction-point.prototype.mayor-desk
   bindingKey: prototype.scene.interaction.mayor-desk
-  displayName: 
+  displayName: Mayor Desk
   role: 0
-  required: 0
+  required: 1
   autoRegister: 1
   anchor: {fileID: 0}
   interactionRange: 3
@@ -7020,70 +7013,48 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144307}
+  m_GameObject: {fileID: 665144308}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
+  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
-  instanceId: LocationSceneBinding.203a9843fa4e4ce68b5e6e938c61544b
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
+  instanceId: InteractionPointSceneBinding.8e7785ac6f58471aabd63a91e605b975
   worldId: local-world
   sceneKey: scene.prototype
-  logicalId: location.prototype.mayor-office
-  bindingKey: prototype.scene.location.mayor-office
-  displayName: 
-  role: 1
-  required: 0
+  logicalId: interaction-point.prototype.merchant-guild-counter
+  bindingKey: prototype.scene.interaction.merchant-guild-counter
+  displayName: Merchant Guild Counter
+  role: 0
+  required: 1
   autoRegister: 1
   anchor: {fileID: 0}
-  locationDefinitionId: location-definition.office
+  interactionRange: 3
+  requirePhysicalRange: 1
 --- !u!114 &665144314
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144309}
+  m_GameObject: {fileID: 665144310}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
-  instanceId: InteractionPointSceneBinding.0620d3c2865448c5a167800a88b77dd1
+  instanceId: InteractionPointSceneBinding.1e164245ff1e48528231a242529749d7
   worldId: local-world
   sceneKey: scene.prototype
-  logicalId: interaction-point.prototype.adventurer-guild-counter
-  bindingKey: prototype.scene.interaction.adventurer-guild-counter
-  displayName: 
+  logicalId: interaction-point.prototype.prison-cell
+  bindingKey: prototype.scene.interaction.prison-cell
+  displayName: Prison Cell
   role: 0
-  required: 0
+  required: 1
   autoRegister: 1
   anchor: {fileID: 0}
   interactionRange: 3
   requirePhysicalRange: 1
---- !u!114 &665144315
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144309}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
-  instanceId: LocationSceneBinding.1ab855ca6287451c8c6205368dcc6b81
-  worldId: local-world
-  sceneKey: scene.prototype
-  logicalId: location.prototype.adventurers-guild
-  bindingKey: prototype.scene.location.adventurers-guild.counter-area
-  displayName: 
-  role: 1
-  required: 0
-  autoRegister: 1
-  anchor: {fileID: 0}
-  locationDefinitionId: location-definition.guild-hall
 --- !u!114 &665144316
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8088,53 +8059,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 775714492}
   m_CullTransparentMesh: 1
---- !u!114 &776851344
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144305}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
-  instanceId: InteractionPointSceneBinding.884e8d091f574cf3984c5b9c6d0c202c
-  worldId: local-world
-  sceneKey: scene.prototype
-  logicalId: interaction-point.prototype.city-records-desk
-  bindingKey: prototype.scene.interaction.city-records-desk
-  displayName: 
-  role: 0
-  required: 0
-  autoRegister: 1
-  anchor: {fileID: 0}
-  interactionRange: 3
-  requirePhysicalRange: 1
---- !u!114 &776851345
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144305}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
-  instanceId: LocationSceneBinding.52c9d1c062964c869b0a687c0d326c58
-  worldId: local-world
-  sceneKey: scene.prototype
-  logicalId: location.prototype.civic-office
-  bindingKey: prototype.scene.location.civic-office.records-desk
-  displayName: 
-  role: 1
-  required: 0
-  autoRegister: 1
-  anchor: {fileID: 0}
-  locationDefinitionId: location-definition.government-building
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -9851,6 +9775,30 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: Dialogue text
+--- !u!114 &1036271595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 665144306}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
+  instanceId: InteractionPointSceneBinding.ac2e342712114c61aeeabed288edea73
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: interaction-point.prototype.guild-head-desk
+  bindingKey: prototype.scene.interaction.guild-head-desk
+  displayName: Guild Head Desk
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  interactionRange: 3
+  requirePhysicalRange: 1
 --- !u!1 &1050589589
 GameObject:
   m_ObjectHideFlags: 0
@@ -12350,13 +12298,44 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1319557515346196011, guid: b1dd20ebed1fb4c4baa9518e3cdc7f66, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1298349446}
   m_SourcePrefab: {fileID: 100100000, guid: b1dd20ebed1fb4c4baa9518e3cdc7f66, type: 3}
 --- !u!4 &1298349444 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5825594282539302856, guid: b1dd20ebed1fb4c4baa9518e3cdc7f66, type: 3}
   m_PrefabInstance: {fileID: 1298349443}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1298349445 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1319557515346196011, guid: b1dd20ebed1fb4c4baa9518e3cdc7f66, type: 3}
+  m_PrefabInstance: {fileID: 1298349443}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1298349446
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1298349445}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
+  instanceId: LocationSceneBinding.b42f98984cee40ab9bb4bf069289312e
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: location.prototype.dungeon-entry
+  bindingKey: prototype.scene.location.dungeon-entry
+  displayName: 
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
+  locationDefinitionId: location-definition.dungeon
 --- !u!1 &1300943054
 GameObject:
   m_ObjectHideFlags: 0
@@ -16810,53 +16789,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1839170864}
   m_CullTransparentMesh: 1
---- !u!114 &1840214077
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144310}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
-  instanceId: InteractionPointSceneBinding.4cfdc1c756ac4c28a2a8b15cde938e93
-  worldId: local-world
-  sceneKey: scene.prototype
-  logicalId: interaction-point.prototype.prison-cell
-  bindingKey: prototype.scene.interaction.prison-cell
-  displayName: 
-  role: 0
-  required: 0
-  autoRegister: 1
-  anchor: {fileID: 0}
-  interactionRange: 3
-  requirePhysicalRange: 1
---- !u!114 &1840214078
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144310}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
-  instanceId: LocationSceneBinding.ac8fdbfeb9054e3380b19cbc144314da
-  worldId: local-world
-  sceneKey: scene.prototype
-  logicalId: location.prototype.basement-prison
-  bindingKey: prototype.scene.location.basement-prison
-  displayName: 
-  role: 1
-  required: 0
-  autoRegister: 1
-  anchor: {fileID: 0}
-  locationDefinitionId: location-definition.detention-area
 --- !u!1 &1848582557
 GameObject:
   m_ObjectHideFlags: 0
@@ -19327,6 +19259,32 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2030514996}
   m_CullTransparentMesh: 1
+--- !u!1 &2031685991 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6106608855532008888, guid: b2192ba13e83098478985e3919f7f873, type: 3}
+  m_PrefabInstance: {fileID: 665144303}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &2031685995
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2031685991}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.763752, y: 2.5065913, z: 1.1004093}
+  m_Center: {x: 0.000030710115, y: 1.2533897, z: 0.39020205}
 --- !u!1 &2044944199
 GameObject:
   m_ObjectHideFlags: 0
@@ -20170,53 +20128,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2121126404}
   m_CullTransparentMesh: 1
---- !u!114 &2124640774
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144308}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
-  instanceId: InteractionPointSceneBinding.f476aea8ede44a1894d9d43c438087e5
-  worldId: local-world
-  sceneKey: scene.prototype
-  logicalId: interaction-point.prototype.merchant-guild-counter
-  bindingKey: prototype.scene.interaction.merchant-guild-counter
-  displayName: 
-  role: 0
-  required: 0
-  autoRegister: 1
-  anchor: {fileID: 0}
-  interactionRange: 3
-  requirePhysicalRange: 1
---- !u!114 &2124640775
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 665144308}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
-  instanceId: LocationSceneBinding.94db7e72a6bd47cd99d6af5aec6b4c37
-  worldId: local-world
-  sceneKey: scene.prototype
-  logicalId: location.prototype.merchant-counter
-  bindingKey: prototype.scene.location.merchant-counter
-  displayName: 
-  role: 1
-  required: 0
-  autoRegister: 1
-  anchor: {fileID: 0}
-  locationDefinitionId: location-definition.market-stall
 --- !u!1 &2131503665
 GameObject:
   m_ObjectHideFlags: 0

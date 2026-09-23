@@ -99,7 +99,7 @@ namespace UnityIsekaiGame.Quests
                         capacity: 1,
                         offerDuration: 7d,
                         authorityRequirements: new[] { "authority.prototype.guild.quest-offer" },
-                        eligibilityGroups: new[] { All("guild-context", Membership("organization.prototype.adventurers-guild"), Interaction("interaction-point.prototype.guild-counter")) });
+                        eligibilityGroups: new[] { All("guild-context", Membership("organization.prototype.adventurers-guild"), Interaction(UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId)) });
                     break;
                 case MerchantDeliveryDefinitionId:
                     definition.DevelopmentConfigureParticipation(
@@ -110,7 +110,7 @@ namespace UnityIsekaiGame.Quests
                         capacity: 0,
                         offerDuration: 3d,
                         authorityRequirements: new[] { "authority.prototype.merchant.quest-offer" },
-                        eligibilityGroups: new[] { All("merchant-counter", Interaction("interaction-point.prototype.merchant-counter")) });
+                        eligibilityGroups: new[] { All("merchant-counter", Interaction(UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId)) });
                     break;
                 case CivicInvestigationDefinitionId:
                     definition.DevelopmentConfigureParticipation(
@@ -159,10 +159,10 @@ namespace UnityIsekaiGame.Quests
                     definition.DevelopmentConfigureObjectives(
                         new[]
                         {
-                            Objective("quest-objective-definition.prototype.guild.use-counter", "Use Adventurer Guild Counter", QuestObjectiveCategory.UseInteractionPoint, QuestObjectiveProgressModel.BooleanEvent, QuestObjectiveProgressSource.DomainEvent, Target(InformationSubjectType.Custom, "interaction-point.prototype.guild-counter"), tags: new[] { "required", "guild", "interaction" }, order: 10),
+                            Objective("quest-objective-definition.prototype.guild.use-counter", "Use Adventurer Guild Counter", QuestObjectiveCategory.UseInteractionPoint, QuestObjectiveProgressModel.BooleanEvent, QuestObjectiveProgressSource.DomainEvent, Target(InformationSubjectType.Custom, UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId), tags: new[] { "required", "guild", "interaction" }, order: 10),
                             Objective("quest-objective-definition.prototype.guild.enter-dungeon", "Enter the Dungeon", QuestObjectiveCategory.VisitLocation, QuestObjectiveProgressModel.BooleanEvent, QuestObjectiveProgressSource.DomainEvent, Target(InformationSubjectType.Location, "location.prototype.dungeon-entry"), prerequisites: new[] { "quest-objective-definition.prototype.guild.use-counter" }, tags: new[] { "required", "exploration" }, order: 20),
                             Objective("quest-objective-definition.prototype.guild.defeat-monsters", "Defeat Three Monsters", QuestObjectiveCategory.DefeatCount, QuestObjectiveProgressModel.Counter, QuestObjectiveProgressSource.DomainEvent, Target(InformationSubjectType.Custom, "enemy-family.prototype.monster"), amount: 3, prerequisites: new[] { "quest-objective-definition.prototype.guild.enter-dungeon" }, tags: new[] { "required", "combat" }, order: 30),
-                            Objective("quest-objective-definition.prototype.guild.report-return", "Report Back to the Guild", QuestObjectiveCategory.UseInteractionPoint, QuestObjectiveProgressModel.BooleanEvent, QuestObjectiveProgressSource.DomainEvent, Target(InformationSubjectType.Custom, "interaction-point.prototype.guild-counter"), prerequisites: new[] { "quest-objective-definition.prototype.guild.defeat-monsters" }, tags: new[] { "required", "guild" }, order: 40)
+                            Objective("quest-objective-definition.prototype.guild.report-return", "Report Back to the Guild", QuestObjectiveCategory.UseInteractionPoint, QuestObjectiveProgressModel.BooleanEvent, QuestObjectiveProgressSource.DomainEvent, Target(InformationSubjectType.Custom, UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId), prerequisites: new[] { "quest-objective-definition.prototype.guild.defeat-monsters" }, tags: new[] { "required", "guild" }, order: 40)
                         },
                         new[] { Group("quest-objective-group.prototype.guild.required", QuestObjectiveGroupPolicy.OrderedAll, 4, "quest-objective-definition.prototype.guild.use-counter", "quest-objective-definition.prototype.guild.enter-dungeon", "quest-objective-definition.prototype.guild.defeat-monsters", "quest-objective-definition.prototype.guild.report-return") });
                     break;
@@ -172,7 +172,7 @@ namespace UnityIsekaiGame.Quests
                         {
                             Objective("quest-objective-definition.prototype.delivery.collect-parcel", "Collect Merchant Parcel", QuestObjectiveCategory.ObtainItem, QuestObjectiveProgressModel.BooleanEvent, QuestObjectiveProgressSource.DomainEvent, Target(InformationSubjectType.Custom, "item.prototype.merchant-parcel"), tags: new[] { "required", "delivery", "item" }, order: 10),
                             Objective("quest-objective-definition.prototype.delivery.possess-parcel", "Possess Merchant Parcel", QuestObjectiveCategory.PossessItem, QuestObjectiveProgressModel.QuantityCurrent, QuestObjectiveProgressSource.CurrentStateQuery, Target(InformationSubjectType.Custom, "item.prototype.merchant-parcel"), amount: 1, tags: new[] { "required", "delivery", "item" }, order: 20),
-                            Objective("quest-objective-definition.prototype.delivery.deliver-parcel", "Deliver Parcel to Merchant Counter", QuestObjectiveCategory.DeliverItem, QuestObjectiveProgressModel.BooleanEvent, QuestObjectiveProgressSource.DomainEvent, Target(InformationSubjectType.Custom, "interaction-point.prototype.merchant-counter"), secondaryTarget: Target(InformationSubjectType.Custom, "item.prototype.merchant-parcel"), prerequisites: new[] { "quest-objective-definition.prototype.delivery.collect-parcel" }, tags: new[] { "required", "delivery" }, order: 30)
+                            Objective("quest-objective-definition.prototype.delivery.deliver-parcel", "Deliver Parcel to Merchant Counter", QuestObjectiveCategory.DeliverItem, QuestObjectiveProgressModel.BooleanEvent, QuestObjectiveProgressSource.DomainEvent, Target(InformationSubjectType.Custom, UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId), secondaryTarget: Target(InformationSubjectType.Custom, "item.prototype.merchant-parcel"), prerequisites: new[] { "quest-objective-definition.prototype.delivery.collect-parcel" }, tags: new[] { "required", "delivery" }, order: 30)
                         },
                         new[] { Group("quest-objective-group.prototype.delivery.required", QuestObjectiveGroupPolicy.All, 3, "quest-objective-definition.prototype.delivery.collect-parcel", "quest-objective-definition.prototype.delivery.possess-parcel", "quest-objective-definition.prototype.delivery.deliver-parcel") });
                     break;
@@ -216,7 +216,7 @@ namespace UnityIsekaiGame.Quests
             {
                 case GuildPostingDefinitionId:
                     definition.DevelopmentConfigureOutcomes(
-                        completion: TurnIn("interaction-point.prototype.guild-counter"),
+                        completion: TurnIn(UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId),
                         deadlines: new[] { Deadline("quest-deadline-definition.prototype.guild.three-days", 3d) },
                         failures: new[] { Failure("quest-failure-condition.prototype.guild.deadline", QuestFailureReasonCode.DeadlineExpired, QuestFailureTriggerKind.Deadline) },
                         rewards: new[] { RewardPackage("quest-reward-package.prototype.guild.base", QuestRewardDeliveryPolicy.ClaimAfterCompletion, Reward("quest-reward.prototype.guild.gold", QuestRewardCategory.Currency, "currency.gold", 50), Reward("quest-reward.prototype.guild.reputation", QuestRewardCategory.Reputation, "reputation.prototype.adventurers-guild", 5)) },
@@ -224,7 +224,7 @@ namespace UnityIsekaiGame.Quests
                     break;
                 case MerchantDeliveryDefinitionId:
                     definition.DevelopmentConfigureOutcomes(
-                        completion: TurnIn("interaction-point.prototype.merchant-counter"),
+                        completion: TurnIn(UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId),
                         deadlines: new[] { Deadline("quest-deadline-definition.prototype.delivery.one-day", 1d) },
                         failures: new[] { Failure("quest-failure-condition.prototype.delivery.parcel-lost", QuestFailureReasonCode.RequiredItemLost, QuestFailureTriggerKind.StateEvaluation) },
                         rewards: new[] { RewardPackage("quest-reward-package.prototype.delivery.base", QuestRewardDeliveryPolicy.ClaimAfterCompletion, Reward("quest-reward.prototype.delivery.gold", QuestRewardCategory.Currency, "currency.gold", 25), Reward("quest-reward.prototype.delivery.item", QuestRewardCategory.Item, "item.health-potion", 1)) });

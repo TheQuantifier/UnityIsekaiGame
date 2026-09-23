@@ -116,7 +116,7 @@ namespace UnityIsekaiGame.WorldLocations
             Provider(runtime, AdventurerGuildCounterPointId, RegisterAdventurerServiceId, PrototypeEntityLocationFactory.GuildMasterPersonId, world);
 
             SeedPoint(runtime, MerchantGuildCounterPointId, MerchantGuildCounterDefinitionId, "Merchant Guild Counter", "location.prototype.merchant-counter", new[] { RegisterMerchantServiceId, MerchantPermitServiceId, MerchantInformationServiceId }, "prototype.scene.interaction.merchant-guild-counter");
-            Link(runtime, MerchantGuildCounterPointId, InteractionSubjectLinkRole.RepresentedOrganization, "Organization", "organization.prototype.royal-forge", world);
+            Link(runtime, MerchantGuildCounterPointId, InteractionSubjectLinkRole.RepresentedOrganization, "Organization", "organization.prototype.merchant-guild", world);
             Provider(runtime, MerchantGuildCounterPointId, RegisterMerchantServiceId, PrototypeEntityLocationFactory.MerchantPersonId, world);
 
             SeedPoint(runtime, MayorDeskPointId, MayorDeskDefinitionId, "Mayor Desk", "location.prototype.mayor-office", new[] { MeetMayorServiceId, GovernmentInformationServiceId }, "prototype.scene.interaction.mayor-desk");

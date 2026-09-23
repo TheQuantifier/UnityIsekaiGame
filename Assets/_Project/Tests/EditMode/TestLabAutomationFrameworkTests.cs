@@ -1371,7 +1371,7 @@ namespace UnityIsekaiGame.Tests
             string[] actualSuiteIds = registry.Suites.Select(suite => suite.SuiteId).ToArray();
             Assert.That(actualSuiteIds, Is.EqualTo(PrototypeTestLabAutomationCatalog.SuiteIds()));
             Assert.That(actualSuiteIds.First(), Is.EqualTo("feature.3.runtime-taxonomy"));
-            Assert.That(actualSuiteIds.Last(), Is.EqualTo("feature.15.12.quest-dialogue-narrative-event-integration-finalization"));
+            Assert.That(actualSuiteIds.Last(), Is.EqualTo("maintenance.phase-2.prototype-integration-legacy-cleanup"));
             Assert.That(registry.Suites.SelectMany(suite => suite.Scenarios).All(scenario => scenario.IsolationMode == TestLabScenarioIsolationMode.FreshRuntime
                 || scenario.RequiredFixtureIds.Contains(TestLabScenarioContext.MutableStateScopeFixtureId)), Is.True);
             Assert.That(registry.Suites.SelectMany(suite => suite.Scenarios).All(scenario => scenario.RequiredFixtureIds.Contains(TestLabScenarioContext.RuntimeBaselineFixtureId)), Is.True);
@@ -1384,8 +1384,8 @@ namespace UnityIsekaiGame.Tests
         {
             PrototypeTestLabAutomationProviderDescriptor[] providers = PrototypeTestLabAutomationCatalog.Providers.ToArray();
 
-            Assert.That(providers.Select(provider => provider.Step), Is.EqualTo(new[] { 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }));
-            Assert.That(providers.Select(provider => provider.Label), Is.EqualTo(new[] { "Runtime Taxonomy", "World Data", "Character", "Combat", "Body", "Knowledge", "Items", "Professions", "Economy", "Social", "Organizations", "World Locations", "Quests" }));
+            Assert.That(providers.Select(provider => provider.Step), Is.EqualTo(new[] { 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 99 }));
+            Assert.That(providers.Select(provider => provider.Label), Is.EqualTo(new[] { "Runtime Taxonomy", "World Data", "Character", "Combat", "Body", "Knowledge", "Items", "Professions", "Economy", "Social", "Organizations", "World Locations", "Quests", "Maintenance" }));
             Assert.That(providers.Select(provider => provider.Name), Is.EqualTo(new[]
             {
                 nameof(PrototypeStep3AutomationSuites),
@@ -1400,7 +1400,8 @@ namespace UnityIsekaiGame.Tests
                 nameof(PrototypeStep12AutomationSuites),
                 nameof(PrototypeStep13AutomationSuites),
                 nameof(PrototypeStep14AutomationSuites),
-                nameof(PrototypeStep15AutomationSuites)
+                nameof(PrototypeStep15AutomationSuites),
+                nameof(PrototypeStep99MaintenanceAutomationSuites)
             }));
         }
 

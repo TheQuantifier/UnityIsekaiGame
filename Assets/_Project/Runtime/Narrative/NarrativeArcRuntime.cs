@@ -447,7 +447,7 @@ namespace UnityIsekaiGame.Narrative
                 return new NarrativeArcQuestBindingResult(!binding.required, string.Empty, $"Quest definition '{binding.questDefinitionId}' is missing.");
             }
 
-            QuestIssuerReferenceData issuer = BuildQuestIssuer(questDefinition, record, binding);
+            QuestIssuerReferenceData issuer = BuildQuestIssuer(questDefinition, record, binding, integrations);
             QuestRuntimeOperationResult create = integrations.QuestRuntime.CreateQuest(new QuestCreateRequest
             {
                 transactionId = $"{N(signal.transactionId)}.{binding.bindingDefinitionId}.quest",
@@ -466,16 +466,37 @@ namespace UnityIsekaiGame.Narrative
             return new NarrativeArcQuestBindingResult(create.Succeeded, create.Snapshot?.QuestId ?? questId, create.Message);
         }
 
-        private static QuestIssuerReferenceData BuildQuestIssuer(QuestDefinition definition, NarrativeArcRecordData record, NarrativeArcQuestBindingDefinitionData binding)
+        private static QuestIssuerReferenceData BuildQuestIssuer(QuestDefinition definition, NarrativeArcRecordData record, NarrativeArcQuestBindingDefinitionData binding, NarrativeArcRuntimeIntegrations integrations)
         {
-            QuestIssuerType issuerType = definition?.SupportedIssuerTypes?.FirstOrDefault(value => value != QuestIssuerType.Unknown) ?? QuestIssuerType.System;
+            QuestIssuerType issuerType = PreferredIssuerTypeForBoundSource(definition, binding, integrations);
+            if (issuerType == QuestIssuerType.Unknown) issuerType = definition?.SupportedIssuerTypes?.FirstOrDefault(value => value != QuestIssuerType.Unknown) ?? QuestIssuerType.System;
             if (issuerType == QuestIssuerType.Unknown) issuerType = QuestIssuerType.System;
             return new QuestIssuerReferenceData
             {
                 issuerType = issuerType,
-                issuerId = IssuerIdFor(issuerType, record, binding),
+                issuerId = IssuerIdFor(issuerType, record, binding, integrations),
                 provenanceId = record?.narrativeArcId ?? string.Empty
             };
+        }
+
+        private static QuestIssuerType PreferredIssuerTypeForBoundSource(QuestDefinition definition, NarrativeArcQuestBindingDefinitionData binding, NarrativeArcRuntimeIntegrations integrations)
+        {
+            if (definition == null || string.IsNullOrWhiteSpace(binding?.questSourceId) || integrations?.QuestSourceRuntime == null)
+            {
+                return QuestIssuerType.Unknown;
+            }
+
+            if (!integrations.QuestSourceRuntime.TryGetSource(binding.questSourceId, out QuestSourceSnapshot source))
+            {
+                return QuestIssuerType.Unknown;
+            }
+
+            if (!string.IsNullOrWhiteSpace(source.OperatingGovernmentId) && definition.SupportedIssuerTypes.Contains(QuestIssuerType.Government)) return QuestIssuerType.Government;
+            if (!string.IsNullOrWhiteSpace(source.OperatingOrganizationId) && definition.SupportedIssuerTypes.Contains(QuestIssuerType.Organization)) return QuestIssuerType.Organization;
+            if (!string.IsNullOrWhiteSpace(source.OperatingOfficeId) && definition.SupportedIssuerTypes.Contains(QuestIssuerType.Office)) return QuestIssuerType.Office;
+            if (!string.IsNullOrWhiteSpace(source.OperatingBusinessId) && definition.SupportedIssuerTypes.Contains(QuestIssuerType.Business)) return QuestIssuerType.Business;
+            if (!string.IsNullOrWhiteSpace(source.OperatingFactionId) && definition.SupportedIssuerTypes.Contains(QuestIssuerType.Faction)) return QuestIssuerType.Faction;
+            return QuestIssuerType.Unknown;
         }
 
         private static QuestRecipientReferenceData BuildQuestRecipient(QuestDefinition definition, NarrativeArcRecordData record)
@@ -507,10 +528,11 @@ namespace UnityIsekaiGame.Narrative
             };
         }
 
-        private static string IssuerIdFor(QuestIssuerType issuerType, NarrativeArcRecordData record, NarrativeArcQuestBindingDefinitionData binding)
+        private static string IssuerIdFor(QuestIssuerType issuerType, NarrativeArcRecordData record, NarrativeArcQuestBindingDefinitionData binding, NarrativeArcRuntimeIntegrations integrations)
         {
             if (issuerType == QuestIssuerType.System || issuerType == QuestIssuerType.Anonymous) return string.Empty;
-            if (!string.IsNullOrWhiteSpace(binding?.questSourceId)) return binding.questSourceId;
+            string sourceIssuer = IssuerFromBoundSource(issuerType, binding, integrations);
+            if (!string.IsNullOrWhiteSpace(sourceIssuer)) return sourceIssuer;
             return issuerType switch
             {
                 QuestIssuerType.Person => string.IsNullOrWhiteSpace(record?.actorPersonId) ? "person.prototype.narrative-arc-issuer" : record.actorPersonId,
@@ -520,6 +542,29 @@ namespace UnityIsekaiGame.Narrative
                 QuestIssuerType.Faction => "faction.prototype.narrative-arc",
                 QuestIssuerType.Business => "business.prototype.narrative-arc",
                 _ => "issuer.prototype.narrative-arc"
+            };
+        }
+
+        private static string IssuerFromBoundSource(QuestIssuerType issuerType, NarrativeArcQuestBindingDefinitionData binding, NarrativeArcRuntimeIntegrations integrations)
+        {
+            if (string.IsNullOrWhiteSpace(binding?.questSourceId) || integrations?.QuestSourceRuntime == null)
+            {
+                return string.Empty;
+            }
+
+            if (!integrations.QuestSourceRuntime.TryGetSource(binding.questSourceId, out QuestSourceSnapshot source))
+            {
+                return string.Empty;
+            }
+
+            return issuerType switch
+            {
+                QuestIssuerType.Organization => source.OperatingOrganizationId,
+                QuestIssuerType.Government => source.OperatingGovernmentId,
+                QuestIssuerType.Office => source.OperatingOfficeId,
+                QuestIssuerType.Faction => source.OperatingFactionId,
+                QuestIssuerType.Business => source.OperatingBusinessId,
+                _ => string.Empty
             };
         }
 

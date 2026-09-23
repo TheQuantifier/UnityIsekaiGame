@@ -431,6 +431,7 @@ namespace UnityIsekaiGame.Narrative
     public sealed class NarrativeArcRuntimeIntegrations
     {
         public QuestRuntime QuestRuntime { get; set; }
+        public QuestSourceRuntime QuestSourceRuntime { get; set; }
         public QuestOutcomeRuntime QuestOutcomeRuntime { get; set; }
         public NarrativeEventRuntime NarrativeEventRuntime { get; set; }
         public NarrativeStateRuntime NarrativeStateRuntime { get; set; }
