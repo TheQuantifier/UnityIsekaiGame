@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Interaction;
 
 namespace UnityIsekaiGame.WorldLocations.SceneBinding
@@ -10,7 +11,15 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
         public override WorldSceneBindingCategory Category => WorldSceneBindingCategory.InteractionPoint;
         public string InteractionPrompt => string.IsNullOrWhiteSpace(DisplayName) ? "Interact" : $"Interact: {DisplayName}";
+        public float InteractionRange => interactionRange;
+        public bool RequiresPhysicalRange => requirePhysicalRange;
         public InteractionPointSnapshot LastPoint { get; private set; }
+
+        public void ConfigureInteraction(float range = 3f, bool enforcePhysicalRange = true)
+        {
+            interactionRange = Mathf.Max(0.1f, range);
+            requirePhysicalRange = enforcePhysicalRange;
+        }
 
         public bool CanInteract(in InteractionContext context)
         {
@@ -36,6 +45,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             }
 
             LastPoint = point;
+            PrototypeHudMessageBus.Show($"Interacted with {DisplayName}.");
             Debug.Log($"Scene interaction routed to logical interaction point '{point.InteractionPointId}'.");
         }
 

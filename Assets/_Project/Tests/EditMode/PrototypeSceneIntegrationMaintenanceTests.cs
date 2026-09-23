@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityIsekaiGame.Dialogue;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.Interaction;
 using UnityIsekaiGame.Narrative;
 using UnityIsekaiGame.Organizations;
 using UnityIsekaiGame.PrototypeIntegration;
@@ -116,7 +117,7 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void Phase2AdventurerGuildPhysicalCountersCarryProductionBindings()
+        public void Phase2AdventurerGuildPhysicalInteractionObjectsCarryProductionBindings()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(AdventurerGuildPrefabPath);
 
@@ -124,19 +125,31 @@ namespace UnityIsekaiGame.Tests
             AssertChildMissing(prefab, "Interact - Adventurer Guild Counter");
             AssertChildMissing(prefab, "Interact - Merchant Guild Counter");
             AssertInteraction(prefab, "AdventurerGuildCounter", PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId, requiresCollider: true);
+            AssertInteractionCollidersDoNotBlockMovement(prefab, "AdventurerGuildCounter");
             AssertQuestSource(prefab, "AdventurerGuildCounter", PrototypeSceneIntegrationIds.AdventurerGuildCounterSourceId, PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId);
             AssertInteraction(prefab, "MerchantGuildCounter", PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId, requiresCollider: true);
+            AssertInteractionCollidersDoNotBlockMovement(prefab, "MerchantGuildCounter");
             AssertQuestSource(prefab, "MerchantGuildCounter", PrototypeSceneIntegrationIds.MerchantGuildCounterSourceId, PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId);
-            AssertInteraction(prefab, "Interact - Mayor Desk", PrototypeInteractionPointDefinitionFactory.MayorDeskPointId);
+            AssertInteraction(prefab, "Quest Board", PrototypeInteractionPointDefinitionFactory.QuestBoardPointId, requiresCollider: true);
+            AssertInteractionCollidersDoNotBlockMovement(prefab, "Quest Board");
+            AssertQuestSource(prefab, "Quest Board", PrototypeSceneIntegrationIds.AdventurerGuildBoardSourceId, PrototypeInteractionPointDefinitionFactory.QuestBoardPointId);
+            AssertInteraction(prefab, "Interact - Mayor Desk", PrototypeInteractionPointDefinitionFactory.MayorDeskPointId, requiresCollider: true);
+            AssertInteractionCollidersDoNotBlockMovement(prefab, "Interact - Mayor Desk");
             AssertQuestSource(prefab, "Interact - Mayor Desk", PrototypeSceneIntegrationIds.MayorOfficeDeskSourceId, PrototypeInteractionPointDefinitionFactory.MayorDeskPointId);
-            AssertInteraction(prefab, "Interact - City Office Records Desk", PrototypeInteractionPointDefinitionFactory.RecordsDeskPointId);
+            AssertInteraction(prefab, "Interact - City Office Records Desk", PrototypeInteractionPointDefinitionFactory.RecordsDeskPointId, requiresCollider: true);
+            AssertInteractionCollidersDoNotBlockMovement(prefab, "Interact - City Office Records Desk");
             AssertQuestSource(prefab, "Interact - City Office Records Desk", PrototypeSceneIntegrationIds.CityRecordsArchiveSourceId, PrototypeInteractionPointDefinitionFactory.RecordsDeskPointId);
-            AssertInteraction(prefab, "Interact - Guild Head Desk", PrototypeInteractionPointDefinitionFactory.GuildHeadDeskPointId);
-            AssertInteraction(prefab, "Interact - Prison Cell A Door", PrototypeInteractionPointDefinitionFactory.PrisonCellPointId);
+            AssertInteraction(prefab, "Interact - Guild Head Desk", PrototypeInteractionPointDefinitionFactory.GuildHeadDeskPointId, requiresCollider: true);
+            AssertInteractionCollidersDoNotBlockMovement(prefab, "Interact - Guild Head Desk");
+            AssertInteraction(prefab, "Interact - Prison Cell A Door", PrototypeInteractionPointDefinitionFactory.PrisonCellPointId, requiresCollider: true);
+            AssertInteractionCollidersDoNotBlockMovement(prefab, "Interact - Prison Cell A Door");
+
+            GameObject merchantCounter = FindChild(prefab, "MerchantGuildCounter");
+            Assert.That(merchantCounter.GetComponent<LocationSceneBinding>(), Is.Not.Null, "Merchant counter must retain its co-located location binding.");
         }
 
         [Test]
-        public void Phase2PrototypeSceneDoesNotKeepLegacyCounterBindingObjects()
+        public void Phase2PrototypeSceneDoesNotKeepLegacyCounterOrQuestBoardBindingObjects()
         {
             EditorSceneManager.OpenScene(PrototypeScenePath);
             string[] obsoleteNames =
@@ -146,15 +159,31 @@ namespace UnityIsekaiGame.Tests
                 "Adventurer Guild Counter Source",
                 "Merchant Guild Counter Source",
                 "Adventurer Guild Counter",
-                "Merchant Guild Counter"
+                "Merchant Guild Counter",
+                "Adventurer Guild Quest Board"
             };
 
             GameObject[] sceneObjects = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include)
                 .Select(item => item.gameObject)
                 .ToArray();
             Assert.That(sceneObjects.Where(item => obsoleteNames.Contains(item.name)).Select(item => item.name).ToArray(), Is.Empty);
-            AssertSceneCounterBinding(PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId, "AdventurerGuildCounter");
-            AssertSceneCounterBinding(PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId, "MerchantGuildCounter");
+            AssertScenePhysicalInteractionBinding(PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId, "AdventurerGuildCounter");
+            AssertScenePhysicalInteractionBinding(PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId, "MerchantGuildCounter");
+            AssertScenePhysicalInteractionBinding(PrototypeInteractionPointDefinitionFactory.QuestBoardPointId, "Quest Board");
+
+            MonoBehaviour[] interactables = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include)
+                .Where(item => item is IInteractable)
+                .ToArray();
+            Assert.That(interactables, Is.Not.Empty);
+            foreach (MonoBehaviour interactable in interactables)
+            {
+                Collider[] ownedColliders = interactable.GetComponentsInChildren<Collider>(true)
+                    .Where(collider => ReferenceEquals(collider.GetComponentInParent<IInteractable>(), interactable))
+                    .ToArray();
+                Assert.That(ownedColliders, Is.Not.Empty, interactable.name);
+                Assert.That(ownedColliders.Any(collider => collider.enabled && collider.isTrigger), Is.True, interactable.name);
+                Assert.That(((IInteractable)interactable).InteractionPrompt, Is.Not.Empty, interactable.name);
+            }
         }
 
         private static void AssertInteraction(GameObject prefab, string objectName, string interactionPointId, bool requiresCollider = false)
@@ -163,7 +192,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(marker, Is.Not.Null, objectName);
             if (requiresCollider)
             {
-                Assert.That(marker.GetComponent<Collider>(), Is.Not.Null, objectName);
+                Assert.That(marker.GetComponentInChildren<Collider>(true), Is.Not.Null, objectName);
             }
 
             InteractionPointSceneBinding binding = marker.GetComponent<InteractionPointSceneBinding>();
@@ -184,14 +213,26 @@ namespace UnityIsekaiGame.Tests
             Assert.That(binding.Required, Is.True, objectName);
         }
 
-        private static void AssertSceneCounterBinding(string interactionPointId, string objectName)
+        private static void AssertInteractionCollidersDoNotBlockMovement(GameObject prefab, string objectName)
+        {
+            GameObject marker = FindChild(prefab, objectName);
+            Collider[] colliders = marker.GetComponentsInChildren<Collider>(true);
+            Assert.That(colliders.Length, Is.GreaterThan(0), objectName);
+            Assert.That(colliders.All(item => item.isTrigger), Is.True, objectName);
+            Assert.That(colliders.All(item => !item.providesContacts), Is.True, objectName);
+        }
+
+        private static void AssertScenePhysicalInteractionBinding(string interactionPointId, string objectName)
         {
             InteractionPointSceneBinding[] bindings = UnityEngine.Object.FindObjectsByType<InteractionPointSceneBinding>(FindObjectsInactive.Include)
                 .Where(item => string.Equals(item.LogicalId, interactionPointId, StringComparison.Ordinal))
                 .ToArray();
             Assert.That(bindings.Length, Is.EqualTo(1), interactionPointId);
             Assert.That(bindings[0].gameObject.name, Is.EqualTo(objectName), interactionPointId);
-            Assert.That(bindings[0].GetComponent<Collider>(), Is.Not.Null, interactionPointId);
+            Collider[] colliders = bindings[0].GetComponentsInChildren<Collider>(true);
+            Assert.That(colliders.Length, Is.GreaterThan(0), interactionPointId);
+            Assert.That(colliders.All(item => item.isTrigger), Is.True, interactionPointId);
+            Assert.That(colliders.All(item => !item.providesContacts), Is.True, interactionPointId);
         }
 
         private static void AssertChildMissing(GameObject prefab, string objectName)

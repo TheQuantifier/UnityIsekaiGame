@@ -8,6 +8,9 @@ namespace UnityIsekaiGame.Interaction
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private Text promptText;
 
+        public bool IsVisible => canvasGroup != null ? canvasGroup.alpha > 0.5f : gameObject.activeSelf;
+        public string DisplayedPrompt => promptText == null ? string.Empty : promptText.text;
+
         private void Awake()
         {
             if (canvasGroup == null)

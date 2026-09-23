@@ -28,6 +28,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
         public string LogicalId => logicalId ?? string.Empty;
         public string BindingKey => bindingKey ?? string.Empty;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? gameObject.name : displayName;
+        public string AuthoredDisplayName => displayName ?? string.Empty;
         public WorldSceneBindingRole Role => role;
         public bool Required => required;
         public bool AutoRegister => autoRegister;
@@ -61,7 +62,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             }
         }
 
-        public void ConfigureBinding(string logicalRecordId, string sceneBindingKey, string scene, string world, WorldSceneBindingRole bindingRole = WorldSceneBindingRole.Primary, bool requiredBinding = false)
+        public void ConfigureBinding(string logicalRecordId, string sceneBindingKey, string scene, string world, WorldSceneBindingRole bindingRole = WorldSceneBindingRole.Primary, bool requiredBinding = false, string authoredDisplayName = null)
         {
             logicalId = N(logicalRecordId);
             bindingKey = N(sceneBindingKey);
@@ -69,6 +70,10 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             worldId = string.IsNullOrWhiteSpace(world) ? worldId : world.Trim();
             role = bindingRole;
             required = requiredBinding;
+            if (authoredDisplayName != null)
+            {
+                displayName = N(authoredDisplayName);
+            }
         }
 
         public WorldSceneBindingSnapshot Register(WorldSceneBindingRuntime targetRuntime)

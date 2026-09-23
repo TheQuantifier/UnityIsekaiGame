@@ -10,7 +10,9 @@ namespace UnityIsekaiGame.Interaction
         [SerializeField] private Transform rayOrigin;
         [SerializeField, Min(0.1f)] private float maxDistance = 3f;
         [SerializeField] private LayerMask interactionMask = ~0;
-        [SerializeField] private QueryTriggerInteraction triggerInteraction = QueryTriggerInteraction.Ignore;
+        [SerializeField] private QueryTriggerInteraction triggerInteraction = QueryTriggerInteraction.Collide;
+
+        private RaycastHit[] hitBuffer = new RaycastHit[32];
 
         private IInteractable currentInteractable;
         private RaycastHit currentHit;
@@ -18,6 +20,11 @@ namespace UnityIsekaiGame.Interaction
         public IInteractable CurrentInteractable => currentInteractable;
         public RaycastHit CurrentHit => currentHit;
         public bool HasTarget => currentInteractable != null;
+        public float MaxDistance => maxDistance;
+        public LayerMask InteractionMask => interactionMask;
+        public QueryTriggerInteraction TriggerInteraction => triggerInteraction;
+        public GameObject Interactor => interactor;
+        public Transform RayOrigin => rayOrigin;
 
         private void Reset()
         {
@@ -53,7 +60,7 @@ namespace UnityIsekaiGame.Interaction
             }
         }
 
-        private void RefreshTarget()
+        public void RefreshTarget()
         {
             currentInteractable = null;
             currentHit = default;
@@ -63,30 +70,76 @@ namespace UnityIsekaiGame.Interaction
                 return;
             }
 
-            if (!Physics.Raycast(rayOrigin.position, rayOrigin.forward, out RaycastHit hit, maxDistance, interactionMask, triggerInteraction))
+            int hitCount = Physics.RaycastNonAlloc(rayOrigin.position, rayOrigin.forward, hitBuffer, maxDistance, interactionMask, triggerInteraction);
+            while (hitCount == hitBuffer.Length)
             {
-                return;
+                hitBuffer = new RaycastHit[hitBuffer.Length * 2];
+                hitCount = Physics.RaycastNonAlloc(rayOrigin.position, rayOrigin.forward, hitBuffer, maxDistance, interactionMask, triggerInteraction);
             }
 
-            IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
-            if (interactable == null)
+            SortHitsByDistance(hitBuffer, hitCount);
+            for (int i = 0; i < hitCount; i++)
             {
+                RaycastHit hit = hitBuffer[i];
+                Collider hitCollider = hit.collider;
+                if (hitCollider == null || IsInteractorCollider(hitCollider))
+                {
+                    continue;
+                }
+
+                IInteractable interactable = hitCollider.GetComponentInParent<IInteractable>();
+                if (interactable == null)
+                {
+                    // Volumes such as area triggers must not steal focus. Solid scene geometry is
+                    // an occluder, so it stops interactions from passing through walls and props.
+                    if (!hitCollider.isTrigger)
+                    {
+                        return;
+                    }
+
+                    continue;
+                }
+
+                InteractionContext context = new InteractionContext(interactor, rayOrigin, hit);
+                if (!interactable.CanInteract(context))
+                {
+                    // An unavailable target still occludes objects behind it.
+                    return;
+                }
+
+                currentHit = hit;
+                currentInteractable = interactable;
                 return;
             }
-
-            InteractionContext context = new InteractionContext(interactor, rayOrigin, hit);
-            if (!interactable.CanInteract(context))
-            {
-                return;
-            }
-
-            currentHit = hit;
-            currentInteractable = interactable;
         }
 
         private InteractionContext CreateContext()
         {
             return new InteractionContext(interactor, rayOrigin, currentHit);
+        }
+
+        private bool IsInteractorCollider(Collider hitCollider)
+        {
+            return interactor != null && hitCollider.transform.IsChildOf(interactor.transform);
+        }
+
+        private static void SortHitsByDistance(RaycastHit[] hits, int count)
+        {
+            // Physics.RaycastNonAlloc does not guarantee result order. Insertion sort is cheap for
+            // the small number of colliders normally crossed by an interaction ray and allocates
+            // no per-frame comparer/delegate objects.
+            for (int i = 1; i < count; i++)
+            {
+                RaycastHit value = hits[i];
+                int j = i - 1;
+                while (j >= 0 && hits[j].distance > value.distance)
+                {
+                    hits[j + 1] = hits[j];
+                    j--;
+                }
+
+                hits[j + 1] = value;
+            }
         }
     }
 }

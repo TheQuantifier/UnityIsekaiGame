@@ -18,6 +18,7 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
         public const string PrototypeScenePath = "Assets/_Project/Scenes/Prototype/PrototypeScene.unity";
         private const string AdventurerGuildPrefabPath = "Assets/_Project/Prototype/Prefabs/Buildings/PrototypeAdventurerGuild/AdventurerGuild.prefab";
         private const string ToolRootName = "Phase 2 Production Bindings";
+        private const string InteractionAreaName = "Interaction Area";
         private static readonly string[] LegacyCounterBindingObjectNames =
         {
             "Interact - Adventurer Guild Counter",
@@ -25,7 +26,8 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             "Adventurer Guild Counter Source",
             "Merchant Guild Counter Source",
             "Adventurer Guild Counter",
-            "Merchant Guild Counter"
+            "Merchant Guild Counter",
+            "Adventurer Guild Quest Board"
         };
 
         [MenuItem("Tools/Project Maintenance/Phase 2 Prototype Integration/Apply Prototype Scene Integration")]
@@ -63,7 +65,7 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             int sceneChanges = missingScripts + prefabChanges;
             int placeholders = 0;
 
-            sceneChanges += EnsureBootstrap(root);
+            sceneChanges += EnsureBootstrap(root, WorldSceneBindingBootstrapMode.DevelopmentFixtureImport);
             sceneChanges += RemoveLegacyCounterBindingComponents();
             sceneChanges += RemoveLegacyCounterBindingObjects(root);
             foreach (PrototypeSceneWorldBindingExpectation expected in PrototypeSceneIntegrationContract.WorldBindings)
@@ -123,9 +125,17 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             return PrototypeSceneIntegrationValidator.ValidateComponents(worldBindings, questSourceBindings, null, precomputed);
         }
 
-        private static int EnsureBootstrap(GameObject root)
+        private static int EnsureBootstrap(GameObject root, WorldSceneBindingBootstrapMode desiredMode)
         {
-            return EnsureComponent<WorldSceneBindingBootstrap>(root, out _) ? 1 : 0;
+            bool added = EnsureComponent<WorldSceneBindingBootstrap>(root, out WorldSceneBindingBootstrap bootstrap);
+            bool modeChanged = bootstrap.BootstrapMode != desiredMode;
+            if (modeChanged)
+            {
+                bootstrap.ConfigureMode(desiredMode);
+                EditorUtility.SetDirty(bootstrap);
+            }
+
+            return added || modeChanged ? 1 : 0;
         }
 
         private static GameObject ResolveTarget(GameObject scaffoldRoot, PrototypeSceneWorldBindingExpectation expected, out bool created)
@@ -138,7 +148,7 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
                 return existing;
             }
 
-            if (ExpectedCounterObjectName(expected.LogicalId) != null)
+            if (ExpectedPhysicalInteractionObjectName(expected.LogicalId) != null)
             {
                 created = false;
                 return null;
@@ -167,14 +177,14 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
                 return preferred;
             }
 
-            string expectedCounterObjectName = ExpectedCounterObjectName(expected.InteractionPointId);
-            if (expectedCounterObjectName != null)
+            string expectedPhysicalObjectName = ExpectedPhysicalInteractionObjectName(expected.InteractionPointId);
+            if (expectedPhysicalObjectName != null)
             {
-                InteractionPointSceneBinding physicalCounterPoint = UnityEngine.Object.FindObjectsByType<InteractionPointSceneBinding>(FindObjectsInactive.Include)
+                InteractionPointSceneBinding physicalInteractionPoint = UnityEngine.Object.FindObjectsByType<InteractionPointSceneBinding>(FindObjectsInactive.Include)
                     .FirstOrDefault(item => string.Equals(item.LogicalId, expected.InteractionPointId, StringComparison.Ordinal)
-                        && string.Equals(item.gameObject.name, expectedCounterObjectName, StringComparison.Ordinal));
+                        && string.Equals(item.gameObject.name, expectedPhysicalObjectName, StringComparison.Ordinal));
                 created = false;
-                return physicalCounterPoint != null ? physicalCounterPoint.gameObject : null;
+                return physicalInteractionPoint != null ? physicalInteractionPoint.gameObject : null;
             }
 
             QuestSourceSceneBinding existing = UnityEngine.Object.FindObjectsByType<QuestSourceSceneBinding>(FindObjectsInactive.Include)
@@ -214,14 +224,66 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             }
 
             int removedDuplicates = RemoveDuplicateWorldBindingsOutsideTarget(target, expected);
-            return expected.Category switch
+            int layoutChanges = EnsurePlaceholderLayout(target, expected);
+            return layoutChanges + (expected.Category switch
             {
                 WorldSceneBindingCategory.Location => ApplyLocationBinding(target, expected) + removedDuplicates,
                 WorldSceneBindingCategory.InteractionPoint => ApplyInteractionBinding(target, expected) + removedDuplicates,
                 WorldSceneBindingCategory.Connection => ApplyConnectionBinding(target, expected) + removedDuplicates,
                 WorldSceneBindingCategory.Entity => ApplyEntityBinding(target, expected) + removedDuplicates,
                 _ => 0
+            });
+        }
+
+        private static int EnsurePlaceholderLayout(GameObject target, PrototypeSceneWorldBindingExpectation expected)
+        {
+            if (target == null || !HasAncestorNamed(target.transform, ToolRootName))
+            {
+                return 0;
+            }
+
+            PrototypeSceneWorldBindingExpectation[] categoryBindings = PrototypeSceneIntegrationContract.WorldBindings
+                .Where(item => item.Category == expected.Category)
+                .ToArray();
+            int index = Array.FindIndex(categoryBindings, item => item.LogicalId == expected.LogicalId);
+            if (index < 0)
+            {
+                return 0;
+            }
+
+            float rowOffset = expected.Category switch
+            {
+                WorldSceneBindingCategory.Location => -10f,
+                WorldSceneBindingCategory.Connection => 0f,
+                WorldSceneBindingCategory.InteractionPoint => 8f,
+                WorldSceneBindingCategory.Entity => 16f,
+                _ => 20f
             };
+            Vector3 desired = new Vector3((index % 5) * 3f, 0.5f, rowOffset + (index / 5) * 3f);
+            if (target.transform.localPosition == desired)
+            {
+                return 0;
+            }
+
+            target.transform.localPosition = desired;
+            EditorUtility.SetDirty(target.transform);
+            return 1;
+        }
+
+        private static bool HasAncestorNamed(Transform transform, string objectName)
+        {
+            Transform current = transform;
+            while (current != null)
+            {
+                if (string.Equals(current.name, objectName, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+
+                current = current.parent;
+            }
+
+            return false;
         }
 
         private static int ApplyLocationBinding(GameObject target, PrototypeSceneWorldBindingExpectation expected)
@@ -242,14 +304,15 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
         {
             int removedConflicts = RemoveConflictingWorldBindings<InteractionPointSceneBinding>(target, expected);
             InteractionPointSceneBinding binding = GetOrAdd<InteractionPointSceneBinding>(target, out bool added);
-            bool changed = added || binding.LogicalId != expected.LogicalId || binding.BindingKey != expected.BindingKey || binding.SceneKey != PrototypeSceneIntegrationIds.SceneKey || binding.WorldId != PersistenceService.LocalWorldId || binding.Role != expected.Role || binding.Required != expected.Required;
+            bool changed = added || binding.LogicalId != expected.LogicalId || binding.BindingKey != expected.BindingKey || binding.SceneKey != PrototypeSceneIntegrationIds.SceneKey || binding.WorldId != PersistenceService.LocalWorldId || binding.Role != expected.Role || binding.Required != expected.Required || binding.AuthoredDisplayName != expected.DisplayName || !Mathf.Approximately(binding.InteractionRange, 3f) || !binding.RequiresPhysicalRange;
             if (changed)
             {
-                binding.ConfigureBinding(expected.LogicalId, expected.BindingKey, PrototypeSceneIntegrationIds.SceneKey, PersistenceService.LocalWorldId, expected.Role, expected.Required);
+                binding.ConfigureBinding(expected.LogicalId, expected.BindingKey, PrototypeSceneIntegrationIds.SceneKey, PersistenceService.LocalWorldId, expected.Role, expected.Required, expected.DisplayName);
+                binding.ConfigureInteraction();
                 EditorUtility.SetDirty(binding);
             }
 
-            return (changed ? 1 : 0) + removedConflicts;
+            return (changed ? 1 : 0) + removedConflicts + EnsureInteractionTriggerColliders(target, expected.LogicalId);
         }
 
         private static int ApplyConnectionBinding(GameObject target, PrototypeSceneWorldBindingExpectation expected)
@@ -257,14 +320,15 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             int removedConflicts = RemoveConflictingWorldBindings<ConnectionSceneBinding>(target, expected);
             BoxCollider collider = target.GetComponent<BoxCollider>();
             ConnectionSceneBinding binding = GetOrAdd<ConnectionSceneBinding>(target, out bool added);
-            bool changed = added || binding.LogicalId != expected.LogicalId || binding.BindingKey != expected.BindingKey || binding.SceneKey != PrototypeSceneIntegrationIds.SceneKey || binding.WorldId != PersistenceService.LocalWorldId || binding.Required != expected.Required;
+            bool changed = added || binding.LogicalId != expected.LogicalId || binding.BindingKey != expected.BindingKey || binding.SceneKey != PrototypeSceneIntegrationIds.SceneKey || binding.WorldId != PersistenceService.LocalWorldId || binding.Required != expected.Required || binding.AuthoredDisplayName != expected.DisplayName || !binding.InteractionEnabled || !Mathf.Approximately(binding.InteractionRange, 3f);
             if (changed)
             {
-                binding.ConfigureConnection(expected.LogicalId, expected.BindingKey, expected.SourceLocationId, expected.DestinationLocationId, PrototypeSceneIntegrationIds.SceneKey, PersistenceService.LocalWorldId, collider, expected.Required);
+                binding.ConfigureConnection(expected.LogicalId, expected.BindingKey, expected.SourceLocationId, expected.DestinationLocationId, PrototypeSceneIntegrationIds.SceneKey, PersistenceService.LocalWorldId, collider, expected.Required, true, expected.DisplayName);
+                binding.ConfigureInteractionRange();
                 EditorUtility.SetDirty(binding);
             }
 
-            return (changed ? 1 : 0) + removedConflicts;
+            return (changed ? 1 : 0) + removedConflicts + EnsureConnectionInteractionArea(target);
         }
 
         private static int ApplyEntityBinding(GameObject target, PrototypeSceneWorldBindingExpectation expected)
@@ -324,7 +388,7 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             {
                 changes += RemoveLegacyCounterBindingComponents(root);
                 changes += RemoveLegacyCounterBindingObjects(root);
-                changes += EnsureBootstrap(root);
+                changes += EnsureBootstrap(root, WorldSceneBindingBootstrapMode.ProductionBindOnly);
                 foreach (PrototypeSceneWorldBindingExpectation expected in PrototypeSceneIntegrationContract.WorldBindings)
                 {
                     if (TryResolveAdventurerGuildPrefabTarget(root, expected, out GameObject target))
@@ -392,8 +456,12 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             int removed = 0;
             foreach (WorldSceneBindingComponent component in target.GetComponents<WorldSceneBindingComponent>())
             {
+                if (component.Category != expected.Category)
+                {
+                    continue;
+                }
+
                 bool keep = component is TExpected
-                    && component.Category == expected.Category
                     && string.Equals(component.LogicalId, expected.LogicalId, StringComparison.Ordinal);
                 if (keep)
                 {
@@ -489,7 +557,7 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             int removed = 0;
             foreach (WorldSceneBindingComponent binding in worldBindings.ToArray())
             {
-                if (binding != null && IsLegacyCounterWorldBinding(binding))
+                if (binding != null && IsLegacyPhysicalInteractionWorldBinding(binding))
                 {
                     UnityEngine.Object.DestroyImmediate(binding, true);
                     removed++;
@@ -498,7 +566,7 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
 
             foreach (QuestSourceSceneBinding binding in questSources.ToArray())
             {
-                if (binding != null && IsLegacyCounterQuestSourceBinding(binding))
+                if (binding != null && IsLegacyPhysicalInteractionQuestSourceBinding(binding))
                 {
                     UnityEngine.Object.DestroyImmediate(binding, true);
                     removed++;
@@ -513,28 +581,234 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             return removed;
         }
 
-        private static bool IsLegacyCounterWorldBinding(WorldSceneBindingComponent binding)
+        private static bool IsLegacyPhysicalInteractionWorldBinding(WorldSceneBindingComponent binding)
         {
-            string targetName = ExpectedCounterObjectName(binding.LogicalId);
+            string targetName = ExpectedPhysicalInteractionObjectName(binding.LogicalId);
             return targetName != null
-                && (!string.Equals(binding.gameObject.name, targetName, StringComparison.Ordinal) || binding.GetComponent<Collider>() == null);
+                && (!string.Equals(binding.gameObject.name, targetName, StringComparison.Ordinal) || binding.GetComponentInChildren<Collider>(true) == null);
         }
 
-        private static bool IsLegacyCounterQuestSourceBinding(QuestSourceSceneBinding binding)
+        private static bool IsLegacyPhysicalInteractionQuestSourceBinding(QuestSourceSceneBinding binding)
         {
-            string targetName = ExpectedCounterObjectName(binding.InteractionPointId);
+            string targetName = ExpectedPhysicalInteractionObjectName(binding.InteractionPointId);
             return targetName != null
-                && (!string.Equals(binding.gameObject.name, targetName, StringComparison.Ordinal) || binding.GetComponent<Collider>() == null);
+                && (!string.Equals(binding.gameObject.name, targetName, StringComparison.Ordinal) || binding.GetComponentInChildren<Collider>(true) == null);
         }
 
-        private static string ExpectedCounterObjectName(string interactionPointId)
+        private static string ExpectedPhysicalInteractionObjectName(string interactionPointId)
         {
             return interactionPointId switch
             {
                 PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId => "AdventurerGuildCounter",
                 PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId => "MerchantGuildCounter",
+                PrototypeInteractionPointDefinitionFactory.QuestBoardPointId => "Quest Board",
                 _ => null
             };
+        }
+
+        private static int EnsureInteractionTriggerColliders(GameObject target, string interactionPointId)
+        {
+            if (target == null)
+            {
+                return 0;
+            }
+
+            int changes = 0;
+            bool useAuthoredChildColliders = interactionPointId == PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId
+                || interactionPointId == PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId;
+            Collider[] authoredChildren = target.GetComponentsInChildren<Collider>(true)
+                .Where(item => item.transform != target.transform)
+                .ToArray();
+            if (useAuthoredChildColliders && authoredChildren.Length > 0)
+            {
+                foreach (BoxCollider rootCollider in target.GetComponents<BoxCollider>())
+                {
+                    UnityEngine.Object.DestroyImmediate(rootCollider, true);
+                    changes++;
+                }
+
+                foreach (Collider collider in authoredChildren)
+                {
+                    if (!collider.isTrigger)
+                    {
+                        collider.isTrigger = true;
+                        changes++;
+                    }
+
+                    if (collider.providesContacts)
+                    {
+                        collider.providesContacts = false;
+                        changes++;
+                    }
+
+                    EditorUtility.SetDirty(collider);
+                }
+
+                if (changes > 0)
+                {
+                    EditorUtility.SetDirty(target);
+                }
+
+                return changes;
+            }
+
+            BoxCollider[] rootColliders = target.GetComponents<BoxCollider>();
+            BoxCollider interactionCollider = rootColliders
+                .OrderBy(item => item.size.x * item.size.y * item.size.z)
+                .FirstOrDefault();
+            if (interactionCollider == null)
+            {
+                interactionCollider = target.AddComponent<BoxCollider>();
+                changes++;
+            }
+
+            foreach (BoxCollider duplicate in rootColliders)
+            {
+                if (duplicate == interactionCollider)
+                {
+                    continue;
+                }
+
+                UnityEngine.Object.DestroyImmediate(duplicate, true);
+                changes++;
+            }
+
+            if (TryGetInteractionColliderProfile(interactionPointId, out Vector3 center, out Vector3 size))
+            {
+                if (interactionCollider.center != center)
+                {
+                    interactionCollider.center = center;
+                    changes++;
+                }
+
+                if (interactionCollider.size != size)
+                {
+                    interactionCollider.size = size;
+                    changes++;
+                }
+            }
+
+            if (!interactionCollider.isTrigger)
+            {
+                interactionCollider.isTrigger = true;
+                changes++;
+            }
+
+            if (interactionCollider.providesContacts)
+            {
+                interactionCollider.providesContacts = false;
+                changes++;
+            }
+
+            // These authored counters and board are interaction surfaces, not movement blockers.
+            // Keep imported child meshes queryable without letting their generated colliders stop
+            // the player. Purpose-built blockers can still be authored outside this binding root.
+            if (ExpectedPhysicalInteractionObjectName(interactionPointId) != null)
+            {
+                foreach (Collider collider in target.GetComponentsInChildren<Collider>(true))
+                {
+                    if (!collider.isTrigger)
+                    {
+                        collider.isTrigger = true;
+                        changes++;
+                    }
+
+                    if (collider.providesContacts)
+                    {
+                        collider.providesContacts = false;
+                        changes++;
+                    }
+
+                    EditorUtility.SetDirty(collider);
+                }
+            }
+
+            if (changes > 0)
+            {
+                EditorUtility.SetDirty(interactionCollider);
+                EditorUtility.SetDirty(target);
+            }
+
+            return changes;
+        }
+
+        private static bool TryGetInteractionColliderProfile(string interactionPointId, out Vector3 center, out Vector3 size)
+        {
+            center = Vector3.zero;
+            size = Vector3.one;
+            switch (interactionPointId)
+            {
+                case PrototypeInteractionPointDefinitionFactory.MayorDeskPointId:
+                case PrototypeInteractionPointDefinitionFactory.GuildHeadDeskPointId:
+                case PrototypeInteractionPointDefinitionFactory.RecordsDeskPointId:
+                    center = new Vector3(0f, 0.4f, 0f);
+                    size = new Vector3(2.2f, 1.6f, 1.2f);
+                    return true;
+                case PrototypeInteractionPointDefinitionFactory.PrisonCellPointId:
+                    center = new Vector3(0f, 1f, 0f);
+                    size = new Vector3(1.25f, 2.4f, 0.6f);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static int EnsureConnectionInteractionArea(GameObject target)
+        {
+            if (target == null)
+            {
+                return 0;
+            }
+
+            int changes = 0;
+            Transform areaTransform = target.transform.Find(InteractionAreaName);
+            if (areaTransform == null)
+            {
+                areaTransform = new GameObject(InteractionAreaName).transform;
+                areaTransform.SetParent(target.transform, false);
+                changes++;
+            }
+
+            BoxCollider area = areaTransform.GetComponent<BoxCollider>();
+            if (area == null)
+            {
+                area = areaTransform.gameObject.AddComponent<BoxCollider>();
+                changes++;
+            }
+
+            Vector3 desiredCenter = new Vector3(0f, 0.75f, 0f);
+            Vector3 desiredSize = new Vector3(1.6f, 2.5f, 1f);
+            if (area.center != desiredCenter)
+            {
+                area.center = desiredCenter;
+                changes++;
+            }
+
+            if (area.size != desiredSize)
+            {
+                area.size = desiredSize;
+                changes++;
+            }
+
+            if (!area.isTrigger)
+            {
+                area.isTrigger = true;
+                changes++;
+            }
+
+            if (area.providesContacts)
+            {
+                area.providesContacts = false;
+                changes++;
+            }
+
+            if (changes > 0)
+            {
+                EditorUtility.SetDirty(areaTransform.gameObject);
+                EditorUtility.SetDirty(area);
+            }
+
+            return changes;
         }
 
         private static int RemoveLegacyCounterBindingObjects(GameObject root)
@@ -637,6 +911,7 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
                 "Adventurer Guild" => "AdventurerGuildBuilding",
                 "Adventurer Guild Counter" => "AdventurerGuildCounter",
                 "Merchant Guild Counter" => "MerchantGuildCounter",
+                "Adventurer Guild Quest Board" => "Quest Board",
                 "Mayor Desk" => "Interact - Mayor Desk",
                 "Guild Head Desk" => "Interact - Guild Head Desk",
                 "City Records Desk" => "Interact - City Office Records Desk",
@@ -653,7 +928,7 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
                 PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId => "MerchantGuildCounter",
                 PrototypeInteractionPointDefinitionFactory.MayorDeskPointId => "Interact - Mayor Desk",
                 PrototypeInteractionPointDefinitionFactory.RecordsDeskPointId => "Interact - City Office Records Desk",
-                PrototypeInteractionPointDefinitionFactory.QuestBoardPointId => "Adventurer Guild Quest Board",
+                PrototypeInteractionPointDefinitionFactory.QuestBoardPointId => "Quest Board",
                 _ => expected.DisplayName
             };
         }
