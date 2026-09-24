@@ -37,11 +37,11 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void ParticipantInventoryAndSchemaVersionsMatchStep4Closeout()
         {
-            Assert.That(PersistenceService.CurrentSchemaVersion, Is.EqualTo(1));
+            Assert.That(PersistenceService.CurrentSchemaVersion, Is.EqualTo(2));
             Assert.That(PrototypePersistenceStateParticipant.Key, Is.EqualTo("prototype.state"));
             Assert.That(PrototypePersistenceStateParticipant.CurrentParticipantSchemaVersion, Is.EqualTo(1));
             Assert.That(GetStatic<string>("UnityIsekaiGame.Persistence.PlayerInventoryEquipmentPersistenceParticipant", "Key"), Is.EqualTo(InventoryEquipmentKey));
-            Assert.That(GetStatic<int>("UnityIsekaiGame.Persistence.PlayerInventoryEquipmentPersistenceParticipant", "CurrentParticipantSchemaVersion"), Is.EqualTo(1));
+            Assert.That(GetStatic<int>("UnityIsekaiGame.Persistence.PlayerInventoryEquipmentPersistenceParticipant", "CurrentParticipantSchemaVersion"), Is.EqualTo(2));
             Assert.That(GetStatic<string>("UnityIsekaiGame.Persistence.PlayerStatsVitalsStatusPersistenceParticipant", "Key"), Is.EqualTo(StatsVitalsStatusKey));
             Assert.That(GetStatic<int>("UnityIsekaiGame.Persistence.PlayerStatsVitalsStatusPersistenceParticipant", "CurrentParticipantSchemaVersion"), Is.EqualTo(1));
             Assert.That(GetStatic<string>("UnityIsekaiGame.Persistence.PlayerQuestContractPersistenceParticipant", "Key"), Is.EqualTo(QuestContractKey));

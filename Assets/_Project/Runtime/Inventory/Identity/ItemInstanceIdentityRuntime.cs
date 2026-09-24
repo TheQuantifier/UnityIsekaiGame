@@ -64,18 +64,6 @@ namespace UnityIsekaiGame.Inventory.Identity
                     kind = string.IsNullOrWhiteSpace(custodianPersonId) ? ItemLocationKind.Unassigned : ItemLocationKind.Inventory,
                     inventoryOwnerId = custodianPersonId ?? string.Empty
                 },
-                condition = new ItemConditionStateData
-                {
-                    state = ItemConditionState.Pristine,
-                    normalized = 1f,
-                    sourceId = creationSourceId ?? string.Empty
-                },
-                quality = new ItemQualityStateData
-                {
-                    tier = ItemQualityTier.Unknown,
-                    source = ItemQualitySource.Unknown,
-                    normalized = -1f
-                },
                 labels = new ItemIdentityLabelData
                 {
                     originalName = definition.DisplayName
@@ -377,51 +365,6 @@ namespace UnityIsekaiGame.Inventory.Identity
             return SetLocation(itemInstanceId, new ItemLocationStateData { kind = ItemLocationKind.WorldPlacement, worldPlacementId = placementId, worldEntityId = worldEntityId, sceneKey = sceneKey ?? string.Empty });
         }
 
-        public ItemInstanceOperationResult SetCondition(string itemInstanceId, ItemConditionState state, float normalized, string sourceId = "", string cause = "")
-        {
-            if (!Enum.IsDefined(typeof(ItemConditionState), state) || !IsNormalized(normalized))
-            {
-                return ItemInstanceOperationResult.Failure(ItemInstanceOperationStatus.InvalidCondition, "Item condition state or normalized value is invalid.");
-            }
-
-            return Mutate(itemInstanceId, record =>
-            {
-                record.condition = new ItemConditionStateData
-                {
-                    state = state,
-                    normalized = Mathf.Clamp01(normalized),
-                    sourceId = sourceId ?? string.Empty,
-                    cause = cause ?? string.Empty
-                };
-                if (state == ItemConditionState.Destroyed)
-                {
-                    record.lifecycleState = ItemLifecycleState.Destroyed;
-                    record.location = new ItemLocationStateData { kind = ItemLocationKind.Destroyed };
-                }
-            }, "Item condition updated.");
-        }
-
-        public ItemInstanceOperationResult SetQuality(string itemInstanceId, ItemQualityTier tier, ItemQualitySource source, float normalized = -1f, string qualityDefinitionId = "", string workmanship = "")
-        {
-            if (!Enum.IsDefined(typeof(ItemQualityTier), tier) || !Enum.IsDefined(typeof(ItemQualitySource), source) || (normalized > 1f || (normalized < 0f && normalized != -1f)))
-            {
-                return ItemInstanceOperationResult.Failure(ItemInstanceOperationStatus.InvalidQuality, "Item quality state is invalid.");
-            }
-
-            return Mutate(itemInstanceId, record =>
-            {
-                record.quality = new ItemQualityStateData
-                {
-                    tier = tier,
-                    source = source,
-                    normalized = normalized,
-                    qualityDefinitionId = qualityDefinitionId ?? string.Empty,
-                    workmanship = workmanship ?? string.Empty,
-                    assessed = source == ItemQualitySource.Appraised
-                };
-            }, "Item quality updated.");
-        }
-
         public ItemInstanceOperationResult MarkLost(string itemInstanceId)
         {
             return Mutate(itemInstanceId, record =>
@@ -629,9 +572,7 @@ namespace UnityIsekaiGame.Inventory.Identity
 
             if (!ValidateLocation(record.location, out failureReason) ||
                 !ValidateWorldRepresentation(record.worldRepresentation, out failureReason) ||
-                !ValidateOwnership(record.ownership, out failureReason) ||
-                !ValidateCondition(record.condition, out failureReason) ||
-                !ValidateQuality(record.quality, out failureReason))
+                !ValidateOwnership(record.ownership, out failureReason))
             {
                 failureReason = $"Item instance '{record.itemInstanceId}': {failureReason}";
                 return false;
@@ -880,38 +821,6 @@ namespace UnityIsekaiGame.Inventory.Identity
             if (ownership.kind == ItemOwnershipKind.Disputed && string.IsNullOrWhiteSpace(ownership.disputeId))
             {
                 failureReason = "Disputed ownership is missing a dispute ID.";
-                return false;
-            }
-
-            return true;
-        }
-
-        private static bool ValidateCondition(ItemConditionStateData condition, out string failureReason)
-        {
-            failureReason = string.Empty;
-            condition ??= new ItemConditionStateData();
-            if (!Enum.IsDefined(typeof(ItemConditionState), condition.state) || !IsNormalized(condition.normalized))
-            {
-                failureReason = "Condition state or normalized condition is invalid.";
-                return false;
-            }
-
-            return true;
-        }
-
-        private static bool ValidateQuality(ItemQualityStateData quality, out string failureReason)
-        {
-            failureReason = string.Empty;
-            quality ??= new ItemQualityStateData();
-            if (!Enum.IsDefined(typeof(ItemQualityTier), quality.tier) || !Enum.IsDefined(typeof(ItemQualitySource), quality.source))
-            {
-                failureReason = "Quality state is invalid.";
-                return false;
-            }
-
-            if (quality.normalized > 1f || (quality.normalized < 0f && quality.normalized != -1f))
-            {
-                failureReason = "Quality normalized value must be -1 or within 0..1.";
                 return false;
             }
 

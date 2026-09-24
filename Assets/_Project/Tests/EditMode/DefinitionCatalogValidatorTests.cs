@@ -55,19 +55,7 @@ namespace UnityIsekaiGame.Tests
 
         private static DefinitionCatalog CreateCatalog(params ScriptableObject[] definitions)
         {
-            DefinitionCatalog catalog = ScriptableObject.CreateInstance<DefinitionCatalog>();
-            SerializedObject serializedCatalog = new SerializedObject(catalog);
-            serializedCatalog.FindProperty("catalogId").stringValue = "catalog.test";
-            SerializedProperty definitionsProperty = serializedCatalog.FindProperty("definitions");
-            definitionsProperty.arraySize = definitions.Length;
-
-            for (int i = 0; i < definitions.Length; i++)
-            {
-                definitionsProperty.GetArrayElementAtIndex(i).objectReferenceValue = definitions[i];
-            }
-
-            serializedCatalog.ApplyModifiedPropertiesWithoutUndo();
-            return catalog;
+            return ClassificationTestFactory.CreateCatalog(definitions);
         }
 
         private static TestScriptableDefinition CreateDefinition(string id, string displayName)

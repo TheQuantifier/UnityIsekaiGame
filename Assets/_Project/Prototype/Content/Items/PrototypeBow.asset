@@ -42,11 +42,11 @@ MonoBehaviour:
       firstPersonLocalScale: {x: 1, y: 1, z: 1}
     meleeWeapon:
       weapon: 0
-      attackName: Bow Strike
-      baseDamage: 2
-      attackRange: 1
-      attackCooldown: 1
-      staminaCost: 4
+      attackName: Attack
+      baseDamage: 5
+      attackRange: 2
+      attackCooldown: 0.5
+      staminaCost: 0
       hitRadius: 0.35
       damageType: {fileID: 0}
     rangedWeapon:
@@ -63,3 +63,11 @@ MonoBehaviour:
       projectilePrefab: {fileID: 0}
       projectileVisualPrefab: {fileID: 100000, guid: 6ad91d9dd5e64a3e94dfe8e1f0d8f901, type: 3}
       damageType: {fileID: 11400000, guid: c71f22a6780f4ef3a8f1d4c6e4c89d01, type: 2}
+  defaultCompositionTemplate:
+    templateVersionId: template.v1
+    required: 0
+    massAuthority: 0
+    completeness: 0
+    materials: []
+    components: []
+    tags: []

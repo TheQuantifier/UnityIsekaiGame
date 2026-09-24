@@ -65,10 +65,50 @@ namespace UnityIsekaiGame.Inventory
         public bool IsEquippable => equipment != null && equipment.Equippable;
         public ItemCompositionTemplateData DefaultCompositionTemplate => defaultCompositionTemplate ?? new ItemCompositionTemplateData();
 
+        public void EnableEquipmentCapability()
+        {
+            equipment ??= new EquipmentData();
+            equipment.Enable();
+        }
+
+        public void RemoveEquipmentCapability()
+        {
+            equipment = null;
+        }
+
+        public void EnableMeleeWeaponCapability()
+        {
+            EnableEquipmentCapability();
+            equipment.EnableMeleeWeapon();
+        }
+
+        public void EnableRangedWeaponCapability()
+        {
+            EnableEquipmentCapability();
+            equipment.EnableRangedWeapon();
+        }
+
+        public void RemoveMeleeWeaponCapability()
+        {
+            equipment?.RemoveMeleeWeapon();
+        }
+
+        public void RemoveRangedWeaponCapability()
+        {
+            equipment?.RemoveRangedWeapon();
+        }
+
+        public void PruneInactiveCapabilities()
+        {
+            if (equipment == null) return;
+            equipment.Validate();
+            if (!equipment.Equippable) equipment = null;
+        }
+
         private void OnValidate()
         {
             maximumStackSize = Mathf.Max(1, maximumStackSize);
-            equipment?.Validate();
+            PruneInactiveCapabilities();
             defaultCompositionTemplate ??= new ItemCompositionTemplateData();
         }
 

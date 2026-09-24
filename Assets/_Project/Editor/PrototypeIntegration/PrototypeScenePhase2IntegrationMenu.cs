@@ -887,8 +887,10 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
 
         private static GameObject CreatePlaceholder(Transform parent, string name, WorldSceneBindingCategory category)
         {
-            GameObject placeholder = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            placeholder.name = name;
+            // Binding placeholders are logical scene anchors, not visible world geometry.
+            // Interaction and connection methods add purpose-built trigger colliders where
+            // required, so creating a primitive here only leaves misleading cubes in-game.
+            GameObject placeholder = new GameObject(name);
             placeholder.transform.SetParent(parent, false);
             placeholder.transform.localScale = category == WorldSceneBindingCategory.Location ? new Vector3(2f, 0.15f, 2f) : new Vector3(0.75f, 0.75f, 0.75f);
             placeholder.transform.localPosition = NextPlaceholderPosition(parent);

@@ -40,7 +40,7 @@ namespace UnityIsekaiGame.Inventory.Composition
                 subjectType = InformationSubjectType.Custom,
                 subjectId = string.IsNullOrWhiteSpace(materialEntryId) ? $"{parent}.material" : materialEntryId,
                 parentSubjectId = parent,
-                tags = Normalize(tags, "domain.item", "item.material", ItemMaterialSubjectTag, materialDefinitionId)
+                tags = Normalize(tags, "domain.item", "category.item.material", ItemMaterialSubjectTag, materialDefinitionId)
             };
         }
 

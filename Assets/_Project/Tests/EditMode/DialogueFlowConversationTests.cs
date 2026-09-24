@@ -164,7 +164,7 @@ namespace UnityIsekaiGame.Tests
                     Participant("person.prototype.player", ConversationParticipantRole.QuestRecipient)
                 },
                 hostLocationId = "location.prototype.adventurers-guild",
-                hostInteractionPointId = "interaction-point.prototype.guild-counter",
+                hostInteractionPointId = "interaction-point.prototype.adventurer-guild-counter",
                 questId = "quest.prototype.guild.counter",
                 questSourceId = "quest-source.prototype.guild-counter",
                 questListingId = "quest-listing.prototype.guild-counter",
@@ -180,7 +180,7 @@ namespace UnityIsekaiGame.Tests
                 personId = personId,
                 role = role,
                 currentLocationId = "location.prototype.adventurers-guild",
-                currentInteractionPointId = "interaction-point.prototype.guild-counter",
+                currentInteractionPointId = "interaction-point.prototype.adventurer-guild-counter",
                 representedOrganizationId = organizationId
             };
         }
@@ -191,7 +191,7 @@ namespace UnityIsekaiGame.Tests
             {
                 actorPersonId = "person.prototype.player",
                 locationId = "location.prototype.adventurers-guild",
-                interactionPointId = "interaction-point.prototype.guild-counter",
+                interactionPointId = "interaction-point.prototype.adventurer-guild-counter",
                 facts = new QuestEligibilityFactSet(
                     organizationMemberships: new[] { "organization.prototype.adventurers-guild" },
                     organizationRanks: rank ? new[] { "rank.prototype.adventurers.silver" } : Array.Empty<string>(),

@@ -9,30 +9,30 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void IsInCategory_ReturnsTrueForDirectCategory()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
             TestClassifiedDefinition definition = new TestClassifiedDefinition(item);
 
             Assert.That(ClassificationUtility.IsInCategory(definition, item), Is.True);
-            Assert.That(ClassificationUtility.IsInCategory(definition, "item"), Is.True);
+            Assert.That(ClassificationUtility.IsInCategory(definition, "category.item"), Is.True);
         }
 
         [Test]
         public void IsInCategory_ReturnsTrueForInheritedParentCategory()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
-            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("item.weapon", "Weapon", CategoryDomain.Item, item);
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
+            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("category.item.weapon", "Weapon", CategoryDomain.Item, item);
             TestClassifiedDefinition definition = new TestClassifiedDefinition(weapon);
 
             Assert.That(ClassificationUtility.IsInCategory(definition, item), Is.True);
-            Assert.That(ClassificationUtility.IsInCategory(definition, "item"), Is.True);
+            Assert.That(ClassificationUtility.IsInCategory(definition, "category.item"), Is.True);
         }
 
         [Test]
         public void GetAncestors_ReturnsParentChain()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
-            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("item.weapon", "Weapon", CategoryDomain.Item, item);
-            CategoryDefinition melee = ClassificationTestFactory.CreateCategory("item.weapon.melee", "Melee Weapon", CategoryDomain.Item, weapon);
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
+            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("category.item.weapon", "Weapon", CategoryDomain.Item, item);
+            CategoryDefinition melee = ClassificationTestFactory.CreateCategory("category.item.weapon.melee", "Melee Weapon", CategoryDomain.Item, weapon);
 
             IReadOnlyList<CategoryDefinition> ancestors = ClassificationUtility.GetAncestors(melee);
 
@@ -44,18 +44,18 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void HasTag_ReturnsTrueForMatchingTagId()
         {
-            TagDefinition healing = ClassificationTestFactory.CreateTag("tag.healing", "Healing");
+            TagDefinition healing = ClassificationTestFactory.CreateTag("tag.general.healing", "Healing");
             TestTaggedDefinition definition = new TestTaggedDefinition(healing);
 
             Assert.That(ClassificationUtility.HasTag(definition, healing), Is.True);
-            Assert.That(ClassificationUtility.HasTag(definition, "tag.healing"), Is.True);
+            Assert.That(ClassificationUtility.HasTag(definition, "tag.general.healing"), Is.True);
         }
 
         [Test]
         public void Queries_HandleMissingCategoryAndTagSafely()
         {
-            Assert.That(ClassificationUtility.IsInCategory((CategoryDefinition)null, "item"), Is.False);
-            Assert.That(ClassificationUtility.HasTag(null, "tag.healing"), Is.False);
+            Assert.That(ClassificationUtility.IsInCategory((CategoryDefinition)null, "category.item"), Is.False);
+            Assert.That(ClassificationUtility.HasTag(null, "tag.general.healing"), Is.False);
         }
 
         private sealed class TestClassifiedDefinition : ICategorizableDefinition

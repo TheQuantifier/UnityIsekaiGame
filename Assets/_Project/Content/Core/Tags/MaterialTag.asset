@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ee90b64dbd74221aa0c35e4df92ffaa, type: 3}
   m_Name: MaterialTag
   m_EditorClassIdentifier: UnityIsekaiGame.GameData::UnityIsekaiGame.GameData.TagDefinition
-  tagId: tag.material
+  tagId: tag.general.material
   displayName: Material
   description: Trait for raw material item definitions.
   domain: 2

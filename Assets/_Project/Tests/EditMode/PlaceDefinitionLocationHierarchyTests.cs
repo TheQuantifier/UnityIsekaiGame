@@ -12,13 +12,13 @@ namespace UnityIsekaiGame.Tests
         public void PlaceDefinition_ExposesStableMetadataAndClassification()
         {
             CategoryDefinition category = CreateCategory("category.place.settlement", CategoryDomain.Place);
-            TagDefinition settlement = CreateTag("tag.settlement", CategoryDomain.Place);
+            TagDefinition settlement = CreateTag("tag.place.settlement", CategoryDomain.Place);
             ScriptableObject place = CreatePlace("place.settlement.prototype-town", "Prototype Town", "Settlement", category, new[] { settlement });
 
             Assert.That(Get<string>(place, "Id"), Is.EqualTo("place.settlement.prototype-town"));
             Assert.That(Get<object>(place, "PlaceKind").ToString(), Is.EqualTo("Settlement"));
             Assert.That(ClassificationUtility.IsInCategory((ICategorizableDefinition)place, "category.place.settlement"), Is.True);
-            Assert.That(ClassificationUtility.HasTag((ITaggedDefinition)place, "tag.settlement"), Is.True);
+            Assert.That(ClassificationUtility.HasTag((ITaggedDefinition)place, "tag.place.settlement"), Is.True);
         }
 
         [Test]
@@ -213,10 +213,7 @@ namespace UnityIsekaiGame.Tests
 
         private static DefinitionCatalog CreateCatalog(params ScriptableObject[] definitions)
         {
-            DefinitionCatalog catalog = ScriptableObject.CreateInstance<DefinitionCatalog>();
-            SetString(catalog, "catalogId", "catalog.test");
-            SetObjectArray(catalog, "definitions", definitions);
-            return catalog;
+            return ClassificationTestFactory.CreateCatalog(definitions);
         }
 
         private static void SetString(UnityEngine.Object target, string fieldName, string value)

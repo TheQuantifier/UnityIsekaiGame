@@ -2,19 +2,19 @@ namespace UnityIsekaiGame.GameData
 {
     public static class ItemTaxonomyUtility
     {
-        public const string ItemCategoryId = "item";
-        public const string EquipmentCategoryId = "item.equipment";
-        public const string WeaponCategoryId = "item.weapon";
-        public const string ArmorCategoryId = "item.armor";
-        public const string ConsumableCategoryId = "item.consumable";
-        public const string MaterialCategoryId = "item.material";
-        public const string IngredientCategoryId = "item.ingredient";
-        public const string ToolCategoryId = "item.tool";
-        public const string TradeGoodCategoryId = "item.trade-good";
-        public const string KeyCategoryId = "item.key";
-        public const string QuestItemCategoryId = "item.quest-item";
-        public const string BookCategoryId = "item.book";
-        public const string MiscellaneousCategoryId = "item.miscellaneous";
+        public const string ItemCategoryId = "category.item";
+        public const string EquipmentCategoryId = "category.item.equipment";
+        public const string WeaponCategoryId = "category.item.weapon";
+        public const string ArmorCategoryId = "category.item.armor";
+        public const string ConsumableCategoryId = "category.item.consumable";
+        public const string MaterialCategoryId = "category.item.material";
+        public const string IngredientCategoryId = "category.item.ingredient";
+        public const string ToolCategoryId = "category.item.tool";
+        public const string TradeGoodCategoryId = "category.item.trade-good";
+        public const string KeyCategoryId = "category.item.key";
+        public const string QuestItemCategoryId = "category.item.quest-item";
+        public const string BookCategoryId = "category.item.book";
+        public const string MiscellaneousCategoryId = "category.item.miscellaneous";
 
         public static bool IsItemDefinition(IGameDefinition definition)
         {

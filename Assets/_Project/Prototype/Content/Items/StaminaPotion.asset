@@ -27,3 +27,49 @@ MonoBehaviour:
   maximumStackSize: 10
   useEffects:
   - {fileID: 11400000, guid: d9dbfef2835e4e349070ebd0c4e99e40, type: 2}
+  equipment:
+    equippable: 0
+    slotType: 0
+    statModifiers:
+      maximumHealth: 0
+      maximumStamina: 0
+      maximumMana: 0
+      attackPower: 0
+      defense: 0
+    resistanceModifiers: []
+    view:
+      firstPersonPrefab: {fileID: 0}
+      firstPersonLocalPosition: {x: 0, y: 0, z: 0}
+      firstPersonLocalEulerAngles: {x: 0, y: 0, z: 0}
+      firstPersonLocalScale: {x: 1, y: 1, z: 1}
+    meleeWeapon:
+      weapon: 0
+      attackName: Attack
+      baseDamage: 5
+      attackRange: 2
+      attackCooldown: 0.5
+      staminaCost: 0
+      hitRadius: 0.35
+      damageType: {fileID: 0}
+    rangedWeapon:
+      weapon: 0
+      attackName: Ranged Attack
+      baseDamage: 5
+      attackCooldown: 0.75
+      staminaCost: 0
+      projectileSpeed: 18
+      projectileLifetime: 3
+      projectileHitRadius: 0.08
+      launchOffset: {x: 0.18, y: -0.12, z: 0.55}
+      ammoItem: {fileID: 0}
+      projectilePrefab: {fileID: 0}
+      projectileVisualPrefab: {fileID: 0}
+      damageType: {fileID: 0}
+  defaultCompositionTemplate:
+    templateVersionId: template.v1
+    required: 0
+    massAuthority: 0
+    completeness: 0
+    materials: []
+    components: []
+    tags: []

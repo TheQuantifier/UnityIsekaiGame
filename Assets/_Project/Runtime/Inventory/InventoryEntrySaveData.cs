@@ -1,5 +1,4 @@
 using System;
-using UnityIsekaiGame.GameData;
 
 namespace UnityIsekaiGame.Inventory
 {
@@ -10,6 +9,5 @@ namespace UnityIsekaiGame.Inventory
         public string definitionId;
         public string itemInstanceId;
         public int quantity;
-        public ItemInstanceSaveData itemInstance;
     }
 }

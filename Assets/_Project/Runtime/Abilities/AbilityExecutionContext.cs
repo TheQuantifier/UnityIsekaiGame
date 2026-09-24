@@ -17,7 +17,7 @@ namespace UnityIsekaiGame.Abilities
             Vector3 direction,
             bool gameplayBlocked = false,
             ItemDefinition sourceItem = null,
-            ItemInstance sourceItemInstance = null,
+            string sourceItemInstanceId = "",
             float magnitudeMultiplier = 1f,
             Action<UnityIsekaiGame.Magic.SpellProjectile> projectileSpawned = null)
         {
@@ -30,7 +30,7 @@ namespace UnityIsekaiGame.Abilities
             Direction = direction.sqrMagnitude > 0f ? direction.normalized : Vector3.forward;
             GameplayBlocked = gameplayBlocked;
             SourceItem = sourceItem;
-            SourceItemInstance = sourceItemInstance;
+            SourceItemInstanceId = sourceItemInstanceId ?? string.Empty;
             MagnitudeMultiplier = magnitudeMultiplier;
             ProjectileSpawned = projectileSpawned;
         }
@@ -44,7 +44,7 @@ namespace UnityIsekaiGame.Abilities
         public Vector3 Direction { get; }
         public bool GameplayBlocked { get; }
         public ItemDefinition SourceItem { get; }
-        public ItemInstance SourceItemInstance { get; }
+        public string SourceItemInstanceId { get; }
         public float MagnitudeMultiplier { get; }
         public Action<UnityIsekaiGame.Magic.SpellProjectile> ProjectileSpawned { get; }
 
@@ -60,7 +60,7 @@ namespace UnityIsekaiGame.Abilities
                 resolvedTargetPosition,
                 Direction,
                 SourceItem,
-                SourceItemInstance,
+                SourceItemInstanceId,
                 MagnitudeMultiplier);
         }
     }

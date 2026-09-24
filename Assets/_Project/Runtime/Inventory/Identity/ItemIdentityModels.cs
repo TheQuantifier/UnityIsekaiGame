@@ -17,8 +17,6 @@ namespace UnityIsekaiGame.Inventory.Identity
         public ItemLocationStateData location = new ItemLocationStateData();
         public ItemWorldRepresentationData worldRepresentation = new ItemWorldRepresentationData();
         public ItemOwnershipStateData ownership = new ItemOwnershipStateData();
-        public ItemConditionStateData condition = new ItemConditionStateData();
-        public ItemQualityStateData quality = new ItemQualityStateData();
         public ItemIdentityLabelData labels = new ItemIdentityLabelData();
         public ItemProvenanceData provenance = new ItemProvenanceData();
         public string accessPolicyId;
@@ -38,8 +36,6 @@ namespace UnityIsekaiGame.Inventory.Identity
                 location = location?.Clone() ?? new ItemLocationStateData(),
                 worldRepresentation = worldRepresentation?.Clone() ?? new ItemWorldRepresentationData(),
                 ownership = ownership?.Clone() ?? new ItemOwnershipStateData(),
-                condition = condition?.Clone() ?? new ItemConditionStateData(),
-                quality = quality?.Clone() ?? new ItemQualityStateData(),
                 labels = labels?.Clone() ?? new ItemIdentityLabelData(),
                 provenance = provenance?.Clone() ?? new ItemProvenanceData(),
                 accessPolicyId = accessPolicyId ?? string.Empty,
@@ -174,54 +170,6 @@ namespace UnityIsekaiGame.Inventory.Identity
     }
 
     [Serializable]
-    public sealed class ItemConditionStateData
-    {
-        public ItemConditionState state = ItemConditionState.Unknown;
-        public float normalized = 1f;
-        public string sourceId;
-        public string changedAtWorldTime;
-        public string cause;
-
-        public ItemConditionStateData Clone()
-        {
-            return new ItemConditionStateData
-            {
-                state = state,
-                normalized = normalized,
-                sourceId = sourceId ?? string.Empty,
-                changedAtWorldTime = changedAtWorldTime ?? string.Empty,
-                cause = cause ?? string.Empty
-            };
-        }
-    }
-
-    [Serializable]
-    public sealed class ItemQualityStateData
-    {
-        public ItemQualityTier tier = ItemQualityTier.Unknown;
-        public string qualityDefinitionId;
-        public string workmanship;
-        public ItemQualitySource source = ItemQualitySource.Unknown;
-        public bool assessed;
-        public float normalized = -1f;
-        public string provenanceId;
-
-        public ItemQualityStateData Clone()
-        {
-            return new ItemQualityStateData
-            {
-                tier = tier,
-                qualityDefinitionId = qualityDefinitionId ?? string.Empty,
-                workmanship = workmanship ?? string.Empty,
-                source = source,
-                assessed = assessed,
-                normalized = normalized,
-                provenanceId = provenanceId ?? string.Empty
-            };
-        }
-    }
-
-    [Serializable]
     public sealed class ItemIdentityLabelData
     {
         public string customName;
@@ -313,7 +261,7 @@ namespace UnityIsekaiGame.Inventory.Identity
     [Serializable]
     public sealed class ItemInstanceRuntimeSaveData
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
         public int schemaVersion = CurrentSchemaVersion;
         public long revision;
         public List<ItemInstanceRecordData> records = new List<ItemInstanceRecordData>();
@@ -346,9 +294,6 @@ namespace UnityIsekaiGame.Inventory.Identity
         public ItemOwnershipKind OwnershipKind => Data.ownership?.kind ?? ItemOwnershipKind.Unknown;
         public string OwnerPersonId => Data.ownership?.ownerPersonId ?? string.Empty;
         public string CustodianPersonId => Data.ownership?.custodianPersonId ?? string.Empty;
-        public ItemConditionState ConditionState => Data.condition?.state ?? ItemConditionState.Unknown;
-        public float ConditionNormalized => Data.condition?.normalized ?? 1f;
-        public ItemQualityTier QualityTier => Data.quality?.tier ?? ItemQualityTier.Unknown;
         public string CustomName => Data.labels?.customName ?? string.Empty;
         public string MakerMark => Data.labels?.makerMark ?? string.Empty;
         public string SerialNumber => Data.labels?.serialNumber ?? string.Empty;

@@ -52,6 +52,10 @@ namespace UnityIsekaiGame.Editor
                 {
                     EditorApplication.Exit(1);
                 }
+                else if (Application.isBatchMode)
+                {
+                    EditorApplication.Exit(0);
+                }
             }
             finally
             {

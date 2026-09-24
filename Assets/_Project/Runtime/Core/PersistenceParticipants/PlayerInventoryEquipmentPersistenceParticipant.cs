@@ -14,7 +14,7 @@ namespace UnityIsekaiGame.Persistence
     public sealed class PlayerInventoryEquipmentPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const string Key = "player.inventory-equipment";
-        public const int CurrentParticipantSchemaVersion = 1;
+        public const int CurrentParticipantSchemaVersion = 2;
 
         private readonly PlayerInventory inventory;
         private readonly PlayerEquipment equipment;
@@ -303,7 +303,7 @@ namespace UnityIsekaiGame.Persistence
                 InventoryEntrySaveData entry = inventorySaveData.entries[i];
                 string instanceId = entry == null || entry.mode == InventoryEntrySaveMode.Empty
                     ? null
-                    : !string.IsNullOrWhiteSpace(entry.itemInstanceId) ? entry.itemInstanceId : entry.itemInstance?.instanceId;
+                    : entry.itemInstanceId;
                 if (!string.IsNullOrWhiteSpace(instanceId))
                 {
                     instanceIds.Add(instanceId);
@@ -323,7 +323,7 @@ namespace UnityIsekaiGame.Persistence
                 EquipmentSlotSaveData entry = equipmentSaveData.slots[i];
                 string instanceId = entry == null || entry.mode == EquipmentEntrySaveMode.Empty
                     ? null
-                    : !string.IsNullOrWhiteSpace(entry.itemInstanceId) ? entry.itemInstanceId : entry.itemInstance?.instanceId;
+                    : entry.itemInstanceId;
                 if (!string.IsNullOrWhiteSpace(instanceId))
                 {
                     instanceIds.Add(instanceId);

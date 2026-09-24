@@ -8,6 +8,8 @@ using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Inventory.Identity;
+using UnityIsekaiGame.Inventory.Durability;
+using UnityIsekaiGame.Inventory.Quality;
 using UnityIsekaiGame.Knowledge.Access;
 using UnityIsekaiGame.Persistence;
 using UnityIsekaiGame.Progression;
@@ -83,11 +85,13 @@ namespace UnityIsekaiGame.Tests
             fixture.CreateBalancedMarket("market.shop");
             MarketOperationResult price = fixture.Runtime.UpdateMarketSubject("market.shop", fixture.Subject.Id, 2d);
             ItemInstanceSnapshot item = fixture.ItemSnapshot(ItemQualityTier.Fine, 0.5f, makerMark: "hidden.master");
+            ItemQualitySnapshot quality = new ItemQualitySnapshot(new ItemQualityRecordData { itemInstanceId = item.ItemInstanceId, overallQuality = 0.8f, qualityTierId = "quality.fine" });
+            ItemDurabilitySnapshot durability = new ItemDurabilitySnapshot(new ItemDurabilityRecordData { itemInstanceId = item.ItemInstanceId, currentDurability = 50f, maximumDurability = 100f });
 
-            MarketOperationResult preview = fixture.Runtime.CreateMerchantQuote("quote.preview", "merchant.local", "market.shop", fixture.Subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 8d, item: item, preview: true);
-            MarketOperationResult sell = fixture.Runtime.CreateMerchantQuote("quote.sell", "merchant.local", "market.shop", fixture.Subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 8d, item: item);
-            MarketOperationResult buy = fixture.Runtime.CreateMerchantQuote("quote.buy", "merchant.local", "market.shop", fixture.Subject.Id, MerchantQuoteDirection.MerchantBuys, 1L, 3d, 8d, item: item);
-            MarketOperationResult hidden = fixture.Runtime.CreateMerchantQuote("quote.hidden", "merchant.local", "market.shop", fixture.Subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 8d, item: item, privilegedHiddenFactors: true);
+            MarketOperationResult preview = fixture.Runtime.CreateMerchantQuote("quote.preview", "merchant.local", "market.shop", fixture.Subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 8d, item: item, preview: true, quality: quality, durability: durability);
+            MarketOperationResult sell = fixture.Runtime.CreateMerchantQuote("quote.sell", "merchant.local", "market.shop", fixture.Subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 8d, item: item, quality: quality, durability: durability);
+            MarketOperationResult buy = fixture.Runtime.CreateMerchantQuote("quote.buy", "merchant.local", "market.shop", fixture.Subject.Id, MerchantQuoteDirection.MerchantBuys, 1L, 3d, 8d, item: item, quality: quality, durability: durability);
+            MarketOperationResult hidden = fixture.Runtime.CreateMerchantQuote("quote.hidden", "merchant.local", "market.shop", fixture.Subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 8d, item: item, privilegedHiddenFactors: true, quality: quality, durability: durability);
 
             Assert.That(price.Succeeded, Is.True, price.Message);
             Assert.That(preview.Succeeded, Is.True, preview.Message);
@@ -271,8 +275,6 @@ namespace UnityIsekaiGame.Tests
                 {
                     itemInstanceId = "item-instance.market-test",
                     itemDefinitionId = Sword.Id,
-                    condition = new ItemConditionStateData { state = ItemConditionState.Good, normalized = condition },
-                    quality = new ItemQualityStateData { tier = quality, source = ItemQualitySource.Authored, assessed = true },
                     labels = new ItemIdentityLabelData { makerMark = makerMark },
                     revision = 1L
                 });

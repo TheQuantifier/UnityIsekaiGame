@@ -43,7 +43,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(result.Snapshot.ConversationDefinitionId, Is.EqualTo(PrototypeConversationDefinitionFactory.AdventurerGuildCounterDefinitionId));
             Assert.That(result.Snapshot.QuestId, Is.EqualTo("quest.prototype.guild.test"));
             Assert.That(result.Snapshot.QuestSourceId, Is.EqualTo("quest-source.prototype.guild-counter.test"));
-            Assert.That(result.Snapshot.HostInteractionPointId, Is.EqualTo("interaction-point.prototype.guild-counter"));
+            Assert.That(result.Snapshot.HostInteractionPointId, Is.EqualTo("interaction-point.prototype.adventurer-guild-counter"));
             Assert.That(result.Snapshot.OperatingOrganizationId, Is.EqualTo("organization.prototype.adventurers-guild"));
             Assert.That(result.Snapshot.SubjectLinks.Any(link => link.role == ConversationSubjectRole.Quest), Is.True);
             Assert.That(result.Snapshot.CreateInformationSubject().tags, Does.Contain(ConversationInformationSubject.ConversationTag));
@@ -167,7 +167,7 @@ namespace UnityIsekaiGame.Tests
                     Participant("person.prototype.player", ConversationParticipantRole.QuestRecipient)
                 },
                 hostLocationId = "location.prototype.adventurers-guild",
-                hostInteractionPointId = "interaction-point.prototype.guild-counter",
+                hostInteractionPointId = "interaction-point.prototype.adventurer-guild-counter",
                 questId = "quest.prototype.guild.test",
                 questSourceId = "quest-source.prototype.guild-counter.test",
                 questListingId = "quest-listing.prototype.guild.test",
@@ -176,7 +176,7 @@ namespace UnityIsekaiGame.Tests
             });
         }
 
-        private static ConversationParticipantRecordData Participant(string personId, ConversationParticipantRole role, string organizationId = "", bool hidden = false, string locationId = "location.prototype.adventurers-guild", string interactionPointId = "interaction-point.prototype.guild-counter")
+        private static ConversationParticipantRecordData Participant(string personId, ConversationParticipantRole role, string organizationId = "", bool hidden = false, string locationId = "location.prototype.adventurers-guild", string interactionPointId = "interaction-point.prototype.adventurer-guild-counter")
         {
             return new ConversationParticipantRecordData
             {

@@ -32,21 +32,6 @@ namespace UnityIsekaiGame.Inventory.Durability
         Custom
     }
 
-    public enum ItemDurabilityConditionCategory
-    {
-        Unknown,
-        Pristine,
-        Excellent,
-        Good,
-        Used,
-        Worn,
-        Damaged,
-        SeverelyDamaged,
-        Broken,
-        Destroyed,
-        Custom
-    }
-
     public enum ItemFunctionalState
     {
         Unknown,

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ee90b64dbd74221aa0c35e4df92ffaa, type: 3}
   m_Name: DangerousPlaceTag
   m_EditorClassIdentifier: UnityIsekaiGame.GameData::UnityIsekaiGame.GameData.TagDefinition
-  tagId: tag.dangerous
+  tagId: tag.general.dangerous
   displayName: Dangerous
   description: Trait for dangerous places.
   domain: 6

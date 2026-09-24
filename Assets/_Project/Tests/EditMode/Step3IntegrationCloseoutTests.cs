@@ -33,12 +33,12 @@ namespace UnityIsekaiGame.Tests
             AssertRegistered(registry, "item.prototype-bow", "UnityIsekaiGame.Inventory.ItemDefinition");
             AssertRegistered(registry, "item.prototype-arrow", "UnityIsekaiGame.Inventory.ItemDefinition");
             AssertRegistered(registry, "item.prototype-iron-ore", "UnityIsekaiGame.Inventory.ItemDefinition");
-            AssertRegistered(registry, "item.weapon", "UnityIsekaiGame.GameData.CategoryDefinition");
-            AssertRegistered(registry, "item.ammunition", "UnityIsekaiGame.GameData.CategoryDefinition");
-            AssertRegistered(registry, "tag.arcane", "UnityIsekaiGame.GameData.TagDefinition");
+            AssertRegistered(registry, "category.item.weapon", "UnityIsekaiGame.GameData.CategoryDefinition");
+            AssertRegistered(registry, "category.item.ammunition", "UnityIsekaiGame.GameData.CategoryDefinition");
+            AssertRegistered(registry, "tag.general.arcane", "UnityIsekaiGame.GameData.TagDefinition");
             AssertRegistered(registry, "rarity.common", "UnityIsekaiGame.GameData.RarityDefinition");
-            AssertRegistered(registry, "quality.standard", "UnityIsekaiGame.GameData.QualityDefinition");
-            AssertRegistered(registry, "condition.good", "UnityIsekaiGame.GameData.ConditionDefinition");
+            AssertRegistered(registry, "quality.common", "UnityIsekaiGame.Inventory.Quality.QualityTierDefinition");
+            AssertRegistered(registry, "condition.scale.standard", "UnityIsekaiGame.Inventory.Durability.ItemConditionScaleDefinition");
             AssertRegistered(registry, "ability.arcane-bolt", "UnityIsekaiGame.Abilities.AbilityDefinition");
             AssertRegistered(registry, "effect.arcane-damage", "UnityIsekaiGame.Abilities.DamageEffectDefinition");
             AssertRegistered(registry, "status.prototype-might", "UnityIsekaiGame.StatusEffects.StatusEffectDefinition");
@@ -98,7 +98,7 @@ namespace UnityIsekaiGame.Tests
 
             IGameDefinition arrow = Required(registry, "item.prototype-arrow");
             Assert.That(Get<WorldItemPickup>(arrow, "WorldPickupPrefab"), Is.Not.Null);
-            Assert.That(Get<IGameDefinition>(arrow, "PrimaryCategory").Id, Is.EqualTo("item.ammunition"));
+            Assert.That(Get<IGameDefinition>(arrow, "PrimaryCategory").Id, Is.EqualTo("category.item.ammunition"));
 
             IGameDefinition arcaneEffect = Required(registry, "effect.arcane-damage");
             Assert.That(Get<IGameDefinition>(arcaneEffect, "TypedDamageType").Id, Is.EqualTo("damage.magic.arcane"));

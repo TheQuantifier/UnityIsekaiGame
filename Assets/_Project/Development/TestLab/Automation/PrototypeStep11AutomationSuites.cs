@@ -18,6 +18,8 @@ using UnityIsekaiGame.Economy.Trading;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Inventory;
+using UnityIsekaiGame.Inventory.Durability;
+using UnityIsekaiGame.Inventory.Quality;
 using UnityIsekaiGame.Inventory.Identity;
 using UnityIsekaiGame.Inventory.Production;
 using UnityIsekaiGame.Inventory.Recipes;
@@ -971,16 +973,16 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 itemInstanceId = Scoped(context, "item-instance", "quote-sword"),
                 itemDefinitionId = PrototypeSwordItemId,
-                condition = new ItemConditionStateData { state = ItemConditionState.Good, normalized = 0.5f },
-                quality = new ItemQualityStateData { tier = ItemQualityTier.Fine, source = ItemQualitySource.Authored, assessed = true },
                 labels = new ItemIdentityLabelData { makerMark = "maker.secret" },
                 revision = 1L
             });
+            ItemQualitySnapshot quality = new ItemQualitySnapshot(new ItemQualityRecordData { itemInstanceId = item.ItemInstanceId, overallQuality = 0.8f, qualityTierId = "quality.fine" });
+            ItemDurabilitySnapshot durability = new ItemDurabilitySnapshot(new ItemDurabilityRecordData { itemInstanceId = item.ItemInstanceId, currentDurability = 50f, maximumDurability = 100f });
 
-            MarketOperationResult preview = markets.CreateMerchantQuote(Scoped(context, "quote", "preview"), "merchant.prototype", marketId, subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 7d, item: item, preview: true);
-            MarketOperationResult sell = markets.CreateMerchantQuote(Scoped(context, "quote", "sell"), "merchant.prototype", marketId, subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 7d, item: item);
-            MarketOperationResult buy = markets.CreateMerchantQuote(Scoped(context, "quote", "buy"), "merchant.prototype", marketId, subject.Id, MerchantQuoteDirection.MerchantBuys, 1L, 3d, 7d, item: item);
-            MarketOperationResult hidden = markets.CreateMerchantQuote(Scoped(context, "quote", "hidden"), "merchant.prototype", marketId, subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 7d, item: item, privilegedHiddenFactors: true);
+            MarketOperationResult preview = markets.CreateMerchantQuote(Scoped(context, "quote", "preview"), "merchant.prototype", marketId, subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 7d, item: item, preview: true, quality: quality, durability: durability);
+            MarketOperationResult sell = markets.CreateMerchantQuote(Scoped(context, "quote", "sell"), "merchant.prototype", marketId, subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 7d, item: item, quality: quality, durability: durability);
+            MarketOperationResult buy = markets.CreateMerchantQuote(Scoped(context, "quote", "buy"), "merchant.prototype", marketId, subject.Id, MerchantQuoteDirection.MerchantBuys, 1L, 3d, 7d, item: item, quality: quality, durability: durability);
+            MarketOperationResult hidden = markets.CreateMerchantQuote(Scoped(context, "quote", "hidden"), "merchant.prototype", marketId, subject.Id, MerchantQuoteDirection.MerchantSells, 1L, 3d, 7d, item: item, privilegedHiddenFactors: true, quality: quality, durability: durability);
             bool validNow = markets.ValidateQuoteForExecution(sell.Quote.quoteId, 4d, out _);
             bool expired = !markets.ValidateQuoteForExecution(sell.Quote.quoteId, 8d, out string expiredReason);
 

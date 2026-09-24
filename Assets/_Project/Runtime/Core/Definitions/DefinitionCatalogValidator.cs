@@ -21,6 +21,22 @@ namespace UnityIsekaiGame.GameData
                 report.Add(message.Severity, message.Message);
             }
 
+            if (catalog.Defaults == null)
+            {
+                report.AddInfo($"Definition catalog '{catalog.name}' has no explicit defaults policy; runtime systems will use their safe fallback values.");
+            }
+
+            HashSet<string> sectionIds = new HashSet<string>();
+            foreach (DefinitionCatalogSection section in catalog.Sections)
+            {
+                if (section == null || string.IsNullOrWhiteSpace(section.DomainId))
+                {
+                    report.AddError($"Definition catalog '{catalog.name}' has a section with no domain ID.");
+                    continue;
+                }
+                if (!sectionIds.Add(section.DomainId)) report.AddError($"Definition catalog '{catalog.name}' repeats section '{section.DomainId}'.");
+            }
+
             HashSet<ScriptableObject> seenAssets = new HashSet<ScriptableObject>();
             Dictionary<string, IGameDefinition> definitionsById = new Dictionary<string, IGameDefinition>();
             List<IGameDefinition> definitions = new List<IGameDefinition>();
@@ -77,7 +93,24 @@ namespace UnityIsekaiGame.GameData
             DefinitionClassificationValidator.ValidateCatalogDefinitions(definitions, definitionsById, report);
             ValidateParticipantDefinitions(definitions, definitionsById, report);
 
+            if (catalog.Defaults != null)
+            {
+                ValidateDefaultReference(catalog.Defaults.DefaultRarity, "rarity", definitionsById, report);
+                ValidateDefaultReference(catalog.Defaults.DefaultQualityTier as IGameDefinition, "quality tier", definitionsById, report);
+                ValidateDefaultReference(catalog.Defaults.ItemConditionScale as IGameDefinition, "condition scale", definitionsById, report);
+            }
+
             return report;
+        }
+
+        private static void ValidateDefaultReference(IGameDefinition definition, string label, IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
+        {
+            if (definition == null)
+            {
+                report.AddError($"Game-data defaults has no default {label}.");
+                return;
+            }
+            if (!definitionsById.ContainsKey(definition.Id)) report.AddError($"Default {label} '{definition.Id}' is not in the catalog.");
         }
 
         private static void ValidateParticipantDefinitions(

@@ -37,7 +37,7 @@ namespace UnityIsekaiGame.Tests
             AssertDefense(registry, "defense-action.weapon-parry", DefensiveActionType.Parry);
             AssertDefense(registry, "defense-action.basic-dodge", DefensiveActionType.Dodge);
             Assert.That(registry.TryGet("item.prototype-shield", out ItemDefinition shield), Is.True);
-            Assert.That(shield.Tags, Has.Some.Matches<TagDefinition>(tag => tag != null && tag.Id == "tag.shield-compatible"));
+            Assert.That(shield.Tags, Has.Some.Matches<TagDefinition>(tag => tag != null && tag.Id == "tag.general.shield-compatible"));
         }
 
         [Test]

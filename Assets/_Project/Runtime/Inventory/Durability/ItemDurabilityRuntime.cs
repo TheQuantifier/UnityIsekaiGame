@@ -14,6 +14,7 @@ namespace UnityIsekaiGame.Inventory.Durability
     {
         private readonly Dictionary<string, ItemDurabilityRecordData> recordsById = new Dictionary<string, ItemDurabilityRecordData>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> recordIdByItemId = new Dictionary<string, string>(StringComparer.Ordinal);
+        private ItemConditionScaleDefinition conditionScale;
         private long revision;
 
         public long Revision => revision;
@@ -53,6 +54,7 @@ namespace UnityIsekaiGame.Inventory.Durability
             string itemInstanceId,
             bool preview = false)
         {
+            ConfigureConditionScale(registry);
             if (TryGetDurabilityForItem(itemInstanceId, out ItemDurabilitySnapshot existing))
             {
                 return ItemDurabilityOperationResult.Success(existing, "Item durability already exists.", preview);
@@ -63,10 +65,10 @@ namespace UnityIsekaiGame.Inventory.Durability
                 return ItemDurabilityOperationResult.Failure(ItemDurabilityOperationStatus.MissingItem, $"Item instance '{itemInstanceId}' was not found.");
             }
 
-            float quality = ResolveQuality(item, qualityRuntime);
+            float quality = ResolveQuality(item, qualityRuntime, registry);
             float materialDurability = ResolveMaterialDurability(itemInstanceId, compositionRuntime, registry);
             float max = Mathf.Clamp((100f * (0.75f + materialDurability * 0.5f)) * (0.75f + quality * 0.5f), 1f, 500f);
-            float normalized = Mathf.Clamp01(item.ConditionNormalized <= 0f ? 0f : item.ConditionNormalized);
+            float normalized = Mathf.Clamp01(registry?.Defaults?.InitialDurabilityNormalized ?? 1f);
             ItemDurabilityRecordData record = new ItemDurabilityRecordData
             {
                 durabilityRecordId = RecordId(itemInstanceId),
@@ -75,9 +77,7 @@ namespace UnityIsekaiGame.Inventory.Durability
                 currentDurability = Mathf.Clamp(max * normalized, 0f, max),
                 maximumDurability = max,
                 originalMaximumDurability = max,
-                source = item.ConditionState == ItemConditionState.Unknown || item.ConditionState == ItemConditionState.Pristine
-                    ? ItemDurabilityRecordSource.DefinitionDefault
-                    : ItemDurabilityRecordSource.Migration,
+                source = ItemDurabilityRecordSource.DefinitionDefault,
                 relatedItemRevision = item.Revision,
                 relatedCompositionRevision = compositionRuntime != null && compositionRuntime.TryGetSnapshotForItem(itemInstanceId, out ItemCompositionSnapshot composition) ? composition.Revision : 0L,
                 relatedQualityRevision = qualityRuntime != null && qualityRuntime.TryGetQualityForItem(itemInstanceId, out ItemQualitySnapshot qualitySnapshot) ? qualitySnapshot.Revision : 0L,
@@ -117,6 +117,7 @@ namespace UnityIsekaiGame.Inventory.Durability
             ItemDurabilityRecordData record,
             bool preview = false)
         {
+            ConfigureConditionScale(registry);
             if (itemRuntime == null)
             {
                 return ItemDurabilityOperationResult.Failure(ItemDurabilityOperationStatus.MissingRuntime, "Item identity runtime is missing.");
@@ -355,7 +356,7 @@ namespace UnityIsekaiGame.Inventory.Durability
             record.functionalState = ItemFunctionalState.Destroyed;
             record.breakageState = ItemBreakageState.Destroyed;
             record.currentDurability = 0f;
-            record.conditionCategory = ItemDurabilityConditionCategory.Destroyed;
+            record.conditionBandId = "condition.destroyed";
             AddRevision(record, "durability.salvage", sourceId, "Item salvaged.");
             ItemDurabilityOperationResult set = SetDurabilityRecord(itemRuntime, compositionRuntime, qualityRuntime, registry, record);
             if (!set.Succeeded)
@@ -398,14 +399,8 @@ namespace UnityIsekaiGame.Inventory.Durability
                 return 1f;
             }
 
-            return snapshot.FunctionalState switch
-            {
-                ItemFunctionalState.Destroyed => 0f,
-                ItemFunctionalState.Broken => 0f,
-                ItemFunctionalState.PartiallyDisabled => 0.25f,
-                ItemFunctionalState.Impaired => 0.5f,
-                _ => 1f
-            };
+            ItemConditionBandData band = ResolveConditionBand(snapshot.NormalizedDurability);
+            return band != null ? Mathf.Clamp01(band.equipmentContribution) : snapshot.FunctionalState >= ItemFunctionalState.Broken ? 0f : 1f;
         }
 
         public bool CanShareDurabilityStack(string leftItemInstanceId, string rightItemInstanceId)
@@ -416,7 +411,7 @@ namespace UnityIsekaiGame.Inventory.Durability
                 return !TryGetDurabilityForItem(leftItemInstanceId, out _) && !TryGetDurabilityForItem(rightItemInstanceId, out _);
             }
 
-            return left.ConditionCategory == right.ConditionCategory
+            return left.ConditionBandId == right.ConditionBandId
                 && left.FunctionalState == right.FunctionalState
                 && Math.Abs(left.NormalizedDurability - right.NormalizedDurability) < 0.01f
                 && Math.Abs(left.Data.permanentCapacityLoss - right.Data.permanentCapacityLoss) < 0.01f;
@@ -434,6 +429,7 @@ namespace UnityIsekaiGame.Inventory.Durability
 
         public ItemDurabilityOperationResult RestoreFromSaveData(ItemDurabilityRuntimeSaveData saveData, DefinitionRegistry registry, ItemInstanceIdentityRuntime itemRuntime, ItemCompositionRuntime compositionRuntime = null)
         {
+            ConfigureConditionScale(registry);
             if (!ValidateSaveData(saveData, registry, itemRuntime, compositionRuntime, out string failure))
             {
                 return ItemDurabilityOperationResult.Failure(ItemDurabilityOperationStatus.RestoreFailed, failure);
@@ -497,7 +493,7 @@ namespace UnityIsekaiGame.Inventory.Durability
             return true;
         }
 
-        private static void NormalizeRecord(ItemDurabilityRecordData record)
+        private void NormalizeRecord(ItemDurabilityRecordData record)
         {
             if (record == null)
             {
@@ -533,7 +529,7 @@ namespace UnityIsekaiGame.Inventory.Durability
             }
         }
 
-        private static void EvaluateRecord(ItemDurabilityRecordData record)
+        private void EvaluateRecord(ItemDurabilityRecordData record)
         {
             if (record == null)
             {
@@ -541,53 +537,42 @@ namespace UnityIsekaiGame.Inventory.Durability
             }
 
             float normalized = record.maximumDurability <= 0f ? 0f : record.currentDurability / record.maximumDurability;
-            record.conditionCategory = normalized <= 0f
-                ? ItemDurabilityConditionCategory.Destroyed
-                : normalized < 0.1f ? ItemDurabilityConditionCategory.Broken
-                : normalized < 0.25f ? ItemDurabilityConditionCategory.SeverelyDamaged
-                : normalized < 0.5f ? ItemDurabilityConditionCategory.Damaged
-                : normalized < 0.7f ? ItemDurabilityConditionCategory.Worn
-                : normalized < 0.85f ? ItemDurabilityConditionCategory.Used
-                : normalized < 0.95f ? ItemDurabilityConditionCategory.Good
-                : ItemDurabilityConditionCategory.Pristine;
-
-            record.breakageState = normalized <= 0f
-                ? ItemBreakageState.Destroyed
-                : normalized < 0.1f ? ItemBreakageState.Broken
-                : normalized < 0.25f ? ItemBreakageState.Major
-                : normalized < 0.5f ? ItemBreakageState.Minor
-                : ItemBreakageState.None;
+            ItemConditionBandData band = ResolveConditionBand(normalized);
+            record.conditionBandId = band?.bandId ?? string.Empty;
+            record.breakageState = band?.breakageState ?? (normalized <= 0f ? ItemBreakageState.Destroyed : ItemBreakageState.None);
 
             bool essentialBroken = record.components.Any(component => (component.criticality == ItemComponentCriticality.Critical || component.criticality == ItemComponentCriticality.Essential) && component.functionalState >= ItemFunctionalState.Broken);
             record.functionalState = record.breakageState == ItemBreakageState.Destroyed
                 ? ItemFunctionalState.Destroyed
-                : record.breakageState == ItemBreakageState.Broken || essentialBroken ? ItemFunctionalState.Broken
-                : record.breakageState == ItemBreakageState.Major ? ItemFunctionalState.PartiallyDisabled
-                : record.breakageState == ItemBreakageState.Minor ? ItemFunctionalState.Impaired
-                : ItemFunctionalState.FullyFunctional;
+                : essentialBroken ? ItemFunctionalState.Broken
+                : band?.functionalState ?? ItemFunctionalState.FullyFunctional;
             record.maintenanceState = record.wear > record.originalMaximumDurability * 0.5f
                 ? ItemMaintenanceState.Overdue
                 : record.wear > record.originalMaximumDurability * 0.25f ? ItemMaintenanceState.Due : ItemMaintenanceState.Maintained;
             record.salvageState = record.salvageState == ItemSalvageState.Salvaged
                 ? ItemSalvageState.Salvaged
-                : record.conditionCategory == ItemDurabilityConditionCategory.Destroyed || record.breakageState == ItemBreakageState.Broken
+                : (band?.salvageEligible ?? false) || record.breakageState == ItemBreakageState.Broken
                     ? ItemSalvageState.Eligible
                     : ItemSalvageState.None;
         }
 
-        private static void EvaluateComponent(ItemComponentDurabilityData component)
+        private void EvaluateComponent(ItemComponentDurabilityData component)
         {
             float normalized = component.maximumDurability <= 0f ? 0f : component.currentDurability / component.maximumDurability;
-            component.breakageState = normalized <= 0f ? ItemBreakageState.Destroyed
-                : normalized < 0.1f ? ItemBreakageState.Broken
-                : normalized < 0.25f ? ItemBreakageState.Major
-                : normalized < 0.5f ? ItemBreakageState.Minor
-                : ItemBreakageState.None;
-            component.functionalState = component.breakageState == ItemBreakageState.Destroyed ? ItemFunctionalState.Destroyed
-                : component.breakageState == ItemBreakageState.Broken ? ItemFunctionalState.Broken
-                : component.breakageState == ItemBreakageState.Major ? ItemFunctionalState.PartiallyDisabled
-                : component.breakageState == ItemBreakageState.Minor ? ItemFunctionalState.Impaired
-                : ItemFunctionalState.FullyFunctional;
+            ItemConditionBandData band = ResolveConditionBand(normalized);
+            component.breakageState = band?.breakageState ?? (normalized <= 0f ? ItemBreakageState.Destroyed : ItemBreakageState.None);
+            component.functionalState = band?.functionalState ?? (normalized <= 0f ? ItemFunctionalState.Destroyed : ItemFunctionalState.FullyFunctional);
+        }
+
+        private void ConfigureConditionScale(DefinitionRegistry registry)
+        {
+            conditionScale = registry?.Defaults?.ItemConditionScale as ItemConditionScaleDefinition
+                ?? registry?.DefinitionsById.Values.OfType<ItemConditionScaleDefinition>().OrderBy(scale => scale.Id, StringComparer.Ordinal).FirstOrDefault();
+        }
+
+        private ItemConditionBandData ResolveConditionBand(float normalized)
+        {
+            return conditionScale != null && conditionScale.TryResolve(normalized, out ItemConditionBandData band) ? band : null;
         }
 
         private static bool ValidateRecord(ItemDurabilityRecordData record, DefinitionRegistry registry, ItemInstanceIdentityRuntime itemRuntime, ItemCompositionRuntime compositionRuntime, out string failure)
@@ -673,14 +658,14 @@ namespace UnityIsekaiGame.Inventory.Durability
             return redacted;
         }
 
-        private static float ResolveQuality(ItemInstanceSnapshot item, ItemQualityAffixRuntime qualityRuntime)
+        private static float ResolveQuality(ItemInstanceSnapshot item, ItemQualityAffixRuntime qualityRuntime, DefinitionRegistry registry)
         {
             if (qualityRuntime != null && qualityRuntime.TryGetQualityForItem(item.ItemInstanceId, out ItemQualitySnapshot quality))
             {
                 return Mathf.Clamp01(quality.OverallQuality);
             }
 
-            return item.ConditionState == ItemConditionState.Pristine ? 0.5f : Mathf.Clamp01(item.ConditionNormalized);
+            return registry?.Defaults?.DefaultQualityNormalized ?? 0.5f;
         }
 
         private static float ResolveMaterialDurability(string itemInstanceId, ItemCompositionRuntime compositionRuntime, DefinitionRegistry registry)

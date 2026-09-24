@@ -1,6 +1,8 @@
 using UnityEditor;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Inventory.Durability;
+using UnityIsekaiGame.Inventory.Quality;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -52,42 +54,39 @@ namespace UnityIsekaiGame.Tests
             return rarity;
         }
 
-        public static QualityDefinition CreateQuality(
-            string id,
-            string displayName,
-            int rank,
-            bool isDefault = false)
+        public static QualityTierDefinition CreateQualityTier(string id, string displayName, float minimum, float maximum, int sortOrder)
         {
-            QualityDefinition quality = ScriptableObject.CreateInstance<QualityDefinition>();
+            QualityTierDefinition quality = ScriptableObject.CreateInstance<QualityTierDefinition>();
             SerializedObject serializedQuality = new SerializedObject(quality);
-            serializedQuality.FindProperty("qualityId").stringValue = id;
+            serializedQuality.FindProperty("tierId").stringValue = id;
             serializedQuality.FindProperty("displayName").stringValue = displayName;
-            serializedQuality.FindProperty("rank").intValue = rank;
-            serializedQuality.FindProperty("defaultQuality").boolValue = isDefault;
+            serializedQuality.FindProperty("minimumQuality").floatValue = minimum;
+            serializedQuality.FindProperty("maximumQuality").floatValue = maximum;
+            serializedQuality.FindProperty("sortOrder").intValue = sortOrder;
             serializedQuality.ApplyModifiedPropertiesWithoutUndo();
             return quality;
         }
 
-        public static ConditionDefinition CreateCondition(
-            string id,
-            string displayName,
-            int rank,
-            float minimumNormalized,
-            float maximumNormalized,
-            bool unusable = false,
-            bool isDefault = false)
+        public static ItemConditionScaleDefinition CreateConditionScale(params ItemConditionBandData[] bands)
         {
-            ConditionDefinition condition = ScriptableObject.CreateInstance<ConditionDefinition>();
-            SerializedObject serializedCondition = new SerializedObject(condition);
-            serializedCondition.FindProperty("conditionId").stringValue = id;
-            serializedCondition.FindProperty("displayName").stringValue = displayName;
-            serializedCondition.FindProperty("rank").intValue = rank;
-            serializedCondition.FindProperty("minimumNormalized").floatValue = minimumNormalized;
-            serializedCondition.FindProperty("maximumNormalized").floatValue = maximumNormalized;
-            serializedCondition.FindProperty("unusable").boolValue = unusable;
-            serializedCondition.FindProperty("defaultCondition").boolValue = isDefault;
-            serializedCondition.ApplyModifiedPropertiesWithoutUndo();
-            return condition;
+            ItemConditionScaleDefinition scale = ScriptableObject.CreateInstance<ItemConditionScaleDefinition>();
+            SerializedObject serialized = new SerializedObject(scale);
+            SerializedProperty values = serialized.FindProperty("bands");
+            values.arraySize = bands.Length;
+            for (int i = 0; i < bands.Length; i++)
+            {
+                SerializedProperty value = values.GetArrayElementAtIndex(i);
+                value.FindPropertyRelative("bandId").stringValue = bands[i].bandId;
+                value.FindPropertyRelative("displayName").stringValue = bands[i].displayName;
+                value.FindPropertyRelative("minimumNormalized").floatValue = bands[i].minimumNormalized;
+                value.FindPropertyRelative("maximumNormalized").floatValue = bands[i].maximumNormalized;
+                value.FindPropertyRelative("equipmentContribution").floatValue = bands[i].equipmentContribution;
+                value.FindPropertyRelative("functionalState").enumValueIndex = (int)bands[i].functionalState;
+                value.FindPropertyRelative("breakageState").enumValueIndex = (int)bands[i].breakageState;
+                value.FindPropertyRelative("salvageEligible").boolValue = bands[i].salvageEligible;
+            }
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            return scale;
         }
 
         public static DefinitionCatalog CreateCatalog(params ScriptableObject[] definitions)
@@ -95,7 +94,11 @@ namespace UnityIsekaiGame.Tests
             DefinitionCatalog catalog = ScriptableObject.CreateInstance<DefinitionCatalog>();
             SerializedObject serializedCatalog = new SerializedObject(catalog);
             serializedCatalog.FindProperty("catalogId").stringValue = "catalog.test";
-            SerializedProperty definitionsProperty = serializedCatalog.FindProperty("definitions");
+            SerializedProperty sections = serializedCatalog.FindProperty("sections");
+            sections.arraySize = 1;
+            SerializedProperty section = sections.GetArrayElementAtIndex(0);
+            section.FindPropertyRelative("domainId").stringValue = "domain.test";
+            SerializedProperty definitionsProperty = section.FindPropertyRelative("definitions");
             definitionsProperty.arraySize = definitions.Length;
 
             for (int i = 0; i < definitions.Length; i++)

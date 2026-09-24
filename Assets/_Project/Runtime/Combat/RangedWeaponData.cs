@@ -36,6 +36,8 @@ namespace UnityIsekaiGame.Combat
         public GameObject ProjectileVisualPrefab => projectileVisualPrefab;
         public DamageTypeDefinition DamageType => damageType;
 
+        public void SetEnabled(bool value) => weapon = value;
+
         public void Validate()
         {
             baseDamage = Mathf.Max(0f, baseDamage);

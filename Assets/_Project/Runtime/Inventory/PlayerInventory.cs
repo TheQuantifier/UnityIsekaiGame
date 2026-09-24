@@ -550,42 +550,20 @@ namespace UnityIsekaiGame.Inventory
                 return TryCreateRestoredDefinitionStack(entry, registry, instanceIds, restoredSlot);
             }
 
-            string restoredInstanceId = !string.IsNullOrWhiteSpace(entry.itemInstanceId)
-                ? entry.itemInstanceId
-                : entry.itemInstance?.instanceId;
-            bool hasLegacyPayload = HasLegacyItemInstancePayload(entry.itemInstance);
-            if (!hasLegacyPayload && string.IsNullOrWhiteSpace(restoredInstanceId))
+            string restoredInstanceId = entry.itemInstanceId;
+            if (string.IsNullOrWhiteSpace(restoredInstanceId))
             {
-                return InventoryRestoreResult.Failure(InventoryRestoreStatus.InvalidItemInstance, "Inventory stateful item entry has no item instance save data.");
+                return InventoryRestoreResult.Failure(InventoryRestoreStatus.InvalidItemInstance, "Inventory stateful item entry has no item instance ID.");
             }
 
-            ItemDefinition item;
-            if (hasLegacyPayload)
+            if (string.IsNullOrWhiteSpace(entry.definitionId))
             {
-                ItemInstanceRestoreResult instanceResult = ItemInstanceSerializationUtility.Restore(entry.itemInstance, registry);
-                if (!instanceResult.Succeeded)
-                {
-                    return InventoryRestoreResult.Failure(InventoryRestoreStatus.InvalidItemInstance, instanceResult.Message);
-                }
-
-                if (instanceResult.ItemInstance.Definition is not ItemDefinition restoredItem)
-                {
-                    return InventoryRestoreResult.Failure(InventoryRestoreStatus.WrongDefinitionType, $"Definition '{instanceResult.ItemInstance.DefinitionId}' is not an ItemDefinition asset.");
-                }
-
-                item = restoredItem;
+                return InventoryRestoreResult.Failure(InventoryRestoreStatus.MissingDefinitionId, "Inventory stateful entry has no definition ID.");
             }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(entry.definitionId))
-                {
-                    return InventoryRestoreResult.Failure(InventoryRestoreStatus.MissingDefinitionId, "Inventory stateful entry has no definition ID.");
-                }
 
-                if (registry == null || !registry.TryGet(entry.definitionId, out item))
-                {
-                    return InventoryRestoreResult.Failure(InventoryRestoreStatus.MissingItemDefinition, $"Item definition '{entry.definitionId}' was not found.");
-                }
+            if (registry == null || !registry.TryGet(entry.definitionId, out ItemDefinition item))
+            {
+                return InventoryRestoreResult.Failure(InventoryRestoreStatus.MissingItemDefinition, $"Item definition '{entry.definitionId}' was not found.");
             }
 
             if (!ItemInstanceId.IsValid(restoredInstanceId))
@@ -600,16 +578,6 @@ namespace UnityIsekaiGame.Inventory
 
             restoredSlot.SetIdentity(item, restoredInstanceId, 1);
             return InventoryRestoreResult.Success();
-        }
-
-        private static bool HasLegacyItemInstancePayload(ItemInstanceSaveData itemInstance)
-        {
-            return itemInstance != null
-                && (!string.IsNullOrWhiteSpace(itemInstance.definitionId)
-                    || !string.IsNullOrWhiteSpace(itemInstance.instanceId)
-                    || itemInstance.hasCondition
-                    || itemInstance.hasQuality
-                    || !string.IsNullOrWhiteSpace(itemInstance.qualityId));
         }
 
         private static InventoryRestoreResult TryCreateRestoredDefinitionStack(

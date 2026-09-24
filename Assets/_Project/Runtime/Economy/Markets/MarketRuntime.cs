@@ -4,6 +4,8 @@ using System.Linq;
 using UnityIsekaiGame.Economy;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Inventory.Identity;
+using UnityIsekaiGame.Inventory.Durability;
+using UnityIsekaiGame.Inventory.Quality;
 using UnityIsekaiGame.Knowledge.Access;
 using UnityIsekaiGame.Progression;
 
@@ -240,7 +242,9 @@ namespace UnityIsekaiGame.Economy.Markets
             long expectedMarketRevision = -1L,
             long expectedPriceRevision = -1L,
             bool fixedPriceOverride = false,
-            bool preview = false)
+            bool preview = false,
+            ItemQualitySnapshot quality = null,
+            ItemDurabilitySnapshot durability = null)
         {
             long before = Revision;
             if (string.IsNullOrWhiteSpace(quoteId))
@@ -302,7 +306,7 @@ namespace UnityIsekaiGame.Economy.Markets
             MerchantMarginPolicyData margin = definition?.DefaultMerchantMarginPolicy ?? new MerchantMarginPolicyData();
             int marginBasisPoints = direction == MerchantQuoteDirection.MerchantBuys ? margin.BuyDiscountBasisPoints : margin.SellMarkupBasisPoints;
             long amount = ScaleForQuantity(price.referenceAmountUnits, price.quantityBasis, quantity);
-            amount = ApplyItemAdjustments(amount, item, subject, privilegedHiddenFactors, out int qualityBps, out int durabilityBps, out int rarityBps, out bool hiddenApplied);
+            amount = ApplyItemAdjustments(amount, item, quality, durability, subject, privilegedHiddenFactors, out int qualityBps, out int durabilityBps, out int rarityBps, out bool hiddenApplied);
             amount = direction == MerchantQuoteDirection.MerchantBuys
                 ? MultiplyBasisPoints(amount, Math.Max(0, 10000 - Math.Max(margin.MinimumMarginBasisPoints, marginBasisPoints)))
                 : MultiplyBasisPoints(amount, 10000 + Math.Max(margin.MinimumMarginBasisPoints, marginBasisPoints));
@@ -869,7 +873,7 @@ namespace UnityIsekaiGame.Economy.Markets
             return calculated;
         }
 
-        private static long ApplyItemAdjustments(long amount, ItemInstanceSnapshot item, MarketSubjectDefinition subject, bool privilegedHiddenFactors, out int qualityBps, out int durabilityBps, out int rarityBps, out bool hiddenApplied)
+        private static long ApplyItemAdjustments(long amount, ItemInstanceSnapshot item, ItemQualitySnapshot quality, ItemDurabilitySnapshot durability, MarketSubjectDefinition subject, bool privilegedHiddenFactors, out int qualityBps, out int durabilityBps, out int rarityBps, out bool hiddenApplied)
         {
             qualityBps = 10000;
             durabilityBps = 10000;
@@ -877,22 +881,8 @@ namespace UnityIsekaiGame.Economy.Markets
             hiddenApplied = false;
             if (item != null)
             {
-                if (item.QualityTier != ItemQualityTier.Unknown)
-                {
-                    qualityBps = item.QualityTier switch
-                    {
-                        ItemQualityTier.Poor => 7000,
-                        ItemQualityTier.Common => 10000,
-                        ItemQualityTier.Good => 11250,
-                        ItemQualityTier.Fine => 12500,
-                        ItemQualityTier.Excellent => 14500,
-                        ItemQualityTier.Masterwork => 16000,
-                        ItemQualityTier.Legendary => 22000,
-                        _ => 10000
-                    };
-                }
-
-                durabilityBps = item.ConditionNormalized <= 0f ? 1000 : (int)Math.Round(Math.Clamp(item.ConditionNormalized, 0f, 1f) * 10000f);
+                if (quality != null) qualityBps = (int)Math.Round(7000d + Math.Clamp(quality.OverallQuality, 0f, 1f) * 15000d);
+                if (durability != null) durabilityBps = Math.Max(1000, (int)Math.Round(Math.Clamp(durability.NormalizedDurability, 0f, 1f) * 10000f));
                 if (!privilegedHiddenFactors && !string.IsNullOrWhiteSpace(item.MakerMark))
                 {
                     hiddenApplied = false;

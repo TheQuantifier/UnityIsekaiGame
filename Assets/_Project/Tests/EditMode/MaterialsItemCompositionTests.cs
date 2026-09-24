@@ -539,9 +539,7 @@ namespace UnityIsekaiGame.Tests
 
         private static DefinitionCatalog Catalog(params IGameDefinition[] definitions)
         {
-            DefinitionCatalog catalog = ScriptableObject.CreateInstance<DefinitionCatalog>();
-            SetField(catalog, "definitions", Array.ConvertAll(definitions, definition => definition as ScriptableObject));
-            return catalog;
+            return ClassificationTestFactory.CreateCatalog(Array.ConvertAll(definitions, definition => definition as ScriptableObject));
         }
 
         private static void SetField(object target, string fieldName, object value)

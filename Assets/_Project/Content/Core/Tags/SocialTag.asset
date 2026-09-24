@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ee90b64dbd74221aa0c35e4df92ffaa, type: 3}
   m_Name: SocialTag
   m_EditorClassIdentifier: UnityIsekaiGame.GameData::UnityIsekaiGame.GameData.TagDefinition
-  tagId: tag.social
+  tagId: tag.general.social
   displayName: Social
   description: Trait for beings that can participate in social systems.
   domain: 4

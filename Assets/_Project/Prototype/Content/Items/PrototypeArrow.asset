@@ -35,6 +35,11 @@ MonoBehaviour:
       attackPower: 0
       defense: 0
     resistanceModifiers: []
+    view:
+      firstPersonPrefab: {fileID: 0}
+      firstPersonLocalPosition: {x: 0, y: 0, z: 0}
+      firstPersonLocalEulerAngles: {x: 0, y: 0, z: 0}
+      firstPersonLocalScale: {x: 1, y: 1, z: 1}
     meleeWeapon:
       weapon: 0
       attackName: Attack
@@ -58,3 +63,11 @@ MonoBehaviour:
       projectilePrefab: {fileID: 0}
       projectileVisualPrefab: {fileID: 0}
       damageType: {fileID: 0}
+  defaultCompositionTemplate:
+    templateVersionId: template.v1
+    required: 0
+    massAuthority: 0
+    completeness: 0
+    materials: []
+    components: []
+    tags: []
