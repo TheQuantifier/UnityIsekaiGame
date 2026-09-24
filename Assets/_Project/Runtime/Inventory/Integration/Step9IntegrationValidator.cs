@@ -60,7 +60,10 @@ namespace UnityIsekaiGame.Inventory.Integration
                 nameof(MaterialDefinition),
                 nameof(QualityTierDefinition),
                 nameof(ItemAffixDefinition),
+                nameof(ItemDegradationPolicyDefinition),
                 nameof(RecipeDefinition),
+                nameof(CraftingOutputPolicyDefinition),
+                nameof(CraftingCatalystEffectDefinition),
                 nameof(ProductionToolDefinition),
                 nameof(ProductionStationDefinition),
                 nameof(ProductionRequirementDefinition),
@@ -77,7 +80,7 @@ namespace UnityIsekaiGame.Inventory.Integration
             {
                 if (!presentTypes.Contains(typeName))
                 {
-                    report.AddWarning(Step9IntegrationDiagnosticDomain.DefinitionCatalog, "MissingRepresentativeType", $"No catalog definition of type '{typeName}' is registered.", typeName);
+                    report.AddError(Step9IntegrationDiagnosticDomain.DefinitionCatalog, "MissingRepresentativeType", $"No catalog definition of type '{typeName}' is registered.", typeName);
                 }
             }
 
@@ -119,7 +122,7 @@ namespace UnityIsekaiGame.Inventory.Integration
             AppendSection(builder, "affixes", data.ItemQualityAffixes.affixInstances, item => item.affixInstanceId, item =>
                 $"{item.affixInstanceId}|{item.itemInstanceId}|{item.affixDefinitionId}|{item.affixTierId}|{item.active}|{item.removed}|{item.modifierSourceId}|{item.revision}");
             AppendSection(builder, "durability", data.ItemDurability.records, item => item.durabilityRecordId, item =>
-                $"{item.durabilityRecordId}|{item.itemInstanceId}|{item.itemDefinitionId}|{item.currentDurability:0.######}|{item.maximumDurability:0.######}|{item.functionalState}|{item.breakageState}|{item.salvageState}|{item.revision}");
+                $"{item.durabilityRecordId}|{item.itemInstanceId}|{item.itemDefinitionId}|{item.currentDurability:0.######}|{item.maximumDurability:0.######}|{item.lastBreakCheckPercent}|{item.breakCheckSequence}|{item.hasBroken}|{item.pendingForcedDecomposition}|{item.functionalState}|{item.breakageState}|{item.revision}");
             AppendSection(builder, "production-plans", data.ProductionRequirements.plans, item => item.planId, item =>
                 $"{item.planId}|{item.productionJobId}|{item.status}|{string.Join(",", Sorted(item.selections?.SelectMany(selection => selection.allocations ?? new List<ProductionInputAllocationData>()).Select(allocation => allocation.itemInstanceId)))}|{item.revision}");
             AppendSection(builder, "production-reservations", data.ProductionRequirements.reservations, item => item.reservationId, item =>
@@ -127,7 +130,7 @@ namespace UnityIsekaiGame.Inventory.Integration
             AppendSection(builder, "recipe-knowledge", data.RecipeKnowledge.records, item => item.recordId, item =>
                 $"{item.recordId}|{item.personId}|{item.recipeId}|{item.versionId}|{item.variantId}|{item.completeness}|{item.incorrect}|{item.outdated}|{item.revision}");
             AppendSection(builder, "crafting", data.CraftingExecution.operations, item => item.operationId, item =>
-                $"{item.operationId}|{item.recipeId}|{item.state}|{item.status}|{item.requirementPlanId}|{string.Join(",", Sorted(item.consumedInputs?.Select(input => input.itemInstanceId)))}|{string.Join(",", Sorted(item.outputs?.Select(output => output.itemInstanceId)))}|{item.revision}");
+                $"{item.operationId}|{item.recipeId}|{item.state}|{item.status}|{item.requirementPlanId}|{string.Join(",", Sorted(item.consumedInputs?.Select(input => input.itemInstanceId)))}|{string.Join(",", Sorted(item.catalysts?.Select(catalyst => $"{catalyst.slotId}:{catalyst.itemInstanceId}:{catalyst.quantity}:{catalyst.effectDefinitionId}:{catalyst.affixTierId}:{catalyst.effectApplied}")))}|{string.Join(",", Sorted(item.outputs?.Select(output => output.itemInstanceId)))}|{item.revision}");
             AppendSection(builder, "workflow-jobs", data.ProductionWorkflow.jobs, item => item.jobId, item =>
                 $"{item.jobId}|{item.workOrderId}|{item.state}|{item.currentStageId}|{string.Join(",", Sorted(item.outputItemIds))}|{item.revision}");
             AppendSection(builder, "experiments", data.Experimentation.runs, item => item.experimentRunId, item =>
@@ -214,7 +217,7 @@ namespace UnityIsekaiGame.Inventory.Integration
             bool terminal = item.lifecycleState == ItemLifecycleState.Destroyed
                 || item.lifecycleState == ItemLifecycleState.Consumed
                 || item.lifecycleState == ItemLifecycleState.Depleted
-                || item.lifecycleState == ItemLifecycleState.Salvaged;
+                || item.lifecycleState == ItemLifecycleState.Disassembled;
 
             if (terminal && location.kind is not (ItemLocationKind.Destroyed or ItemLocationKind.Consumed or ItemLocationKind.Unassigned))
             {
@@ -368,16 +371,23 @@ namespace UnityIsekaiGame.Inventory.Integration
                 }
 
                 if (ReferenceItem(items, record.itemInstanceId, record.durabilityRecordId, "DurabilityItemMissing", report)
-                    && record.salvageState is ItemSalvageState.Salvaged or ItemSalvageState.Destroyed
+                    && record.breakageState == ItemBreakageState.Destroyed
                     && items.TryGetValue(record.itemInstanceId, out ItemInstanceRecordData item)
                     && !IsTerminal(item.lifecycleState))
                 {
-                    report.AddError(Step9IntegrationDiagnosticDomain.ItemGraph, "SalvagedDurabilityOnActiveItem", "Salvaged or destroyed durability state must be reflected by terminal item identity state.", record.durabilityRecordId);
+                    report.AddError(Step9IntegrationDiagnosticDomain.ItemGraph, "DestroyedDurabilityOnActiveItem", "Destroyed durability state must be reflected by terminal item identity state.", record.durabilityRecordId);
                 }
 
                 if (record.maximumDurability < 0f || record.currentDurability < 0f || record.currentDurability > record.maximumDurability)
                 {
                     report.AddError(Step9IntegrationDiagnosticDomain.ItemGraph, "InvalidDurabilityRange", "Durability values must stay within 0..maximum durability.", record.durabilityRecordId);
+                }
+
+                if (record.lastBreakCheckPercent < 1
+                    || record.lastBreakCheckPercent > 11
+                    || record.breakCheckSequence < 0L)
+                {
+                    report.AddError(Step9IntegrationDiagnosticDomain.ItemGraph, "InvalidBreakCheckState", "Item break-check chance, percentage cursor, and sequence must be valid.", record.durabilityRecordId);
                 }
 
                 if (!string.IsNullOrWhiteSpace(record.itemDefinitionId) && registry != null && !registry.TryGet<ItemDefinition>(record.itemDefinitionId, out _))
@@ -449,6 +459,29 @@ namespace UnityIsekaiGame.Inventory.Integration
                 foreach (CraftingToolUseData tool in operation.toolUses ?? new List<CraftingToolUseData>())
                 {
                     ReferenceItem(items, tool.toolItemInstanceId, operation.operationId, "CraftingToolItemMissing", report, allowEmpty: true);
+                }
+
+                HashSet<string> catalystSlots = new HashSet<string>(StringComparer.Ordinal);
+                foreach (CraftingCatalystUseData catalyst in operation.catalysts ?? new List<CraftingCatalystUseData>())
+                {
+                    if (catalyst == null || string.IsNullOrWhiteSpace(catalyst.slotId) || !catalystSlots.Add(catalyst.slotId))
+                    {
+                        report.AddError(Step9IntegrationDiagnosticDomain.RuntimeIndex, "InvalidCraftingCatalystSlot", "Crafting catalyst slots must be non-empty and unique.", operation.operationId);
+                        continue;
+                    }
+
+                    ReferenceItem(items, catalyst.itemInstanceId, operation.operationId, "CraftingCatalystItemMissing", report);
+                    if (registry != null && !registry.TryGet<ItemDefinition>(catalyst.itemDefinitionId, out _))
+                    {
+                        report.AddError(Step9IntegrationDiagnosticDomain.DefinitionCatalog, "MissingCraftingCatalystItemDefinition", $"Crafting catalyst item '{catalyst.itemDefinitionId}' is not registered.", operation.operationId);
+                    }
+
+                    if (registry != null
+                        && !string.IsNullOrWhiteSpace(catalyst.effectDefinitionId)
+                        && !registry.TryGet<CraftingCatalystEffectDefinition>(catalyst.effectDefinitionId, out _))
+                    {
+                        report.AddError(Step9IntegrationDiagnosticDomain.DefinitionCatalog, "MissingCraftingCatalystEffect", $"Crafting catalyst effect '{catalyst.effectDefinitionId}' is not registered.", operation.operationId);
+                    }
                 }
 
                 foreach (CraftingOutputItemData output in operation.outputs ?? new List<CraftingOutputItemData>())
@@ -643,7 +676,7 @@ namespace UnityIsekaiGame.Inventory.Integration
 
         private static bool IsTerminal(ItemLifecycleState state)
         {
-            return state is ItemLifecycleState.Destroyed or ItemLifecycleState.Consumed or ItemLifecycleState.Depleted or ItemLifecycleState.Salvaged;
+            return state is ItemLifecycleState.Destroyed or ItemLifecycleState.Consumed or ItemLifecycleState.Depleted or ItemLifecycleState.Disassembled;
         }
 
         private static void ValidateUnique<T>(IEnumerable<T> values, Func<T, string> idSelector, string code, Step9IntegrationDiagnosticDomain domain, Step9IntegrationValidationReport report)

@@ -62,7 +62,7 @@ namespace UnityIsekaiGame.Inventory.Composition
     {
         RuntimeGameplay = 0,
         AuthoredSetup = 1,
-        Migration = 2,
+        DefaultInitialization = 2,
         DebugTestLab = 3,
         CraftingProduction = 4,
         RepairModification = 5

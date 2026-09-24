@@ -166,7 +166,7 @@ namespace UnityIsekaiGame.Tests
                 }
             };
 
-            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.MigrateInventoryEquipmentSave(projection, registry, "person.prototype.player", "test.projection");
+            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.BuildInventoryEquipmentProjection(projection, registry, "person.prototype.player", "test.projection");
 
             Assert.That(migration.Succeeded, Is.True, migration.Message);
             Assert.That(migration.SaveData.records.Count, Is.EqualTo(3));
@@ -304,11 +304,11 @@ namespace UnityIsekaiGame.Tests
                 },
                 equipment = new EquipmentSaveData()
             };
-            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.MigrateInventoryEquipmentSave(projection, registry, "person.prototype.player", "test.divergent");
-            Assert.That(migration.Succeeded, Is.True, migration.Message);
+            ItemIdentityInventoryBridgeResult identityProjection = ItemIdentityInventoryBridge.BuildInventoryEquipmentProjection(projection, registry, "person.prototype.player", "test.divergent");
+            Assert.That(identityProjection.Succeeded, Is.True, identityProjection.Message);
 
-            migration.SaveData.records[0].location = new ItemLocationStateData { kind = ItemLocationKind.WorldPlacement, worldPlacementId = "placement.test", worldEntityId = "world.item.test" };
-            ItemIdentityInventoryBridgeResult audit = ItemIdentityInventoryBridge.ValidateInventoryEquipmentProjection(projection, migration.SaveData, "person.prototype.player");
+            identityProjection.SaveData.records[0].location = new ItemLocationStateData { kind = ItemLocationKind.WorldPlacement, worldPlacementId = "placement.test", worldEntityId = "world.item.test" };
+            ItemIdentityInventoryBridgeResult audit = ItemIdentityInventoryBridge.ValidateInventoryEquipmentProjection(projection, identityProjection.SaveData, "person.prototype.player");
 
             Assert.That(audit.Succeeded, Is.False);
             Assert.That(audit.Status, Is.EqualTo("ProjectionMismatch"));
@@ -328,6 +328,32 @@ namespace UnityIsekaiGame.Tests
             Assert.That(runtime.Rename(second, "Named Potion").Succeeded, Is.True);
             Assert.That(runtime.TryGetSnapshot(second, out ItemInstanceSnapshot named), Is.True);
             Assert.That(ItemIdentityInventoryBridge.CanShareStack(cleanA, named), Is.False);
+        }
+
+        [Test]
+        public void PartialStackConsumptionPreservesRemainderAndCreatesExactConsumedIdentity()
+        {
+            ItemDefinition potion = LoadItem("item.health-potion", out _);
+            ItemInstanceIdentityRuntime runtime = new ItemInstanceIdentityRuntime();
+            string sourceId = ItemInstanceId.Generate();
+            string consumedId = ItemInstanceId.Generate();
+
+            ItemInstanceOperationResult created = runtime.CreateItem(
+                potion,
+                ItemInstanceClassification.StackableWhileEquivalent,
+                sourceId,
+                ownerPersonId: "person.owner",
+                stackQuantity: 8);
+            ItemInstanceOperationResult consumed = runtime.ConsumeStackQuantity(sourceId, 3, consumedId);
+
+            Assert.That(created.Succeeded, Is.True, created.Message);
+            Assert.That(consumed.Succeeded, Is.True, consumed.Message);
+            Assert.That(runtime.TryGetSnapshot(sourceId, out ItemInstanceSnapshot remainder), Is.True);
+            Assert.That(remainder.StackQuantity, Is.EqualTo(5));
+            Assert.That(runtime.TryGetSnapshot(consumedId, out ItemInstanceSnapshot removed), Is.True);
+            Assert.That(removed.StackQuantity, Is.EqualTo(3));
+            Assert.That(removed.LifecycleState, Is.EqualTo(ItemLifecycleState.Consumed));
+            Assert.That(removed.Data.provenance.parentItemInstanceIds, Does.Contain(sourceId));
         }
 
         [Test]

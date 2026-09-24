@@ -28,7 +28,8 @@ namespace UnityIsekaiGame.Inventory.Identity
             string ownerPersonId = "",
             string custodianPersonId = "",
             string creationSourceId = "",
-            bool preview = false)
+            bool preview = false,
+            int stackQuantity = 1)
         {
             if (definition == null || string.IsNullOrWhiteSpace(definition.Id))
             {
@@ -46,12 +47,20 @@ namespace UnityIsekaiGame.Inventory.Identity
                 return ItemInstanceOperationResult.Failure(ItemInstanceOperationStatus.DuplicateItemInstanceId, $"Item instance '{resolvedId}' already exists.");
             }
 
+            int resolvedQuantity = Math.Max(1, stackQuantity);
+            if (classification is ItemInstanceClassification.Unique or ItemInstanceClassification.Serialized or ItemInstanceClassification.IndividuallyTracked
+                && resolvedQuantity != 1)
+            {
+                return ItemInstanceOperationResult.Failure(ItemInstanceOperationStatus.InvalidRequest, "Individually tracked item instances must have a stack quantity of one.");
+            }
+
             ItemInstanceRecordData record = new ItemInstanceRecordData
             {
                 itemInstanceId = resolvedId,
                 itemDefinitionId = definition.Id,
                 classification = classification,
-                lifecycleState = ItemLifecycleState.Active,
+                stackQuantity = resolvedQuantity,
+                lifecycleState = string.IsNullOrWhiteSpace(custodianPersonId) ? ItemLifecycleState.Active : ItemLifecycleState.InInventory,
                 ownership = new ItemOwnershipStateData
                 {
                     kind = string.IsNullOrWhiteSpace(ownerPersonId) ? ItemOwnershipKind.Unowned : ItemOwnershipKind.PersonOwned,
@@ -396,6 +405,73 @@ namespace UnityIsekaiGame.Inventory.Identity
                 record.lifecycleState = consumed ? ItemLifecycleState.Consumed : ItemLifecycleState.Destroyed;
                 record.location = new ItemLocationStateData { kind = consumed ? ItemLocationKind.Consumed : ItemLocationKind.Destroyed };
             }, consumed ? "Item consumed." : "Item destroyed.");
+        }
+
+        public ItemInstanceOperationResult MarkDisassembled(string itemInstanceId)
+        {
+            return Mutate(itemInstanceId, record =>
+            {
+                record.lifecycleState = ItemLifecycleState.Disassembled;
+                record.location = new ItemLocationStateData { kind = ItemLocationKind.Destroyed };
+            }, "Item disassembled.");
+        }
+
+        public ItemInstanceOperationResult ConsumeStackQuantity(string itemInstanceId, int quantity, string consumedItemInstanceId = "")
+        {
+            if (string.IsNullOrWhiteSpace(itemInstanceId) || !recordsById.TryGetValue(itemInstanceId, out ItemInstanceRecordData source))
+            {
+                return ItemInstanceOperationResult.Failure(ItemInstanceOperationStatus.MissingItem, $"Item instance '{itemInstanceId}' was not found.");
+            }
+
+            if (quantity <= 0 || quantity > source.stackQuantity)
+            {
+                return ItemInstanceOperationResult.Failure(ItemInstanceOperationStatus.InvalidRequest, $"Cannot consume {quantity} from stack '{itemInstanceId}' containing {source.stackQuantity}.");
+            }
+
+            if (quantity == source.stackQuantity)
+            {
+                return DestroyOrConsume(itemInstanceId, consumed: true);
+            }
+
+            if (source.classification is ItemInstanceClassification.Unique or ItemInstanceClassification.Serialized or ItemInstanceClassification.IndividuallyTracked)
+            {
+                return ItemInstanceOperationResult.Failure(ItemInstanceOperationStatus.InvalidRequest, $"Item instance '{itemInstanceId}' cannot be partially consumed.");
+            }
+
+            string consumedId = string.IsNullOrWhiteSpace(consumedItemInstanceId) ? ItemInstanceId.Generate() : consumedItemInstanceId;
+            if (!ItemInstanceId.IsValid(consumedId) || recordsById.ContainsKey(consumedId))
+            {
+                return ItemInstanceOperationResult.Failure(ItemInstanceOperationStatus.InvalidRequest, $"Consumed stack identity '{consumedId}' is invalid or already exists.");
+            }
+
+            ItemInstanceRecordData remaining = source.Clone();
+            remaining.stackQuantity -= quantity;
+            remaining.revision = Math.Max(1L, remaining.revision + 1L);
+
+            ItemInstanceRecordData consumed = source.Clone();
+            consumed.itemInstanceId = consumedId;
+            consumed.stackQuantity = quantity;
+            consumed.lifecycleState = ItemLifecycleState.Consumed;
+            consumed.location = new ItemLocationStateData { kind = ItemLocationKind.Consumed };
+            consumed.provenance ??= new ItemProvenanceData();
+            consumed.provenance.parentItemInstanceIds = AddDistinct(consumed.provenance.parentItemInstanceIds, itemInstanceId);
+            consumed.provenance.sourceItemInstanceIds = AddDistinct(consumed.provenance.sourceItemInstanceIds, itemInstanceId);
+            consumed.revision = 1L;
+
+            if (!ValidateRecord(remaining, out string remainingFailure))
+            {
+                return ItemInstanceOperationResult.Failure(ItemInstanceOperationStatus.ValidationFailed, remainingFailure);
+            }
+
+            if (!ValidateRecord(consumed, out string consumedFailure))
+            {
+                return ItemInstanceOperationResult.Failure(ItemInstanceOperationStatus.ValidationFailed, consumedFailure);
+            }
+
+            recordsById[itemInstanceId] = remaining;
+            recordsById.Add(consumedId, consumed);
+            revision++;
+            return ItemInstanceOperationResult.Success(new ItemInstanceSnapshot(consumed), "Stack quantity consumed.");
         }
 
         public ItemInstanceProjection Project(string itemInstanceId, ItemProjectionAudience audience, InformationAccessDecision decision = null)

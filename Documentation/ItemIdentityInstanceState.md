@@ -1,6 +1,6 @@
 # Feature 9.1 - Item Identity and Instance State
 
-Feature 9.1 establishes persistent identity and authoritative state for specific item objects. Because the project is still pre-release, inventory, equipment, pickups, and persistence now transition toward item identity as the live contract instead of preserving a permanent legacy item-state path.
+Feature 9.1 establishes persistent identity and authoritative state for specific item objects. Because the project is still pre-release, item identity is the only supported live contract.
 
 ## Item Definition Versus Item Instance
 
@@ -14,7 +14,7 @@ A logical item is not its `GameObject`. Destroying, disabling, unloading, or rep
 
 Individually tracked items use canonical GUID item-instance IDs. The ID must remain stable across transfer, equipment, world placement, save/restore, naming, future repair, future modification, and future production flows.
 
-Feature 9.1 uses `ItemInstanceIdentityRuntime` as the authoritative record owner for item instance state. Player inventory and equipment slots now carry `itemInstanceId` directly. Existing `ItemInstance` / `ItemInstanceSaveData` shapes are compatibility inputs for migration and old tests only; they are not live gameplay ownership, condition, provenance, or placement state.
+Feature 9.1 uses `ItemInstanceIdentityRuntime` as the authoritative record owner for item instance state. Player inventory and equipment slots carry `itemInstanceId` directly and no deprecated nested item-instance model is supported.
 
 ## Fungible Versus Individually Tracked
 
@@ -35,9 +35,9 @@ Items must separate into distinct instances when they gain instance-specific con
 
 ## Lifecycle
 
-The item identity runtime represents lifecycle states including created, active, stored, in inventory, equipped, placed in world, in transit, reserved, lost, missing, disputed, destroyed, consumed, depleted, broken, salvaged, archived, and quarantined.
+The item identity runtime represents lifecycle states including created, active, stored, in inventory, equipped, placed in world, in transit, reserved, lost, missing, disputed, destroyed, consumed, depleted, broken, disassembled, archived, and quarantined.
 
-Feature 9.1 defines the boundaries. Full breakage, durability loss, repair, salvage, and production behavior remain deferred.
+Feature 9.1 defines the boundaries. Later systems implement breakage, durability loss, repair, disassembly, field salvage, and production behavior.
 
 ## Location and Containment
 
@@ -77,7 +77,7 @@ Feature 9.1 stores general condition state and optional normalized condition:
 - Broken
 - Destroyed
 
-Condition is not full durability. Durability degradation, wear, repair, and salvage belong to later Step 9 features.
+Condition is not full durability. Durability degradation, wear, repair, and item recovery belong to later systems.
 
 ## Quality Foundation
 
@@ -137,13 +137,13 @@ The representation contract now carries optional prefab/addressable references, 
 
 Scene-authored items require unique stable placement identity. Runtime-created items receive run/world-stable item-instance IDs. Restore must not replay item creation or duplicate scene-authored records.
 
-## Persistence and Migration
+## Persistence and Projection
 
 `ItemInstanceIdentityPersistenceParticipant` persists identity records as a world-scoped participant for current saves. Prepare validates the full payload before commit. Failed prepare leaves live runtime state unchanged. Commit uses rollback on unexpected restore failure.
 
-`PlayerInventoryEquipmentPersistenceParticipant` still writes the Step 3 inventory/equipment DTO container so existing UI and slot restore code have a projection to restore, but current entries are identity projections: `definitionId`, `itemInstanceId`, and quantity/slot. New saves do not write nested legacy `ItemInstanceSaveData` for current inventory/equipment state. When an identity runtime is registered, capture synchronizes the current inventory/equipment state into `ItemInstanceIdentityRuntime`; prepare validates the projection; commit restores inventory/equipment and then resynchronizes identity. The projection is not a second source of truth.
+`PlayerInventoryEquipmentPersistenceParticipant` writes the inventory/equipment DTO container used by UI and slot restore code. Entries are identity projections: `definitionId`, `itemInstanceId`, and quantity/slot. Capture synchronizes current inventory/equipment state into `ItemInstanceIdentityRuntime`; prepare validates the projection; commit restores inventory/equipment and then resynchronizes identity. The projection is not a second source of truth.
 
-Existing Step 3 inventory/equipment saves may contain lightweight `ItemInstanceSaveData`. Feature 9.1 keeps read support for them as migration data only. `ItemIdentityInventoryBridge.MigrateInventoryEquipmentSave` deterministically creates richer identity records from old inventory/equipment payloads:
+`ItemIdentityInventoryBridge.BuildInventoryEquipmentProjection` deterministically creates identity records from current inventory/equipment state:
 
 - Stateful inventory entries keep their existing persistent item-instance IDs and become inventory-located identity records.
 - Stateful equipment entries keep their existing persistent item-instance IDs and become equipped identity records.
@@ -154,15 +154,13 @@ For current saves:
 - Inventory stateful entries write `definitionId + itemInstanceId`.
 - Inventory stack entries write `definitionId + itemInstanceId + quantity`.
 - Equipment entries write `definitionId + itemInstanceId + slotType`.
-- Legacy nested `itemInstance` data is read but not emitted by current slot/equipment save capture.
-
-An absent Feature 9.1 payload is therefore only safe when there are no surviving inventory/equipment items to migrate. Old saves with items should run through the bridge so each surviving item or fungible stack receives coherent identity exactly once.
+There is no old-save conversion path. Pre-Group-6 saves should be deleted during development.
 
 ## Live Synchronization
 
 `PlayerItemIdentitySynchronizer` is the central live adapter between player inventory/equipment and item identity. It listens for inventory/equipment changes, builds the current projection, creates missing identity records, updates equipped/inventory locations, preserves richer metadata already held by identity, and marks records that disappear from the player inventory/equipment projection as lost rather than leaving stale player-held locations.
 
-New gameplay actions should use the current inventory/equipment APIs only as mutation commands and rely on the synchronizer for identity state. New systems that need item truth should read `ItemInstanceIdentityRuntime` snapshots or access-aware projections, not raw inventory/equipment slots. Code that still consumes `ItemInstance` should be treated as migration or compatibility code and should not be used for new gameplay behavior.
+New gameplay actions use current inventory/equipment APIs as mutation commands and rely on the synchronizer for identity state. Systems that need item truth read `ItemInstanceIdentityRuntime` snapshots or access-aware projections, not raw inventory/equipment slots.
 
 ## Validation
 
@@ -184,7 +182,7 @@ Validation rejects:
 
 ## Test Lab and Automation
 
-Feature 9.1 is designed to work with fixture-owned automation using run-scoped mutable item IDs. The current code foundation is independent of active scene objects and can run in fresh runtime contexts. Automation now covers distinct instances, ownership/custody, location validation, save/restore, old-save migration, current inventory/equipment synchronization, and access subject projection. Edit Mode coverage also verifies identity-projection-only current saves, live inventory/equipment synchronization, and persistence drift rejection. Full manual scene-authored lifecycle verification remains a Unity integration pass.
+Feature 9.1 is designed to work with fixture-owned automation using run-scoped mutable item IDs. The code foundation is independent of active scene objects and can run in fresh runtime contexts. Automation covers distinct instances, ownership/custody, location validation, save/restore, current inventory/equipment synchronization, and access subject projection. Edit Mode coverage also verifies identity-projection-only saves, live synchronization, and persistence drift rejection.
 
 ## Deferred Features
 

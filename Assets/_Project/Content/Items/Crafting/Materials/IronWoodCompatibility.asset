@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80f2ae086844444ca7575521173e125c, type: 3}
+  m_Name: IronWoodCompatibility
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Composition.MaterialCompatibilityRuleDefinition
+  ruleId: material-compatibility.iron-wood
+  displayName: Iron and Wood
+  sourceMaterial: {fileID: 11400000, guid: 6e9b1037287eb4247991ce780170a369, type: 2}
+  targetMaterial: {fileID: 11400000, guid: c5f5cc0229e6a6c4b8422813802ef2c5, type: 2}
+  sourceRole: 0
+  targetRole: 0
+  outcome: 1
+  priority: 0
+  durabilityMultiplier: 1
+  message: Iron fittings and wooden structures are compatible in ordinary prototype
+    construction.

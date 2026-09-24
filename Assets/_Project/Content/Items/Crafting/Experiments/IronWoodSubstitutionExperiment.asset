@@ -1,0 +1,77 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdbff0fa203c51c458be975198054ddd, type: 3}
+  m_Name: IronWoodSubstitutionExperiment
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Experimentation.ExperimentDefinition
+  experimentId: experiment.iron-wood-substitution
+  displayName: Iron and Wood Substitution Study
+  description: Tests how changing the balance of iron and wood affects crafted equipment.
+  category: 90
+  defaultPlanMode: 0
+  tags:
+  - experiment.prototype
+  - experiment.crafting
+  supportedTargetTypes:
+  - recipe
+  - material
+  variables:
+  - variableId: variable.material-ratio
+    category: 20
+    targetSubjectId: material.iron
+    valueType: 40
+    unit: count
+    minimumValue: 0.1
+    maximumValue: 10
+    allowedValueIds: []
+    controlValue: 
+    role: 0
+    requiredMeasurementMethodId: 
+    accessPolicyId: 
+    visible: 1
+  requiredControls:
+  - controlId: control.standard-recipe
+    baselineType: recipe
+    baselineReferenceId: recipe.prototype-shield
+    heldVariableIds: []
+    comparisonPolicyId: 
+  requiredObservationMethodIds: []
+  productionRequirementIds:
+  - production-requirement.prototype-workstation
+  procedureTemplateId: procedure.experiment.crafting-comparison
+  accessPolicyId: 
+  secrecyClassification: 
+  provenance: source.prototype.workstation
+  evidencePolicy:
+    minimumTrials: 1
+    independentReproductionThreshold: 1
+    confirmationEvidenceThreshold: 2
+    minimumEvidenceStrength: 500
+    allowDestructiveTesting: 0
+    allowAccidentalOutputs: 1
+    allowAuthoritativeRegistrationProposal: 0
+  reproducibilityPolicy:
+    minimumTrials: 2
+    independentReproductionThreshold: 2
+    confirmationEvidenceThreshold: 2
+    minimumEvidenceStrength: 500
+    allowDestructiveTesting: 0
+    allowAccidentalOutputs: 0
+    allowAuthoritativeRegistrationProposal: 0
+  confirmationPolicy:
+    minimumTrials: 2
+    independentReproductionThreshold: 2
+    confirmationEvidenceThreshold: 2
+    minimumEvidenceStrength: 500
+    allowDestructiveTesting: 0
+    allowAccidentalOutputs: 0
+    allowAuthoritativeRegistrationProposal: 1
+  schemaVersion: 1

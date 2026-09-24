@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53000000000000000000000000000653, type: 3}
+  m_Name: DisassemblySkill
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Skills.SkillDefinition
+  skillId: skill.disassembly
+  displayName: Disassembly
+  description: Learned proficiency at dismantling crafted goods and salvaging broken
+    items while preserving useful components.
+  primaryCategory: {fileID: 11400000, guid: 53200000000000000000000000000053, type: 2}
+  tags: []
+  alphaEnabled: 1
+  naturalLearning:
+    enabled: 1
+    qualifyingEventId: action.item-recovery
+    actionCategory: 800
+    requiredItemCategory: {fileID: 0}
+    requiredItemTag: {fileID: 0}
+    requiredMagicTag: {fileID: 0}
+    requiredActionTag: {fileID: 0}
+    requiredCount: 25
+    grantedStartingGrade: 0
+  defaultNaturalStartingGrade: 0
+  xpThresholds:
+  - fromGrade: 0
+    xpRequired: 25
+  - fromGrade: 1
+    xpRequired: 50
+  - fromGrade: 2
+    xpRequired: 100
+  - fromGrade: 3
+    xpRequired: 200
+  - fromGrade: 4
+    xpRequired: 400
+  - fromGrade: 5
+    xpRequired: 800
+  - fromGrade: 6
+    xpRequired: 1600
+  gradePackages: []
+  abilityUnlocks: []
+  directGrantDefaultGrade: 0

@@ -25,6 +25,7 @@ namespace UnityIsekaiGame.Editor
 
             QualityTierDefinition[] tiers = CreateQualityTiers();
             ItemConditionScaleDefinition scale = CreateConditionScale();
+            CreateItemDegradationPolicy();
             GameDataDefaultsDefinition defaults = CreateDefaults(tiers, scale);
             foreach (string guid in AssetDatabase.FindAssets("t:ItemDefinition", new[] { "Assets/_Project/Content", "Assets/_Project/Prototype/Content" }))
             {
@@ -49,7 +50,7 @@ namespace UnityIsekaiGame.Editor
                 .OrderBy(group => group.Key, StringComparer.Ordinal)
                 .ToArray();
             SerializedObject serialized = new SerializedObject(catalog);
-            serialized.FindProperty("contentVersion").stringValue = "phase-3.group-1.clean-break";
+            serialized.FindProperty("contentVersion").stringValue = "phase-3.group-6.items-crafting-production";
             serialized.FindProperty("defaults").objectReferenceValue = defaults;
             SerializedProperty sections = serialized.FindProperty("sections");
             sections.arraySize = groups.Length;
@@ -118,14 +119,14 @@ namespace UnityIsekaiGame.Editor
             if (asset == null) { asset = ScriptableObject.CreateInstance<ItemConditionScaleDefinition>(); AssetDatabase.CreateAsset(asset, path); }
             var bands = new[]
             {
-                Band("condition.destroyed", "Destroyed", 0f, 0.0001f, 0f, ItemFunctionalState.Destroyed, ItemBreakageState.Destroyed, true),
-                Band("condition.broken", "Broken", 0.0001f, 0.1f, 0f, ItemFunctionalState.Broken, ItemBreakageState.Broken, true),
-                Band("condition.severely-damaged", "Severely Damaged", 0.1f, 0.25f, 0.25f, ItemFunctionalState.PartiallyDisabled, ItemBreakageState.Major, false),
-                Band("condition.damaged", "Damaged", 0.25f, 0.5f, 0.5f, ItemFunctionalState.Impaired, ItemBreakageState.Minor, false),
-                Band("condition.worn", "Worn", 0.5f, 0.7f, 1f, ItemFunctionalState.FullyFunctional, ItemBreakageState.None, false),
-                Band("condition.used", "Used", 0.7f, 0.85f, 1f, ItemFunctionalState.FullyFunctional, ItemBreakageState.None, false),
-                Band("condition.good", "Good", 0.85f, 0.95f, 1f, ItemFunctionalState.FullyFunctional, ItemBreakageState.None, false),
-                Band("condition.pristine", "Pristine", 0.95f, 1f, 1f, ItemFunctionalState.FullyFunctional, ItemBreakageState.None, false)
+                Band("condition.destroyed", "Destroyed", 0f, 0.0001f, 0f, ItemFunctionalState.Destroyed, ItemBreakageState.Destroyed),
+                Band("condition.near-failure", "Near Failure", 0.0001f, 0.1f, 0.1f, ItemFunctionalState.PartiallyDisabled, ItemBreakageState.Major),
+                Band("condition.severely-damaged", "Severely Damaged", 0.1f, 0.25f, 0.25f, ItemFunctionalState.PartiallyDisabled, ItemBreakageState.Major),
+                Band("condition.damaged", "Damaged", 0.25f, 0.5f, 0.5f, ItemFunctionalState.Impaired, ItemBreakageState.Minor),
+                Band("condition.worn", "Worn", 0.5f, 0.7f, 1f, ItemFunctionalState.FullyFunctional, ItemBreakageState.None),
+                Band("condition.used", "Used", 0.7f, 0.85f, 1f, ItemFunctionalState.FullyFunctional, ItemBreakageState.None),
+                Band("condition.good", "Good", 0.85f, 0.95f, 1f, ItemFunctionalState.FullyFunctional, ItemBreakageState.None),
+                Band("condition.pristine", "Pristine", 0.95f, 1f, 1f, ItemFunctionalState.FullyFunctional, ItemBreakageState.None)
             };
             SerializedObject serialized = new SerializedObject(asset);
             serialized.FindProperty("scaleId").stringValue = "condition.scale.standard";
@@ -143,7 +144,6 @@ namespace UnityIsekaiGame.Editor
                 value.FindPropertyRelative("equipmentContribution").floatValue = band.equipmentContribution;
                 value.FindPropertyRelative("functionalState").enumValueIndex = (int)band.functionalState;
                 value.FindPropertyRelative("breakageState").enumValueIndex = (int)band.breakageState;
-                value.FindPropertyRelative("salvageEligible").boolValue = band.salvageEligible;
             }
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(asset);
@@ -167,9 +167,36 @@ namespace UnityIsekaiGame.Editor
             return asset;
         }
 
-        private static ItemConditionBandData Band(string id, string name, float min, float max, float contribution, ItemFunctionalState functional, ItemBreakageState breakage, bool salvage)
+        private static ItemDegradationPolicyDefinition CreateItemDegradationPolicy()
         {
-            return new ItemConditionBandData { bandId = id, displayName = name, minimumNormalized = min, maximumNormalized = max, equipmentContribution = contribution, functionalState = functional, breakageState = breakage, salvageEligible = salvage };
+            string path = $"{GeneratedRoot}/StandardItemDegradationPolicy.asset";
+            ItemDegradationPolicyDefinition asset = AssetDatabase.LoadAssetAtPath<ItemDegradationPolicyDefinition>(path);
+            if (asset == null) { asset = ScriptableObject.CreateInstance<ItemDegradationPolicyDefinition>(); AssetDatabase.CreateAsset(asset, path); }
+            SerializedObject serialized = new SerializedObject(asset);
+            serialized.FindProperty("policyId").stringValue = ItemDegradationPolicyDefinition.StandardPolicyId;
+            serialized.FindProperty("displayName").stringValue = "Standard Item Degradation";
+            serialized.FindProperty("fastDecompositionThreshold").floatValue = ItemDegradationPolicyDefinition.StandardFastThreshold;
+            serialized.FindProperty("immediateDecompositionThreshold").floatValue = ItemDegradationPolicyDefinition.StandardImmediateThreshold;
+            serialized.FindProperty("slowDecompositionSeconds").floatValue = ItemDegradationPolicyDefinition.StandardSlowDurationSeconds;
+            serialized.FindProperty("fastDecompositionSeconds").floatValue = ItemDegradationPolicyDefinition.StandardFastDurationSeconds;
+            serialized.FindProperty("brokenWorldItemsContinueDecay").boolValue = true;
+            ItemBreakChanceEntryData[] breakChances = ItemDegradationPolicyDefinition.CreateStandardBreakChances();
+            SerializedProperty values = serialized.FindProperty("breakChances");
+            values.arraySize = breakChances.Length;
+            for (int i = 0; i < breakChances.Length; i++)
+            {
+                SerializedProperty value = values.GetArrayElementAtIndex(i);
+                value.FindPropertyRelative("durabilityPercent").intValue = breakChances[i].durabilityPercent;
+                value.FindPropertyRelative("breakChance").floatValue = breakChances[i].breakChance;
+            }
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
+        private static ItemConditionBandData Band(string id, string name, float min, float max, float contribution, ItemFunctionalState functional, ItemBreakageState breakage)
+        {
+            return new ItemConditionBandData { bandId = id, displayName = name, minimumNormalized = min, maximumNormalized = max, equipmentContribution = contribution, functionalState = functional, breakageState = breakage };
         }
 
         private static string SectionId(IGameDefinition definition)

@@ -107,7 +107,7 @@ namespace UnityIsekaiGame.Inventory.Composition
                     source = "default.unknown",
                     tags = new[] { "item.composition", "composition.unknown" }
                 },
-                ItemCompositionMutationPurpose.Migration,
+                ItemCompositionMutationPurpose.DefaultInitialization,
                 preview);
         }
 
@@ -132,7 +132,7 @@ namespace UnityIsekaiGame.Inventory.Composition
                 && definition.DefaultCompositionTemplate != null
                 && !definition.DefaultCompositionTemplate.IsEmpty)
             {
-                return SetComposition(itemRuntime, registry, definition.DefaultCompositionTemplate.Instantiate(itemInstanceId, item.ItemDefinitionId), ItemCompositionMutationPurpose.Migration, preview);
+                return SetComposition(itemRuntime, registry, definition.DefaultCompositionTemplate.Instantiate(itemInstanceId, item.ItemDefinitionId), ItemCompositionMutationPurpose.DefaultInitialization, preview);
             }
 
             return CreateUnknownCompositionForItem(itemRuntime, registry, itemInstanceId, preview);
@@ -552,7 +552,7 @@ namespace UnityIsekaiGame.Inventory.Composition
 
             if (!Enum.IsDefined(typeof(MaterialEntryRole), material.role) || !ValidateQuantity(material.quantity))
             {
-                failure = $"Material entry '{material.entryId}' has an invalid role or quantity.";
+                failure = $"Material entry '{material.entryId}' has an invalid role or quantity (role={material.role}, value={material.quantity?.value.ToString("0.####") ?? "null"}, unit={material.quantity?.unit.ToString() ?? "null"}).";
                 return false;
             }
 

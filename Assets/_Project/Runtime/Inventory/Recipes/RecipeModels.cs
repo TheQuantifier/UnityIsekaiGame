@@ -7,6 +7,42 @@ using UnityIsekaiGame.Knowledge.Access;
 namespace UnityIsekaiGame.Inventory.Recipes
 {
     [Serializable]
+    public sealed class RecipeCraftingScalingData
+    {
+        public float baseDurationSeconds = 10f;
+        public float minimumDurationSeconds = 1f;
+        public string[] eligibleSkillIds = Array.Empty<string>();
+        public float unskilledDurationMultiplier = 1.25f;
+        public float durationReductionPerSkillGrade = 0.06f;
+        public float minimumSkillDurationMultiplier = 0.55f;
+        public float rarityDurationMultiplierPerRank = 0.12f;
+        public float statDurationMultiplierPerComplexityPoint = 0.03f;
+        public float unskilledQualityAdjustment = -0.05f;
+        public float qualityBonusPerSkillGrade = 0.04f;
+        public float maximumSkillQualityBonus = 0.35f;
+        public float affixChanceBonusPerSkillGrade = 0.025f;
+
+        public RecipeCraftingScalingData Clone()
+        {
+            return new RecipeCraftingScalingData
+            {
+                baseDurationSeconds = Math.Max(0.1f, baseDurationSeconds),
+                minimumDurationSeconds = Math.Max(0.1f, minimumDurationSeconds),
+                eligibleSkillIds = ProductionStageDefinitionData.NormalizeIds(eligibleSkillIds),
+                unskilledDurationMultiplier = Math.Max(0.1f, unskilledDurationMultiplier),
+                durationReductionPerSkillGrade = Math.Max(0f, durationReductionPerSkillGrade),
+                minimumSkillDurationMultiplier = Math.Max(0.1f, minimumSkillDurationMultiplier),
+                rarityDurationMultiplierPerRank = Math.Max(0f, rarityDurationMultiplierPerRank),
+                statDurationMultiplierPerComplexityPoint = Math.Max(0f, statDurationMultiplierPerComplexityPoint),
+                unskilledQualityAdjustment = Math.Min(0f, unskilledQualityAdjustment),
+                qualityBonusPerSkillGrade = Math.Max(0f, qualityBonusPerSkillGrade),
+                maximumSkillQualityBonus = Math.Max(0f, maximumSkillQualityBonus),
+                affixChanceBonusPerSkillGrade = Math.Max(0f, affixChanceBonusPerSkillGrade)
+            };
+        }
+    }
+
+    [Serializable]
     public sealed class RecipeBatchPolicyData
     {
         public RecipeBatchScalingPolicy scalingPolicy = RecipeBatchScalingPolicy.Fixed;

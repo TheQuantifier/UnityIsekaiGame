@@ -64,10 +64,60 @@ MonoBehaviour:
       projectileVisualPrefab: {fileID: 0}
       damageType: {fileID: 0}
   defaultCompositionTemplate:
-    templateVersionId: template.v1
-    required: 0
-    massAuthority: 0
-    completeness: 0
-    materials: []
-    components: []
-    tags: []
+    templateVersionId: template.group-6.v1
+    required: 1
+    massAuthority: 1
+    completeness: 2
+    materials:
+    - entryId: material.1
+      materialDefinitionId: material.glass
+      sourceItemDefinitionId: 
+      role: 1
+      quantity:
+        value: 0.2
+        unit: 7
+      purity: 1
+      processedForm: 
+      layerIndex: 0
+      componentEntryId: component.main
+      accessPolicyId: 
+      hidden: 0
+      tags:
+      - material.glass
+      - material.brittle
+    - entryId: material.2
+      materialDefinitionId: material.potion-liquid
+      sourceItemDefinitionId: 
+      role: 4
+      quantity:
+        value: 0.8
+        unit: 7
+      purity: 1
+      processedForm: 
+      layerIndex: 0
+      componentEntryId: component.main
+      accessPolicyId: 
+      hidden: 0
+      tags:
+      - material.liquid
+      - material.alchemical
+    components:
+    - componentEntryId: component.main
+      parentComponentEntryId: 
+      componentName: Main Body
+      kind: 1
+      componentItemInstanceId: 
+      componentItemDefinitionId: 
+      materialEntryIds:
+      - material.1
+      - material.2
+      detachable: 0
+      replaceable: 0
+      optional: 0
+      count: 1
+      accessPolicyId: 
+      hidden: 0
+      tags: []
+    tags:
+    - item.composition
+    - composition.authored

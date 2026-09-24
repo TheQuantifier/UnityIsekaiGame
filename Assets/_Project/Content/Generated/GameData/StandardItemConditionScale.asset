@@ -22,15 +22,13 @@ MonoBehaviour:
     equipmentContribution: 0
     functionalState: 5
     breakageState: 4
-    salvageEligible: 1
-  - bandId: condition.broken
-    displayName: Broken
+  - bandId: condition.near-failure
+    displayName: Near Failure
     minimumNormalized: 0.0001
     maximumNormalized: 0.1
-    equipmentContribution: 0
-    functionalState: 4
-    breakageState: 3
-    salvageEligible: 1
+    equipmentContribution: 0.1
+    functionalState: 3
+    breakageState: 2
   - bandId: condition.severely-damaged
     displayName: Severely Damaged
     minimumNormalized: 0.1
@@ -38,7 +36,6 @@ MonoBehaviour:
     equipmentContribution: 0.25
     functionalState: 3
     breakageState: 2
-    salvageEligible: 0
   - bandId: condition.damaged
     displayName: Damaged
     minimumNormalized: 0.25
@@ -46,7 +43,6 @@ MonoBehaviour:
     equipmentContribution: 0.5
     functionalState: 2
     breakageState: 1
-    salvageEligible: 0
   - bandId: condition.worn
     displayName: Worn
     minimumNormalized: 0.5
@@ -54,7 +50,6 @@ MonoBehaviour:
     equipmentContribution: 1
     functionalState: 1
     breakageState: 0
-    salvageEligible: 0
   - bandId: condition.used
     displayName: Used
     minimumNormalized: 0.7
@@ -62,7 +57,6 @@ MonoBehaviour:
     equipmentContribution: 1
     functionalState: 1
     breakageState: 0
-    salvageEligible: 0
   - bandId: condition.good
     displayName: Good
     minimumNormalized: 0.85
@@ -70,7 +64,6 @@ MonoBehaviour:
     equipmentContribution: 1
     functionalState: 1
     breakageState: 0
-    salvageEligible: 0
   - bandId: condition.pristine
     displayName: Pristine
     minimumNormalized: 0.95
@@ -78,4 +71,3 @@ MonoBehaviour:
     equipmentContribution: 1
     functionalState: 1
     breakageState: 0
-    salvageEligible: 0

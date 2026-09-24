@@ -12,7 +12,7 @@ namespace UnityIsekaiGame.Persistence
     public sealed class ItemDurabilityPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const string Key = "world.item-durability";
-        public const int CurrentParticipantSchemaVersion = 1;
+        public const int CurrentParticipantSchemaVersion = 2;
 
         private readonly ItemDurabilityRuntime runtime;
         private readonly ItemInstanceIdentityRuntime itemIdentityRuntime;

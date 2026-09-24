@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PrototypeHelmet
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Inventory.ItemDefinition
   itemId: item.prototype-helmet
-  displayName: Prototype Helmet
+  displayName: Iron Helmet
   description: A test helmet for the Head slot.
   icon: {fileID: 0}
   worldPickupPrefab: {fileID: 0}
@@ -22,7 +22,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 97dbdde00b704771a90d78bab3dbeb7c, type: 2}
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
   rarity: {fileID: 11400000, guid: d4b0d27a07fa46c085d39f87ffff6cbb, type: 2}
-  instanceMode: 1
+  instanceMode: 2
   stackable: 0
   maximumStackSize: 1
   useEffects: []
@@ -63,10 +63,43 @@ MonoBehaviour:
       projectileVisualPrefab: {fileID: 0}
       damageType: {fileID: 0}
   defaultCompositionTemplate:
-    templateVersionId: template.v1
-    required: 0
-    massAuthority: 0
-    completeness: 0
-    materials: []
-    components: []
-    tags: []
+    templateVersionId: template.group-6.v1
+    required: 1
+    massAuthority: 1
+    completeness: 2
+    materials:
+    - entryId: material.1
+      materialDefinitionId: material.iron
+      sourceItemDefinitionId: 
+      role: 1
+      quantity:
+        value: 4
+        unit: 1
+      purity: 1
+      processedForm: 
+      layerIndex: 0
+      componentEntryId: component.main
+      accessPolicyId: 
+      hidden: 0
+      tags:
+      - material.metal
+      - material.iron
+    components:
+    - componentEntryId: component.main
+      parentComponentEntryId: 
+      componentName: Main Body
+      kind: 1
+      componentItemInstanceId: 
+      componentItemDefinitionId: 
+      materialEntryIds:
+      - material.1
+      detachable: 0
+      replaceable: 0
+      optional: 0
+      count: 1
+      accessPolicyId: 
+      hidden: 0
+      tags: []
+    tags:
+    - item.composition
+    - composition.authored

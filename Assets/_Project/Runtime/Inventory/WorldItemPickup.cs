@@ -1,6 +1,9 @@
+using System.Linq;
 using UnityEngine;
+using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Inventory.Durability;
+using UnityIsekaiGame.Inventory.Disassembly;
 using UnityIsekaiGame.Inventory.Identity;
 using UnityIsekaiGame.Inventory.Quality;
 using UnityIsekaiGame.Interaction;
@@ -12,28 +15,42 @@ namespace UnityIsekaiGame.Inventory
         [SerializeField] private ItemDefinition item;
         [SerializeField, Min(1)] private int quantity = 1;
         [SerializeField] private bool disableOnCollected;
+        [SerializeField] private bool salvagePickup;
+        [SerializeField] private string runtimeItemInstanceId;
+        private bool salvageBonusResolved;
 
         public string InteractionPrompt => item == null ? "Pick up" : $"Pick up {quantity} x {item.DisplayName}";
 
         public int Quantity => quantity;
         public ItemDefinition Item => item;
         public bool DisableOnCollected => disableOnCollected;
+        public string RuntimeItemInstanceId => runtimeItemInstanceId ?? string.Empty;
+        public bool IsSalvagePickup => salvagePickup;
 
         private void OnValidate()
         {
             quantity = Mathf.Max(1, quantity);
         }
 
-        public void Configure(ItemDefinition itemDefinition, int pickupQuantity, bool disableWhenCollected = false)
+        public void Configure(ItemDefinition itemDefinition, int pickupQuantity, bool disableWhenCollected = false, bool isSalvagePickup = false)
         {
             item = itemDefinition;
             quantity = Mathf.Max(1, pickupQuantity);
             disableOnCollected = disableWhenCollected;
+            salvagePickup = isSalvagePickup;
+            runtimeItemInstanceId = string.Empty;
+            salvageBonusResolved = false;
+        }
+
+        public void ConfigureTrackedInstance(string itemInstanceId)
+        {
+            runtimeItemInstanceId = itemInstanceId?.Trim() ?? string.Empty;
         }
 
         public void ResetPickupState(int pickupQuantity, bool active)
         {
             quantity = Mathf.Max(1, pickupQuantity);
+            salvageBonusResolved = false;
             gameObject.SetActive(active);
         }
 
@@ -51,17 +68,41 @@ namespace UnityIsekaiGame.Inventory
                 return;
             }
 
-            if (TryCollectSceneAuthoredInstance(context, inventory))
+            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            if (TryCollectTrackedRuntimeInstance(inventory, services) || TryCollectSceneAuthoredInstance(context, inventory))
             {
                 return;
             }
 
+            SalvagePickupCalculation salvage = null;
+            if (!salvageBonusResolved && IsSalvageResourcePickup() && item.InstanceMode != ItemInstanceMode.AlwaysInstanced && services != null)
+            {
+                salvage = services.CalculateSalvagePickup(item, quantity, SalvageSourceId());
+            }
+
+            // Consume only the physical world quantity first. A successful Salvager roll then
+            // grants extra recovered material without ever increasing the amount left on the ground.
             InventoryAddResult result = inventory.AddItemOrInstances(item, quantity);
+            int bonusAdded = 0;
+            if (result.AddedAny && salvage?.BonusApplied == true)
+            {
+                int requestedBonus = result.AddedQuantity * (salvage.QuantityMultiplier - 1);
+                bonusAdded = inventory.AddItemOrInstances(item, requestedBonus).AddedQuantity;
+            }
+            int totalAdded = result.AddedQuantity + bonusAdded;
+
+            if (result.AddedAny && salvage != null)
+            {
+                salvageBonusResolved = true;
+                DisassemblyResult recorded = services.RecordSalvagePickup(item, salvage, result.AddedQuantity, totalAdded, SalvageSourceId());
+                if (!recorded.Succeeded) Debug.LogWarning($"{name} could not record salvage pickup: {recorded.Message}");
+            }
 
             if (result.AddedAll)
             {
-                Debug.Log($"Collected all {result.AddedQuantity} x {item.ItemId} from {name}.");
-                PrototypeHudMessageBus.Show($"Picked up {result.AddedQuantity} x {item.DisplayName}");
+                Debug.Log($"Collected all {totalAdded} x {item.ItemId} from {name}.");
+                string bonus = bonusAdded > 0 ? $" (Salvager bonus: +{bonusAdded})" : string.Empty;
+                PrototypeHudMessageBus.Show($"Picked up {totalAdded} x {item.DisplayName}{bonus}");
                 CompletePickup();
                 return;
             }
@@ -70,12 +111,24 @@ namespace UnityIsekaiGame.Inventory
             {
                 quantity = result.RemainingQuantity;
                 Debug.Log($"Partial pickup from {name}. {quantity} x {item.ItemId} remain in the world.");
-                PrototypeHudMessageBus.Show($"Picked up {result.AddedQuantity} x {item.DisplayName}. Inventory full.");
+                PrototypeHudMessageBus.Show($"Picked up {totalAdded} x {item.DisplayName}. Inventory full.");
                 return;
             }
 
             Debug.Log($"Inventory full. {name} remains in the world with {quantity} x {item.ItemId}.");
             PrototypeHudMessageBus.Show("Inventory full");
+        }
+
+        private bool IsSalvageResourcePickup()
+        {
+            if (salvagePickup) return true;
+            return item != null && (string.Equals(item.PrimaryCategory?.Id, "category.item.material", System.StringComparison.Ordinal)
+                || item.Tags.Any(tag => tag != null && string.Equals(tag.Id, "tag.general.material", System.StringComparison.Ordinal)));
+        }
+
+        private string SalvageSourceId()
+        {
+            return $"salvage-pickup.{gameObject.scene.name}.{transform.GetSiblingIndex()}.{name}.{item?.Id}";
         }
 
         private static PlayerInventory FindInventory(GameObject interactor)
@@ -154,6 +207,31 @@ namespace UnityIsekaiGame.Inventory
             }
 
             Debug.Log($"Collected scene-authored {item.ItemId} instance {itemInstanceId} from {name}.");
+            PrototypeHudMessageBus.Show($"Picked up {item.DisplayName}");
+            CompletePickup();
+            return true;
+        }
+
+        private bool TryCollectTrackedRuntimeInstance(PlayerInventory inventory, PrototypePersistenceServiceBehaviour services)
+        {
+            if (string.IsNullOrWhiteSpace(runtimeItemInstanceId)) return false;
+            if (services == null || !services.ItemIdentities.TryGetSnapshot(runtimeItemInstanceId, out ItemInstanceSnapshot snapshot))
+            {
+                Debug.LogWarning($"{name} could not resolve tracked dropped item '{runtimeItemInstanceId}'.");
+                return true;
+            }
+            if (!inventory.CanAddExistingItemIdentity(item, runtimeItemInstanceId, snapshot.StackQuantity))
+            {
+                PrototypeHudMessageBus.Show("Inventory full");
+                return true;
+            }
+            InventoryInstanceOperationResult result = inventory.AddExistingItemIdentity(item, runtimeItemInstanceId, snapshot.StackQuantity);
+            if (!result.Succeeded)
+            {
+                Debug.LogWarning($"{name} could not collect tracked dropped item '{runtimeItemInstanceId}': {result.Message}");
+                return true;
+            }
+            services.CancelNaturalDecomposition(runtimeItemInstanceId);
             PrototypeHudMessageBus.Show($"Picked up {item.DisplayName}");
             CompletePickup();
             return true;

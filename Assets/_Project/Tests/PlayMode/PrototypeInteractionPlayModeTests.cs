@@ -54,7 +54,7 @@ namespace UnityIsekaiGame.Tests
                 .Where(item => item is IInteractable)
                 .OrderBy(item => HierarchyPath(item.transform))
                 .ToArray();
-            Assert.That(interactables.Length, Is.EqualTo(27));
+            Assert.That(interactables.Length, Is.EqualTo(28));
 
             RaycastHit counterCaptureHit = default;
             Vector3 counterCaptureDirection = Vector3.zero;

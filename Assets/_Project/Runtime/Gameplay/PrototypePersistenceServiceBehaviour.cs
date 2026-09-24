@@ -33,6 +33,7 @@ using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Inventory.Crafting;
 using UnityIsekaiGame.Inventory.Composition;
 using UnityIsekaiGame.Inventory.Durability;
+using UnityIsekaiGame.Inventory.Disassembly;
 using UnityIsekaiGame.Inventory.Experimentation;
 using UnityIsekaiGame.Inventory.Identity;
 using UnityIsekaiGame.Inventory.Production;
@@ -111,7 +112,7 @@ namespace UnityIsekaiGame.Gameplay
         [SerializeField] private string defaultSpawnPointId = "spawn.prototype.default";
         [SerializeField] private string defaultPlayerSpeciesId = "species.human";
         [SerializeField] private bool registerPlayerInventoryEquipment = true;
-        [SerializeField] private bool registerPlayerItemIdentities = true;
+        [SerializeField] private bool registerWorldItemIdentities = true;
         [SerializeField] private bool registerWorldEconomy = true;
         [SerializeField] private bool registerWorldMarkets = true;
         [SerializeField] private bool registerWorldTrades = true;
@@ -132,14 +133,15 @@ namespace UnityIsekaiGame.Gameplay
         [SerializeField] private bool registerWorldLaws = true;
         [SerializeField] private bool registerWorldCrimes = true;
         [SerializeField] private bool registerWorldJustice = true;
-        [SerializeField] private bool registerPlayerItemCompositions = true;
-        [SerializeField] private bool registerPlayerItemQualityAffixes = true;
-        [SerializeField] private bool registerPlayerItemDurability = true;
-        [SerializeField] private bool registerPlayerProductionRequirements = true;
+        [SerializeField] private bool registerWorldItemCompositions = true;
+        [SerializeField] private bool registerWorldItemQualityAffixes = true;
+        [SerializeField] private bool registerWorldItemDurability = true;
+        [SerializeField] private bool registerWorldProductionRequirements = true;
         [SerializeField] private bool registerPlayerRecipeKnowledge = true;
-        [SerializeField] private bool registerPlayerCraftingExecution = true;
-        [SerializeField] private bool registerPlayerProductionWorkflow = true;
-        [SerializeField] private bool registerPlayerExperimentation = true;
+        [SerializeField] private bool registerWorldCraftingExecution = true;
+        [SerializeField] private bool registerWorldItemRecovery = true;
+        [SerializeField] private bool registerWorldProductionWorkflow = true;
+        [SerializeField] private bool registerWorldExperimentation = true;
         [SerializeField] private bool registerPlayerIdentityProgression = true;
         [SerializeField] private bool registerPlayerAttributes = true;
         [SerializeField] private bool registerPlayerSkills = true;
@@ -251,6 +253,7 @@ namespace UnityIsekaiGame.Gameplay
         private ProductionRequirementPersistenceParticipant productionRequirementParticipant;
         private RecipeKnowledgePersistenceParticipant recipeKnowledgeParticipant;
         private CraftingExecutionPersistenceParticipant craftingExecutionParticipant;
+        private DisassemblyPersistenceParticipant disassemblyParticipant;
         private ProductionWorkflowPersistenceParticipant productionWorkflowParticipant;
         private ExperimentationPersistenceParticipant experimentationParticipant;
         private PlayerStatusEffectsPersistenceParticipant statusEffectsParticipant;
@@ -323,6 +326,7 @@ namespace UnityIsekaiGame.Gameplay
         private ProductionRequirementRuntime playerProductionRequirements;
         private RecipeKnowledgeRuntime playerRecipeKnowledge;
         private CraftingExecutionRuntime playerCraftingExecution;
+        private DisassemblyRuntime playerDisassembly;
         private ProductionWorkflowRuntime playerProductionWorkflow;
         private ExperimentationRuntime playerExperimentation;
         private PlayerItemIdentitySynchronizer playerItemIdentitySynchronizer;
@@ -934,6 +938,7 @@ namespace UnityIsekaiGame.Gameplay
         public ProductionRequirementRuntime ProductionRequirements => playerProductionRequirements ??= new ProductionRequirementRuntime();
         public RecipeKnowledgeRuntime RecipeKnowledge => playerRecipeKnowledge ??= new RecipeKnowledgeRuntime();
         public CraftingExecutionRuntime CraftingExecution => playerCraftingExecution ??= new CraftingExecutionRuntime();
+        public DisassemblyRuntime ItemRecovery => playerDisassembly ??= new DisassemblyRuntime();
         public ProductionWorkflowRuntime ProductionWorkflow => playerProductionWorkflow ??= new ProductionWorkflowRuntime();
         public ExperimentationRuntime Experimentation => playerExperimentation ??= new ExperimentationRuntime();
         public DefinitionRegistry ItemQualityDefinitionRegistry => GetDefinitionRegistry();
@@ -946,6 +951,8 @@ namespace UnityIsekaiGame.Gameplay
 
         private void Update()
         {
+            AdvanceGroup6Crafting();
+
             if (memoryMaintenance == null || playTimeTracker == null)
             {
                 return;
@@ -1126,6 +1133,12 @@ namespace UnityIsekaiGame.Gameplay
             {
                 UnregisterParticipant(craftingExecutionParticipant);
                 craftingExecutionParticipant = null;
+            }
+
+            if (playerService != null && disassemblyParticipant != null)
+            {
+                UnregisterParticipant(disassemblyParticipant);
+                disassemblyParticipant = null;
             }
 
             if (playerService != null && productionWorkflowParticipant != null)
@@ -1465,7 +1478,7 @@ namespace UnityIsekaiGame.Gameplay
             EnsureWorldSocialDecisionParticipant();
             EnsurePlayerInformationAccessParticipant();
             EnsurePlayerKnowledgeRecordParticipant();
-            EnsurePlayerItemIdentityParticipant();
+            EnsureWorldItemIdentityParticipant();
             EnsureWorldEconomyParticipant();
             EnsureWorldMarketParticipant();
             EnsureWorldTradeParticipant();
@@ -1487,15 +1500,17 @@ namespace UnityIsekaiGame.Gameplay
             EnsureWorldCrimeParticipant();
             EnsureWorldJusticeParticipant();
             EnsureWorldLocationAndNarrativePersistence();
-            EnsurePlayerItemCompositionParticipant();
-            EnsurePlayerItemQualityAffixParticipant();
-            EnsurePlayerItemDurabilityParticipant();
-            EnsurePlayerProductionRequirementParticipant();
+            EnsureWorldItemCompositionParticipant();
+            EnsureWorldItemQualityAffixParticipant();
+            EnsureWorldItemDurabilityParticipant();
+            EnsureWorldProductionRequirementParticipant();
             EnsurePlayerRecipeKnowledgeParticipant();
-            EnsurePlayerCraftingExecutionParticipant();
-            EnsurePlayerProductionWorkflowParticipant();
-            EnsurePlayerExperimentationParticipant();
+            EnsureWorldCraftingExecutionParticipant();
+            EnsureWorldItemRecoveryParticipant();
+            EnsureWorldProductionWorkflowParticipant();
+            EnsureWorldExperimentationParticipant();
             EnsurePlayerInventoryEquipmentParticipant();
+            EnsureGroup6GameplayRuntime();
             EnsurePlayerStatusEffectsParticipant();
             EnsurePlayerResourcesParticipant();
             EnsurePlayerActorLifecycleParticipant();
@@ -1966,7 +1981,7 @@ namespace UnityIsekaiGame.Gameplay
                 playerEquipment,
                 GetDefinitionRegistry,
                 playerService.PlayerId,
-                registerPlayerItemIdentities ? ItemIdentities : null,
+                registerWorldItemIdentities ? ItemIdentities : null,
                 "prototype.player.inventory-equipment");
 
             RegisterParticipant(inventoryEquipmentParticipant, out string failureReason);
@@ -1977,9 +1992,9 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
-        private void EnsurePlayerItemIdentityParticipant()
+        private void EnsureWorldItemIdentityParticipant()
         {
-            if (!registerPlayerItemIdentities || itemIdentityParticipant != null)
+            if (!registerWorldItemIdentities || itemIdentityParticipant != null)
             {
                 return;
             }
@@ -1987,7 +2002,7 @@ namespace UnityIsekaiGame.Gameplay
             ResolvePlayerPersistenceReferences();
             if (definitionCatalog == null)
             {
-                Debug.LogWarning("Player item identity persistence participant was not registered because no definition catalog is assigned.");
+                Debug.LogWarning("World item identity persistence participant was not registered because no definition catalog is assigned.");
                 return;
             }
 
@@ -2617,23 +2632,23 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
-        private void EnsurePlayerItemCompositionParticipant()
+        private void EnsureWorldItemCompositionParticipant()
         {
-            if (!registerPlayerItemCompositions || itemCompositionParticipant != null)
+            if (!registerWorldItemCompositions || itemCompositionParticipant != null)
             {
                 return;
             }
 
             ResolvePlayerPersistenceReferences();
-            if (!registerPlayerItemIdentities)
+            if (!registerWorldItemIdentities)
             {
-                Debug.LogWarning("Player item composition persistence participant was not registered because item identity persistence is disabled.");
+                Debug.LogWarning("World item composition persistence participant was not registered because item identity persistence is disabled.");
                 return;
             }
 
             if (definitionCatalog == null)
             {
-                Debug.LogWarning("Player item composition persistence participant was not registered because no definition catalog is assigned.");
+                Debug.LogWarning("World item composition persistence participant was not registered because no definition catalog is assigned.");
                 return;
             }
 
@@ -2651,23 +2666,23 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
-        private void EnsurePlayerItemQualityAffixParticipant()
+        private void EnsureWorldItemQualityAffixParticipant()
         {
-            if (!registerPlayerItemQualityAffixes || itemQualityAffixParticipant != null)
+            if (!registerWorldItemQualityAffixes || itemQualityAffixParticipant != null)
             {
                 return;
             }
 
             ResolvePlayerPersistenceReferences();
-            if (!registerPlayerItemIdentities)
+            if (!registerWorldItemIdentities)
             {
-                Debug.LogWarning("Player item quality persistence participant was not registered because item identity persistence is disabled.");
+                Debug.LogWarning("World item quality persistence participant was not registered because item identity persistence is disabled.");
                 return;
             }
 
             if (definitionCatalog == null)
             {
-                Debug.LogWarning("Player item quality persistence participant was not registered because no definition catalog is assigned.");
+                Debug.LogWarning("World item quality persistence participant was not registered because no definition catalog is assigned.");
                 return;
             }
 
@@ -2685,30 +2700,30 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
-        private void EnsurePlayerItemDurabilityParticipant()
+        private void EnsureWorldItemDurabilityParticipant()
         {
-            if (!registerPlayerItemDurability || itemDurabilityParticipant != null)
+            if (!registerWorldItemDurability || itemDurabilityParticipant != null)
             {
                 return;
             }
 
             ResolvePlayerPersistenceReferences();
-            if (!registerPlayerItemIdentities)
+            if (!registerWorldItemIdentities)
             {
-                Debug.LogWarning("Player item durability persistence participant was not registered because item identity persistence is disabled.");
+                Debug.LogWarning("World item durability persistence participant was not registered because item identity persistence is disabled.");
                 return;
             }
 
             if (definitionCatalog == null)
             {
-                Debug.LogWarning("Player item durability persistence participant was not registered because no definition catalog is assigned.");
+                Debug.LogWarning("World item durability persistence participant was not registered because no definition catalog is assigned.");
                 return;
             }
 
             itemDurabilityParticipant = new ItemDurabilityPersistenceParticipant(
                 ItemDurability,
                 ItemIdentities,
-                registerPlayerItemCompositions ? ItemCompositions : null,
+                registerWorldItemCompositions ? ItemCompositions : null,
                 GetDefinitionRegistry,
                 playerService.WorldId);
 
@@ -2747,9 +2762,9 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
-        private void EnsurePlayerProductionRequirementParticipant()
+        private void EnsureWorldProductionRequirementParticipant()
         {
-            if (!registerPlayerProductionRequirements || productionRequirementParticipant != null)
+            if (!registerWorldProductionRequirements || productionRequirementParticipant != null)
             {
                 return;
             }
@@ -2757,7 +2772,7 @@ namespace UnityIsekaiGame.Gameplay
             ResolvePlayerPersistenceReferences();
             if (definitionCatalog == null)
             {
-                Debug.LogWarning("Player production requirement persistence participant was not registered because no definition catalog is assigned.");
+                Debug.LogWarning("World production requirement persistence participant was not registered because no definition catalog is assigned.");
                 return;
             }
 
@@ -2773,23 +2788,23 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
-        private void EnsurePlayerCraftingExecutionParticipant()
+        private void EnsureWorldCraftingExecutionParticipant()
         {
-            if (!registerPlayerCraftingExecution || craftingExecutionParticipant != null)
+            if (!registerWorldCraftingExecution || craftingExecutionParticipant != null)
             {
                 return;
             }
 
             ResolvePlayerPersistenceReferences();
-            if (!registerPlayerItemIdentities || !registerPlayerRecipeKnowledge)
+            if (!registerWorldItemIdentities || !registerPlayerRecipeKnowledge)
             {
-                Debug.LogWarning("Player crafting execution persistence participant was not registered because item identity or recipe persistence is disabled.");
+                Debug.LogWarning("World crafting execution persistence participant was not registered because item identity or player recipe knowledge persistence is disabled.");
                 return;
             }
 
             if (definitionCatalog == null)
             {
-                Debug.LogWarning("Player crafting execution persistence participant was not registered because no definition catalog is assigned.");
+                Debug.LogWarning("World crafting execution persistence participant was not registered because no definition catalog is assigned.");
                 return;
             }
 
@@ -2806,23 +2821,37 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
-        private void EnsurePlayerProductionWorkflowParticipant()
+        private void EnsureWorldItemRecoveryParticipant()
         {
-            if (!registerPlayerProductionWorkflow || productionWorkflowParticipant != null)
+            if (!registerWorldItemRecovery || disassemblyParticipant != null) return;
+            ResolvePlayerPersistenceReferences();
+            if (!registerWorldItemIdentities || !registerWorldItemCompositions || definitionCatalog == null)
+            {
+                Debug.LogWarning("World item recovery persistence was not registered because identity, composition, or definitions are unavailable.");
+                return;
+            }
+            disassemblyParticipant = new DisassemblyPersistenceParticipant(ItemRecovery, GetDefinitionRegistry, playerService.WorldId);
+            RegisterParticipant(disassemblyParticipant, out string failureReason);
+            if (!string.IsNullOrWhiteSpace(failureReason)) { Debug.LogWarning(failureReason); disassemblyParticipant = null; }
+        }
+
+        private void EnsureWorldProductionWorkflowParticipant()
+        {
+            if (!registerWorldProductionWorkflow || productionWorkflowParticipant != null)
             {
                 return;
             }
 
             ResolvePlayerPersistenceReferences();
-            if (!registerPlayerItemIdentities || !registerPlayerProductionRequirements || !registerPlayerCraftingExecution)
+            if (!registerWorldItemIdentities || !registerWorldProductionRequirements || !registerWorldCraftingExecution)
             {
-                Debug.LogWarning("Player production workflow persistence participant was not registered because item identity, production requirement, or crafting execution persistence is disabled.");
+                Debug.LogWarning("World production workflow persistence participant was not registered because item identity, production requirement, or crafting execution persistence is disabled.");
                 return;
             }
 
             if (definitionCatalog == null)
             {
-                Debug.LogWarning("Player production workflow persistence participant was not registered because no definition catalog is assigned.");
+                Debug.LogWarning("World production workflow persistence participant was not registered because no definition catalog is assigned.");
                 return;
             }
 
@@ -2839,23 +2868,23 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
-        private void EnsurePlayerExperimentationParticipant()
+        private void EnsureWorldExperimentationParticipant()
         {
-            if (!registerPlayerExperimentation || experimentationParticipant != null)
+            if (!registerWorldExperimentation || experimentationParticipant != null)
             {
                 return;
             }
 
             ResolvePlayerPersistenceReferences();
-            if (!registerPlayerItemIdentities || !registerPlayerProductionRequirements || !registerPlayerCraftingExecution)
+            if (!registerWorldItemIdentities || !registerWorldProductionRequirements || !registerWorldCraftingExecution)
             {
-                Debug.LogWarning("Player experimentation persistence participant was not registered because item identity, production requirement, or crafting execution persistence is disabled.");
+                Debug.LogWarning("World experimentation persistence participant was not registered because item identity, production requirement, or crafting execution persistence is disabled.");
                 return;
             }
 
             if (definitionCatalog == null)
             {
-                Debug.LogWarning("Player experimentation persistence participant was not registered because no definition catalog is assigned.");
+                Debug.LogWarning("World experimentation persistence participant was not registered because no definition catalog is assigned.");
                 return;
             }
 

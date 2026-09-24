@@ -1,32 +1,50 @@
-# Item Durability, Wear, Repair, Breakage, and Salvage
+# Item Durability, Wear, Repair, and Breakage
 
 Feature 9.4 introduces `ItemDurabilityRuntime` as the authoritative owner of physical item condition.
 
 ## Ownership Boundary
 
-`ItemInstanceIdentityRuntime` still stores the legacy `ItemConditionStateData` field for compatibility, migration, and coarse projections. It is no longer the owner of physical condition. New gameplay systems should read or mutate durability through `ItemDurabilityRuntime`.
+`ItemInstanceIdentityRuntime` owns identity and lifecycle only. Gameplay systems read and mutate physical condition exclusively through `ItemDurabilityRuntime`.
 
 The item runtime ownership model is:
 
 - `ItemInstanceIdentityRuntime`: stable identity, ownership, custody, location, and lifecycle.
 - `ItemCompositionRuntime`: materials, components, and physical structure.
 - `ItemQualityAffixRuntime`: workmanship, quality, defects, rarity, affixes, and stat modifiers.
-- `ItemDurabilityRuntime`: current/max/original durability, wear, damage channels, repair history, breakage, salvage, and functional contribution.
+- `ItemDurabilityRuntime`: current/max/original durability, wear, damage channels, repair history, breakage, and functional contribution.
+- `DisassemblyRuntime`: item recovery operations, component return rolls, and salvage-pickup history.
 
-## Migration
+## Default Initialization
 
-When a durability record is missing, `EnsureDefaultDurability` creates one from the current item instance, composition, and quality state. If an older identity condition exists, its normalized value and condition category seed the new durability record. The identity record is not mutated during this migration.
+When a durability record is missing, `EnsureDefaultDurability` creates one from the current item instance, composition, quality, authored defaults, and material durability. No deprecated condition record is consulted.
 
 ## Gameplay Effects
 
 Damage and wear reduce current durability. Permanent damage also lowers maximum durability relative to original maximum durability. Repair restores current durability but may add permanent capacity loss depending on repair quality.
+
+Below 10%, each whole durability percentage crossed receives one authoritative break roll. The chance rises as structure approaches failure. These values, the critical/immediate thresholds, environmental timers, and broken-drop behavior live in the catalog's `durability-policy.standard` asset rather than on a scene component:
+
+| Durability reached | Break chance |
+|---:|---:|
+| 10% | 5% |
+| 9% | 7% |
+| 8% | 10% |
+| 7% | 14% |
+| 6% | 19% |
+| 5% | 25% |
+
+The percentage cursor and roll sequence persist, so saving/loading cannot repeat a check. A successful roll stops the damage at that percentage and leaves the same item in the Broken state. Broken items remain items rather than silently becoming resources. Repairing above 10% clears the broken state and starts a fresh descent.
+
+Each durability record stores the policy ID that governed it. The runtime resolves that policy from `DefinitionRegistry`, making balance edits data-driven and catalog-validated while retaining deterministic server-authoritative rolls.
+
+If every roll through 5% fails, durability stops at 5% and requests forced natural decomposition. An equipped item is removed and its recovered pieces drop beside the character as Salvager-eligible pickups. Materials from an inventory or storage container remain in that inventory/container. A loose world item produces loose Salvager-eligible pieces at its world position.
 
 Functional state is derived from item and component durability:
 
 - fully functional items contribute normally;
 - impaired and partially disabled items can be scaled by consumers;
 - broken or destroyed items contribute no equipment stat modifiers;
-- salvage marks the durability record as salvaged and can optionally destroy the identity.
+- a completed disassembly closes the durability record through `MarkDestroyedByItemRecovery`; durability does not calculate or create recovered outputs.
 
 ## Components
 
@@ -38,7 +56,7 @@ Durability can be tracked at the item level and at composition component level. 
 
 ## Access Projection
 
-Durability projections expose Step 8 information subjects. Redacted projections can hide repair history, structural weakness, hidden damage, maintenance provenance, and salvage yields while still returning a stable projection object.
+Durability projections expose Step 8 information subjects. Redacted projections can hide repair history, structural weakness, hidden damage, maintenance provenance, and item-recovery yield information while still returning a stable projection object.
 
 ## Test Lab
 
@@ -46,4 +64,4 @@ Feature 9.4 automation runs in the item runtime fixture bundle. The fixture snap
 
 ## Current Limitations
 
-This feature intentionally does not implement full repair stations, tool quality requirements, crafting queues, merchant pricing, or final UI. Those systems should call the durability runtime rather than owning durability state themselves.
+This feature intentionally does not implement full repair stations, tool quality requirements, crafting queues, merchant pricing, or final UI. Item recovery is documented separately in `DisassemblyAndSalvage.md`.

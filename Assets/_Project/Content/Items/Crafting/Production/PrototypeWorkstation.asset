@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90cd155bb165b87428627d1f4fe37fa0, type: 3}
+  m_Name: PrototypeWorkstation
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Production.ProductionStationDefinition
+  stationId: production-station.prototype.workstation
+  displayName: Prototype Workstation
+  description: A shared-world crafting station supporting basic assembly, woodworking,
+    and forging.
+  category: 10
+  capabilityIds:
+  - production-capability.assembly
+  - production-capability.forging
+  - production-capability.woodworking
+  supportedToolRoles: 0a00000032000000
+  concurrentReservationLimit: 1
+  portable: 0
+  priority: 100

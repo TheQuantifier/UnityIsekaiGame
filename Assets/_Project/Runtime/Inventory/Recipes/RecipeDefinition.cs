@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Inventory.Composition;
 using UnityIsekaiGame.Inventory.Production;
+using UnityIsekaiGame.Skills;
 
 namespace UnityIsekaiGame.Inventory.Recipes
 {
@@ -26,6 +27,7 @@ namespace UnityIsekaiGame.Inventory.Recipes
         [SerializeField] private RecipeProcedureStepData[] procedureSteps = Array.Empty<RecipeProcedureStepData>();
         [SerializeField] private string[] recipeRequirementIds = Array.Empty<string>();
         [SerializeField] private RecipeBatchPolicyData batchPolicy = new RecipeBatchPolicyData();
+        [SerializeField] private RecipeCraftingScalingData craftingScaling = new RecipeCraftingScalingData();
         [SerializeField] private string compositionTransferPolicyId;
         [SerializeField] private string qualityGenerationPolicyId;
         [SerializeField] private string affixGenerationPolicyId;
@@ -51,6 +53,7 @@ namespace UnityIsekaiGame.Inventory.Recipes
         public IReadOnlyList<RecipeProcedureStepData> ProcedureSteps => (procedureSteps ?? Array.Empty<RecipeProcedureStepData>()).Select(step => step.Clone()).ToArray();
         public IReadOnlyList<string> RecipeRequirementIds => recipeRequirementIds ?? Array.Empty<string>();
         public RecipeBatchPolicyData BatchPolicy => batchPolicy == null ? new RecipeBatchPolicyData() : batchPolicy.Clone();
+        public RecipeCraftingScalingData CraftingScaling => (craftingScaling ?? new RecipeCraftingScalingData()).Clone();
         public string CompositionTransferPolicyId => compositionTransferPolicyId ?? string.Empty;
         public string QualityGenerationPolicyId => qualityGenerationPolicyId ?? string.Empty;
         public string AffixGenerationPolicyId => affixGenerationPolicyId ?? string.Empty;
@@ -67,6 +70,7 @@ namespace UnityIsekaiGame.Inventory.Recipes
             currentVersionId = currentVersionId?.Trim();
             knowledgeDifficulty = Math.Max(0, knowledgeDifficulty);
             teachingDifficulty = Math.Max(0, teachingDifficulty);
+            craftingScaling = (craftingScaling ?? new RecipeCraftingScalingData()).Clone();
             schemaVersion = Math.Max(1, schemaVersion);
         }
 
@@ -98,6 +102,8 @@ namespace UnityIsekaiGame.Inventory.Recipes
             ValidateProcedure(report);
             ValidateRequirements(report, definitionsById);
             ValidateBatch(report);
+            ValidateCraftingScaling(report, definitionsById);
+            ValidatePolicies(report, definitionsById);
         }
 
         private void ValidateVersions(DefinitionValidationReport report)
@@ -164,6 +170,7 @@ namespace UnityIsekaiGame.Inventory.Recipes
         private void ValidateInputs(DefinitionValidationReport report, IReadOnlyDictionary<string, IGameDefinition> definitionsById)
         {
             HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> componentRoleIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (RecipeInputSpecificationData input in inputs ?? Array.Empty<RecipeInputSpecificationData>())
             {
                 if (input == null || string.IsNullOrWhiteSpace(input.inputId))
@@ -187,6 +194,11 @@ namespace UnityIsekaiGame.Inventory.Recipes
                     report.AddError($"Recipe input '{input.inputId}' must have a positive quantity.");
                 }
 
+                if (!RecipeInputMatcher.HasSelector(input) && input.classification != RecipeInputClassification.StationProvided)
+                {
+                    report.AddError($"Recipe input '{input.inputId}' must identify an item, material, item category, or material category tag.");
+                }
+
                 if (!string.IsNullOrWhiteSpace(input.materialDefinitionId) && (definitionsById == null || !definitionsById.TryGetValue(input.materialDefinitionId, out IGameDefinition material) || material is not MaterialDefinition))
                 {
                     report.AddError($"Recipe input '{input.inputId}' references missing Material definition '{input.materialDefinitionId}'.");
@@ -195,6 +207,34 @@ namespace UnityIsekaiGame.Inventory.Recipes
                 if (!string.IsNullOrWhiteSpace(input.itemDefinitionId) && (definitionsById == null || !definitionsById.TryGetValue(input.itemDefinitionId, out IGameDefinition item) || item is not UnityIsekaiGame.Inventory.ItemDefinition))
                 {
                     report.AddError($"Recipe input '{input.inputId}' references missing Item definition '{input.itemDefinitionId}'.");
+                }
+
+                foreach (string categoryId in input.itemCategoryIds ?? Array.Empty<string>())
+                {
+                    if (definitionsById == null || !definitionsById.TryGetValue(categoryId, out IGameDefinition category) || category is not CategoryDefinition)
+                    {
+                        report.AddError($"Recipe input '{input.inputId}' references missing Item Category definition '{categoryId}'.");
+                    }
+                }
+
+                foreach (string materialTagId in input.materialTagIds ?? Array.Empty<string>())
+                {
+                    if (string.IsNullOrWhiteSpace(materialTagId) || !materialTagId.StartsWith("material.", StringComparison.Ordinal))
+                    {
+                        report.AddError($"Recipe input '{input.inputId}' has invalid material category ID '{materialTagId}'. Expected 'material.<category>'.");
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(input.componentRoleId))
+                {
+                    if (!input.componentRoleId.StartsWith("component.", StringComparison.Ordinal))
+                    {
+                        report.AddError($"Recipe input '{input.inputId}' has invalid component role '{input.componentRoleId}'. Expected 'component.<part>'.");
+                    }
+                    else if (!componentRoleIds.Add(input.componentRoleId))
+                    {
+                        report.AddError($"Recipe '{DisplayName}' assigns component role '{input.componentRoleId}' more than once.");
+                    }
                 }
             }
         }
@@ -240,6 +280,10 @@ namespace UnityIsekaiGame.Inventory.Recipes
         private void ValidateTransferMappings(DefinitionValidationReport report)
         {
             HashSet<string> inputIds = new HashSet<string>((inputs ?? Array.Empty<RecipeInputSpecificationData>()).Where(input => input != null).Select(input => input.inputId), StringComparer.Ordinal);
+            Dictionary<string, RecipeInputSpecificationData> inputsById = (inputs ?? Array.Empty<RecipeInputSpecificationData>())
+                .Where(input => input != null && !string.IsNullOrWhiteSpace(input.inputId))
+                .GroupBy(input => input.inputId, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
             HashSet<string> outputIds = new HashSet<string>((outputs ?? Array.Empty<RecipeOutputSpecificationData>()).Where(output => output != null).Select(output => output.outputId), StringComparer.Ordinal);
             HashSet<string> trackedTargets = new HashSet<string>(StringComparer.Ordinal);
             foreach (RecipeTransferMappingData mapping in transferMappings ?? Array.Empty<RecipeTransferMappingData>())
@@ -258,6 +302,13 @@ namespace UnityIsekaiGame.Inventory.Recipes
                 if (!outputIds.Contains(mapping.targetOutputId ?? string.Empty))
                 {
                     report.AddError($"Recipe transfer '{mapping.mappingId}' references missing output '{mapping.targetOutputId}'.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(mapping.targetComponentId)
+                    && inputsById.TryGetValue(mapping.sourceInputId ?? string.Empty, out RecipeInputSpecificationData sourceInput)
+                    && !string.Equals(mapping.targetComponentId, sourceInput.componentRoleId, StringComparison.Ordinal))
+                {
+                    report.AddError($"Recipe transfer '{mapping.mappingId}' targets component '{mapping.targetComponentId}', but input '{sourceInput.inputId}' is assigned to '{sourceInput.componentRoleId}'.");
                 }
 
                 if (mapping.preserveTrackedComponent && !trackedTargets.Add(mapping.sourceInputId ?? string.Empty))
@@ -357,6 +408,63 @@ namespace UnityIsekaiGame.Inventory.Recipes
             if (policy.baseBatchSize <= 0f || policy.minimumBatchSize <= 0f || policy.maximumBatchSize < policy.minimumBatchSize || policy.batchIncrement <= 0f)
             {
                 report.AddError($"Recipe '{DisplayName}' has invalid batch policy bounds.");
+            }
+        }
+
+        private void ValidateCraftingScaling(DefinitionValidationReport report, IReadOnlyDictionary<string, IGameDefinition> definitionsById)
+        {
+            RecipeCraftingScalingData scaling = CraftingScaling;
+            if (scaling.baseDurationSeconds <= 0f || scaling.minimumDurationSeconds <= 0f || scaling.minimumDurationSeconds > scaling.baseDurationSeconds)
+            {
+                report.AddError($"Recipe '{DisplayName}' has invalid crafting duration bounds.");
+            }
+
+            if (scaling.minimumSkillDurationMultiplier > scaling.unskilledDurationMultiplier)
+            {
+                report.AddError($"Recipe '{DisplayName}' has an invalid skill duration multiplier range.");
+            }
+
+            foreach (string skillId in scaling.eligibleSkillIds)
+            {
+                if (definitionsById == null || !definitionsById.TryGetValue(skillId, out IGameDefinition definition) || definition is not SkillDefinition)
+                {
+                    report.AddError($"Recipe '{DisplayName}' references missing crafting Skill '{skillId}'.");
+                }
+            }
+        }
+
+        private void ValidatePolicies(DefinitionValidationReport report, IReadOnlyDictionary<string, IGameDefinition> definitionsById)
+        {
+            if (definitionsById == null || !definitionsById.Values.OfType<CraftingOutputPolicyDefinition>().Any())
+            {
+                return;
+            }
+
+            ValidatePolicy(CompositionTransferPolicyId, CraftingOutputPolicyKind.CompositionTransfer, "composition", report, definitionsById);
+            ValidatePolicy(QualityGenerationPolicyId, CraftingOutputPolicyKind.QualityGeneration, "quality", report, definitionsById);
+            ValidatePolicy(AffixGenerationPolicyId, CraftingOutputPolicyKind.AffixGeneration, "affix", report, definitionsById);
+            ValidatePolicy(DurabilityInitializationPolicyId, CraftingOutputPolicyKind.DurabilityInitialization, "durability", report, definitionsById);
+        }
+
+        private void ValidatePolicy(
+            string policyId,
+            CraftingOutputPolicyKind expectedKind,
+            string label,
+            DefinitionValidationReport report,
+            IReadOnlyDictionary<string, IGameDefinition> definitionsById)
+        {
+            if (string.IsNullOrWhiteSpace(policyId))
+            {
+                report.AddError($"Recipe '{DisplayName}' is missing its {label} policy.");
+                return;
+            }
+
+            if (definitionsById == null
+                || !definitionsById.TryGetValue(policyId, out IGameDefinition definition)
+                || definition is not CraftingOutputPolicyDefinition policy
+                || policy.Kind != expectedKind)
+            {
+                report.AddError($"Recipe '{DisplayName}' references invalid {label} policy '{policyId}'.");
             }
         }
     }

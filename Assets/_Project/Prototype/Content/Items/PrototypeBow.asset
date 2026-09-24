@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PrototypeBow
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Inventory.ItemDefinition
   itemId: item.prototype-bow
-  displayName: Prototype Bow
+  displayName: Wood Bow with Wood Grip
   description: Prototype ranged weapon for firing Prototype Arrows.
   icon: {fileID: 0}
   worldPickupPrefab: {fileID: 5131536276511148414, guid: ff316209d562d294dbd9b4ede5287034, type: 3}
@@ -21,7 +21,7 @@ MonoBehaviour:
   tags:
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
   rarity: {fileID: 11400000, guid: d4b0d27a07fa46c085d39f87ffff6cbb, type: 2}
-  instanceMode: 1
+  instanceMode: 2
   stackable: 0
   maximumStackSize: 1
   useEffects: []
@@ -62,10 +62,43 @@ MonoBehaviour:
       projectileVisualPrefab: {fileID: 100000, guid: 6ad91d9dd5e64a3e94dfe8e1f0d8f901, type: 3}
       damageType: {fileID: 11400000, guid: c71f22a6780f4ef3a8f1d4c6e4c89d01, type: 2}
   defaultCompositionTemplate:
-    templateVersionId: template.v1
-    required: 0
-    massAuthority: 0
-    completeness: 0
-    materials: []
-    components: []
-    tags: []
+    templateVersionId: template.group-6.v1
+    required: 1
+    massAuthority: 1
+    completeness: 2
+    materials:
+    - entryId: material.1
+      materialDefinitionId: material.wood
+      sourceItemDefinitionId: 
+      role: 1
+      quantity:
+        value: 4
+        unit: 1
+      purity: 1
+      processedForm: 
+      layerIndex: 0
+      componentEntryId: component.main
+      accessPolicyId: 
+      hidden: 0
+      tags:
+      - material.wood
+      - material.organic
+    components:
+    - componentEntryId: component.main
+      parentComponentEntryId: 
+      componentName: Main Body
+      kind: 1
+      componentItemInstanceId: 
+      componentItemDefinitionId: 
+      materialEntryIds:
+      - material.1
+      detachable: 0
+      replaceable: 0
+      optional: 0
+      count: 1
+      accessPolicyId: 
+      hidden: 0
+      tags: []
+    tags:
+    - item.composition
+    - composition.authored

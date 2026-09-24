@@ -1110,7 +1110,12 @@ namespace UnityIsekaiGame.Progression
         {
             if (actorStats != null)
             {
-                foreach (StatModifierSource source in activeStatSources)
+                // Removing a contribution raises stat-change callbacks. Those callbacks can
+                // synchronously rebuild progression and repopulate this set, so detach the
+                // current batch before invoking them to keep cleanup re-entrant safe.
+                StatModifierSource[] sourcesToRemove = activeStatSources.ToArray();
+                activeStatSources.Clear();
+                foreach (StatModifierSource source in sourcesToRemove)
                 {
                     actorStats.RemoveCalculatedStatContributions(source);
                 }

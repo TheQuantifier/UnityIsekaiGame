@@ -21,7 +21,8 @@ Runtime state remains owned by the systems that created it:
 - Item identity owns item instances, ownership, custody, and location.
 - Composition owns item materials and components.
 - Quality owns workmanship and affixes.
-- Durability owns damage, repair, maintenance, salvage, and wear.
+- Durability owns damage, repair, maintenance, and wear.
+- Item recovery owns disassembly and salvage-pickup operation history.
 - Production requirements own only plans, station instances, and reservations.
 
 ## Evaluation Flow

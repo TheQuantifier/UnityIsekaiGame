@@ -103,6 +103,18 @@ namespace UnityIsekaiGame.Equipment
             NotifyStatsChanged();
         }
 
+        public void ConfigureItemRuntimeProvider(MonoBehaviour provider)
+        {
+            UnsubscribeQualityAffixRuntime();
+            UnsubscribeDurabilityRuntime();
+            itemQualityAffixRuntimeProvider = provider;
+            qualityAffixProvider = provider as IItemQualityAffixRuntimeProvider;
+            durabilityProvider = provider as IItemDurabilityRuntimeProvider;
+            SubscribeQualityAffixRuntime();
+            SubscribeDurabilityRuntime();
+            RefreshEquipmentModifiers();
+        }
+
         private void RecalculateEquipmentModifiers()
         {
             RemoveEquipmentModifiers();
@@ -150,13 +162,16 @@ namespace UnityIsekaiGame.Equipment
                 return;
             }
 
+            float qualityFactor = GetQualityContributionFactor(slot);
+            float equipmentFactor = durabilityFactor * qualityFactor;
+
             StatModifierSource source = CreateEquipmentSource(slot.SlotType);
             StatModifiers modifiers = slot.Item.Equipment.StatModifiers;
-            AddFlatEquipmentModifier(source, CalculatedStatIds.MaximumHealth, modifiers.MaximumHealth * durabilityFactor);
-            AddFlatEquipmentModifier(source, CalculatedStatIds.MaximumStamina, modifiers.MaximumStamina * durabilityFactor);
-            AddFlatEquipmentModifier(source, CalculatedStatIds.MaximumMana, modifiers.MaximumMana * durabilityFactor);
-            AddFlatEquipmentModifier(source, CalculatedStatIds.PhysicalPower, modifiers.AttackPower * durabilityFactor);
-            AddFlatEquipmentModifier(source, CalculatedStatIds.PhysicalDefense, modifiers.Defense * durabilityFactor);
+            AddFlatEquipmentModifier(source, CalculatedStatIds.MaximumHealth, modifiers.MaximumHealth * equipmentFactor);
+            AddFlatEquipmentModifier(source, CalculatedStatIds.MaximumStamina, modifiers.MaximumStamina * equipmentFactor);
+            AddFlatEquipmentModifier(source, CalculatedStatIds.MaximumMana, modifiers.MaximumMana * equipmentFactor);
+            AddFlatEquipmentModifier(source, CalculatedStatIds.PhysicalPower, modifiers.AttackPower * equipmentFactor);
+            AddFlatEquipmentModifier(source, CalculatedStatIds.PhysicalDefense, modifiers.Defense * equipmentFactor);
             if (durabilityFactor >= 0.999f)
             {
                 RegisterEquipmentResistanceModifiers(source, slot.Item.Equipment.ResistanceModifiers);
@@ -325,6 +340,25 @@ namespace UnityIsekaiGame.Equipment
 
             IItemDurabilityRuntimeProvider provider = durabilityProvider ?? ResolveQualityAffixProvider() as IItemDurabilityRuntimeProvider;
             return Mathf.Clamp01(provider?.ItemDurability?.GetEquipmentContributionFactor(slot.ItemInstanceId) ?? 1f);
+        }
+
+        private float GetQualityContributionFactor(EquipmentSlotState slot)
+        {
+            if (slot == null || string.IsNullOrWhiteSpace(slot.ItemInstanceId))
+            {
+                return 1f;
+            }
+
+            IItemQualityAffixRuntimeProvider provider = ResolveQualityAffixProvider();
+            if (provider?.ItemQualityAffixes == null
+                || !provider.ItemQualityAffixes.TryGetQualityForItem(slot.ItemInstanceId, out ItemQualitySnapshot quality))
+            {
+                return 1f;
+            }
+
+            // Quality 0.5 preserves authored definition stats. Lower-quality items
+            // lose up to 25%; exceptional items gain up to 25% before affixes.
+            return Mathf.Lerp(0.75f, 1.25f, quality.OverallQuality);
         }
     }
 }

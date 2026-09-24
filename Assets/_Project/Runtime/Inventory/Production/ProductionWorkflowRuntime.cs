@@ -835,7 +835,12 @@ namespace UnityIsekaiGame.Inventory.Production
             return ProductionWorkflowResult.Success("Production job cancelled.", job: job);
         }
 
-        public ProductionWorkflowResult CollectOutputs(string jobId, string destinationId, string worldTime = "")
+        public ProductionWorkflowResult CollectOutputs(
+            string jobId,
+            string destinationInventoryOwnerId,
+            ItemInstanceIdentityRuntime itemRuntime,
+            DefinitionRegistry registry,
+            string worldTime = "")
         {
             if (!jobsById.TryGetValue(jobId ?? string.Empty, out ProductionJobData job))
             {
@@ -852,6 +857,29 @@ namespace UnityIsekaiGame.Inventory.Production
                 return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.CollectionFailed, "Production outputs are not ready for collection.", job: job);
             }
 
+            if (itemRuntime == null || string.IsNullOrWhiteSpace(destinationInventoryOwnerId))
+            {
+                return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.CollectionFailed, "Output collection requires an item runtime and destination inventory owner.", job: job);
+            }
+
+            ItemInstanceRuntimeSaveData itemRollback = itemRuntime.CreateSaveData();
+            foreach (string itemInstanceId in job.outputItemIds ?? Array.Empty<string>())
+            {
+                if (!itemRuntime.TryGetSnapshot(itemInstanceId, out ItemInstanceSnapshot output)
+                    || output.LifecycleState is ItemLifecycleState.Consumed or ItemLifecycleState.Destroyed or ItemLifecycleState.Disassembled)
+                {
+                    itemRuntime.RestoreFromSaveData(itemRollback, registry);
+                    return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.CollectionFailed, $"Output item '{itemInstanceId}' is missing or no longer collectable.", job: job);
+                }
+
+                ItemInstanceOperationResult moved = itemRuntime.SetInventoryLocation(itemInstanceId, destinationInventoryOwnerId);
+                if (!moved.Succeeded)
+                {
+                    itemRuntime.RestoreFromSaveData(itemRollback, registry);
+                    return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.CollectionFailed, moved.Message, job: job);
+                }
+            }
+
             job.outputCollectionState = ProductionOutputCollectionState.Collected;
             job.state = ProductionJobState.Completed;
             job.completionWorldTime = string.IsNullOrWhiteSpace(job.completionWorldTime) ? worldTime ?? string.Empty : job.completionWorldTime;
@@ -863,7 +891,7 @@ namespace UnityIsekaiGame.Inventory.Production
                 workOrder.revision++;
             }
 
-            Touch($"outputs-collected.{job.jobId}.{job.revision}", "OutputsCollected", job.jobId, string.Empty, job.workOrderId, job.batchId, string.Empty, worldTime, $"Outputs collected to '{destinationId}'.");
+            Touch($"outputs-collected.{job.jobId}.{job.revision}", "OutputsCollected", job.jobId, string.Empty, job.workOrderId, job.batchId, string.Empty, worldTime, $"Outputs collected to inventory '{destinationInventoryOwnerId}'.");
             return ProductionWorkflowResult.Success("Production outputs collected.", job: job);
         }
 

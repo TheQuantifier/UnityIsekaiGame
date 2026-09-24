@@ -15,10 +15,14 @@ namespace UnityIsekaiGame.Inventory.Durability
         private readonly Dictionary<string, ItemDurabilityRecordData> recordsById = new Dictionary<string, ItemDurabilityRecordData>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> recordIdByItemId = new Dictionary<string, string>(StringComparer.Ordinal);
         private ItemConditionScaleDefinition conditionScale;
+        private ItemDegradationPolicyDefinition degradationPolicy;
         private long revision;
 
         public long Revision => revision;
         public int Count => recordsById.Count;
+        public ItemDegradationPolicyDefinition DegradationPolicy => degradationPolicy;
+        public float BreakCheckStartNormalized => degradationPolicy?.FastDecompositionThreshold ?? ItemDegradationPolicyDefinition.StandardFastThreshold;
+        public float ForcedDecompositionNormalized => degradationPolicy?.ImmediateDecompositionThreshold ?? ItemDegradationPolicyDefinition.StandardImmediateThreshold;
         public event Action<string> ItemDurabilityStateChanged;
 
         public IReadOnlyList<ItemDurabilitySnapshot> Snapshots => recordsById.Values
@@ -54,7 +58,7 @@ namespace UnityIsekaiGame.Inventory.Durability
             string itemInstanceId,
             bool preview = false)
         {
-            ConfigureConditionScale(registry);
+            ConfigureDefinitions(registry);
             if (TryGetDurabilityForItem(itemInstanceId, out ItemDurabilitySnapshot existing))
             {
                 return ItemDurabilityOperationResult.Success(existing, "Item durability already exists.", preview);
@@ -74,9 +78,11 @@ namespace UnityIsekaiGame.Inventory.Durability
                 durabilityRecordId = RecordId(itemInstanceId),
                 itemInstanceId = itemInstanceId,
                 itemDefinitionId = item.ItemDefinitionId,
+                policyId = degradationPolicy?.Id ?? ItemDegradationPolicyDefinition.StandardPolicyId,
                 currentDurability = Mathf.Clamp(max * normalized, 0f, max),
                 maximumDurability = max,
                 originalMaximumDurability = max,
+                lastBreakCheckPercent = 11,
                 source = ItemDurabilityRecordSource.DefinitionDefault,
                 relatedItemRevision = item.Revision,
                 relatedCompositionRevision = compositionRuntime != null && compositionRuntime.TryGetSnapshotForItem(itemInstanceId, out ItemCompositionSnapshot composition) ? composition.Revision : 0L,
@@ -117,7 +123,7 @@ namespace UnityIsekaiGame.Inventory.Durability
             ItemDurabilityRecordData record,
             bool preview = false)
         {
-            ConfigureConditionScale(registry);
+            ConfigureDefinitions(registry);
             if (itemRuntime == null)
             {
                 return ItemDurabilityOperationResult.Failure(ItemDurabilityOperationStatus.MissingRuntime, "Item identity runtime is missing.");
@@ -177,7 +183,11 @@ namespace UnityIsekaiGame.Inventory.Durability
             }
 
             ItemDurabilityRecordData record = ensured.Snapshot.Data.Clone();
-            record.currentDurability = Mathf.Max(0f, record.currentDurability - amount);
+            float previousNormalized = record.maximumDurability <= 0f ? 1f : record.currentDurability / record.maximumDurability;
+            if (!record.hasBroken)
+            {
+                record.currentDurability = Mathf.Max(0f, record.currentDurability - amount);
+            }
             record.recoverableDamage = Mathf.Max(0f, record.maximumDurability - record.currentDurability);
             if (permanent)
             {
@@ -196,7 +206,9 @@ namespace UnityIsekaiGame.Inventory.Durability
                     return ItemDurabilityOperationResult.Failure(ItemDurabilityOperationStatus.InvalidRequest, $"Durability component '{componentEntryId}' does not exist.");
                 }
 
-                component.currentDurability = Mathf.Max(0f, component.currentDurability - amount);
+                component.currentDurability = record.hasBroken
+                    ? component.currentDurability
+                    : Mathf.Max(0f, component.currentDurability - amount);
                 component.revision++;
                 EvaluateComponent(component);
             }
@@ -212,6 +224,7 @@ namespace UnityIsekaiGame.Inventory.Durability
             channelState.lastSourceId = sourceId ?? string.Empty;
             record.lastDamageWorldTime = sourceId ?? string.Empty;
             record.source = ItemDurabilityRecordSource.Custom;
+            EvaluateBreakChecks(record, previousNormalized);
             EvaluateRecord(record);
             return SetDurabilityRecord(itemRuntime, compositionRuntime, qualityRuntime, registry, record, preview);
         }
@@ -229,6 +242,15 @@ namespace UnityIsekaiGame.Inventory.Durability
             ItemDurabilityOperationResult result = ApplyDamage(itemRuntime, compositionRuntime, qualityRuntime, registry, itemInstanceId, amount, ItemDamageChannel.GeneralWear, sourceId: sourceId, preview: preview);
             if (result.Succeeded && result.Snapshot != null && !preview)
             {
+                if (itemRuntime != null
+                    && itemRuntime.TryGetSnapshot(itemInstanceId, out ItemInstanceSnapshot currentItem)
+                    && currentItem.LifecycleState is ItemLifecycleState.Disassembled or ItemLifecycleState.Destroyed or ItemLifecycleState.Consumed)
+                {
+                    return TryGetDurabilityForItem(itemInstanceId, out ItemDurabilitySnapshot terminalDurability)
+                        ? ItemDurabilityOperationResult.Success(terminalDurability, "Wear triggered terminal item decomposition.")
+                        : result;
+                }
+
                 ItemDurabilityRecordData record = result.Snapshot.Data.Clone();
                 record.wear = Mathf.Min(record.originalMaximumDurability, record.wear + amount);
                 EvaluateRecord(record);
@@ -308,6 +330,19 @@ namespace UnityIsekaiGame.Inventory.Durability
                 EvaluateComponent(component);
             }
 
+            float repairedNormalized = record.maximumDurability <= 0f ? 0f : record.currentDurability / record.maximumDurability;
+            if (repairedNormalized > BreakCheckStartNormalized)
+            {
+                record.hasBroken = false;
+                record.pendingForcedDecomposition = false;
+                record.lastBreakCheckPercent = 11;
+            }
+            else if (!record.hasBroken)
+            {
+                record.pendingForcedDecomposition = false;
+                record.lastBreakCheckPercent = Mathf.Clamp(Mathf.CeilToInt(repairedNormalized * 100f - 0.0001f), 5, 10);
+            }
+
             record.repairHistory.Add(new ItemRepairRecordData
             {
                 repairId = string.IsNullOrWhiteSpace(repairId) ? $"repair.{record.itemInstanceId}.{record.revision + 1L}" : repairId,
@@ -324,25 +359,13 @@ namespace UnityIsekaiGame.Inventory.Durability
             return SetDurabilityRecord(itemRuntime, compositionRuntime, qualityRuntime, registry, record, preview);
         }
 
-        public ItemDurabilityOperationResult PreviewSalvage(string itemInstanceId)
-        {
-            if (!TryGetDurabilityForItem(itemInstanceId, out ItemDurabilitySnapshot snapshot))
-            {
-                return ItemDurabilityOperationResult.Failure(ItemDurabilityOperationStatus.MissingDurability, $"Item durability for '{itemInstanceId}' was not found.");
-            }
-
-            List<ItemSalvageOutputData> outputs = BuildSalvageOutputs(snapshot.Data);
-            return ItemDurabilityOperationResult.Success(snapshot, "Salvage preview prepared.", true, outputs);
-        }
-
-        public ItemDurabilityOperationResult ExecuteSalvage(
+        public ItemDurabilityOperationResult MarkDestroyedByItemRecovery(
             ItemInstanceIdentityRuntime itemRuntime,
             ItemCompositionRuntime compositionRuntime,
             ItemQualityAffixRuntime qualityRuntime,
             DefinitionRegistry registry,
             string itemInstanceId,
-            string sourceId = "",
-            bool destroyIdentity = false)
+            string sourceId = "")
         {
             if (!TryGetDurabilityForItem(itemInstanceId, out ItemDurabilitySnapshot snapshot))
             {
@@ -350,26 +373,19 @@ namespace UnityIsekaiGame.Inventory.Durability
             }
 
             ItemDurabilityRecordData record = snapshot.Data.Clone();
-            List<ItemSalvageOutputData> outputs = BuildSalvageOutputs(record);
-            record.salvageOutputs = outputs;
-            record.salvageState = ItemSalvageState.Salvaged;
             record.functionalState = ItemFunctionalState.Destroyed;
             record.breakageState = ItemBreakageState.Destroyed;
             record.currentDurability = 0f;
             record.conditionBandId = "condition.destroyed";
-            AddRevision(record, "durability.salvage", sourceId, "Item salvaged.");
+            record.source = ItemDurabilityRecordSource.ItemRecovery;
+            AddRevision(record, "durability.item-recovery", sourceId, "Item consumed by item recovery.");
             ItemDurabilityOperationResult set = SetDurabilityRecord(itemRuntime, compositionRuntime, qualityRuntime, registry, record);
             if (!set.Succeeded)
             {
                 return set;
             }
 
-            if (destroyIdentity && itemRuntime != null)
-            {
-                itemRuntime.DestroyOrConsume(itemInstanceId, consumed: false);
-            }
-
-            return ItemDurabilityOperationResult.Success(set.Snapshot, "Item salvaged.", salvageOutputs: outputs);
+            return ItemDurabilityOperationResult.Success(set.Snapshot, "Item durability closed by item recovery.");
         }
 
         public ItemDurabilityProjection Project(string itemInstanceId, InformationAccessDecision decision = null)
@@ -399,8 +415,13 @@ namespace UnityIsekaiGame.Inventory.Durability
                 return 1f;
             }
 
+            if (snapshot.FunctionalState >= ItemFunctionalState.Broken)
+            {
+                return 0f;
+            }
+
             ItemConditionBandData band = ResolveConditionBand(snapshot.NormalizedDurability);
-            return band != null ? Mathf.Clamp01(band.equipmentContribution) : snapshot.FunctionalState >= ItemFunctionalState.Broken ? 0f : 1f;
+            return band != null ? Mathf.Clamp01(band.equipmentContribution) : 1f;
         }
 
         public bool CanShareDurabilityStack(string leftItemInstanceId, string rightItemInstanceId)
@@ -413,6 +434,8 @@ namespace UnityIsekaiGame.Inventory.Durability
 
             return left.ConditionBandId == right.ConditionBandId
                 && left.FunctionalState == right.FunctionalState
+                && left.HasBroken == right.HasBroken
+                && left.PendingForcedDecomposition == right.PendingForcedDecomposition
                 && Math.Abs(left.NormalizedDurability - right.NormalizedDurability) < 0.01f
                 && Math.Abs(left.Data.permanentCapacityLoss - right.Data.permanentCapacityLoss) < 0.01f;
         }
@@ -429,7 +452,7 @@ namespace UnityIsekaiGame.Inventory.Durability
 
         public ItemDurabilityOperationResult RestoreFromSaveData(ItemDurabilityRuntimeSaveData saveData, DefinitionRegistry registry, ItemInstanceIdentityRuntime itemRuntime, ItemCompositionRuntime compositionRuntime = null)
         {
-            ConfigureConditionScale(registry);
+            ConfigureDefinitions(registry);
             if (!ValidateSaveData(saveData, registry, itemRuntime, compositionRuntime, out string failure))
             {
                 return ItemDurabilityOperationResult.Failure(ItemDurabilityOperationStatus.RestoreFailed, failure);
@@ -505,17 +528,23 @@ namespace UnityIsekaiGame.Inventory.Durability
                 record.durabilityRecordId = RecordId(record.itemInstanceId);
             }
 
+            if (string.IsNullOrWhiteSpace(record.policyId))
+            {
+                record.policyId = degradationPolicy?.Id ?? ItemDegradationPolicyDefinition.StandardPolicyId;
+            }
+
             record.maximumDurability = Mathf.Max(1f, record.maximumDurability);
             record.originalMaximumDurability = Mathf.Max(record.maximumDurability, record.originalMaximumDurability);
             record.permanentCapacityLoss = Mathf.Clamp(record.permanentCapacityLoss, 0f, record.originalMaximumDurability - 1f);
             record.maximumDurability = Mathf.Max(1f, record.originalMaximumDurability - record.permanentCapacityLoss);
             record.currentDurability = Mathf.Clamp(record.currentDurability, 0f, record.maximumDurability);
+            record.lastBreakCheckPercent = Mathf.Clamp(record.lastBreakCheckPercent, 1, 11);
+            record.breakCheckSequence = Math.Max(0L, record.breakCheckSequence);
             record.recoverableDamage = Mathf.Max(0f, record.maximumDurability - record.currentDurability);
             record.irrecoverableDamage = record.permanentCapacityLoss;
             record.components ??= new List<ItemComponentDurabilityData>();
             record.damageChannels ??= new List<ItemDamageChannelStateData>();
             record.repairHistory ??= new List<ItemRepairRecordData>();
-            record.salvageOutputs ??= new List<ItemSalvageOutputData>();
             record.revisionHistory ??= new List<ItemDurabilityRevisionData>();
 
             foreach (ItemComponentDurabilityData component in record.components)
@@ -538,36 +567,36 @@ namespace UnityIsekaiGame.Inventory.Durability
 
             float normalized = record.maximumDurability <= 0f ? 0f : record.currentDurability / record.maximumDurability;
             ItemConditionBandData band = ResolveConditionBand(normalized);
-            record.conditionBandId = band?.bandId ?? string.Empty;
-            record.breakageState = band?.breakageState ?? (normalized <= 0f ? ItemBreakageState.Destroyed : ItemBreakageState.None);
+            bool destroyed = normalized <= 0f;
+            bool broken = !destroyed && record.hasBroken;
+            record.conditionBandId = destroyed ? "condition.destroyed" : broken ? "condition.broken" : band?.bandId ?? string.Empty;
+            record.breakageState = destroyed ? ItemBreakageState.Destroyed : broken ? ItemBreakageState.Broken
+                : band != null && band.breakageState >= ItemBreakageState.Broken ? ItemBreakageState.Major : band?.breakageState ?? ItemBreakageState.None;
 
             bool essentialBroken = record.components.Any(component => (component.criticality == ItemComponentCriticality.Critical || component.criticality == ItemComponentCriticality.Essential) && component.functionalState >= ItemFunctionalState.Broken);
-            record.functionalState = record.breakageState == ItemBreakageState.Destroyed
+            record.functionalState = destroyed
                 ? ItemFunctionalState.Destroyed
-                : essentialBroken ? ItemFunctionalState.Broken
-                : band?.functionalState ?? ItemFunctionalState.FullyFunctional;
+                : broken || essentialBroken ? ItemFunctionalState.Broken
+                : band != null && band.functionalState >= ItemFunctionalState.Broken ? ItemFunctionalState.PartiallyDisabled : band?.functionalState ?? ItemFunctionalState.FullyFunctional;
             record.maintenanceState = record.wear > record.originalMaximumDurability * 0.5f
                 ? ItemMaintenanceState.Overdue
                 : record.wear > record.originalMaximumDurability * 0.25f ? ItemMaintenanceState.Due : ItemMaintenanceState.Maintained;
-            record.salvageState = record.salvageState == ItemSalvageState.Salvaged
-                ? ItemSalvageState.Salvaged
-                : (band?.salvageEligible ?? false) || record.breakageState == ItemBreakageState.Broken
-                    ? ItemSalvageState.Eligible
-                    : ItemSalvageState.None;
         }
 
         private void EvaluateComponent(ItemComponentDurabilityData component)
         {
             float normalized = component.maximumDurability <= 0f ? 0f : component.currentDurability / component.maximumDurability;
             ItemConditionBandData band = ResolveConditionBand(normalized);
-            component.breakageState = band?.breakageState ?? (normalized <= 0f ? ItemBreakageState.Destroyed : ItemBreakageState.None);
-            component.functionalState = band?.functionalState ?? (normalized <= 0f ? ItemFunctionalState.Destroyed : ItemFunctionalState.FullyFunctional);
+            bool destroyed = normalized <= 0f;
+            component.breakageState = destroyed ? ItemBreakageState.Destroyed : band != null && band.breakageState >= ItemBreakageState.Broken ? ItemBreakageState.Major : band?.breakageState ?? ItemBreakageState.None;
+            component.functionalState = destroyed ? ItemFunctionalState.Destroyed : band != null && band.functionalState >= ItemFunctionalState.Broken ? ItemFunctionalState.PartiallyDisabled : band?.functionalState ?? ItemFunctionalState.FullyFunctional;
         }
 
-        private void ConfigureConditionScale(DefinitionRegistry registry)
+        private void ConfigureDefinitions(DefinitionRegistry registry)
         {
             conditionScale = registry?.Defaults?.ItemConditionScale as ItemConditionScaleDefinition
                 ?? registry?.DefinitionsById.Values.OfType<ItemConditionScaleDefinition>().OrderBy(scale => scale.Id, StringComparer.Ordinal).FirstOrDefault();
+            degradationPolicy = ItemDegradationPolicyDefinition.Resolve(registry);
         }
 
         private ItemConditionBandData ResolveConditionBand(float normalized)
@@ -615,9 +644,25 @@ namespace UnityIsekaiGame.Inventory.Durability
                 return false;
             }
 
+            bool catalogDefinesDegradationPolicies = registry?.DefinitionsById.Values.OfType<ItemDegradationPolicyDefinition>().Any() == true;
+            if (catalogDefinesDegradationPolicies
+                && (string.IsNullOrWhiteSpace(record.policyId) || !registry.TryGet(record.policyId, out ItemDegradationPolicyDefinition _)))
+            {
+                failure = $"Durability record '{record.durabilityRecordId}' references unknown degradation policy '{record.policyId}'.";
+                return false;
+            }
+
             if (record.maximumDurability <= 0f || record.originalMaximumDurability <= 0f || record.currentDurability < 0f)
             {
                 failure = $"Durability record '{record.durabilityRecordId}' has invalid durability values.";
+                return false;
+            }
+
+            if (record.lastBreakCheckPercent < 1
+                || record.lastBreakCheckPercent > 11
+                || record.breakCheckSequence < 0L)
+            {
+                failure = $"Durability record '{record.durabilityRecordId}' has invalid break-check state.";
                 return false;
             }
 
@@ -679,42 +724,6 @@ namespace UnityIsekaiGame.Inventory.Durability
             return Mathf.Clamp01(properties.WeightedDurabilityPotential <= 0f ? 0.5f : properties.WeightedDurabilityPotential);
         }
 
-        private static List<ItemSalvageOutputData> BuildSalvageOutputs(ItemDurabilityRecordData record)
-        {
-            List<ItemSalvageOutputData> outputs = new List<ItemSalvageOutputData>();
-            float yield = Mathf.Clamp01(record.maximumDurability <= 0f ? 0f : record.currentDurability / record.maximumDurability);
-            if (yield <= 0f)
-            {
-                yield = 0.1f;
-            }
-
-            if (record.components != null && record.components.Count > 0)
-            {
-                foreach (ItemComponentDurabilityData component in record.components.OrderBy(entry => entry.componentEntryId, StringComparer.Ordinal))
-                {
-                    outputs.Add(new ItemSalvageOutputData
-                    {
-                        outputId = $"salvage.{record.itemInstanceId}.{component.componentEntryId}",
-                        itemDefinitionId = record.itemDefinitionId,
-                        quantity = Mathf.Max(0.01f, yield),
-                        unit = "component",
-                        sourceComponentEntryId = component.componentEntryId
-                    });
-                }
-
-                return outputs;
-            }
-
-            outputs.Add(new ItemSalvageOutputData
-            {
-                outputId = $"salvage.{record.itemInstanceId}.base",
-                itemDefinitionId = record.itemDefinitionId,
-                quantity = Mathf.Max(0.01f, yield),
-                unit = "item"
-            });
-            return outputs;
-        }
-
         private static float RepairPenalty(ItemRepairQuality quality, float amount)
         {
             return quality switch
@@ -726,6 +735,66 @@ namespace UnityIsekaiGame.Inventory.Durability
                 ItemRepairQuality.Masterwork => 0f,
                 _ => amount * 0.12f
             };
+        }
+
+        private void EvaluateBreakChecks(ItemDurabilityRecordData record, float previousNormalized)
+        {
+            if (record == null || record.hasBroken || record.pendingForcedDecomposition)
+            {
+                return;
+            }
+
+            float currentNormalized = record.maximumDurability <= 0f ? 0f : record.currentDurability / record.maximumDurability;
+            if (previousNormalized <= currentNormalized || currentNormalized > BreakCheckStartNormalized)
+            {
+                return;
+            }
+
+            int currentPercent = Mathf.Clamp(Mathf.CeilToInt(currentNormalized * 100f - 0.0001f), 0, 100);
+            int firstCheck = Mathf.Min(10, record.lastBreakCheckPercent - 1);
+            int finalCheck = Mathf.Max(5, currentPercent);
+            for (int percent = firstCheck; percent >= finalCheck; percent--)
+            {
+                record.breakCheckSequence++;
+                record.lastBreakCheckPercent = percent;
+                float roll = DeterministicBreakRoll(record.itemInstanceId, percent, record.breakCheckSequence);
+                if (roll < ResolveBreakChanceForPercent(percent))
+                {
+                    record.hasBroken = true;
+                    record.pendingForcedDecomposition = false;
+                    record.currentDurability = Mathf.Max(record.currentDurability, record.maximumDurability * (percent / 100f));
+                    return;
+                }
+            }
+
+            if (currentNormalized <= ForcedDecompositionNormalized)
+            {
+                record.currentDurability = record.maximumDurability * ForcedDecompositionNormalized;
+                record.lastBreakCheckPercent = 5;
+                record.pendingForcedDecomposition = true;
+            }
+        }
+
+        private float ResolveBreakChanceForPercent(int durabilityPercent)
+        {
+            return degradationPolicy != null
+                ? degradationPolicy.BreakChanceForPercent(durabilityPercent)
+                : ItemDegradationPolicyDefinition.StandardBreakChanceForPercent(durabilityPercent);
+        }
+
+        public static float DeterministicBreakRoll(string itemInstanceId, int percent, long sequence)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                string seed = $"{itemInstanceId}|{percent}|{sequence}";
+                for (int i = 0; i < seed.Length; i++)
+                {
+                    hash ^= seed[i];
+                    hash *= 16777619u;
+                }
+                return (hash & 0x00FFFFFFu) / 16777215f;
+            }
         }
 
         private static void AddRevision(ItemDurabilityRecordData record, string operationId, string sourceId, string message)

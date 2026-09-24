@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PrototypeShield
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Inventory.ItemDefinition
   itemId: item.prototype-shield
-  displayName: Prototype Shield
+  displayName: Wood Shield with Iron Rim
   description: A test shield for the Off Hand slot.
   icon: {fileID: 0}
   worldPickupPrefab: {fileID: 0}
@@ -22,7 +22,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8660110, type: 2}
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
   rarity: {fileID: 11400000, guid: d4b0d27a07fa46c085d39f87ffff6cbb, type: 2}
-  instanceMode: 1
+  instanceMode: 2
   stackable: 0
   maximumStackSize: 1
   useEffects: []
@@ -63,10 +63,60 @@ MonoBehaviour:
       projectileVisualPrefab: {fileID: 0}
       damageType: {fileID: 0}
   defaultCompositionTemplate:
-    templateVersionId: template.v1
-    required: 0
-    massAuthority: 0
-    completeness: 0
-    materials: []
-    components: []
-    tags: []
+    templateVersionId: template.group-6.v1
+    required: 1
+    massAuthority: 1
+    completeness: 2
+    materials:
+    - entryId: material.1
+      materialDefinitionId: material.iron
+      sourceItemDefinitionId: 
+      role: 1
+      quantity:
+        value: 3
+        unit: 1
+      purity: 1
+      processedForm: 
+      layerIndex: 0
+      componentEntryId: component.main
+      accessPolicyId: 
+      hidden: 0
+      tags:
+      - material.metal
+      - material.iron
+    - entryId: material.2
+      materialDefinitionId: material.wood
+      sourceItemDefinitionId: 
+      role: 4
+      quantity:
+        value: 2
+        unit: 1
+      purity: 1
+      processedForm: 
+      layerIndex: 0
+      componentEntryId: component.main
+      accessPolicyId: 
+      hidden: 0
+      tags:
+      - material.wood
+      - material.organic
+    components:
+    - componentEntryId: component.main
+      parentComponentEntryId: 
+      componentName: Main Body
+      kind: 1
+      componentItemInstanceId: 
+      componentItemDefinitionId: 
+      materialEntryIds:
+      - material.1
+      - material.2
+      detachable: 0
+      replaceable: 0
+      optional: 0
+      count: 1
+      accessPolicyId: 
+      hidden: 0
+      tags: []
+    tags:
+    - item.composition
+    - composition.authored

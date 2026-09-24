@@ -542,7 +542,7 @@ namespace UnityIsekaiGame.Professions
                 diagnostics.Add("MissingSource");
             }
 
-            if (!string.Equals(source.ActingPersonId, activity.personId, StringComparison.Ordinal) && source.Reference.sourceType != ProfessionalActivitySourceType.SalvageOperation)
+            if (!string.Equals(source.ActingPersonId, activity.personId, StringComparison.Ordinal))
             {
                 diagnostics.Add("SourceActorMismatch");
             }

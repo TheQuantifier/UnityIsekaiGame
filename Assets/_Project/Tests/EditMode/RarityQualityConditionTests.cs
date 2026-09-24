@@ -101,8 +101,7 @@ namespace UnityIsekaiGame.Tests
                 maximumNormalized = maximum,
                 functionalState = state,
                 breakageState = state == ItemFunctionalState.Broken ? ItemBreakageState.Broken : ItemBreakageState.None,
-                equipmentContribution = contribution,
-                salvageEligible = state == ItemFunctionalState.Broken
+                equipmentContribution = contribution
             };
         }
 

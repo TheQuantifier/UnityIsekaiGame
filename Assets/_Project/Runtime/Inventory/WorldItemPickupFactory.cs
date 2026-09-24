@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityIsekaiGame.Inventory.Disassembly;
 
 namespace UnityIsekaiGame.Inventory
 {
@@ -28,6 +29,27 @@ namespace UnityIsekaiGame.Inventory
             }
 
             pickup.Configure(item, quantity);
+            return pickup;
+        }
+
+        public static WorldItemPickup CreateTrackedDrop(
+            ItemDefinition item,
+            int quantity,
+            string itemInstanceId,
+            Vector3 position,
+            Quaternion rotation,
+            Transform parent = null,
+            Material fallbackMaterial = null,
+            bool enableNaturalDecomposition = true)
+        {
+            WorldItemPickup pickup = Create(item, quantity, position, rotation, parent, fallbackMaterial);
+            if (pickup == null) return null;
+            pickup.ConfigureTrackedInstance(itemInstanceId);
+            if (enableNaturalDecomposition)
+            {
+                WorldItemDecomposition decomposition = pickup.GetComponent<WorldItemDecomposition>() ?? pickup.gameObject.AddComponent<WorldItemDecomposition>();
+                decomposition.Configure(itemInstanceId);
+            }
             return pickup;
         }
 

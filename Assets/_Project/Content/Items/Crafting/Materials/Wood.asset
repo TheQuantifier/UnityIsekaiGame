@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ffcc27e04544d8aaeddb48e1633625c, type: 3}
+  m_Name: Wood
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Composition.MaterialDefinition
+  materialId: material.wood
+  displayName: Wood
+  description: Authored wood material used by the Prototype crafting system.
+  category: 2
+  materialTags:
+  - material.wood
+  - material.organic
+  canBeStructural: 1
+  canBeCoating: 0
+  canBeBinding: 1
+  physicalProperties:
+    densityKgPerLiter: 0.7
+    hardness: 0.35
+    durability: 0.55
+    flexibility: 0.75
+    conductivity: 0.1
+    flammability: 0.8
+    biologicalCompatibility: 0.2
+    propertyProfileId: material-profile.wood
+  constituents: []
