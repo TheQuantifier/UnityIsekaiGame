@@ -1482,7 +1482,7 @@ namespace UnityIsekaiGame.Gameplay
             {
                 if (character != null && !character.IsReady)
                 {
-                    character.InitializeFromRegistry(registry, restoring: false, addMissingCore: false);
+                    character.InitializeFromRegistry(registry, restoring: false);
                 }
             }
 
@@ -2792,7 +2792,7 @@ namespace UnityIsekaiGame.Gameplay
 
             DefinitionRegistry registry = GetDefinitionRegistry();
             playerIdentityProgression.ConfigureIdentity(playerService.AccountId, playerService.PlayerId);
-            playerIdentityProgression.RegisterDefinitionCache(registry);
+            playerIdentityProgression.ConfigureDefinitions(registry);
 
             identityProgressionParticipant = new PlayerIdentityProgressionPersistenceParticipant(
                 playerIdentityProgression,
@@ -2848,7 +2848,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            playerAttributes.Configure(GetDefinitionRegistry());
             playerAttributesParticipant = new PlayerAttributesPersistenceParticipant(
                 playerAttributes,
                 playerIdentityProgression,
@@ -2883,7 +2882,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            playerSkills.Configure(GetDefinitionRegistry(), playerCalculatedStats, playerRoot == null ? null : playerRoot.GetComponent<PlayerSpellLoadout>());
             playerSkillsParticipant = new PlayerSkillsPersistenceParticipant(
                 playerSkills,
                 playerIdentityProgression,
@@ -2918,7 +2916,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            playerTraits.Configure(GetDefinitionRegistry(), playerCalculatedStats, playerSkills, playerService.PlayerId);
             playerTraitsParticipant = new PlayerTraitsPersistenceParticipant(
                 playerTraits,
                 playerIdentityProgression,
@@ -2955,7 +2952,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            playerBody.Configure(GetDefinitionRegistry(), ResolvePlayerActorId(), playerIdentityProgression == null ? string.Empty : playerIdentityProgression.PersonId, playerTraits, playerCalculatedStats);
             if (!playerBody.IsReady && !string.IsNullOrWhiteSpace(defaultPlayerSpeciesId))
             {
                 BodyOperationResult defaultAssignment = playerBody.AssignSpecies(defaultPlayerSpeciesId, restoring: false, "Prototype player default Species");
@@ -3989,14 +3985,12 @@ namespace UnityIsekaiGame.Gameplay
             if (definitionCatalog != null)
             {
                 DefinitionRegistry registry = GetDefinitionRegistry();
-                playerAttributes?.Configure(registry);
-                playerCalculatedStats?.Configure(registry, playerAttributes);
-                playerResources?.Configure(registry, playerCalculatedStats, playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId);
-                playerSkills?.Configure(registry, playerCalculatedStats, playerObject == null ? null : playerObject.GetComponent<PlayerSpellLoadout>());
-                playerTraits?.Configure(registry, playerCalculatedStats, playerSkills, playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId);
-                playerActorLifecycle?.Configure(null, playerResources, playerObject == null ? null : playerObject.GetComponent<CharacterSystemCoordinator>(), playerTraits);
+                CharacterSystemCoordinator character = playerObject == null ? null : playerObject.GetComponent<CharacterSystemCoordinator>();
+                if (character != null && !character.IsReady)
+                {
+                    character.InitializeFromRegistry(registry, restoring: false);
+                }
                 playerOngoingEffects?.Configure(playerObject == null ? null : playerObject.GetComponent<CharacterSystemCoordinator>());
-                playerStats?.ConfigureDerivedStats(registry);
                 playerStats?.RefreshEquipmentModifiers();
                 if (playerKnowledge != null && playerIdentityProgression != null)
                 {
@@ -4050,7 +4044,7 @@ namespace UnityIsekaiGame.Gameplay
                 playerIdentityProgression.ConfigureRuntimeReferences(playerStats, worldEntityIdentity, playTimeTracker, overallLevelConfiguration);
                 if (definitionCatalog != null)
                 {
-                    playerIdentityProgression.RegisterDefinitionCache(GetDefinitionRegistry());
+                    playerIdentityProgression.ConfigureDefinitions(GetDefinitionRegistry());
                 }
             }
 
@@ -4101,7 +4095,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            playerResources.Configure(GetDefinitionRegistry(), playerCalculatedStats, playerService.PlayerId);
             playerResourcesParticipant = new PlayerResourcesPersistenceParticipant(
                 playerResources,
                 playerIdentityProgression,
@@ -4131,7 +4124,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            playerActorLifecycle.Configure(null, playerResources, playerRoot == null ? null : playerRoot.GetComponent<CharacterSystemCoordinator>(), playerTraits);
             playerActorLifecycleParticipant = new PlayerActorLifecyclePersistenceParticipant(
                 playerActorLifecycle,
                 playerIdentityProgression,

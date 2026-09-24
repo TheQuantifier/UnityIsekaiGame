@@ -11,7 +11,6 @@ namespace UnityIsekaiGame.Beings
         public ActorProfileInitializationStatus Status { get; }
         public string Message { get; }
         public bool Succeeded => Status == ActorProfileInitializationStatus.InitializedFromProfile
-            || Status == ActorProfileInitializationStatus.InitializedFromLegacyFallback
             || Status == ActorProfileInitializationStatus.AlreadyInitialized;
     }
 }

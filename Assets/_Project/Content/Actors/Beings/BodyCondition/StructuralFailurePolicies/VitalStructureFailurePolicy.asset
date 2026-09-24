@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Beings.Biology.Condition.StructuralFailurePolicyDefinition
   policyId: structural-failure.vital-structure
   displayName: Vital Structure Failure
-  description: Policy marker for future lifecycle integration when a vital structure fails.
+  description: Requests lifecycle pressure evaluation when a vital structure fails.
   failureState: 9
   functionalState: 5
   runtimePresence: 5

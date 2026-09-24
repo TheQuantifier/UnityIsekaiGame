@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -9,6 +10,7 @@ using UnityIsekaiGame.ResourceSystem;
 using UnityIsekaiGame.Stats;
 using UnityIsekaiGame.Traits;
 using UnityIsekaiGame.WorldEntities;
+using Object = UnityEngine.Object;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -50,6 +52,8 @@ namespace UnityIsekaiGame.Tests
             Assert.That(first.Succeeded, Is.True, first.Message);
             Assert.That(first.BecameZero, Is.True);
             Assert.That(fixture.Lifecycle.State, Is.EqualTo(ActorLifecycleState.Unconscious));
+            Assert.That(fixture.Lifecycle.DiedAtUtc, Is.Null);
+            Assert.That(fixture.Lifecycle.RevivalAvailableAtUtc, Is.Null);
             Assert.That(lifecycleEvents, Is.EqualTo(1));
             Assert.That(duplicate.Succeeded, Is.True, duplicate.Message);
             Assert.That(duplicate.Duplicate, Is.True);
@@ -91,24 +95,62 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void DeathAndRevival_UseValidatedResourceTransactions()
+        public void FatalDeath_EnforcesConfiguredRealWorldRevivalWaitAtBoundary()
         {
-            using LifecycleFixture fixture = LifecycleFixture.Create("death-revival");
+            MutableLifecycleClock clock = new MutableLifecycleClock(new DateTimeOffset(2030, 1, 2, 3, 4, 5, TimeSpan.Zero));
+            using LifecycleFixture fixture = LifecycleFixture.Create("death-revival", useStandardPolicy: true, clock: clock);
 
-            ActorLifecycleResult death = fixture.Lifecycle.ExecuteDeath(new LifecycleDeathRequest("tx.lifecycle.death", "test", null, fixture.ActorId, fixture.Owner, LifecycleTriggerKind.ExplicitDeath));
-            ActorLifecycleResult previewRevival = fixture.Lifecycle.PreviewRevival(new LifecycleRevivalRequest(string.Empty, "test", null, fixture.ActorId, fixture.Owner, 20f));
+            ActorLifecycleResult death = fixture.Lifecycle.ExecuteDeath(new LifecycleDeathRequest("tx.lifecycle.death", "test", null, fixture.ActorId, fixture.Owner, LifecycleTriggerKind.FatalInjury));
+            ActorLifecycleResult immediateRevival = fixture.Lifecycle.PreviewRevival(new LifecycleRevivalRequest(string.Empty, "test", null, fixture.ActorId, fixture.Owner, 20f));
 
             Assert.That(death.Succeeded, Is.True, death.Message);
             Assert.That(fixture.Lifecycle.State, Is.EqualTo(ActorLifecycleState.Dead));
             Assert.That(fixture.Health, Is.Zero.Within(0.001f));
-            Assert.That(previewRevival.Succeeded, Is.True, previewRevival.Message);
+            Assert.That(fixture.Lifecycle.DiedAtUtc, Is.EqualTo(clock.UtcNow));
+            Assert.That(fixture.Lifecycle.RevivalAvailableAtUtc, Is.EqualTo(clock.UtcNow.AddHours(1)));
+            Assert.That(fixture.Lifecycle.RevivalWaitRemainingSeconds, Is.EqualTo(3600d).Within(0.001d));
+            Assert.That(immediateRevival.Succeeded, Is.False);
+            Assert.That(immediateRevival.Code, Is.EqualTo(ActorLifecycleResultCode.RevivalWaitActive));
             Assert.That(fixture.Lifecycle.State, Is.EqualTo(ActorLifecycleState.Dead), "Preview must not mutate state.");
+
+            clock.Advance(TimeSpan.FromSeconds(3599));
+            ActorLifecycleResult oneSecondEarly = fixture.Lifecycle.ExecuteRevival(new LifecycleRevivalRequest("tx.lifecycle.revival.early", "test", null, fixture.ActorId, fixture.Owner, 20f));
+            Assert.That(oneSecondEarly.Succeeded, Is.False);
+            Assert.That(oneSecondEarly.Code, Is.EqualTo(ActorLifecycleResultCode.RevivalWaitActive));
+            Assert.That(fixture.Lifecycle.State, Is.EqualTo(ActorLifecycleState.Dead));
+
+            clock.Advance(TimeSpan.FromSeconds(1));
+            ActorLifecycleResult previewRevival = fixture.Lifecycle.PreviewRevival(new LifecycleRevivalRequest(string.Empty, "test", null, fixture.ActorId, fixture.Owner, 20f));
+            Assert.That(previewRevival.Succeeded, Is.True, previewRevival.Message);
 
             ActorLifecycleResult revival = fixture.Lifecycle.ExecuteRevival(new LifecycleRevivalRequest("tx.lifecycle.revival", "test", null, fixture.ActorId, fixture.Owner, 20f));
 
             Assert.That(revival.Succeeded, Is.True, revival.Message);
             Assert.That(fixture.Lifecycle.State, Is.EqualTo(ActorLifecycleState.Active));
             Assert.That(fixture.Health, Is.EqualTo(20f).Within(0.001f));
+            Assert.That(fixture.Lifecycle.DiedAtUtc, Is.Null);
+            Assert.That(fixture.Lifecycle.RevivalAvailableAtUtc, Is.Null);
+        }
+
+        [Test]
+        public void DeadLifecycleSaveData_PersistsAbsoluteRevivalDeadlineAcrossOfflineTime()
+        {
+            MutableLifecycleClock clock = new MutableLifecycleClock(new DateTimeOffset(2031, 2, 3, 4, 5, 6, TimeSpan.Zero));
+            using LifecycleFixture fixture = LifecycleFixture.Create("death-save", useStandardPolicy: true, clock: clock);
+            fixture.Lifecycle.ExecuteDeath(new LifecycleDeathRequest("tx.lifecycle.death-save", "test", null, fixture.ActorId, fixture.Owner, LifecycleTriggerKind.Execution));
+            ActorLifecycleSaveData saveData = fixture.Lifecycle.CreateSaveData("player.local", "person.test");
+
+            Assert.That(saveData.schemaVersion, Is.EqualTo(ActorLifecycleSaveData.CurrentSchemaVersion));
+            Assert.That(saveData.diedAtUtc, Is.Not.Empty);
+            Assert.That(saveData.revivalAvailableAtUtc, Is.Not.Empty);
+
+            clock.Advance(TimeSpan.FromMinutes(30));
+            bool restored = fixture.Lifecycle.RestoreFromSaveData(saveData, "player.local", fixture.ActorId, out string failureReason, restoring: true);
+
+            Assert.That(restored, Is.True, failureReason);
+            Assert.That(fixture.Lifecycle.RevivalWaitRemainingSeconds, Is.EqualTo(1800d).Within(0.001d));
+            clock.Advance(TimeSpan.FromMinutes(30));
+            Assert.That(fixture.Lifecycle.IsRevivalWaitComplete, Is.True);
         }
 
         [Test]
@@ -193,7 +235,7 @@ namespace UnityIsekaiGame.Tests
             public float Health => Resources.GetCurrent(ResourceIds.Health);
             public float MaximumHealth => Resources.GetMaximum(ResourceIds.Health);
 
-            public static LifecycleFixture Create(string id)
+            public static LifecycleFixture Create(string id, bool useStandardPolicy = false, IActorLifecycleUtcClock clock = null)
             {
                 DefinitionRegistry registry = LoadCatalog().CreateRegistry();
                 GameObject owner = new GameObject($"Lifecycle Test {id}");
@@ -203,14 +245,23 @@ namespace UnityIsekaiGame.Tests
                 CharacterAttributes attributes = owner.AddComponent<CharacterAttributes>();
                 CalculatedStatCollection stats = owner.AddComponent<CalculatedStatCollection>();
                 CharacterTraitCollection traits = owner.AddComponent<CharacterTraitCollection>();
+                UnityIsekaiGame.Capabilities.CharacterCapabilityCollection capabilities = owner.AddComponent<UnityIsekaiGame.Capabilities.CharacterCapabilityCollection>();
                 CharacterResourceCollection resources = owner.AddComponent<CharacterResourceCollection>();
                 ActorLifecycleController lifecycle = owner.AddComponent<ActorLifecycleController>();
 
                 attributes.Configure(registry);
                 stats.Configure(registry, attributes);
-                traits.Configure(registry, stats, null, "player.local");
+                capabilities.Configure(registry);
+                traits.Configure(registry, stats, null, capabilities, "player.local");
                 resources.Configure(registry, stats, "player.local");
-                lifecycle.Configure(null, resources, null, traits);
+                DefeatPolicyDefinition policy = null;
+                if (useStandardPolicy)
+                {
+                    Assert.That(registry.TryGet("defeat-policy.living-standard", out policy), Is.True);
+                }
+
+                lifecycle.Configure(policy, resources, null, traits, capabilities);
+                lifecycle.ConfigureUtcClock(clock);
 
                 Assert.That(registry.TryGet("damage.physical", out DamageTypeDefinition damageType), Is.True);
                 return new LifecycleFixture(owner, damageType, resources, lifecycle);
@@ -224,6 +275,21 @@ namespace UnityIsekaiGame.Tests
             public void Dispose()
             {
                 Object.DestroyImmediate(Owner);
+            }
+        }
+
+        private sealed class MutableLifecycleClock : IActorLifecycleUtcClock
+        {
+            public MutableLifecycleClock(DateTimeOffset utcNow)
+            {
+                UtcNow = utcNow.ToUniversalTime();
+            }
+
+            public DateTimeOffset UtcNow { get; private set; }
+
+            public void Advance(TimeSpan duration)
+            {
+                UtcNow = UtcNow.Add(duration);
             }
         }
 

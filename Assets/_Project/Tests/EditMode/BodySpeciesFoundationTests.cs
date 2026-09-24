@@ -4,6 +4,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityIsekaiGame.Beings.Biology;
+using UnityIsekaiGame.ActorLifecycle;
 using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.GameData;
@@ -72,8 +73,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(snapshot.CanDie, Is.True);
             Assert.That(snapshot.SpeciesOwnedTraits.Select(trait => trait.TraitId), Does.Contain("trait.living"));
             Assert.That(snapshot.BiologicalStatContributions.Select(contribution => contribution.SourceId), Does.Contain("species.human"));
-            Assert.That(snapshot.BiologicalCapabilities.Select(capability => capability.CapabilityId), Does.Contain("can.die"));
-            Assert.That(snapshot.BiologicalCapabilities.Select(capability => capability.CapabilityId), Does.Not.Contain("capability.can.die"));
+            Assert.That(snapshot.BiologicalCapabilities.Select(capability => capability.CapabilityId), Does.Contain("capability.can.die"));
 
             long revision = body.BodyRevision;
             BodyOperationResult duplicate = body.AssignSpecies("species.human");
@@ -91,10 +91,11 @@ namespace UnityIsekaiGame.Tests
             ConfigureSubsystems(owner, registry, "actor.runtime.test.aggregate", "person.test");
             ActorBodyRuntime body = owner.GetComponent<ActorBodyRuntime>();
             CharacterTraitCollection traits = owner.GetComponent<CharacterTraitCollection>();
+            CharacterCapabilityCollection capabilities = owner.GetComponent<CharacterCapabilityCollection>();
 
-            Assert.That(traits.Capabilities.Add(new RuntimeCapabilityContribution
+            Assert.That(capabilities.Add(new RuntimeCapabilityContribution
             {
-                capabilityId = "can.die",
+                capabilityId = ActorLifecycleCapabilityIds.CanDie,
                 valueType = (int)CapabilityValueType.Boolean,
                 boolValue = true,
                 aggregationPolicy = (int)CapabilityAggregationPolicy.BooleanAny,
@@ -104,14 +105,14 @@ namespace UnityIsekaiGame.Tests
             }), Is.True);
 
             Assert.That(body.AssignSpecies("species.human").Succeeded, Is.True);
-            AssertCanDieSources(traits, expectedCount: 2, requiredSource: "test.external-source", forbiddenSource: string.Empty);
+            AssertCanDieSources(capabilities, expectedCount: 2, requiredSource: "test.external-source", forbiddenSource: string.Empty);
 
             Assert.That(body.AssignSpecies("species.human").Duplicate, Is.True);
-            AssertCanDieSources(traits, expectedCount: 2, requiredSource: "test.external-source", forbiddenSource: string.Empty);
+            AssertCanDieSources(capabilities, expectedCount: 2, requiredSource: "test.external-source", forbiddenSource: string.Empty);
 
             Assert.That(body.AssignSpecies("species.basic-spirit").Succeeded, Is.True);
             AssertCanDieSources(
-                traits,
+                capabilities,
                 expectedCount: 2,
                 requiredSource: "test.external-source",
                 forbiddenSource: "body.species.actor.runtime.test.aggregate.species.human");
@@ -215,7 +216,7 @@ namespace UnityIsekaiGame.Tests
 
             ConfigureSubsystems(owner, registry, "actor.runtime.query", "person.query");
             Assert.That(body.AssignSpecies("species.basic-spirit").Succeeded, Is.True);
-            Assert.That(coordinator.InitializeFromRegistry(registry, false, false), Is.True);
+            Assert.That(coordinator.InitializeFromRegistry(registry, false), Is.True);
 
             CharacterQueryService query = coordinator.Query;
             Assert.That(query.IsBodyReady(), Is.True);
@@ -240,6 +241,7 @@ namespace UnityIsekaiGame.Tests
             owner.AddComponent<CharacterAttributes>();
             owner.AddComponent<CalculatedStatCollection>();
             owner.AddComponent<CharacterTraitCollection>();
+            owner.AddComponent<CharacterCapabilityCollection>();
             owner.AddComponent<ActorBodyRuntime>();
             return owner;
         }
@@ -249,12 +251,14 @@ namespace UnityIsekaiGame.Tests
             CharacterAttributes attributes = owner.GetComponent<CharacterAttributes>();
             CalculatedStatCollection stats = owner.GetComponent<CalculatedStatCollection>();
             CharacterTraitCollection traits = owner.GetComponent<CharacterTraitCollection>();
+            CharacterCapabilityCollection capabilities = owner.GetComponent<CharacterCapabilityCollection>();
             ActorBodyRuntime body = owner.GetComponent<ActorBodyRuntime>();
 
             attributes.Configure(registry);
             stats.Configure(registry, attributes);
-            traits.Configure(registry, stats, null, personId);
-            body.Configure(registry, actorBodyId, personId, traits, stats);
+            capabilities.Configure(registry);
+            traits.Configure(registry, stats, null, capabilities, personId);
+            body.Configure(registry, actorBodyId, personId, traits, stats, capabilityCollection: capabilities);
         }
 
         private static DefinitionRegistry LoadRegistry()
@@ -277,9 +281,9 @@ namespace UnityIsekaiGame.Tests
             Assert.That(definition, Is.Not.Null);
         }
 
-        private static void AssertCanDieSources(CharacterTraitCollection traits, int expectedCount, string requiredSource, string forbiddenSource)
+        private static void AssertCanDieSources(CharacterCapabilityCollection capabilities, int expectedCount, string requiredSource, string forbiddenSource)
         {
-            CapabilitySnapshot snapshot = traits.Capabilities.Evaluate("can.die");
+            CapabilitySnapshot snapshot = capabilities.Evaluate(ActorLifecycleCapabilityIds.CanDie);
             Assert.That(snapshot.BooleanValue, Is.True);
             Assert.That(snapshot.Sources, Has.Count.EqualTo(expectedCount));
             Assert.That(snapshot.Sources.Any(source => source.sourceId == requiredSource), Is.True);

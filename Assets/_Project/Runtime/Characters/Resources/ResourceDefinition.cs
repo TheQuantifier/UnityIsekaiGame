@@ -19,7 +19,7 @@ namespace UnityIsekaiGame.ResourceSystem
         [SerializeField] private ResourceCategoryKind resourceCategory = ResourceCategoryKind.Vital;
         [SerializeField] private CalculatedStatDefinition linkedMaximumStat;
         [SerializeField, Min(0f)] private float minimumValue;
-        [SerializeField, Min(0f)] private float developmentMaximumFallback = 100f;
+        [SerializeField, Min(0f)] private float defaultMaximum = 100f;
         [SerializeField] private ResourceInitializationPolicy initializationPolicy = ResourceInitializationPolicy.Full;
         [SerializeField, Min(0f)] private float initialFixedValue;
         [SerializeField, Range(0f, 1f)] private float initialPercentageOfMaximum = 1f;
@@ -39,9 +39,8 @@ namespace UnityIsekaiGame.ResourceSystem
         [SerializeField] private bool overfillAllowed;
         [SerializeField] private bool underflowAllowed;
         [SerializeField] private ResourcePersistencePolicy persistencePolicy = ResourcePersistencePolicy.Persist;
-        [SerializeField] private ResourceAuthorityKind authority = ResourceAuthorityKind.ServerAuthoritativeFuture;
+        [SerializeField] private ResourceAuthorityKind authority = ResourceAuthorityKind.ServerAuthoritative;
         [SerializeField] private string uiColor = "#FFFFFF";
-        [SerializeField, TextArea] private string futureMetadata;
 
         public string Id => resourceId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
@@ -54,7 +53,7 @@ namespace UnityIsekaiGame.ResourceSystem
         public CalculatedStatDefinition LinkedMaximumStat => linkedMaximumStat;
         public string LinkedMaximumStatId => linkedMaximumStat == null ? string.Empty : linkedMaximumStat.Id;
         public float MinimumValue => Mathf.Max(0f, minimumValue);
-        public float DevelopmentMaximumFallback => Mathf.Max(MinimumValue, developmentMaximumFallback);
+        public float DefaultMaximum => Mathf.Max(MinimumValue, defaultMaximum);
         public ResourceInitializationPolicy InitializationPolicy => initializationPolicy;
         public float InitialFixedValue => initialFixedValue;
         public float InitialPercentageOfMaximum => Mathf.Clamp01(initialPercentageOfMaximum);
@@ -76,12 +75,11 @@ namespace UnityIsekaiGame.ResourceSystem
         public ResourcePersistencePolicy PersistencePolicy => persistencePolicy;
         public ResourceAuthorityKind Authority => authority;
         public string UiColor => uiColor ?? string.Empty;
-        public string FutureMetadata => futureMetadata ?? string.Empty;
 
         private void OnValidate()
         {
             minimumValue = Mathf.Max(0f, minimumValue);
-            developmentMaximumFallback = Mathf.Max(minimumValue, developmentMaximumFallback);
+            defaultMaximum = Mathf.Max(minimumValue, defaultMaximum);
             initialFixedValue = Mathf.Max(0f, initialFixedValue);
             initialPercentageOfMaximum = Mathf.Clamp01(initialPercentageOfMaximum);
             regenerationPerSecond = Mathf.Max(0f, regenerationPerSecond);
@@ -129,9 +127,9 @@ namespace UnityIsekaiGame.ResourceSystem
                     report.AddError($"Resource '{DisplayName}' links calculated stat '{linkedMaximumStat.Id}', but that stat is not classified as ResourceMaximum.");
                 }
 
-                if (!string.Equals(linkedMaximumStat.LinkedFutureResourceId, Id, StringComparison.Ordinal))
+                if (!string.Equals(linkedMaximumStat.LinkedResourceId, Id, StringComparison.Ordinal))
                 {
-                    report.AddError($"Resource '{DisplayName}' ID '{Id}' does not match linked maximum stat resource link '{linkedMaximumStat.LinkedFutureResourceId}'.");
+                    report.AddError($"Resource '{DisplayName}' ID '{Id}' does not match linked maximum stat resource link '{linkedMaximumStat.LinkedResourceId}'.");
                 }
             }
 

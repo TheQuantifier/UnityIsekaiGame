@@ -25,7 +25,7 @@ MonoBehaviour:
   startingAttributeGrants:
   - attribute: {fileID: 11400000, guid: a9000000000000000000000000000052, type: 2}
     amount: 2
-  influencedGiftPool:
+  favoredGiftPool:
   - {fileID: 11400000, guid: 9886ab69802e43ebbaa24675354f2a01, type: 2}
   - {fileID: 11400000, guid: 3b607dff9a9c4f109cf9798f37ae830c, type: 2}
   giftWeightModifiers: []
@@ -58,7 +58,3 @@ MonoBehaviour:
     customContextTargetId: 
     acquisitionReason: Court record
   startingTitle: {fileID: 0}
-  futureHomeReference: royal-guest-quarter
-  futureRelationshipReferences: court-sponsor-placeholder
-  futureFactionObligations: royal-summons-obligation-placeholder
-  futureStartingLocationReference: place.prototype-town

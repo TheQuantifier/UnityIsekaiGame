@@ -335,6 +335,7 @@ namespace UnityIsekaiGame.Tests
             owner.AddComponent<CalculatedStatCollection>();
             owner.AddComponent<CharacterResourceCollection>();
             owner.AddComponent<CharacterTraitCollection>();
+            owner.AddComponent<UnityIsekaiGame.Capabilities.CharacterCapabilityCollection>();
             WorldEntityIdentity identity = owner.AddComponent<WorldEntityIdentity>();
             owner.AddComponent<ActorBodyRuntime>();
 
@@ -342,14 +343,16 @@ namespace UnityIsekaiGame.Tests
             CalculatedStatCollection stats = owner.GetComponent<CalculatedStatCollection>();
             CharacterResourceCollection resources = owner.GetComponent<CharacterResourceCollection>();
             CharacterTraitCollection traits = owner.GetComponent<CharacterTraitCollection>();
+            UnityIsekaiGame.Capabilities.CharacterCapabilityCollection capabilities = owner.GetComponent<UnityIsekaiGame.Capabilities.CharacterCapabilityCollection>();
             ActorBodyRuntime body = owner.GetComponent<ActorBodyRuntime>();
 
             Assert.That(identity.TrySetAuthoredIdentity(actorBodyId.Replace('.', '-'), "scene.test", PersistenceScope.RegionOrScene, "test.biological-condition", out string identityFailure), Is.True, identityFailure);
             attributes.Configure(registry);
             stats.Configure(registry, attributes);
             resources.Configure(registry, stats, personId);
-            traits.Configure(registry, stats, null, personId);
-            body.Configure(registry, actorBodyId, personId, traits, stats);
+            capabilities.Configure(registry);
+            traits.Configure(registry, stats, null, capabilities, personId);
+            body.Configure(registry, actorBodyId, personId, traits, stats, capabilityCollection: capabilities);
             return body;
         }
 

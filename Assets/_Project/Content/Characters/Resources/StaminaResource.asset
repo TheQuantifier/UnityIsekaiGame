@@ -21,7 +21,7 @@ MonoBehaviour:
   resourceCategory: 3
   linkedMaximumStat: {fileID: 11400000, guid: c8000000000000000000000000000052, type: 2}
   minimumValue: 0
-  developmentMaximumFallback: 100
+  defaultMaximum: 100
   initializationPolicy: 0
   initialFixedValue: 0
   initialPercentageOfMaximum: 1
@@ -43,4 +43,3 @@ MonoBehaviour:
   persistencePolicy: 0
   authority: 1
   uiColor: '#D6B24A'
-  futureMetadata: Prototype Stamina is local-only for now. Multiplayer resource authority is reserved for server-owned runtime state.

@@ -15,7 +15,7 @@ MonoBehaviour:
   transmissionProfileId: transmission.biology.prototype-contact
   displayName: Prototype Contact Transmission
   description: Fictional contact transmission fixture for dormant spores.
-  conditionDefinitionId: condition.biology.prototype-dormant-spores
+  conditionDefinition: {fileID: 11400000, guid: 7a79000000000000000000000000011a, type: 2}
   transmissionMode: 1
   exposureRoute: 1
   transferredDose: 2

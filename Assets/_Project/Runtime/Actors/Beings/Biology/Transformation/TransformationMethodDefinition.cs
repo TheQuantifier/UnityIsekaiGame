@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Beings.Biology.Compatibility;
+using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.GameData;
 
 namespace UnityIsekaiGame.Beings.Biology.Transformation
@@ -13,14 +14,14 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
         [SerializeField] private string methodId;
         [SerializeField] private string displayName;
         [SerializeField, TextArea(2, 5)] private string description;
-        [SerializeField] private string biologicalInteractionDefinitionId;
+        [SerializeField] private BiologicalInteractionDefinition biologicalInteractionDefinition;
         [SerializeField] private TransformationCategory category = TransformationCategory.Unknown;
         [SerializeField] private bool temporary;
         [SerializeField, Min(0f)] private float defaultDurationSeconds;
-        [SerializeField] private string[] allowedTargetSpeciesIds = Array.Empty<string>();
-        [SerializeField] private string[] allowedTargetBodyFormIds = Array.Empty<string>();
-        [SerializeField] private string[] requiredRuntimeCapabilityKeys = Array.Empty<string>();
-        [SerializeField] private string[] blockingRuntimeCapabilityKeys = Array.Empty<string>();
+        [SerializeField] private SpeciesDefinition[] allowedTargetSpecies = Array.Empty<SpeciesDefinition>();
+        [SerializeField] private BodyFormDefinition[] allowedTargetBodyForms = Array.Empty<BodyFormDefinition>();
+        [SerializeField] private CapabilityDefinition[] requiredCapabilities = Array.Empty<CapabilityDefinition>();
+        [SerializeField] private CapabilityDefinition[] blockingCapabilities = Array.Empty<CapabilityDefinition>();
         [SerializeField] private TransformationTransferPolicy transferPolicy = TransformationTransferPolicy.TransferPersonOwnedOnly;
         [SerializeField] private TransformationReconciliationPolicy anatomyPolicy = TransformationReconciliationPolicy.Rebuild;
         [SerializeField] private TransformationReconciliationPolicy conditionPolicy = TransformationReconciliationPolicy.Clear;
@@ -40,14 +41,19 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
         public string Id => methodId ?? string.Empty;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public string Description => description ?? string.Empty;
-        public string BiologicalInteractionDefinitionId => biologicalInteractionDefinitionId ?? string.Empty;
+        public BiologicalInteractionDefinition BiologicalInteractionDefinition => biologicalInteractionDefinition;
+        public string BiologicalInteractionDefinitionId => biologicalInteractionDefinition == null ? string.Empty : biologicalInteractionDefinition.Id;
         public TransformationCategory Category => category;
         public bool Temporary => temporary;
         public float DefaultDurationSeconds => Mathf.Max(0f, defaultDurationSeconds);
-        public IReadOnlyList<string> AllowedTargetSpeciesIds => allowedTargetSpeciesIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> AllowedTargetBodyFormIds => allowedTargetBodyFormIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> RequiredRuntimeCapabilityKeys => requiredRuntimeCapabilityKeys ?? Array.Empty<string>();
-        public IReadOnlyList<string> BlockingRuntimeCapabilityKeys => blockingRuntimeCapabilityKeys ?? Array.Empty<string>();
+        public IReadOnlyList<SpeciesDefinition> AllowedTargetSpecies => allowedTargetSpecies ?? Array.Empty<SpeciesDefinition>();
+        public IReadOnlyList<BodyFormDefinition> AllowedTargetBodyForms => allowedTargetBodyForms ?? Array.Empty<BodyFormDefinition>();
+        public IReadOnlyList<CapabilityDefinition> RequiredCapabilities => requiredCapabilities ?? Array.Empty<CapabilityDefinition>();
+        public IReadOnlyList<CapabilityDefinition> BlockingCapabilities => blockingCapabilities ?? Array.Empty<CapabilityDefinition>();
+        public IReadOnlyList<string> AllowedTargetSpeciesIds => AllowedTargetSpecies.Select(definition => definition.Id).ToArray();
+        public IReadOnlyList<string> AllowedTargetBodyFormIds => AllowedTargetBodyForms.Select(definition => definition.Id).ToArray();
+        public IReadOnlyList<string> RequiredRuntimeCapabilityKeys => RequiredCapabilities.Select(definition => definition.Id).ToArray();
+        public IReadOnlyList<string> BlockingRuntimeCapabilityKeys => BlockingCapabilities.Select(definition => definition.Id).ToArray();
         public TransformationTransferPolicy TransferPolicy => transferPolicy;
         public TransformationReconciliationPolicy AnatomyPolicy => anatomyPolicy;
         public TransformationReconciliationPolicy ConditionPolicy => conditionPolicy;
@@ -68,12 +74,11 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
         {
             methodId = methodId?.Trim();
             displayName = displayName?.Trim();
-            biologicalInteractionDefinitionId = biologicalInteractionDefinitionId?.Trim();
             defaultDurationSeconds = Mathf.Max(0f, defaultDurationSeconds);
-            allowedTargetSpeciesIds = Normalize(allowedTargetSpeciesIds);
-            allowedTargetBodyFormIds = Normalize(allowedTargetBodyFormIds);
-            requiredRuntimeCapabilityKeys = Normalize(requiredRuntimeCapabilityKeys);
-            blockingRuntimeCapabilityKeys = Normalize(blockingRuntimeCapabilityKeys);
+            allowedTargetSpecies = Normalize(allowedTargetSpecies);
+            allowedTargetBodyForms = Normalize(allowedTargetBodyForms);
+            requiredCapabilities = Normalize(requiredCapabilities);
+            blockingCapabilities = Normalize(blockingCapabilities);
         }
 
         public bool AllowsTargetSpecies(string speciesId)
@@ -107,10 +112,10 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
                 report.AddError($"TransformationMethodDefinition '{DisplayName}' has an invalid category.");
             }
 
-            if (string.IsNullOrWhiteSpace(BiologicalInteractionDefinitionId)
+            if (biologicalInteractionDefinition == null
                 || definitionsById == null
                 || !definitionsById.TryGetValue(BiologicalInteractionDefinitionId, out IGameDefinition interaction)
-                || interaction is not BiologicalInteractionDefinition)
+                || !ReferenceEquals(interaction, biologicalInteractionDefinition))
             {
                 report.AddError($"TransformationMethodDefinition '{DisplayName}' references missing Biological Interaction '{BiologicalInteractionDefinitionId}'.");
             }
@@ -131,11 +136,11 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
                 }
             }
 
-            foreach (string capabilityKey in RequiredRuntimeCapabilityKeys.Concat(BlockingRuntimeCapabilityKeys))
+            foreach (CapabilityDefinition capability in RequiredCapabilities.Concat(BlockingCapabilities))
             {
-                if (capabilityKey.StartsWith("capability.", StringComparison.Ordinal))
+                if (definitionsById == null || !definitionsById.TryGetValue(capability.Id, out IGameDefinition registered) || !ReferenceEquals(registered, capability))
                 {
-                    report.AddError($"TransformationMethodDefinition '{DisplayName}' runtime capability key '{capabilityKey}' must use a runtime key, not a CapabilityDefinition ID.");
+                    report.AddError($"TransformationMethodDefinition '{DisplayName}' references missing Capability '{capability.Id}'.");
                 }
             }
 
@@ -186,9 +191,9 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
             }
         }
 
-        private static string[] Normalize(string[] values)
+        private static T[] Normalize<T>(T[] values) where T : UnityEngine.Object, IGameDefinition
         {
-            return values == null ? Array.Empty<string>() : values.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim()).Distinct(StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+            return values == null ? Array.Empty<T>() : values.Where(value => value != null).Distinct().OrderBy(value => value.Id, StringComparer.Ordinal).ToArray();
         }
     }
 }

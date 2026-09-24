@@ -24,7 +24,7 @@ MonoBehaviour:
   startingAttributeGrants:
   - attribute: {fileID: 11400000, guid: a2000000000000000000000000000052, type: 2}
     amount: 1
-  influencedGiftPool:
+  favoredGiftPool:
   - {fileID: 11400000, guid: 04aff63d3e324479b25cb92534f74028, type: 2}
   - {fileID: 11400000, guid: 3b607dff9a9c4f109cf9798f37ae830c, type: 2}
   giftWeightModifiers: []
@@ -50,7 +50,3 @@ MonoBehaviour:
     customContextTargetId: 
     acquisitionReason: No sponsor found
   startingTitle: {fileID: 0}
-  futureHomeReference: unassigned
-  futureRelationshipReferences: none
-  futureFactionObligations: unregistered-arrival-placeholder
-  futureStartingLocationReference: place.prototype-town

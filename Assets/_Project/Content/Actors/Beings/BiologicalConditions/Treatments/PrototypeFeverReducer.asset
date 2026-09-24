@@ -16,9 +16,9 @@ MonoBehaviour:
   displayName: Prototype Fever Reducer
   description: Fictional fever treatment fixture.
   treatmentKind: 6
-  biologicalInteractionDefinitionId: interaction.condition.disease
-  compatibleConditionIds:
-  - condition.biology.prototype-fever-response
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000123, type: 2}
+  compatibleConditions:
+  - {fileID: 11400000, guid: 7a790000000000000000000000000118, type: 2}
   compatibleFamilies: [13]
   loadReduction: 10
   progressionMultiplier: 0.5

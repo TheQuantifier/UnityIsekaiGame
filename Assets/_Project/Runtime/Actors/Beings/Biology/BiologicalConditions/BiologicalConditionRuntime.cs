@@ -144,7 +144,7 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
                 sourceEventId: request.TransactionId,
                 sourceCategory: BiologicalConditionSourceCategory.Transmission,
                 preview: true,
-                authority: "server-authoritative-future");
+                authority: "authoritative-character-simulation");
             return new BiologicalConditionTransmissionPlan(profile.Id, instance.ActorBodyId, request.TargetActorBodyId, exposure, "Transmission produced an exposure plan only.");
         }
 
@@ -1121,7 +1121,7 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
                 return null;
             }
 
-            if (definition.TargetAnatomyTagIds.Count > 0 && !definition.TargetAnatomyTagIds.Any(required => node.FutureDamageTagIds.Contains(required, StringComparer.Ordinal) || node.EquipmentTagIds.Contains(required, StringComparer.Ordinal)))
+            if (definition.TargetAnatomyTagIds.Count > 0 && !definition.TargetAnatomyTagIds.Any(required => node.DamageTagIds.Contains(required, StringComparer.Ordinal) || node.EquipmentTagIds.Contains(required, StringComparer.Ordinal)))
             {
                 code = BiologicalConditionResultCode.InvalidAnatomyTarget;
                 failure = $"Anatomy node '{nodeId}' does not satisfy target tags for Biological Condition '{definition.Id}'.";

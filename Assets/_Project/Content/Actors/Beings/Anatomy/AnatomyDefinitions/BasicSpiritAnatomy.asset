@@ -38,8 +38,8 @@ MonoBehaviour:
     repeatGroup: 
     mirrorGroup: 
     equipmentTagIds: []
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - spirit
     tags: []
     order: 0
@@ -61,9 +61,9 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.incorporeal-incompatible
-    futureDamageTagIds:
+    damageTagIds:
     - damage.region.essence
-    futureBiologicalFunctionTags:
+    biologicalFunctionTags:
     - spirit
     tags: []
     order: 10
@@ -85,8 +85,8 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.incorporeal-incompatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - spirit
     tags: []
     order: 20
@@ -107,9 +107,9 @@ MonoBehaviour:
     repeatGroup: 
     mirrorGroup: 
     equipmentTagIds: []
-    futureDamageTagIds:
+    damageTagIds:
     - damage.core.spiritual
-    futureBiologicalFunctionTags:
+    biologicalFunctionTags:
     - spirit
     tags: []
     order: 30

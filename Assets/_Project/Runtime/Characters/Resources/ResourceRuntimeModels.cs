@@ -46,7 +46,7 @@ namespace UnityIsekaiGame.ResourceSystem
     public enum ResourceAuthorityKind
     {
         LocalPrototype,
-        ServerAuthoritativeFuture
+        ServerAuthoritative
     }
 
     public enum ResourceChangeOperation

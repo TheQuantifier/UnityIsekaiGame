@@ -271,7 +271,7 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
                     return false;
                 }
 
-                HashSet<string> nodeTags = new HashSet<string>(context.TargetNode.FutureDamageTagIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+                HashSet<string> nodeTags = new HashSet<string>(context.TargetNode.DamageTagIds ?? Array.Empty<string>(), StringComparer.Ordinal);
                 if (!rule.RequiredAnatomyTagIds.Any(nodeTags.Contains))
                 {
                     failureReason = "Required anatomy tag was not present.";

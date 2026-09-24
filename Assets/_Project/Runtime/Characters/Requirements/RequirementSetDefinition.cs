@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Traits;
+using UnityIsekaiGame.Beings.Biology;
+using UnityIsekaiGame.Beings.Biology.BiologicalConditions;
 
 namespace UnityIsekaiGame.Requirements
 {
@@ -115,6 +117,12 @@ namespace UnityIsekaiGame.Requirements
                 report.AddError($"RequirementSet '{DisplayName}' node '{node.NodeId}' requires context but does not declare a context key.");
             }
 
+            if (node.NodeType != RequirementNodeType.LifecycleState && node.TargetDefinition == null)
+            {
+                report.AddError($"RequirementSet '{DisplayName}' node '{node.NodeId}' is missing its typed target definition.");
+                return;
+            }
+
             if (definitionsById == null || string.IsNullOrWhiteSpace(node.TargetId))
             {
                 return;
@@ -138,6 +146,10 @@ namespace UnityIsekaiGame.Requirements
             {
                 RequirementNodeType.TraitLifecycle => typeof(TraitDefinition),
                 RequirementNodeType.CapabilityBoolean or RequirementNodeType.CapabilityNumeric => typeof(CapabilityDefinition),
+                RequirementNodeType.Species => typeof(SpeciesDefinition),
+                RequirementNodeType.BiologicalClassification => typeof(BiologicalClassificationDefinition),
+                RequirementNodeType.BodyForm => typeof(BodyFormDefinition),
+                RequirementNodeType.BiologicalConditionPresent or RequirementNodeType.BiologicalConditionAbsent => typeof(BiologicalConditionDefinition),
                 _ => null
             };
         }

@@ -56,7 +56,6 @@ namespace UnityIsekaiGame.UI.Inventory
         private int selectedKnownSpellIndex;
         private int selectedContractIndex;
         private int selectedQuestIndex;
-        private DefinitionCatalog playerSkillsConfiguredCatalog;
         private bool refreshing;
 
         private void Awake()
@@ -759,11 +758,6 @@ namespace UnityIsekaiGame.UI.Inventory
                 identityProgression = source.GetComponentInParent<PlayerIdentityProgression>();
             }
 
-            if (identityProgression == null && source != null)
-            {
-                identityProgression = source.AddComponent<PlayerIdentityProgression>();
-            }
-
             ResolveCharacterSkills();
             ResolveCharacterTraits();
             ResolveCharacterSystem();
@@ -782,15 +776,10 @@ namespace UnityIsekaiGame.UI.Inventory
                 characterSystem = source.GetComponentInParent<CharacterSystemCoordinator>();
             }
 
-            if (characterSystem == null && source != null)
-            {
-                characterSystem = source.AddComponent<CharacterSystemCoordinator>();
-            }
-
             DefinitionCatalog catalog = ResolveSaveLoadCatalog();
             if (characterSystem != null && catalog != null && !characterSystem.IsReady)
             {
-                characterSystem.InitializeFromRegistry(catalog.CreateRegistry(), restoring: false, addMissingCore: true);
+                characterSystem.InitializeFromRegistry(catalog.CreateRegistry(), restoring: false);
             }
 
             return characterSystem;
@@ -809,21 +798,6 @@ namespace UnityIsekaiGame.UI.Inventory
                 playerSkills = source.GetComponentInParent<CharacterSkillCollection>();
             }
 
-            if (playerSkills == null && source != null)
-            {
-                playerSkills = source.AddComponent<CharacterSkillCollection>();
-            }
-
-            if (playerSkills != null)
-            {
-                DefinitionCatalog catalog = ResolveSaveLoadCatalog();
-                if (catalog != null && (!playerSkills.IsConfigured || playerSkillsConfiguredCatalog != catalog))
-                {
-                    playerSkills.Configure(catalog.CreateRegistry(), playerStats == null ? null : playerStats.CalculatedStats, spellLoadout);
-                    playerSkillsConfiguredCatalog = catalog;
-                }
-            }
-
             return playerSkills;
         }
 
@@ -838,20 +812,6 @@ namespace UnityIsekaiGame.UI.Inventory
             if (playerTraits == null && source != null)
             {
                 playerTraits = source.GetComponentInParent<CharacterTraitCollection>();
-            }
-
-            if (playerTraits == null && source != null)
-            {
-                playerTraits = source.AddComponent<CharacterTraitCollection>();
-            }
-
-            if (playerTraits != null)
-            {
-                DefinitionCatalog catalog = ResolveSaveLoadCatalog();
-                if (catalog != null && !playerTraits.IsConfigured)
-                {
-                    playerTraits.Configure(catalog.CreateRegistry(), playerStats == null ? null : playerStats.CalculatedStats, playerSkills, PersistenceService.LocalPlayerId);
-                }
             }
 
             return playerTraits;

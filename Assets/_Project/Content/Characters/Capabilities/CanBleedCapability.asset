@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Capabilities.CapabilityDefinition
   capabilityId: capability.can.bleed
   displayName: Can Bleed
-  description: Body can bleed when future injury systems implement bleeding.
+  description: Body can receive and process bleeding hazards.
   primaryCategory: {fileID: 11400000, guid: 55cb0000000000000000000000000055, type: 2}
   tags: []
   valueType: 0
@@ -24,4 +24,3 @@ MonoBehaviour:
   minimumValue: 0
   maximumValue: 1
   alphaEnabled: 1
-  futureMetadata: Feature 7.1 biological capability.

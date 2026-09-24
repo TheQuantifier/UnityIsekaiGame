@@ -38,7 +38,6 @@ namespace UnityIsekaiGame.Traits
         [SerializeField] private RequirementSetDefinition acquisitionRequirements;
         [SerializeField] private RequirementSetDefinition activationRequirements;
         [SerializeField] private string upgradeReplacementMetadata;
-        [SerializeField] private string futureMetadata;
 
         public string Id => traitId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
@@ -65,7 +64,6 @@ namespace UnityIsekaiGame.Traits
         public RequirementSetDefinition AcquisitionRequirements => acquisitionRequirements;
         public RequirementSetDefinition ActivationRequirements => activationRequirements;
         public string UpgradeReplacementMetadata => upgradeReplacementMetadata ?? string.Empty;
-        public string FutureMetadata => futureMetadata ?? string.Empty;
 
         private void OnValidate()
         {

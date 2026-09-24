@@ -27,7 +27,6 @@ MonoBehaviour:
     alphaEnabled: 1
   defaultBooleanCapabilities:
   - entryId: capability.biology.is-living
-    runtimeCapabilityKey: capability.biology.is-living
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000001, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -35,7 +34,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: capability.biology.has-blood
-    runtimeCapabilityKey: capability.biology.has-blood
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000005, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -43,7 +41,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: capability.biology.requires-breathing
-    runtimeCapabilityKey: capability.biology.requires-breathing
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000006, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -51,7 +48,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: capability.biology.can-be-poisoned
-    runtimeCapabilityKey: capability.biology.can-be-poisoned
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000007, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -59,7 +55,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: capability.biology.can-contract-disease
-    runtimeCapabilityKey: capability.biology.can-contract-disease
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000008, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -67,7 +62,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: capability.biology.accepts-biological-healing
-    runtimeCapabilityKey: capability.biology.accepts-biological-healing
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000009, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -75,7 +69,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: capability.biology.is-corporeal
-    runtimeCapabilityKey: capability.biology.is-corporeal
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000011, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -83,7 +76,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: capability.biology.has-physical-body
-    runtimeCapabilityKey: capability.biology.has-physical-body
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000012, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -91,7 +83,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: species.human.can-become-unconscious
-    runtimeCapabilityKey: can.become-unconscious
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000013, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -99,7 +90,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: species.human.can-die
-    runtimeCapabilityKey: can.die
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000014, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -107,7 +97,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: species.human.can-be-revived
-    runtimeCapabilityKey: can.be-revived
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000015, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -115,7 +104,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: species.human.can-breathe
-    runtimeCapabilityKey: can.breathe
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000016, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -123,7 +111,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: species.human.can-bleed
-    runtimeCapabilityKey: can.bleed
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000017, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -142,5 +129,3 @@ MonoBehaviour:
   defaultDefeatPolicy: {fileID: 11400000, guid: 63f00000000000000000000000000032, type: 2}
   anatomyDefinition: {fileID: 11400000, guid: 7a190000000000000000000000000001, type: 2}
   compatibleOriginIds: []
-  futureAnatomyDefinitionId: 
-  futureBiologicalMetadata: Anatomy resolves through anatomy.human.

@@ -296,7 +296,7 @@ namespace UnityIsekaiGame.Beings.Biology.Anatomy
             MirrorGroup = definition.MirrorGroup;
             Order = definition.Order;
             EquipmentTagIds = definition.EquipmentTagIds.ToArray();
-            FutureDamageTagIds = definition.FutureDamageTagIds.ToArray();
+            DamageTagIds = definition.DamageTagIds.ToArray();
         }
 
         public string NodeId { get; }
@@ -318,7 +318,7 @@ namespace UnityIsekaiGame.Beings.Biology.Anatomy
         public int Order { get; }
         public IReadOnlyList<string> ChildNodeIds => childNodeIds;
         public IReadOnlyList<string> EquipmentTagIds { get; }
-        public IReadOnlyList<string> FutureDamageTagIds { get; }
+        public IReadOnlyList<string> DamageTagIds { get; }
 
         public void AddChild(string nodeId)
         {
@@ -355,7 +355,7 @@ namespace UnityIsekaiGame.Beings.Biology.Anatomy
                 MirrorGroup,
                 ChildNodeIds,
                 EquipmentTagIds,
-                FutureDamageTagIds);
+                DamageTagIds);
         }
     }
 }

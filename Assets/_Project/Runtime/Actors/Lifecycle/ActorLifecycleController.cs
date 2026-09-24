@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -16,10 +17,13 @@ namespace UnityIsekaiGame.ActorLifecycle
     [DisallowMultipleComponent]
     public sealed class ActorLifecycleController : MonoBehaviour
     {
+        private const double DefaultRevivalWaitRealSeconds = 3600d;
+
         [SerializeField] private DefeatPolicyDefinition defeatPolicy;
         [SerializeField] private CharacterSystemCoordinator character;
         [SerializeField] private CharacterResourceCollection resources;
         [SerializeField] private CharacterTraitCollection traits;
+        [SerializeField] private CharacterCapabilityCollection capabilities;
         [SerializeField] private WorldEntityIdentity worldEntityIdentity;
         [SerializeField] private ActorLifecycleState lifecycleState = ActorLifecycleState.Active;
 
@@ -28,6 +32,9 @@ namespace UnityIsekaiGame.ActorLifecycle
         private bool subscribed;
         private bool suppressResourceDefeatHandling;
         private long revision;
+        private IActorLifecycleUtcClock utcClock = SystemActorLifecycleUtcClock.Instance;
+        private DateTimeOffset? diedAtUtc;
+        private DateTimeOffset? revivalAvailableAtUtc;
 
         public event Action<ActorLifecycleResult> DefeatProcessed;
         public event Action<ActorLifecycleResult> ActorDefeated;
@@ -38,11 +45,16 @@ namespace UnityIsekaiGame.ActorLifecycle
         public event Action<ActorLifecycleResult> LifecycleTransitionRejected;
 
         public ActorLifecycleState State => lifecycleState;
-        public DefeatPolicyDefinition DefeatPolicy => defeatPolicy;
+        public DefeatPolicyDefinition DefeatPolicy => ActiveDefeatPolicy;
         public bool CanAct => lifecycleState == ActorLifecycleState.Active;
         public bool IsDefeatedOrWorse => lifecycleState == ActorLifecycleState.Defeated || lifecycleState == ActorLifecycleState.Unconscious || lifecycleState == ActorLifecycleState.Dead;
         public long Revision => revision;
         public string ActorId => ResolveActorId();
+        public DateTimeOffset? DiedAtUtc => diedAtUtc;
+        public DateTimeOffset? RevivalAvailableAtUtc => revivalAvailableAtUtc;
+        public double RevivalWaitRealSeconds => ActiveDefeatPolicy == null ? DefaultRevivalWaitRealSeconds : ActiveDefeatPolicy.RevivalWaitRealSeconds;
+        public double RevivalWaitRemainingSeconds => CalculateRevivalWaitRemainingSeconds();
+        public bool IsRevivalWaitComplete => RevivalWaitRemainingSeconds <= 0d;
 
         private void Awake()
         {
@@ -64,15 +76,22 @@ namespace UnityIsekaiGame.ActorLifecycle
             DefeatPolicyDefinition policy,
             CharacterResourceCollection resourceCollection = null,
             CharacterSystemCoordinator characterSystem = null,
-            CharacterTraitCollection traitCollection = null)
+            CharacterTraitCollection traitCollection = null,
+            CharacterCapabilityCollection capabilityCollection = null)
         {
             Unsubscribe();
             defeatPolicy = policy == null ? defeatPolicy : policy;
             character = characterSystem == null ? character : characterSystem;
             resources = resourceCollection == null ? resources : resourceCollection;
             traits = traitCollection == null ? traits : traitCollection;
+            capabilities = capabilityCollection == null ? capabilities : capabilityCollection;
             ResolveReferences();
             Subscribe();
+        }
+
+        public void ConfigureUtcClock(IActorLifecycleUtcClock clock)
+        {
+            utcClock = clock ?? SystemActorLifecycleUtcClock.Instance;
         }
 
         public ActorLifecycleResult PreviewDefeat(DefeatResolutionRequest request)
@@ -123,8 +142,10 @@ namespace UnityIsekaiGame.ActorLifecycle
                 playerId = playerId ?? string.Empty,
                 personId = personId ?? string.Empty,
                 actorId = ActorId,
-                policyId = defeatPolicy == null ? string.Empty : defeatPolicy.Id,
-                lifecycleState = lifecycleState.ToString()
+                policyId = PolicyId,
+                lifecycleState = lifecycleState.ToString(),
+                diedAtUtc = FormatUtc(diedAtUtc),
+                revivalAvailableAtUtc = FormatUtc(revivalAvailableAtUtc)
             };
         }
 
@@ -138,10 +159,12 @@ namespace UnityIsekaiGame.ActorLifecycle
             ActorLifecycleState restored = (ActorLifecycleState)Enum.Parse(typeof(ActorLifecycleState), saveData.lifecycleState);
             ActorLifecycleState previous = lifecycleState;
             lifecycleState = restored;
+            diedAtUtc = ParseUtcOrNull(saveData.diedAtUtc);
+            revivalAvailableAtUtc = ParseUtcOrNull(saveData.revivalAvailableAtUtc);
             revision++;
             if (!restoring && previous != restored)
             {
-                RaiseTransition(ActorLifecycleResult.Create(true, false, false, ActorLifecycleResultCode.Success, $"Lifecycle restored to {restored}.", string.Empty, string.Empty, ActorId, defeatPolicy == null ? string.Empty : defeatPolicy.Id, LifecycleTransitionKind.None, LifecycleTriggerKind.Scripted, previous, restored, PolicyOutcome, CurrentHealth, CurrentHealth, HealthMinimum, HealthMaximum, 0f, 0f, 0f, string.Empty, revision));
+                RaiseTransition(ActorLifecycleResult.Create(true, false, false, ActorLifecycleResultCode.Success, $"Lifecycle restored to {restored}.", string.Empty, string.Empty, ActorId, PolicyId, LifecycleTransitionKind.None, LifecycleTriggerKind.Scripted, previous, restored, PolicyOutcome, CurrentHealth, CurrentHealth, HealthMinimum, HealthMaximum, 0f, 0f, 0f, string.Empty, revision));
             }
 
             return true;
@@ -180,9 +203,31 @@ namespace UnityIsekaiGame.ActorLifecycle
                 return false;
             }
 
-            if (!Enum.TryParse(saveData.lifecycleState, out ActorLifecycleState _))
+            if (!Enum.TryParse(saveData.lifecycleState, out ActorLifecycleState restoredState))
             {
                 failureReason = $"Saved lifecycle state '{saveData.lifecycleState}' is invalid.";
+                return false;
+            }
+
+            bool hasDiedAt = TryParseUtc(saveData.diedAtUtc, out DateTimeOffset savedDiedAt);
+            bool hasRevivalDeadline = TryParseUtc(saveData.revivalAvailableAtUtc, out DateTimeOffset savedRevivalDeadline);
+            if (restoredState == ActorLifecycleState.Dead)
+            {
+                if (!hasDiedAt || !hasRevivalDeadline)
+                {
+                    failureReason = "Dead lifecycle save data requires valid death and revival-availability UTC timestamps.";
+                    return false;
+                }
+
+                if (savedRevivalDeadline < savedDiedAt)
+                {
+                    failureReason = "Saved revival-availability time cannot precede the death time.";
+                    return false;
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(saveData.diedAtUtc) || !string.IsNullOrWhiteSpace(saveData.revivalAvailableAtUtc))
+            {
+                failureReason = $"Lifecycle state '{restoredState}' cannot retain death timing data.";
                 return false;
             }
 
@@ -218,6 +263,7 @@ namespace UnityIsekaiGame.ActorLifecycle
         {
             ActorLifecycleState previous = lifecycleState;
             lifecycleState = ActorLifecycleState.Active;
+            ClearDeathTiming();
             processedLifecycleTransactionIds.Clear();
             processedLifecycleTransactionOrder.Clear();
             if (previous != ActorLifecycleState.Active)
@@ -263,6 +309,10 @@ namespace UnityIsekaiGame.ActorLifecycle
             }
 
             lifecycleState = resultState;
+            if (resultState == ActorLifecycleState.Dead)
+            {
+                RecordDeathTiming();
+            }
             RememberLifecycleTransaction(request.TransactionId);
             revision++;
             ActorLifecycleResult result = ActorLifecycleResult.Create(true, false, false, ActorLifecycleResultCode.Success, $"Actor lifecycle changed from {previous} to {resultState}.", request.TransactionId, request.SourceActorId, actorId, PolicyId, transition, request.Trigger, previous, resultState, outcome, health.Current, health.Current, health.Minimum, health.Maximum, 0f, 0f, 0f, string.Empty, revision);
@@ -287,7 +337,7 @@ namespace UnityIsekaiGame.ActorLifecycle
                 return Reject(BuildFailure(ActorLifecycleResultCode.InvalidState, $"Cannot recover from {lifecycleState}.", request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Recovery, LifecycleTriggerKind.Recovery, health, PolicyOutcome), execute);
             }
 
-            if (defeatPolicy != null && !defeatPolicy.AllowRecovery)
+            if (ActiveDefeatPolicy != null && !ActiveDefeatPolicy.AllowRecovery)
             {
                 return Reject(BuildFailure(ActorLifecycleResultCode.PolicyRejected, "Recovery is disallowed by the defeat policy.", request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Recovery, LifecycleTriggerKind.Recovery, health, PolicyOutcome), execute);
             }
@@ -297,7 +347,7 @@ namespace UnityIsekaiGame.ActorLifecycle
                 return Reject(BuildFailure(ActorLifecycleResultCode.CapabilityRejected, capabilityReason, request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Recovery, LifecycleTriggerKind.Recovery, health, PolicyOutcome), execute);
             }
 
-            if (!RequirementsPass(defeatPolicy == null ? null : defeatPolicy.RecoveryRequirements, out string requirementSummary))
+            if (!RequirementsPass(ActiveDefeatPolicy == null ? null : ActiveDefeatPolicy.RecoveryRequirements, out string requirementSummary))
             {
                 return Reject(BuildFailure(ActorLifecycleResultCode.RequirementRejected, "Recovery requirements failed.", request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Recovery, LifecycleTriggerKind.Recovery, health, PolicyOutcome, requirementSummary), execute);
             }
@@ -329,7 +379,7 @@ namespace UnityIsekaiGame.ActorLifecycle
                 return ActorLifecycleResult.Create(true, !execute, false, ActorLifecycleResultCode.NoChange, "Actor is already dead.", request.TransactionId, request.SourceActorId, actorId, PolicyId, LifecycleTransitionKind.Death, request.Trigger, lifecycleState, lifecycleState, PolicyOutcome, health.Current, health.Current, health.Minimum, health.Maximum, 0f, 0f, 0f, string.Empty, revision);
             }
 
-            if (defeatPolicy != null && !defeatPolicy.AllowDeath)
+            if (ActiveDefeatPolicy != null && !ActiveDefeatPolicy.AllowDeath)
             {
                 return Reject(BuildFailure(ActorLifecycleResultCode.PolicyRejected, "Death is disallowed by the defeat policy.", request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Death, request.Trigger, health, PolicyOutcome), execute);
             }
@@ -344,7 +394,7 @@ namespace UnityIsekaiGame.ActorLifecycle
                 return Reject(BuildFailure(ActorLifecycleResultCode.CapabilityRejected, deathReason, request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Death, request.Trigger, health, PolicyOutcome), execute);
             }
 
-            if (!RequirementsPass(defeatPolicy == null ? null : defeatPolicy.DeathRequirements, out string requirementSummary))
+            if (!RequirementsPass(ActiveDefeatPolicy == null ? null : ActiveDefeatPolicy.DeathRequirements, out string requirementSummary))
             {
                 return Reject(BuildFailure(ActorLifecycleResultCode.RequirementRejected, "Death requirements failed.", request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Death, request.Trigger, health, PolicyOutcome, requirementSummary), execute);
             }
@@ -389,6 +439,7 @@ namespace UnityIsekaiGame.ActorLifecycle
             }
 
             lifecycleState = ActorLifecycleState.Dead;
+            RecordDeathTiming();
             RememberLifecycleTransaction(request.TransactionId);
             revision++;
             ActorLifecycleResult result = ActorLifecycleResult.Create(true, false, false, ActorLifecycleResultCode.Success, $"Actor lifecycle changed from {previous} to Dead.", request.TransactionId, request.SourceActorId, actorId, PolicyId, LifecycleTransitionKind.Death, request.Trigger, previous, ActorLifecycleState.Dead, PolicyOutcome, oldHealth, newHealth, health.Minimum, health.Maximum, 0f, 0f, 0f, requirementSummary, revision, resourceResult);
@@ -413,9 +464,17 @@ namespace UnityIsekaiGame.ActorLifecycle
                 return Reject(BuildFailure(ActorLifecycleResultCode.InvalidState, $"Cannot revive from {lifecycleState}.", request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Revival, LifecycleTriggerKind.Revival, health, PolicyOutcome), execute);
             }
 
-            if (defeatPolicy != null && !defeatPolicy.AllowRevival)
+            if (ActiveDefeatPolicy != null && !ActiveDefeatPolicy.AllowRevival)
             {
                 return Reject(BuildFailure(ActorLifecycleResultCode.PolicyRejected, "Revival is disallowed by the defeat policy.", request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Revival, LifecycleTriggerKind.Revival, health, PolicyOutcome), execute);
+            }
+
+            double remainingWait = RevivalWaitRemainingSeconds;
+            if (remainingWait > 0d)
+            {
+                string availableAt = revivalAvailableAtUtc.HasValue ? revivalAvailableAtUtc.Value.ToString("O", CultureInfo.InvariantCulture) : "the configured deadline";
+                string message = $"Revival is locked for another {FormatDuration(remainingWait)} (available at {availableAt}).";
+                return Reject(BuildFailure(ActorLifecycleResultCode.RevivalWaitActive, message, request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Revival, LifecycleTriggerKind.Revival, health, PolicyOutcome), execute);
             }
 
             if (!CapabilityAllows(CanBeRevivedCapabilityId, out string capabilityReason))
@@ -423,7 +482,7 @@ namespace UnityIsekaiGame.ActorLifecycle
                 return Reject(BuildFailure(ActorLifecycleResultCode.CapabilityRejected, capabilityReason, request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Revival, LifecycleTriggerKind.Revival, health, PolicyOutcome), execute);
             }
 
-            if (!RequirementsPass(defeatPolicy == null ? null : defeatPolicy.RevivalRequirements, out string requirementSummary))
+            if (!RequirementsPass(ActiveDefeatPolicy == null ? null : ActiveDefeatPolicy.RevivalRequirements, out string requirementSummary))
             {
                 return Reject(BuildFailure(ActorLifecycleResultCode.RequirementRejected, "Revival requirements failed.", request.TransactionId, request.SourceActorId, actorId, LifecycleTransitionKind.Revival, LifecycleTriggerKind.Revival, health, PolicyOutcome, requirementSummary), execute);
             }
@@ -460,6 +519,10 @@ namespace UnityIsekaiGame.ActorLifecycle
             }
 
             lifecycleState = resultState;
+            if (transition == LifecycleTransitionKind.Revival)
+            {
+                ClearDeathTiming();
+            }
             RememberLifecycleTransaction(transactionId);
             revision++;
             ActorLifecycleResult result = ActorLifecycleResult.Create(true, false, false, ActorLifecycleResultCode.Success, $"Actor lifecycle changed from {previous} to {resultState}.", transactionId, sourceActorId, actorId, PolicyId, transition, trigger, previous, resultState, PolicyOutcome, before.Current, resourceResult.NewCurrent, before.Minimum, before.Maximum, requestedRestore, resourceResult.AppliedAmount, policyMinimum, requirementSummary, revision, resourceResult);
@@ -612,7 +675,7 @@ namespace UnityIsekaiGame.ActorLifecycle
 
         private bool CanBecomeUnconscious(out string reason)
         {
-            if (defeatPolicy != null && !defeatPolicy.AllowUnconsciousness)
+            if (ActiveDefeatPolicy != null && !ActiveDefeatPolicy.AllowUnconsciousness)
             {
                 reason = "Unconsciousness is disallowed by the defeat policy.";
                 return false;
@@ -623,7 +686,7 @@ namespace UnityIsekaiGame.ActorLifecycle
 
         private bool CanDie(out string reason)
         {
-            if (defeatPolicy != null && !defeatPolicy.AllowDeath)
+            if (ActiveDefeatPolicy != null && !ActiveDefeatPolicy.AllowDeath)
             {
                 reason = "Death is disallowed by the defeat policy.";
                 return false;
@@ -634,19 +697,19 @@ namespace UnityIsekaiGame.ActorLifecycle
 
         private bool HasDeathImmunity()
         {
-            CapabilitySnapshot snapshot = traits == null ? null : traits.Capabilities.Evaluate(DeathImmunityCapabilityId);
+            CapabilitySnapshot snapshot = capabilities == null ? null : capabilities.Evaluate(DeathImmunityCapabilityId);
             return snapshot != null && !snapshot.Blocked && snapshot.BooleanValue;
         }
 
         private bool CapabilityAllows(string capabilityId, out string reason)
         {
             reason = string.Empty;
-            if (traits == null || string.IsNullOrWhiteSpace(capabilityId))
+            if (capabilities == null || string.IsNullOrWhiteSpace(capabilityId))
             {
                 return true;
             }
 
-            CapabilitySnapshot snapshot = traits.Capabilities.Evaluate(capabilityId);
+            CapabilitySnapshot snapshot = capabilities.Evaluate(capabilityId);
             if (snapshot == null || snapshot.Sources == null || snapshot.Sources.Count == 0)
             {
                 return true;
@@ -670,7 +733,7 @@ namespace UnityIsekaiGame.ActorLifecycle
             }
 
             RequirementEvaluationResult result = character == null
-                ? CapabilityRequirementEvaluator.Evaluate(requirements, new RequirementEvaluationContext { Resources = resources, Traits = traits })
+                ? CapabilityRequirementEvaluator.Evaluate(requirements, new RequirementEvaluationContext { Resources = resources, Traits = traits, Capabilities = capabilities })
                 : character.Query.EvaluateRequirement(requirements);
             summary = string.Join("; ", result.TestLabFailureReasons);
             return result.Passed;
@@ -683,6 +746,59 @@ namespace UnityIsekaiGame.ActorLifecycle
             float targetRestore = Mathf.Max(minimumRestore, requestedRestore);
             float missing = Mathf.Max(0f, health.Maximum - health.Current);
             return Mathf.Min(targetRestore, missing);
+        }
+
+        private void RecordDeathTiming()
+        {
+            DateTimeOffset now = (utcClock ?? SystemActorLifecycleUtcClock.Instance).UtcNow.ToUniversalTime();
+            diedAtUtc = now;
+            double supportedWait = Math.Min(RevivalWaitRealSeconds, (DateTimeOffset.MaxValue - now).TotalSeconds);
+            revivalAvailableAtUtc = now.AddSeconds(supportedWait);
+        }
+
+        private void ClearDeathTiming()
+        {
+            diedAtUtc = null;
+            revivalAvailableAtUtc = null;
+        }
+
+        private double CalculateRevivalWaitRemainingSeconds()
+        {
+            if (lifecycleState != ActorLifecycleState.Dead || !revivalAvailableAtUtc.HasValue)
+            {
+                return 0d;
+            }
+
+            DateTimeOffset now = (utcClock ?? SystemActorLifecycleUtcClock.Instance).UtcNow.ToUniversalTime();
+            return Math.Max(0d, (revivalAvailableAtUtc.Value - now).TotalSeconds);
+        }
+
+        private static string FormatUtc(DateTimeOffset? value)
+        {
+            return value.HasValue ? value.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : string.Empty;
+        }
+
+        private static DateTimeOffset? ParseUtcOrNull(string value)
+        {
+            return TryParseUtc(value, out DateTimeOffset parsed) ? parsed.ToUniversalTime() : (DateTimeOffset?)null;
+        }
+
+        private static bool TryParseUtc(string value, out DateTimeOffset parsed)
+        {
+            return DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out parsed);
+        }
+
+        private static string FormatDuration(double seconds)
+        {
+            TimeSpan duration = TimeSpan.FromSeconds(Math.Ceiling(Math.Max(0d, seconds)));
+            if (duration.TotalHours >= 1d)
+            {
+                return $"{(int)duration.TotalHours}h {duration.Minutes}m {duration.Seconds}s";
+            }
+
+            return duration.TotalMinutes >= 1d
+                ? $"{duration.Minutes}m {duration.Seconds}s"
+                : $"{duration.Seconds}s";
         }
 
         private bool TryGetHealth(out ResourceSnapshot health)
@@ -698,15 +814,16 @@ namespace UnityIsekaiGame.ActorLifecycle
         }
 
         private ResourceSnapshot HealthSnapshotOrDefault => TryGetHealth(out ResourceSnapshot snapshot) ? snapshot : default;
-        private string PolicyId => defeatPolicy == null ? string.Empty : defeatPolicy.Id;
-        private DefeatPolicyOutcome PolicyOutcome => defeatPolicy == null ? DefeatPolicyOutcome.BecomeUnconscious : defeatPolicy.ZeroHealthOutcome;
-        private float RecoveryMinimumHealth => defeatPolicy == null ? 1f : defeatPolicy.RecoveryMinimumHealth;
-        private float RevivalMinimumHealth => defeatPolicy == null ? 1f : defeatPolicy.RevivalMinimumHealth;
-        private string CanBecomeUnconsciousCapabilityId => defeatPolicy == null ? ActorLifecycleCapabilityIds.CanBecomeUnconscious : defeatPolicy.CanBecomeUnconsciousCapabilityId;
-        private string CanDieCapabilityId => defeatPolicy == null ? ActorLifecycleCapabilityIds.CanDie : defeatPolicy.CanDieCapabilityId;
-        private string CanRecoverCapabilityId => defeatPolicy == null ? ActorLifecycleCapabilityIds.CanRecover : defeatPolicy.CanRecoverCapabilityId;
-        private string CanBeRevivedCapabilityId => defeatPolicy == null ? ActorLifecycleCapabilityIds.CanBeRevived : defeatPolicy.CanBeRevivedCapabilityId;
-        private string DeathImmunityCapabilityId => defeatPolicy == null ? ActorLifecycleCapabilityIds.DeathImmunity : defeatPolicy.DeathImmunityCapabilityId;
+        private DefeatPolicyDefinition ActiveDefeatPolicy => defeatPolicy != null ? defeatPolicy : character?.Body?.Species?.DefaultDefeatPolicy;
+        private string PolicyId => ActiveDefeatPolicy == null ? string.Empty : ActiveDefeatPolicy.Id;
+        private DefeatPolicyOutcome PolicyOutcome => ActiveDefeatPolicy == null ? DefeatPolicyOutcome.BecomeUnconscious : ActiveDefeatPolicy.ZeroHealthOutcome;
+        private float RecoveryMinimumHealth => ActiveDefeatPolicy == null ? 1f : ActiveDefeatPolicy.RecoveryMinimumHealth;
+        private float RevivalMinimumHealth => ActiveDefeatPolicy == null ? 1f : ActiveDefeatPolicy.RevivalMinimumHealth;
+        private string CanBecomeUnconsciousCapabilityId => ActiveDefeatPolicy == null ? ActorLifecycleCapabilityIds.CanBecomeUnconscious : ActiveDefeatPolicy.CanBecomeUnconsciousCapabilityId;
+        private string CanDieCapabilityId => ActiveDefeatPolicy == null ? ActorLifecycleCapabilityIds.CanDie : ActiveDefeatPolicy.CanDieCapabilityId;
+        private string CanRecoverCapabilityId => ActiveDefeatPolicy == null ? ActorLifecycleCapabilityIds.CanRecover : ActiveDefeatPolicy.CanRecoverCapabilityId;
+        private string CanBeRevivedCapabilityId => ActiveDefeatPolicy == null ? ActorLifecycleCapabilityIds.CanBeRevived : ActiveDefeatPolicy.CanBeRevivedCapabilityId;
+        private string DeathImmunityCapabilityId => ActiveDefeatPolicy == null ? ActorLifecycleCapabilityIds.DeathImmunity : ActiveDefeatPolicy.DeathImmunityCapabilityId;
         private float CurrentHealth => TryGetHealth(out ResourceSnapshot health) ? health.Current : 0f;
         private float HealthMinimum => TryGetHealth(out ResourceSnapshot health) ? health.Minimum : 0f;
         private float HealthMaximum => TryGetHealth(out ResourceSnapshot health) ? health.Maximum : 0f;
@@ -716,6 +833,7 @@ namespace UnityIsekaiGame.ActorLifecycle
             character = character == null ? GetComponentInParent<CharacterSystemCoordinator>() : character;
             resources = resources == null ? character == null ? GetComponentInParent<CharacterResourceCollection>() : character.Resources : resources;
             traits = traits == null ? character == null ? GetComponentInParent<CharacterTraitCollection>() : character.Traits : traits;
+            capabilities = capabilities == null ? character == null ? GetComponentInParent<CharacterCapabilityCollection>() : character.Capabilities : capabilities;
             worldEntityIdentity = worldEntityIdentity == null ? GetComponentInParent<WorldEntityIdentity>() : worldEntityIdentity;
         }
 

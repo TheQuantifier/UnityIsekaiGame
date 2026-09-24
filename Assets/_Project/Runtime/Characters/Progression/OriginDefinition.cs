@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Skills;
@@ -18,17 +19,13 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private bool enabledForAlpha = true;
         [SerializeField] private PermanentAttributeGrantDefinition[] startingAttributeGrants;
         [SerializeField] private SkillGrantDefinition[] startingSkillGrants;
-        [SerializeField] private BirthGiftDefinition[] influencedGiftPool;
+        [SerializeField] private BirthGiftDefinition[] favoredGiftPool;
         [SerializeField] private BirthGiftWeightModifierDefinition[] giftWeightModifiers;
         [SerializeField] private RarityWeightModifierDefinition[] giftRarityWeightModifiers;
         [SerializeField] private ProgressionCurrencyGrantDefinition startingGold;
         [SerializeField] private RoleDefinition startingRole;
         [SerializeField] private SocialStatusAssignmentDefinition[] startingSocialStatuses;
         [SerializeField] private TitleDefinition startingTitle;
-        [SerializeField] private string futureHomeReference;
-        [SerializeField] private string futureRelationshipReferences;
-        [SerializeField] private string futureFactionObligations;
-        [SerializeField] private string futureStartingLocationReference;
 
         public string OriginId => originId;
         public string Id => originId;
@@ -42,7 +39,7 @@ namespace UnityIsekaiGame.Progression
         public bool EnabledForAlpha => enabledForAlpha;
         public IReadOnlyList<PermanentAttributeGrantDefinition> StartingAttributeGrants => startingAttributeGrants ?? System.Array.Empty<PermanentAttributeGrantDefinition>();
         public IReadOnlyList<SkillGrantDefinition> StartingSkillGrants => startingSkillGrants ?? System.Array.Empty<SkillGrantDefinition>();
-        public IReadOnlyList<BirthGiftDefinition> InfluencedGiftPool => influencedGiftPool ?? System.Array.Empty<BirthGiftDefinition>();
+        public IReadOnlyList<BirthGiftDefinition> FavoredGiftPool => favoredGiftPool ?? System.Array.Empty<BirthGiftDefinition>();
         public IReadOnlyList<BirthGiftWeightModifierDefinition> GiftWeightModifiers => giftWeightModifiers ?? System.Array.Empty<BirthGiftWeightModifierDefinition>();
         public IReadOnlyList<RarityWeightModifierDefinition> GiftRarityWeightModifiers => giftRarityWeightModifiers ?? System.Array.Empty<RarityWeightModifierDefinition>();
         public ProgressionCurrencyGrantDefinition StartingGold => startingGold;
@@ -74,6 +71,10 @@ namespace UnityIsekaiGame.Progression
             else if (definitionsById == null || !definitionsById.TryGetValue(family.Id, out IGameDefinition foundFamily) || foundFamily is not OriginFamilyDefinition)
             {
                 report.AddError($"Origin '{DisplayName}' references family '{family.Id}', which is not in the configured catalog.");
+            }
+            else if (!family.AllowedOrigins.Contains(this))
+            {
+                report.AddError($"Origin '{DisplayName}' references family '{family.DisplayName}' but is absent from that family's allowed-origin list.");
             }
 
             if (enabledForAlpha && selectionWeight <= 0f)
@@ -147,16 +148,76 @@ namespace UnityIsekaiGame.Progression
                 ValidateDefinitionReference(startingTitle, nameof(TitleDefinition), definitionsById, report, $"Origin '{DisplayName}' starting title");
             }
 
-            foreach (BirthGiftDefinition gift in InfluencedGiftPool)
+            if (enabledForAlpha && FavoredGiftPool.Count == 0)
+            {
+                report.AddError($"Origin '{DisplayName}' is enabled but has no favored birth gifts.");
+            }
+
+            HashSet<string> favoredGiftIds = new HashSet<string>();
+            foreach (BirthGiftDefinition gift in FavoredGiftPool)
             {
                 if (gift == null)
                 {
-                    report.AddError($"Origin '{DisplayName}' has a missing influenced gift reference.");
+                    report.AddError($"Origin '{DisplayName}' has a missing favored gift reference.");
                     continue;
                 }
 
-                ValidateDefinitionReference(gift, nameof(BirthGiftDefinition), definitionsById, report, $"Origin '{DisplayName}' influenced gift");
+                if (!favoredGiftIds.Add(gift.Id))
+                {
+                    report.AddError($"Origin '{DisplayName}' has duplicate favored gift '{gift.Id}'.");
+                }
+
+                ValidateDefinitionReference(gift, nameof(BirthGiftDefinition), definitionsById, report, $"Origin '{DisplayName}' favored gift");
             }
+
+            HashSet<string> modifiedGiftIds = new HashSet<string>();
+            foreach (BirthGiftWeightModifierDefinition modifier in GiftWeightModifiers)
+            {
+                if (modifier?.Gift == null)
+                {
+                    report.AddError($"Origin '{DisplayName}' has a missing gift weight modifier reference.");
+                    continue;
+                }
+
+                if (!IsFiniteNonNegative(modifier.RawWeightMultiplier))
+                {
+                    report.AddError($"Origin '{DisplayName}' has an invalid weight multiplier for gift '{modifier.Gift.Id}'.");
+                }
+
+                if (!modifiedGiftIds.Add(modifier.Gift.Id))
+                {
+                    report.AddError($"Origin '{DisplayName}' has duplicate weight modifiers for gift '{modifier.Gift.Id}'.");
+                }
+
+                ValidateDefinitionReference(modifier.Gift, nameof(BirthGiftDefinition), definitionsById, report, $"Origin '{DisplayName}' gift weight modifier");
+            }
+
+            HashSet<string> modifiedRarityIds = new HashSet<string>();
+            foreach (RarityWeightModifierDefinition modifier in GiftRarityWeightModifiers)
+            {
+                if (modifier?.Rarity == null)
+                {
+                    report.AddError($"Origin '{DisplayName}' has a missing gift rarity modifier reference.");
+                    continue;
+                }
+
+                if (!IsFiniteNonNegative(modifier.RawWeightMultiplier))
+                {
+                    report.AddError($"Origin '{DisplayName}' has an invalid weight multiplier for rarity '{modifier.Rarity.Id}'.");
+                }
+
+                if (!modifiedRarityIds.Add(modifier.Rarity.Id))
+                {
+                    report.AddError($"Origin '{DisplayName}' has duplicate weight modifiers for rarity '{modifier.Rarity.Id}'.");
+                }
+
+                ValidateDefinitionReference(modifier.Rarity, nameof(RarityDefinition), definitionsById, report, $"Origin '{DisplayName}' gift rarity modifier");
+            }
+        }
+
+        private static bool IsFiniteNonNegative(float value)
+        {
+            return value >= 0f && !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
         private static void ValidateCurrencyGrant(string label, ProgressionCurrencyGrantDefinition grant, IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)

@@ -25,8 +25,7 @@ MonoBehaviour:
   grantedAbility:
     ability: {fileID: 11400000, guid: 639aa4a2f0594102aab8d3119e667cb9, type: 2}
   permanentAttributeGrants: []
-  futureGrowthAffinityEntries: []
+  growthAffinityGrants: []
   awakeningMode: 1
   requiredActivePlaytimeSeconds: 300
   enabledForAlpha: 1
-  futureConditionData: active-playtime

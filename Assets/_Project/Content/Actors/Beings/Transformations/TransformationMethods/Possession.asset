@@ -15,14 +15,14 @@ MonoBehaviour:
   methodId: transformation.possession
   displayName: Possession
   description: Canonical alpha plan for temporary controller association with an existing body.
-  biologicalInteractionDefinitionId: interaction.transformation.possession
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000012c, type: 2}
   category: 6
   temporary: 1
   defaultDurationSeconds: 30
-  allowedTargetSpeciesIds: []
-  allowedTargetBodyFormIds: []
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  allowedTargetSpecies: []
+  allowedTargetBodyForms: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   transferPolicy: 3
   anatomyPolicy: 2
   conditionPolicy: 2

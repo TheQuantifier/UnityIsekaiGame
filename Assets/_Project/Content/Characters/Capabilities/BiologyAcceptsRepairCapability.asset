@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Capabilities.CapabilityDefinition
   capabilityId: capability.biology.accepts-repair
   displayName: Accepts Repair
-  description: Body is conceptually compatible with future repair effects.
+  description: Body accepts construct repair effects.
   primaryCategory: {fileID: 11400000, guid: 55cb0000000000000000000000000055, type: 2}
   tags: []
   valueType: 0
@@ -24,4 +24,3 @@ MonoBehaviour:
   minimumValue: 0
   maximumValue: 1
   alphaEnabled: 1
-  futureMetadata: Feature 7.1 biological capability.

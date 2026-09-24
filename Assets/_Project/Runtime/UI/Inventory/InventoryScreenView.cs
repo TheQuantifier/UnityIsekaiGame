@@ -427,7 +427,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 List<string> parts = new List<string>();
                 foreach (CalculatedStatDefinition definition in calculatedStats.GetOrderedDefinitions(characterMenuOnly: true))
                 {
-                    string resource = definition.IsResourceMaximum ? $" [{definition.LinkedFutureResourceId} max]" : string.Empty;
+                    string resource = definition.IsResourceMaximum ? $" [{definition.LinkedResourceId} max]" : string.Empty;
                     parts.Add($"{definition.DisplayName} {FormatNumber(calculatedStats.GetValue(definition.Id))}{resource}");
                 }
 

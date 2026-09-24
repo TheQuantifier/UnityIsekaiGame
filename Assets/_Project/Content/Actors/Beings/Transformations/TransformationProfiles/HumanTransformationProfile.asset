@@ -15,23 +15,23 @@ MonoBehaviour:
   profileId: transformation-profile.species.human
   displayName: Human Transformation Profile
   description: Alpha transformation profile for humans and humanoid bodies.
-  speciesDefinitionIds:
-  - species.human
-  - species.undead-human
-  bodyFormDefinitionIds:
-  - body-form.humanoid
-  enabledMethodIds:
-  - transformation.body-form-change
-  - transformation.body-replacement
-  - transformation.body-swap
-  - transformation.limb-replacement
-  - transformation.organ-replacement
-  - transformation.polymorph.temporary
-  - transformation.possession
-  - transformation.reincarnation
-  - transformation.resurrection-body
-  - transformation.species-change.permanent
-  - transformation.structure-replacement
+  speciesDefinitions:
+  - {fileID: 11400000, guid: 7a170000000000000000000000000001, type: 2}
+  - {fileID: 11400000, guid: 7a170000000000000000000000000002, type: 2}
+  bodyFormDefinitions:
+  - {fileID: 11400000, guid: 7a160000000000000000000000000001, type: 2}
+  enabledMethods:
+  - {fileID: 11400000, guid: 7a780000000000000000000000000112, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000113, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000114, type: 2}
+  - {fileID: 11400000, guid: 7a78000000000000000000000000011b, type: 2}
+  - {fileID: 11400000, guid: 7a78000000000000000000000000011a, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000110, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000115, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000116, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000117, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000111, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000119, type: 2}
   defaultTransferPolicy: 2
   defaultConditionPolicy: 4
   defaultVitalPolicy: 6

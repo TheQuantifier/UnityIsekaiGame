@@ -15,96 +15,96 @@ MonoBehaviour:
   profileId: recovery-profile.species.human
   displayName: Human Recovery Profile
   description: Canonical alpha recovery profile for Feature 7.7.
-  speciesDefinitionId: species.human
-  bodyFormDefinitionId: 
-  biologicalClassificationId: 
+  speciesDefinition: {fileID: 11400000, guid: 7a170000000000000000000000000001, type: 2}
+  bodyFormDefinition: {fileID: 0}
+  biologicalClassification: {fileID: 0}
   baseRecoveryCapacityPerHour: 1
   allocationPolicy: 4
   methods:
-  - recoveryMethodId: recovery.natural.tissue-healing
+  - recoveryMethod: {fileID: 11400000, guid: 7a77000000000000000000000000006e, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 10
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 4
-  - recoveryMethodId: recovery.natural.wound-closure
+  - recoveryMethod: {fileID: 11400000, guid: 7a77000000000000000000000000006f, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 20
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 7
-  - recoveryMethodId: recovery.natural.fracture-healing
+  - recoveryMethod: {fileID: 11400000, guid: 7a770000000000000000000000000070, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 30
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 8
-  - recoveryMethodId: recovery.natural.organ-recovery
+  - recoveryMethod: {fileID: 11400000, guid: 7a770000000000000000000000000071, type: 2}
     enabled: 1
     rateMultiplier: 0.8
     priority: 40
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 4
-  - recoveryMethodId: recovery.natural.blood-restoration
+  - recoveryMethod: {fileID: 11400000, guid: 7a770000000000000000000000000072, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 50
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 11
-  - recoveryMethodId: recovery.natural.breath-restoration
+  - recoveryMethod: {fileID: 11400000, guid: 7a770000000000000000000000000073, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 60
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 11
-  - recoveryMethodId: recovery.natural.nutrition-recovery
+  - recoveryMethod: {fileID: 11400000, guid: 7a770000000000000000000000000074, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 65
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 11
-  - recoveryMethodId: recovery.natural.hydration-recovery
+  - recoveryMethod: {fileID: 11400000, guid: 7a770000000000000000000000000075, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 66
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 11
-  - recoveryMethodId: recovery.natural.fatigue-reduction
+  - recoveryMethod: {fileID: 11400000, guid: 7a770000000000000000000000000076, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 70
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 11
-  - recoveryMethodId: recovery.natural.sleep-need-reduction
+  - recoveryMethod: {fileID: 11400000, guid: 7a770000000000000000000000000077, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 80
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 11
-  - recoveryMethodId: recovery.magical.biological-healing
+  - recoveryMethod: {fileID: 11400000, guid: 7a77000000000000000000000000007c, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 90
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 11
-  - recoveryMethodId: recovery.magical.holy-healing
+  - recoveryMethod: {fileID: 11400000, guid: 7a77000000000000000000000000007d, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 100
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 11
-  blockingHazardIds: []
+  blockingHazards: []
   tags: []
   validationMetadata: Feature 7.7 canonical alpha recovery profile.

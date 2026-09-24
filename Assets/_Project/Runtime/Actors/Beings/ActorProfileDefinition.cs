@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Stats;
+using UnityIsekaiGame.Beings.Biology;
 
 namespace UnityIsekaiGame.Beings
 {
@@ -14,25 +15,23 @@ namespace UnityIsekaiGame.Beings
         [SerializeField] private string displayName;
         [SerializeField, TextArea(2, 5)] private string description;
         [SerializeField] private BeingDefinition beingDefinition;
+        [SerializeField] private SpeciesDefinition defaultSpecies;
         [SerializeField] private CategoryDefinition primaryCategory;
         [SerializeField] private TagDefinition[] tags;
         [SerializeField] private ActorProfileStatContribution[] statContributions;
         [SerializeField] private ResistanceModifierDefinition[] baseResistances;
-        [SerializeField] private string futureSensesPlaceholder;
-        [SerializeField] private string futureMovementProfilePlaceholder;
 
         public string ActorProfileId => actorProfileId;
         public string Id => actorProfileId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public string Description => description;
         public BeingDefinition BeingDefinition => beingDefinition;
+        public SpeciesDefinition DefaultSpecies => defaultSpecies;
         public CategoryDefinition PrimaryCategory => primaryCategory;
         public CategoryDomain ClassificationDomain => CategoryDomain.Being;
         public IReadOnlyList<TagDefinition> Tags => tags ?? Array.Empty<TagDefinition>();
         public IReadOnlyList<ActorProfileStatContribution> StatContributions => statContributions ?? Array.Empty<ActorProfileStatContribution>();
         public IReadOnlyList<ResistanceModifierDefinition> BaseResistances => baseResistances ?? System.Array.Empty<ResistanceModifierDefinition>();
-        public string FutureSensesPlaceholder => futureSensesPlaceholder;
-        public string FutureMovementProfilePlaceholder => futureMovementProfilePlaceholder;
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
@@ -53,6 +52,15 @@ namespace UnityIsekaiGame.Beings
             else if (!definitionsById.TryGetValue(beingDefinition.Id, out IGameDefinition being) || !(being is BeingDefinition))
             {
                 report.AddError($"ActorProfileDefinition '{DisplayName}' references being '{beingDefinition.Id}', which is not in the configured catalog.");
+            }
+
+            if (defaultSpecies == null)
+            {
+                report.AddError($"ActorProfileDefinition '{DisplayName}' is missing its default Species.");
+            }
+            else if (!definitionsById.TryGetValue(defaultSpecies.Id, out IGameDefinition species) || !ReferenceEquals(species, defaultSpecies))
+            {
+                report.AddError($"ActorProfileDefinition '{DisplayName}' references Species '{defaultSpecies.Id}' outside the configured catalog.");
             }
 
             ValidateStatContributions(definitionsById, report);

@@ -33,5 +33,3 @@ MonoBehaviour:
     currency: {fileID: 11400000, guid: 8d5f2bba9b8d4f56ad823790337abbad, type: 2}
     baseAmount: 60
     randomVariation: 20
-  futureSelectionMetadata: reincarnation-alpha-family
-  futureWorldCultureRestrictions: prototype-kingdom

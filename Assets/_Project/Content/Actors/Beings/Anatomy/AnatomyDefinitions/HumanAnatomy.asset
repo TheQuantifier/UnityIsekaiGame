@@ -39,8 +39,8 @@ MonoBehaviour:
     repeatGroup: 
     mirrorGroup: 
     equipmentTagIds: []
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags: []
+    damageTagIds: []
+    biologicalFunctionTags: []
     tags: []
     order: 0
   - nodeId: region.head
@@ -61,9 +61,9 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.head-compatible
-    futureDamageTagIds:
+    damageTagIds:
     - damage.region.head
-    futureBiologicalFunctionTags: []
+    biologicalFunctionTags: []
     tags: []
     order: 10
   - nodeId: region.torso
@@ -84,9 +84,9 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.torso-compatible
-    futureDamageTagIds:
+    damageTagIds:
     - damage.region.torso
-    futureBiologicalFunctionTags: []
+    biologicalFunctionTags: []
     tags: []
     order: 20
   - nodeId: region.arm.left
@@ -107,9 +107,9 @@ MonoBehaviour:
     mirrorGroup: region.arm
     equipmentTagIds:
     - equipment.hand-compatible
-    futureDamageTagIds:
+    damageTagIds:
     - damage.region.arm
-    futureBiologicalFunctionTags: []
+    biologicalFunctionTags: []
     tags: []
     order: 30
   - nodeId: region.arm.right
@@ -130,9 +130,9 @@ MonoBehaviour:
     mirrorGroup: region.arm
     equipmentTagIds:
     - equipment.hand-compatible
-    futureDamageTagIds:
+    damageTagIds:
     - damage.region.arm
-    futureBiologicalFunctionTags: []
+    biologicalFunctionTags: []
     tags: []
     order: 40
   - nodeId: region.leg.left
@@ -153,9 +153,9 @@ MonoBehaviour:
     mirrorGroup: region.leg
     equipmentTagIds:
     - equipment.foot-compatible
-    futureDamageTagIds:
+    damageTagIds:
     - damage.region.leg
-    futureBiologicalFunctionTags: []
+    biologicalFunctionTags: []
     tags: []
     order: 50
   - nodeId: region.leg.right
@@ -176,9 +176,9 @@ MonoBehaviour:
     mirrorGroup: region.leg
     equipmentTagIds:
     - equipment.foot-compatible
-    futureDamageTagIds:
+    damageTagIds:
     - damage.region.leg
-    futureBiologicalFunctionTags: []
+    biologicalFunctionTags: []
     tags: []
     order: 60
   - nodeId: part.head
@@ -199,8 +199,8 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.head-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags: []
+    damageTagIds: []
+    biologicalFunctionTags: []
     tags: []
     order: 70
   - nodeId: part.torso
@@ -221,8 +221,8 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.torso-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags: []
+    damageTagIds: []
+    biologicalFunctionTags: []
     tags: []
     order: 80
   - nodeId: part.arm.left
@@ -243,8 +243,8 @@ MonoBehaviour:
     mirrorGroup: limb.arm
     equipmentTagIds:
     - equipment.hand-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - manipulation
     tags: []
     order: 90
@@ -266,8 +266,8 @@ MonoBehaviour:
     mirrorGroup: hand
     equipmentTagIds:
     - equipment.hand-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - manipulation
     tags: []
     order: 100
@@ -289,8 +289,8 @@ MonoBehaviour:
     mirrorGroup: limb.arm
     equipmentTagIds:
     - equipment.hand-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - manipulation
     tags: []
     order: 110
@@ -312,8 +312,8 @@ MonoBehaviour:
     mirrorGroup: hand
     equipmentTagIds:
     - equipment.hand-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - manipulation
     tags: []
     order: 120
@@ -335,8 +335,8 @@ MonoBehaviour:
     mirrorGroup: limb.leg
     equipmentTagIds:
     - equipment.foot-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - locomotion
     tags: []
     order: 130
@@ -358,8 +358,8 @@ MonoBehaviour:
     mirrorGroup: foot
     equipmentTagIds:
     - equipment.foot-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - locomotion
     tags: []
     order: 140
@@ -381,8 +381,8 @@ MonoBehaviour:
     mirrorGroup: limb.leg
     equipmentTagIds:
     - equipment.foot-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - locomotion
     tags: []
     order: 150
@@ -404,8 +404,8 @@ MonoBehaviour:
     mirrorGroup: foot
     equipmentTagIds:
     - equipment.foot-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - locomotion
     tags: []
     order: 160
@@ -426,9 +426,9 @@ MonoBehaviour:
     repeatGroup: 
     mirrorGroup: 
     equipmentTagIds: []
-    futureDamageTagIds:
+    damageTagIds:
     - damage.organ.brain
-    futureBiologicalFunctionTags:
+    biologicalFunctionTags:
     - consciousness
     tags: []
     order: 170
@@ -449,9 +449,9 @@ MonoBehaviour:
     repeatGroup: 
     mirrorGroup: 
     equipmentTagIds: []
-    futureDamageTagIds:
+    damageTagIds:
     - damage.organ.heart
-    futureBiologicalFunctionTags:
+    biologicalFunctionTags:
     - circulation
     tags: []
     order: 180
@@ -472,9 +472,9 @@ MonoBehaviour:
     repeatGroup: lung
     mirrorGroup: lung
     equipmentTagIds: []
-    futureDamageTagIds:
+    damageTagIds:
     - damage.organ.lung
-    futureBiologicalFunctionTags:
+    biologicalFunctionTags:
     - breathing
     tags: []
     order: 190
@@ -495,9 +495,9 @@ MonoBehaviour:
     repeatGroup: lung
     mirrorGroup: lung
     equipmentTagIds: []
-    futureDamageTagIds:
+    damageTagIds:
     - damage.organ.lung
-    futureBiologicalFunctionTags:
+    biologicalFunctionTags:
     - breathing
     tags: []
     order: 200
@@ -518,8 +518,8 @@ MonoBehaviour:
     repeatGroup: 
     mirrorGroup: 
     equipmentTagIds: []
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags: []
+    damageTagIds: []
+    biologicalFunctionTags: []
     tags: []
     order: 210
   tags: []

@@ -15,14 +15,14 @@ MonoBehaviour:
   profileId: compatibility-profile.species.basic-construct
   displayName: BasicConstruct Compatibility Profile
   description: Canonical alpha compatibility profile for species.basic-construct.
-  speciesDefinitionId: species.basic-construct
-  bodyFormDefinitionId: 
-  biologicalClassificationId: 
+  speciesDefinition: {fileID: 11400000, guid: 7a170000000000000000000000000003, type: 2}
+  bodyFormDefinition: {fileID: 0}
+  biologicalClassification: {fileID: 0}
   rules:
   - entryId: profile.construct.bleeding-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.biology.bleeding
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000101, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -32,9 +32,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -43,7 +43,7 @@ MonoBehaviour:
   - entryId: profile.construct.suffocation-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.biology.suffocation
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000102, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -53,9 +53,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -64,7 +64,7 @@ MonoBehaviour:
   - entryId: profile.construct.starvation-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.biology.starvation
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000105, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -74,9 +74,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -85,7 +85,7 @@ MonoBehaviour:
   - entryId: profile.construct.dehydration-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.biology.dehydration
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000106, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -95,9 +95,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -106,7 +106,7 @@ MonoBehaviour:
   - entryId: profile.construct.fatigue-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.biology.extreme-fatigue
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000107, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -116,9 +116,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -127,7 +127,7 @@ MonoBehaviour:
   - entryId: profile.construct.sleep-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.biology.sleep-deprivation
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000108, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -137,9 +137,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -148,7 +148,7 @@ MonoBehaviour:
   - entryId: profile.construct.biological-healing-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.recovery.biological-healing
+    interactionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000011e, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -158,9 +158,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -169,7 +169,7 @@ MonoBehaviour:
   - entryId: profile.construct.repair-compatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.recovery.construct-repair
+    interactionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000011f, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 0
@@ -179,9 +179,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -190,7 +190,7 @@ MonoBehaviour:
   - entryId: profile.construct.core-damage-compatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.injury.core-damage
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000111, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 0
@@ -200,9 +200,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -211,7 +211,7 @@ MonoBehaviour:
   - entryId: profile.construct.disease-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.condition.disease
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000123, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -221,9 +221,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -232,7 +232,7 @@ MonoBehaviour:
   - entryId: profile.construct.poison-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.condition.poison
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000126, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -242,9 +242,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 

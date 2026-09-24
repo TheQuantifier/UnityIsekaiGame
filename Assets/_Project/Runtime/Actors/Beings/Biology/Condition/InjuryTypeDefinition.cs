@@ -23,10 +23,10 @@ namespace UnityIsekaiGame.Beings.Biology.Condition
         [SerializeField] private bool canCauseStructuralFailure = true;
         [SerializeField] private bool canCauseRuntimeAbsence;
         [SerializeField] private bool canAffectVitalStructures = true;
-        [SerializeField] private bool futureBleedingMetadata;
-        [SerializeField] private bool futurePainMetadata;
-        [SerializeField] private bool futureHealingMetadata;
-        [SerializeField] private bool futureInfectionMetadata;
+        [SerializeField] private bool causesBleeding;
+        [SerializeField] private bool causesPain;
+        [SerializeField] private bool supportsHealing;
+        [SerializeField] private bool carriesInfectionRisk;
         [SerializeField] private TagDefinition[] tags;
 
         public string Id => injuryTypeId ?? string.Empty;
@@ -41,10 +41,10 @@ namespace UnityIsekaiGame.Beings.Biology.Condition
         public bool CanCauseStructuralFailure => canCauseStructuralFailure;
         public bool CanCauseRuntimeAbsence => canCauseRuntimeAbsence;
         public bool CanAffectVitalStructures => canAffectVitalStructures;
-        public bool FutureBleedingMetadata => futureBleedingMetadata;
-        public bool FuturePainMetadata => futurePainMetadata;
-        public bool FutureHealingMetadata => futureHealingMetadata;
-        public bool FutureInfectionMetadata => futureInfectionMetadata;
+        public bool CausesBleeding => causesBleeding;
+        public bool CausesPain => causesPain;
+        public bool SupportsHealing => supportsHealing;
+        public bool CarriesInfectionRisk => carriesInfectionRisk;
         public IReadOnlyList<TagDefinition> Tags => tags ?? Array.Empty<TagDefinition>();
 
         private void OnValidate()
@@ -73,7 +73,7 @@ namespace UnityIsekaiGame.Beings.Biology.Condition
 
             if (CompatibleAnatomyTags.Count > 0)
             {
-                HashSet<string> nodeTags = new HashSet<string>(node.FutureDamageTagIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+                HashSet<string> nodeTags = new HashSet<string>(node.DamageTagIds ?? Array.Empty<string>(), StringComparer.Ordinal);
                 if (!CompatibleAnatomyTags.Any(tag => tag != null && nodeTags.Contains(tag.Id)))
                 {
                     return false;

@@ -15,7 +15,7 @@ MonoBehaviour:
   methodId: recovery.restoration.spirit
   displayName: Spirit Restoration
   description: Canonical alpha recovery method for Feature 7.7.
-  biologicalInteractionDefinitionId: interaction.recovery.spirit-restoration
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000120, type: 2}
   category: 10
   supportedTargets:
   - 1
@@ -34,11 +34,11 @@ MonoBehaviour:
   allowedRestTypes:
   - 5
   - 6
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   compatibleInjuryTypeIds: []
   compatibleAnatomyTagIds: []
-  restoredResourceIds: []
+  restoredResources: []
   permanentOutcome: 0
   interruptionPolicy: 0
   alphaExecutionEnabled: 1

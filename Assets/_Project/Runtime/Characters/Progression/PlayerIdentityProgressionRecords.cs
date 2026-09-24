@@ -22,7 +22,6 @@ namespace UnityIsekaiGame.Progression
         public string originFamilyId;
         public string originId;
         public int randomSeed;
-        public bool originInfluencedGiftRoll;
         public long startingGoldAmount;
         public bool originStatGrantsApplied;
         public bool startingCurrencyApplied;
@@ -39,7 +38,6 @@ namespace UnityIsekaiGame.Progression
         public BirthGiftType giftType;
         public string originFamilyId;
         public string originId;
-        public bool originInfluencedRoll;
         public BirthGiftAwakeningMode awakeningMode;
         public float requiredActivePlaytimeSeconds;
         public float currentProgressSeconds;
@@ -50,7 +48,6 @@ namespace UnityIsekaiGame.Progression
         public string awakenedAtUtc;
         public double awakenedAtPlaytimeSeconds;
         public string assignmentSource;
-        public string futureConditionData;
     }
 
     [Serializable]

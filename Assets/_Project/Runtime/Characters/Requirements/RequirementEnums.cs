@@ -28,7 +28,13 @@ namespace UnityIsekaiGame.Requirements
         ConditionAbsent,
         Currency,
         CapabilityBoolean,
-        CapabilityNumeric
+        CapabilityNumeric,
+        Species,
+        BiologicalClassification,
+        BodyForm,
+        LifecycleState,
+        BiologicalConditionPresent,
+        BiologicalConditionAbsent
     }
 
     public enum RequirementComparison

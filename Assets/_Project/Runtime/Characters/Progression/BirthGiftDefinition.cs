@@ -19,11 +19,10 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private ProgressionAbilityReference grantedAbility;
         [SerializeField] private SkillGrantDefinition[] skillGrants;
         [SerializeField] private PermanentAttributeGrantDefinition[] permanentAttributeGrants;
-        [SerializeField] private PermanentAttributeGrantDefinition[] futureGrowthAffinityEntries;
+        [SerializeField] private PermanentAttributeGrantDefinition[] growthAffinityGrants;
         [SerializeField] private BirthGiftAwakeningMode awakeningMode = BirthGiftAwakeningMode.ImmediateAutomatic;
         [SerializeField, Min(0f)] private float requiredActivePlaytimeSeconds;
         [SerializeField] private bool enabledForAlpha = true;
-        [SerializeField] private string futureConditionData;
 
         public string BirthGiftId => birthGiftId;
         public string Id => birthGiftId;
@@ -38,11 +37,10 @@ namespace UnityIsekaiGame.Progression
         public ProgressionAbilityReference GrantedAbility => grantedAbility;
         public IReadOnlyList<SkillGrantDefinition> SkillGrants => skillGrants ?? System.Array.Empty<SkillGrantDefinition>();
         public IReadOnlyList<PermanentAttributeGrantDefinition> PermanentAttributeGrants => permanentAttributeGrants ?? System.Array.Empty<PermanentAttributeGrantDefinition>();
-        public IReadOnlyList<PermanentAttributeGrantDefinition> FutureGrowthAffinityEntries => futureGrowthAffinityEntries ?? System.Array.Empty<PermanentAttributeGrantDefinition>();
+        public IReadOnlyList<PermanentAttributeGrantDefinition> GrowthAffinityGrants => growthAffinityGrants ?? System.Array.Empty<PermanentAttributeGrantDefinition>();
         public BirthGiftAwakeningMode AwakeningMode => awakeningMode;
         public float RequiredActivePlaytimeSeconds => Mathf.Max(0f, requiredActivePlaytimeSeconds);
         public bool EnabledForAlpha => enabledForAlpha;
-        public string FutureConditionData => futureConditionData ?? string.Empty;
 
         private void OnValidate()
         {
@@ -92,6 +90,11 @@ namespace UnityIsekaiGame.Progression
                 report.AddError($"Birth gift '{DisplayName}' is a permanent attribute grant but has no grants.");
             }
 
+            if (giftType == BirthGiftType.GrowthAffinity && GrowthAffinityGrants.Count == 0)
+            {
+                report.AddError($"Birth gift '{DisplayName}' is a growth affinity but has no affinity grants.");
+            }
+
             if (giftType == BirthGiftType.LatentSkill)
             {
                 if (grantedAbility?.Ability == null)
@@ -113,6 +116,18 @@ namespace UnityIsekaiGame.Progression
                 else if (definitionsById == null || !definitionsById.TryGetValue(grant.Attribute.Id, out IGameDefinition registeredAttribute) || !ReferenceEquals(registeredAttribute, grant.Attribute))
                 {
                     report.AddError($"Birth gift '{DisplayName}' references attribute '{grant.Attribute.Id}', which is not in the configured catalog.");
+                }
+            }
+
+            foreach (PermanentAttributeGrantDefinition grant in GrowthAffinityGrants)
+            {
+                if (grant == null || !grant.IsValid)
+                {
+                    report.AddError($"Birth gift '{DisplayName}' has an invalid growth affinity grant.");
+                }
+                else if (definitionsById == null || !definitionsById.TryGetValue(grant.Attribute.Id, out IGameDefinition registeredAttribute) || !ReferenceEquals(registeredAttribute, grant.Attribute))
+                {
+                    report.AddError($"Birth gift '{DisplayName}' references growth affinity attribute '{grant.Attribute.Id}', which is not in the configured catalog.");
                 }
             }
 

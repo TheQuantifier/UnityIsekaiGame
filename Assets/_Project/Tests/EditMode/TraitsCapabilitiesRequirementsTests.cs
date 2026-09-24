@@ -193,12 +193,13 @@ namespace UnityIsekaiGame.Tests
             object context = Activator.CreateInstance(RequiredType("UnityIsekaiGame.Requirements.RequirementEvaluationContext"));
             SetProperty(context, "Resources", resources);
             SetProperty(context, "Traits", traits);
+            SetProperty(context, "Capabilities", traits.GetComponent(RequiredType("UnityIsekaiGame.Capabilities.CharacterCapabilityCollection")));
             return InvokeStatic(RequiredType("UnityIsekaiGame.Requirements.CapabilityRequirementEvaluator"), "Evaluate", requirementSet, context);
         }
 
         private static bool CapabilityBoolean(Component traits, string capabilityId)
         {
-            object capabilities = Property<object>(traits, "Capabilities");
+            object capabilities = traits.GetComponent(RequiredType("UnityIsekaiGame.Capabilities.CharacterCapabilityCollection"));
             object snapshot = Invoke(capabilities, "Evaluate", capabilityId);
             Assert.That(snapshot, Is.Not.Null, capabilityId);
             return Property<bool>(snapshot, "BooleanValue");
@@ -223,12 +224,14 @@ namespace UnityIsekaiGame.Tests
             resources = owner.AddComponent(RequiredType("UnityIsekaiGame.ResourceSystem.CharacterResourceCollection"));
             skills = owner.AddComponent(RequiredType("UnityIsekaiGame.Skills.CharacterSkillCollection"));
             traits = owner.AddComponent(RequiredType("UnityIsekaiGame.Traits.CharacterTraitCollection"));
+            Component capabilities = owner.AddComponent(RequiredType("UnityIsekaiGame.Capabilities.CharacterCapabilityCollection"));
 
             Invoke(attributes, "Configure", registry);
             Invoke(stats, "Configure", registry, attributes);
             Invoke(resources, "Configure", registry, stats, LocalPlayerId);
+            Invoke(capabilities, "Configure", registry);
             Invoke(skills, "Configure", registry, stats, null);
-            Invoke(traits, "Configure", registry, stats, skills, LocalPlayerId);
+            Invoke(traits, "Configure", registry, stats, skills, capabilities, LocalPlayerId);
             return owner;
         }
 

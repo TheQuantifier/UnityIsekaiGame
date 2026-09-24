@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Beings.Biology;
 using UnityIsekaiGame.Abilities;
+using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.GameData;
@@ -18,6 +19,7 @@ using UnityIsekaiGame.Stats;
 using UnityIsekaiGame.StatusEffects;
 using UnityIsekaiGame.Traits;
 using UnityIsekaiGame.WorldEntities;
+using UnityIsekaiGame.ActorLifecycle;
 
 namespace UnityIsekaiGame.CharacterSystem
 {
@@ -30,12 +32,15 @@ namespace UnityIsekaiGame.CharacterSystem
         [SerializeField] private CharacterResourceCollection resources;
         [SerializeField] private CharacterSkillCollection skills;
         [SerializeField] private CharacterAbilityCollection abilities;
+        [SerializeField] private CharacterCapabilityCollection capabilities;
         [SerializeField] private CharacterTraitCollection traits;
         [SerializeField] private ActorBodyRuntime body;
         [SerializeField] private StatusEffectController statuses;
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private PlayerEquipment equipment;
         [SerializeField] private WorldEntityIdentity worldEntityIdentity;
+        [SerializeField] private AuthoritativeCharacterSimulationDriver simulation;
+        [SerializeField] private ActorLifecycleController lifecycle;
         [SerializeField] private string actorIdOverride;
 
         private DefinitionRegistry registry;
@@ -65,11 +70,14 @@ namespace UnityIsekaiGame.CharacterSystem
         public CharacterResourceCollection Resources => resources;
         public CharacterSkillCollection Skills => skills;
         public CharacterAbilityCollection Abilities => abilities;
+        public CharacterCapabilityCollection Capabilities => capabilities;
         public CharacterTraitCollection Traits => traits;
         public ActorBodyRuntime Body => body;
         public StatusEffectController Statuses => statuses;
         public PlayerInventory Inventory => inventory;
         public PlayerEquipment Equipment => equipment;
+        public AuthoritativeCharacterSimulationDriver Simulation => simulation;
+        public ActorLifecycleController Lifecycle => lifecycle;
         public string AccountId => identity == null ? string.Empty : identity.AccountId;
         public string PlayerId => identity == null ? PersistenceService.LocalPlayerId : identity.PlayerId;
         public string PersonId => identity == null ? string.Empty : identity.PersonId;
@@ -77,12 +85,12 @@ namespace UnityIsekaiGame.CharacterSystem
 
         private void Awake()
         {
-            ResolveSubsystems(addMissingCore: false);
+            ResolveSubsystems();
         }
 
         private void OnEnable()
         {
-            ResolveSubsystems(addMissingCore: false);
+            ResolveSubsystems();
             Subscribe();
         }
 
@@ -93,7 +101,7 @@ namespace UnityIsekaiGame.CharacterSystem
             CharacterDisposed?.Invoke(this, false);
         }
 
-        public bool InitializeFromRegistry(DefinitionRegistry definitionRegistry, bool restoring = false, bool addMissingCore = true)
+        public bool InitializeFromRegistry(DefinitionRegistry definitionRegistry, bool restoring = false)
         {
             registry = definitionRegistry ?? registry;
             LastFailureReason = string.Empty;
@@ -101,7 +109,7 @@ namespace UnityIsekaiGame.CharacterSystem
             {
                 SetReadiness(restoring ? CharacterReadinessState.Restoring : CharacterReadinessState.DefinitionsReady, restoring);
                 Unsubscribe();
-                ResolveSubsystems(addMissingCore);
+                ResolveSubsystems();
                 if (registry == null)
                 {
                     Fail("Definition registry is missing.");
@@ -111,6 +119,7 @@ namespace UnityIsekaiGame.CharacterSystem
                 attributes?.Configure(registry);
                 calculatedStats?.Configure(registry, attributes);
                 abilities?.Configure(registry);
+                capabilities?.Configure(registry);
                 GetComponent<PlayerSpellLoadout>()?.SynchronizeAuthoredAbilityGrants(restoring);
                 if (actorStats != null)
                 {
@@ -119,10 +128,23 @@ namespace UnityIsekaiGame.CharacterSystem
                     calculatedStats = actorStats.CalculatedStats ?? calculatedStats;
                 }
                 skills?.Configure(registry, calculatedStats, null);
-                traits?.Configure(registry, calculatedStats, skills, PlayerId);
-                body?.Configure(registry, ActorId, PersonId, traits, calculatedStats, restoring);
+                traits?.Configure(registry, calculatedStats, skills, capabilities, PlayerId);
+                body?.Configure(registry, ActorId, PersonId, traits, calculatedStats, restoring, capabilities);
+                if (body != null && !body.IsReady && actorStats?.ActorProfile?.DefaultSpecies != null)
+                {
+                    body.AssignSpecies(actorStats.ActorProfile.DefaultSpecies.Id, restoring, "Actor profile default Species");
+                }
                 resources?.Configure(registry, calculatedStats, PlayerId);
                 identity?.ConfigureRuntimeReferences(actorStats, worldEntityIdentity, null, null);
+                identity?.ConfigureDefinitions(registry);
+                if (identity != null)
+                {
+                    ProgressionOperationResult originInitialization = identity.EnsureOriginAndBirthGiftAssigned(registry, restoring);
+                    if (!originInitialization.Succeeded)
+                    {
+                        throw new InvalidOperationException(originInitialization.Message);
+                    }
+                }
                 SetReadiness(CharacterReadinessState.IdentityReady, restoring);
 
                 Subscribe();
@@ -197,10 +219,13 @@ namespace UnityIsekaiGame.CharacterSystem
                 Resources = resources,
                 Skills = skills,
                 Traits = traits,
+                Capabilities = capabilities,
                 Identity = identity,
                 Equipment = equipment,
                 Statuses = statuses,
-                Inventory = inventory
+                Inventory = inventory,
+                Body = body,
+                Lifecycle = lifecycle
             };
 
             if (abilities != null)
@@ -237,6 +262,7 @@ namespace UnityIsekaiGame.CharacterSystem
             ValidateConfigured(report, calculatedStats, calculatedStats == null || calculatedStats.IsConfigured, "Calculated Stats");
             ValidateConfigured(report, resources, resources == null || resources.IsConfigured, "Current Resources");
             ValidateConfigured(report, skills, skills == null || skills.IsConfigured, "Skills");
+            ValidateConfigured(report, capabilities, capabilities == null || capabilities.IsConfigured, "Capabilities");
             ValidateConfigured(report, traits, traits == null || traits.IsConfigured, "Traits");
             ValidateConfigured(report, body, body == null || body.IsReady, "Body");
 
@@ -281,7 +307,7 @@ namespace UnityIsekaiGame.CharacterSystem
             return string.Join(Environment.NewLine, lines);
         }
 
-        private void ResolveSubsystems(bool addMissingCore)
+        private void ResolveSubsystems()
         {
             actorStats = actorStats == null ? GetComponent<ActorStats>() : actorStats;
             identity = identity == null ? GetComponent<PlayerIdentityProgression>() : identity;
@@ -290,24 +316,15 @@ namespace UnityIsekaiGame.CharacterSystem
             resources = resources == null ? GetComponent<CharacterResourceCollection>() : resources;
             skills = skills == null ? GetComponent<CharacterSkillCollection>() : skills;
             abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
+            capabilities = capabilities == null ? GetComponent<CharacterCapabilityCollection>() : capabilities;
             traits = traits == null ? GetComponent<CharacterTraitCollection>() : traits;
             body = body == null ? GetComponent<ActorBodyRuntime>() : body;
             statuses = statuses == null ? GetComponent<StatusEffectController>() : statuses;
             inventory = inventory == null ? GetComponent<PlayerInventory>() : inventory;
             equipment = equipment == null ? GetComponent<PlayerEquipment>() : equipment;
             worldEntityIdentity = worldEntityIdentity == null ? GetComponent<WorldEntityIdentity>() : worldEntityIdentity;
-
-            if (!addMissingCore)
-            {
-                return;
-            }
-
-            attributes = attributes == null ? gameObject.AddComponent<CharacterAttributes>() : attributes;
-            calculatedStats = calculatedStats == null ? gameObject.AddComponent<CalculatedStatCollection>() : calculatedStats;
-            resources = resources == null ? gameObject.AddComponent<CharacterResourceCollection>() : resources;
-            skills = skills == null ? gameObject.AddComponent<CharacterSkillCollection>() : skills;
-            abilities = abilities == null ? gameObject.AddComponent<CharacterAbilityCollection>() : abilities;
-            traits = traits == null ? gameObject.AddComponent<CharacterTraitCollection>() : traits;
+            simulation = simulation == null ? GetComponent<AuthoritativeCharacterSimulationDriver>() : simulation;
+            lifecycle = lifecycle == null ? GetComponent<ActorLifecycleController>() : lifecycle;
         }
 
         private CharacterFullSnapshot BuildSnapshot(bool developmentView)
@@ -400,7 +417,7 @@ namespace UnityIsekaiGame.CharacterSystem
             }
 
             return new CharacterCapabilitySnapshot(
-                traits == null ? Array.Empty<Capabilities.CapabilitySnapshot>() : traits.Capabilities.GetSnapshots(),
+                capabilities == null ? Array.Empty<Capabilities.CapabilitySnapshot>() : capabilities.GetSnapshots(),
                 resistances,
                 immunities.ToList());
         }

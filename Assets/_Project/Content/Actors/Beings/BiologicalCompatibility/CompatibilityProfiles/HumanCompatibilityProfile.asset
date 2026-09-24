@@ -15,14 +15,14 @@ MonoBehaviour:
   profileId: compatibility-profile.species.human
   displayName: Human Compatibility Profile
   description: Canonical alpha compatibility profile for species.human.
-  speciesDefinitionId: species.human
-  bodyFormDefinitionId: 
-  biologicalClassificationId: 
+  speciesDefinition: {fileID: 11400000, guid: 7a170000000000000000000000000001, type: 2}
+  bodyFormDefinition: {fileID: 0}
+  biologicalClassification: {fileID: 0}
   rules:
   - entryId: profile.human.bleeding-compatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.biology.bleeding
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000101, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 0
@@ -32,9 +32,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -43,7 +43,7 @@ MonoBehaviour:
   - entryId: profile.human.fracture-compatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.injury.fracture
+    interactionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000010c, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 0
@@ -53,9 +53,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 

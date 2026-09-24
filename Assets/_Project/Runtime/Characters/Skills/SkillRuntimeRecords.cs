@@ -16,7 +16,6 @@ namespace UnityIsekaiGame.Skills
         public string latestProgressAtUtc;
         public double latestProgressAtPlaytimeSeconds;
         public string sourceSystem;
-        public string futureConditionData;
     }
 
     [Serializable]
@@ -54,7 +53,7 @@ namespace UnityIsekaiGame.Skills
     [Serializable]
     public sealed class PlayerSkillsSaveData
     {
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         public int schemaVersion = CurrentSchemaVersion;
         public string playerId;

@@ -10,7 +10,7 @@ namespace UnityIsekaiGame.Progression
     public sealed class PlayerIdentityProgressionPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const string Key = "player.identity-progression";
-        public const int CurrentParticipantSchemaVersion = 2;
+        public const int CurrentParticipantSchemaVersion = 4;
 
         private readonly PlayerIdentityProgression progression;
         private readonly Func<DefinitionRegistry> registryProvider;
@@ -203,7 +203,6 @@ namespace UnityIsekaiGame.Progression
                 && ValidateSocialStatuses(saveData.socialStatuses, registry, out failureReason)
                 && ValidateTitles(saveData.titles, registry, out failureReason)
                 && ValidateWallet(saveData.walletBalances, registry, out failureReason)
-                && ValidateStringList(saveData.learnedCapabilityIds, "learned capability", out failureReason)
                 && ValidateActivityRecords(saveData.activityRecords, out failureReason)
                 && ValidateParticipationRecords(saveData.participationRecords, out failureReason);
         }
@@ -213,7 +212,8 @@ namespace UnityIsekaiGame.Progression
             failureReason = string.Empty;
             if (origin == null || !origin.assigned)
             {
-                return true;
+                failureReason = "Saved identity/progression data does not contain an assigned origin.";
+                return false;
             }
 
             if (!registry.TryGet(origin.originFamilyId, out OriginFamilyDefinition family))
@@ -254,7 +254,8 @@ namespace UnityIsekaiGame.Progression
             failureReason = string.Empty;
             if (gift == null || string.IsNullOrWhiteSpace(gift.giftDefinitionId))
             {
-                return true;
+                failureReason = "Saved identity/progression data does not contain an assigned birth gift.";
+                return false;
             }
 
             if (!registry.TryGet(gift.giftDefinitionId, out BirthGiftDefinition definition))

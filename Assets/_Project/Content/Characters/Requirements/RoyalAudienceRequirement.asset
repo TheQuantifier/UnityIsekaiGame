@@ -23,7 +23,7 @@ MonoBehaviour:
     - nodeId: noble-context
       nodeType: 8
       comparison: 0
-      targetId: social-status.nobility
+      targetDefinition: {fileID: 11400000, guid: 747ecf653fdf4c98a63ca48e316d79d4, type: 2}
       numericValue: 0
       integerValue: 0
       booleanValue: 1

@@ -15,7 +15,7 @@ MonoBehaviour:
   methodId: recovery.natural.fatigue-reduction
   displayName: Natural Fatigue Reduction
   description: Canonical alpha recovery method for Feature 7.7.
-  biologicalInteractionDefinitionId: interaction.recovery.natural-healing
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000011c, type: 2}
   category: 7
   supportedTargets:
   - 4
@@ -34,12 +34,12 @@ MonoBehaviour:
   - 1
   - 2
   - 3
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   compatibleInjuryTypeIds: []
   compatibleAnatomyTagIds: []
-  restoredResourceIds:
-  - resource.biology.fatigue
+  restoredResources:
+  - {fileID: 11400000, guid: 7a250000000000000000000000000016, type: 2}
   permanentOutcome: 0
   interruptionPolicy: 0
   alphaExecutionEnabled: 1

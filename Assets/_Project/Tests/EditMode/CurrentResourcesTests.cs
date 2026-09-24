@@ -269,9 +269,9 @@ namespace UnityIsekaiGame.Tests
             Assert.That(GetProperty<string>(resource, "LinkedMaximumStatId"), Is.EqualTo(expectedMaximumStatId));
             object linkedMaximum = GetProperty<object>(resource, "LinkedMaximumStat");
             Assert.That(GetProperty<bool>(linkedMaximum, "IsResourceMaximum"), Is.True);
-            Assert.That(GetProperty<string>(linkedMaximum, "LinkedFutureResourceId"), Is.EqualTo(resourceId));
+            Assert.That(GetProperty<string>(linkedMaximum, "LinkedResourceId"), Is.EqualTo(resourceId));
             Assert.That(GetProperty<object>(resource, "PersistencePolicy").ToString(), Is.EqualTo("Persist"));
-            Assert.That(GetProperty<object>(resource, "Authority").ToString(), Is.EqualTo("ServerAuthoritativeFuture"));
+            Assert.That(GetProperty<object>(resource, "Authority").ToString(), Is.EqualTo("ServerAuthoritative"));
         }
 
         private static GameObject CreateConfiguredOwner(

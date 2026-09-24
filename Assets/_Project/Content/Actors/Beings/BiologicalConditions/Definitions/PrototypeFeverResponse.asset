@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Fictional systemic fever response fixture.
   family: 13
   strainId: strain.prototype.fever-alpha
-  biologicalInteractionDefinitionId: interaction.condition.disease
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000123, type: 2}
   allowedRoutes: [11]
   targetAnatomyTagIds: []
   requiredAnatomyNodeId: 
@@ -28,9 +28,9 @@ MonoBehaviour:
   baseRegressionRate: 0.5
   immuneClearanceRate: 0.2
   symptomThreshold: 3
-  vitalResourceId: resource.biology.temperature
+  vitalResource: {fileID: 11400000, guid: 7a250000000000000000000000000012, type: 2}
   vitalPressurePerTick: 0.75
-  hazardDefinitionId: hazard.biology.overheating
+  hazardDefinition: {fileID: 11400000, guid: 7a750000000000000000000000000012, type: 2}
   hazardRateMultiplier: 0.75
   damageType: {fileID: 0}
   step6DamagePerTick: 0

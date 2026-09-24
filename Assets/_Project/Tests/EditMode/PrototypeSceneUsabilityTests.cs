@@ -6,7 +6,16 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityIsekaiGame.Abilities;
+using UnityIsekaiGame.ActorLifecycle;
+using UnityIsekaiGame.Beings.Biology;
+using UnityIsekaiGame.Capabilities;
+using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.Configuration;
+using UnityIsekaiGame.ResourceSystem;
+using UnityIsekaiGame.Skills;
+using UnityIsekaiGame.Stats;
+using UnityIsekaiGame.Traits;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -95,6 +104,24 @@ namespace UnityIsekaiGame.Tests
             MatchCollection matches = Regex.Matches(scene, @"m_Name:\s*EventSystem\b");
 
             Assert.That(matches.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void PrototypeCharactersUseExplicitCanonicalCharacterComposition()
+        {
+            EditorSceneManager.OpenScene(ScenePath);
+            CharacterSystemCoordinator[] characters = UnityEngine.Object.FindObjectsByType<CharacterSystemCoordinator>(FindObjectsInactive.Include)
+                .Where(character => character.gameObject.scene.path == ScenePath)
+                .ToArray();
+
+            Assert.That(characters.Length, Is.GreaterThanOrEqualTo(3));
+            Assert.That(characters.Select(character => character.name), Does.Contain("Prototype Player"));
+            Assert.That(characters.Select(character => character.name), Does.Contain("Prototype Zombie Enemy"));
+            Assert.That(characters.Select(character => character.name), Does.Contain("Prototype Zombie Dungeon Patrol"));
+            foreach (CharacterSystemCoordinator character in characters)
+            {
+                AssertCharacterComposition(character);
+            }
         }
 
         [Test]
@@ -320,6 +347,21 @@ namespace UnityIsekaiGame.Tests
         private static void AssertSceneDoesNotContain(string scene, string removedName)
         {
             Assert.That(scene, Does.Not.Contain($"m_Name: {removedName}"), removedName);
+        }
+
+        private static void AssertCharacterComposition(CharacterSystemCoordinator character)
+        {
+            Assert.That(character.GetComponents<CharacterSystemCoordinator>().Length, Is.EqualTo(1), character.name);
+            Assert.That(character.Attributes, Is.SameAs(character.GetComponent<CharacterAttributes>()), character.name);
+            Assert.That(character.CalculatedStats, Is.SameAs(character.GetComponent<CalculatedStatCollection>()), character.name);
+            Assert.That(character.Resources, Is.SameAs(character.GetComponent<CharacterResourceCollection>()), character.name);
+            Assert.That(character.Skills, Is.SameAs(character.GetComponent<CharacterSkillCollection>()), character.name);
+            Assert.That(character.Abilities, Is.SameAs(character.GetComponent<CharacterAbilityCollection>()), character.name);
+            Assert.That(character.Capabilities, Is.SameAs(character.GetComponent<CharacterCapabilityCollection>()), character.name);
+            Assert.That(character.Traits, Is.SameAs(character.GetComponent<CharacterTraitCollection>()), character.name);
+            Assert.That(character.Body, Is.SameAs(character.GetComponent<ActorBodyRuntime>()), character.name);
+            Assert.That(character.Simulation, Is.SameAs(character.GetComponent<AuthoritativeCharacterSimulationDriver>()), character.name);
+            Assert.That(character.Lifecycle, Is.SameAs(character.GetComponent<ActorLifecycleController>()), character.name);
         }
 
         private static GameObject FindScenePath(UnityEngine.SceneManagement.Scene scene, string path)

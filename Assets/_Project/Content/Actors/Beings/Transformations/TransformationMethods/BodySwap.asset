@@ -15,14 +15,14 @@ MonoBehaviour:
   methodId: transformation.body-swap
   displayName: Body Swap
   description: Canonical alpha plan for swapping Person/body associations between two existing bodies.
-  biologicalInteractionDefinitionId: interaction.transformation.body-replacement
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000012d, type: 2}
   category: 5
   temporary: 0
   defaultDurationSeconds: 0
-  allowedTargetSpeciesIds: []
-  allowedTargetBodyFormIds: []
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  allowedTargetSpecies: []
+  allowedTargetBodyForms: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   transferPolicy: 2
   anatomyPolicy: 2
   conditionPolicy: 2

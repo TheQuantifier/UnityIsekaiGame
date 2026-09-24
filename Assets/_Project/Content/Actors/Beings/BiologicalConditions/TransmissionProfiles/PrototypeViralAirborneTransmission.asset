@@ -15,7 +15,7 @@ MonoBehaviour:
   transmissionProfileId: transmission.biology.prototype-viral-airborne
   displayName: Prototype Viral Airborne Transmission
   description: Fictional airborne transmission fixture that creates exposure plans.
-  conditionDefinitionId: condition.biology.prototype-viral-malaise
+  conditionDefinition: {fileID: 11400000, guid: 7a790000000000000000000000000110, type: 2}
   transmissionMode: 2
   exposureRoute: 2
   transferredDose: 3

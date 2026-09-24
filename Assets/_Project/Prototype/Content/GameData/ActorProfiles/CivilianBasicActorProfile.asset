@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: Civilian Basic
   description: Optional baseline profile for noncombat person actors.
   beingDefinition: {fileID: 11400000, guid: 83c94b51705a4b43aa317ea3d808e24f, type: 2}
+  defaultSpecies: {fileID: 11400000, guid: 7a170000000000000000000000000001, type: 2}
   primaryCategory: {fileID: 11400000, guid: 0bfc1472e1244e4992e19c31886b1252, type: 2}
   tags:
   - {fileID: 11400000, guid: ae91f7acd1794650bcc7d65b47d79796, type: 2}
@@ -36,5 +37,3 @@ MonoBehaviour:
     direction: 100
     magnitude: 3.5
     priority: 0
-  futureSensesPlaceholder: 
-  futureMovementProfilePlaceholder: 

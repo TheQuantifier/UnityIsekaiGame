@@ -19,7 +19,6 @@ namespace UnityIsekaiGame.Skills
         [SerializeField] private SkillGradeEffectPackageDefinition[] gradePackages;
         [SerializeField] private SkillAbilityUnlockDefinition[] abilityUnlocks;
         [SerializeField] private SkillGrade directGrantDefaultGrade = SkillGrade.F;
-        [SerializeField] private string futureMetadata;
 
         public string SkillId => skillId;
         public string Id => skillId;
@@ -35,7 +34,6 @@ namespace UnityIsekaiGame.Skills
         public IReadOnlyList<SkillGradeEffectPackageDefinition> GradePackages => gradePackages ?? System.Array.Empty<SkillGradeEffectPackageDefinition>();
         public IReadOnlyList<SkillAbilityUnlockDefinition> AbilityUnlocks => abilityUnlocks ?? System.Array.Empty<SkillAbilityUnlockDefinition>();
         public SkillGrade DirectGrantDefaultGrade => SkillGradeUtility.Clamp(directGrantDefaultGrade);
-        public string FutureMetadata => futureMetadata ?? string.Empty;
 
         private void OnValidate()
         {

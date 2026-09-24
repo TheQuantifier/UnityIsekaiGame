@@ -124,7 +124,7 @@ namespace UnityIsekaiGame.Tests
             CharacterSystemCoordinator coordinator = owner.GetComponent<CharacterSystemCoordinator>();
             ActorBodyRuntime body = owner.GetComponent<ActorBodyRuntime>();
             Assert.That(body.AssignSpecies("species.human").Succeeded, Is.True);
-            Assert.That(coordinator.InitializeFromRegistry(registry, false, false), Is.True);
+            Assert.That(coordinator.InitializeFromRegistry(registry, false), Is.True);
 
             long anatomyRevision = coordinator.Body.Anatomy.AnatomyRevision;
             AnatomySnapshot snapshot = coordinator.Query.GetAnatomySnapshot();
@@ -203,6 +203,7 @@ namespace UnityIsekaiGame.Tests
             owner.AddComponent<CharacterAttributes>();
             owner.AddComponent<CalculatedStatCollection>();
             owner.AddComponent<CharacterTraitCollection>();
+            owner.AddComponent<UnityIsekaiGame.Capabilities.CharacterCapabilityCollection>();
             owner.AddComponent<ActorBodyRuntime>();
             return owner;
         }
@@ -212,12 +213,14 @@ namespace UnityIsekaiGame.Tests
             CharacterAttributes attributes = owner.GetComponent<CharacterAttributes>();
             CalculatedStatCollection stats = owner.GetComponent<CalculatedStatCollection>();
             CharacterTraitCollection traits = owner.GetComponent<CharacterTraitCollection>();
+            UnityIsekaiGame.Capabilities.CharacterCapabilityCollection capabilities = owner.GetComponent<UnityIsekaiGame.Capabilities.CharacterCapabilityCollection>();
             ActorBodyRuntime body = owner.GetComponent<ActorBodyRuntime>();
 
             attributes.Configure(registry);
             stats.Configure(registry, attributes);
-            traits.Configure(registry, stats, null, personId);
-            body.Configure(registry, actorBodyId, personId, traits, stats);
+            capabilities.Configure(registry);
+            traits.Configure(registry, stats, null, capabilities, personId);
+            body.Configure(registry, actorBodyId, personId, traits, stats, capabilityCollection: capabilities);
         }
 
         private static DefinitionRegistry LoadRegistry()

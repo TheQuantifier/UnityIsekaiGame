@@ -463,12 +463,14 @@ namespace UnityIsekaiGame.Tests
                 CharacterAttributes attributes = owner.AddComponent<CharacterAttributes>();
                 CalculatedStatCollection stats = owner.AddComponent<CalculatedStatCollection>();
                 CharacterTraitCollection traits = owner.AddComponent<CharacterTraitCollection>();
+                UnityIsekaiGame.Capabilities.CharacterCapabilityCollection capabilities = owner.AddComponent<UnityIsekaiGame.Capabilities.CharacterCapabilityCollection>();
                 CharacterResourceCollection resources = owner.AddComponent<CharacterResourceCollection>();
                 ActorLifecycleController lifecycle = owner.AddComponent<ActorLifecycleController>();
                 OngoingEffectService ongoing = owner.AddComponent<OngoingEffectService>();
                 attributes.Configure(registry);
                 stats.Configure(registry, attributes);
-                traits.Configure(registry, stats, null, "player.local");
+                capabilities.Configure(registry);
+                traits.Configure(registry, stats, null, capabilities, "player.local");
                 resources.Configure(registry, stats, "player.local");
                 lifecycle.Configure(null, resources, null, traits);
                 ongoing.Configure(null);

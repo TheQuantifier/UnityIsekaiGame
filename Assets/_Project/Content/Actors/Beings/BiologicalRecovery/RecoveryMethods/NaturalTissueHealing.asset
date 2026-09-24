@@ -15,7 +15,7 @@ MonoBehaviour:
   methodId: recovery.natural.tissue-healing
   displayName: Natural Tissue Healing
   description: Canonical alpha recovery method for Feature 7.7.
-  biologicalInteractionDefinitionId: interaction.recovery.natural-healing
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000011c, type: 2}
   category: 3
   supportedTargets:
   - 1
@@ -32,11 +32,11 @@ MonoBehaviour:
   resolvesInjuryOnCompletion: 0
   requiresRestContext: 0
   allowedRestTypes: []
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   compatibleInjuryTypeIds: []
   compatibleAnatomyTagIds: []
-  restoredResourceIds: []
+  restoredResources: []
   permanentOutcome: 0
   interruptionPolicy: 0
   alphaExecutionEnabled: 1

@@ -15,40 +15,40 @@ MonoBehaviour:
   profileId: recovery-profile.species.undead-human
   displayName: Undead Human Recovery Profile
   description: Canonical alpha recovery profile for Feature 7.7.
-  speciesDefinitionId: species.undead-human
-  bodyFormDefinitionId: 
-  biologicalClassificationId: 
+  speciesDefinition: {fileID: 11400000, guid: 7a170000000000000000000000000002, type: 2}
+  bodyFormDefinition: {fileID: 0}
+  biologicalClassification: {fileID: 0}
   baseRecoveryCapacityPerHour: 1
   allocationPolicy: 4
   methods:
-  - recoveryMethodId: recovery.natural.tissue-healing
+  - recoveryMethod: {fileID: 11400000, guid: 7a77000000000000000000000000006e, type: 2}
     enabled: 1
     rateMultiplier: 0.5
     priority: 10
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 2
-  - recoveryMethodId: recovery.natural.wound-closure
+  - recoveryMethod: {fileID: 11400000, guid: 7a77000000000000000000000000006f, type: 2}
     enabled: 1
     rateMultiplier: 0.5
     priority: 20
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 7
-  - recoveryMethodId: recovery.magical.necrotic-restoration
+  - recoveryMethod: {fileID: 11400000, guid: 7a77000000000000000000000000007e, type: 2}
     enabled: 1
     rateMultiplier: 1.25
     priority: 30
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 11
-  - recoveryMethodId: recovery.magical.holy-healing
+  - recoveryMethod: {fileID: 11400000, guid: 7a77000000000000000000000000007d, type: 2}
     enabled: 1
     rateMultiplier: 1
     priority: 40
     autoStart: 0
     allocationPolicy: 0
     recoveryLimit: 11
-  blockingHazardIds: []
+  blockingHazards: []
   tags: []
   validationMetadata: Feature 7.7 canonical alpha recovery profile.

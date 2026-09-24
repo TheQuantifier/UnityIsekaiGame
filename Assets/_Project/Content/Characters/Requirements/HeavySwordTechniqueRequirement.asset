@@ -23,7 +23,7 @@ MonoBehaviour:
     - nodeId: skill-swordsmanship-d
       nodeType: 5
       comparison: 3
-      targetId: skill.swordsmanship
+      targetDefinition: {fileID: 11400000, guid: 53300000000000000000000000000153, type: 2}
       numericValue: 0
       integerValue: 2
       booleanValue: 1
@@ -35,7 +35,7 @@ MonoBehaviour:
     - nodeId: physical-power-eight
       nodeType: 1
       comparison: 3
-      targetId: calculated-stat.physical-power
+      targetDefinition: {fileID: 11400000, guid: c1000000000000000000000000000052, type: 2}
       numericValue: 8
       integerValue: 0
       booleanValue: 1

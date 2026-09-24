@@ -17,14 +17,13 @@ MonoBehaviour:
   description: Critical fatigue pressure from overexertion.
   stackingPolicy: 7
   defaultSeverity: 3
-  targetResourceId: 
+  targetResource: {fileID: 0}
   resourceOperation: 0
   baseResourceRatePerHour: 0
   baseDamagePerHour: 1
   damageType: {fileID: 0}
   lifecycleRequest: 2
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   alphaEnabled: 1
-  futureResistanceMetadata: Deferred endurance and exhaustion hooks.
   tags: []

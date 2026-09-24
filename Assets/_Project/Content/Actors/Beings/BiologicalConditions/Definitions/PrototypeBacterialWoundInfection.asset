@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Fictional bacterial-like fixture requiring an active injury at the target node.
   family: 3
   strainId: strain.prototype.bacterial-alpha
-  biologicalInteractionDefinitionId: interaction.condition.infection
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000124, type: 2}
   allowedRoutes: [5, 8]
   targetAnatomyTagIds: []
   requiredAnatomyNodeId: 
@@ -28,9 +28,9 @@ MonoBehaviour:
   baseRegressionRate: 0.2
   immuneClearanceRate: 0.04
   symptomThreshold: 8
-  vitalResourceId: resource.biology.temperature
+  vitalResource: {fileID: 11400000, guid: 7a250000000000000000000000000012, type: 2}
   vitalPressurePerTick: 0.25
-  hazardDefinitionId: hazard.biology.overheating
+  hazardDefinition: {fileID: 11400000, guid: 7a750000000000000000000000000012, type: 2}
   hazardRateMultiplier: 0.5
   damageType: {fileID: 0}
   step6DamagePerTick: 0

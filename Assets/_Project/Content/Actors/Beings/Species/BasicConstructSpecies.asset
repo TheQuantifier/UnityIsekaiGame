@@ -27,7 +27,6 @@ MonoBehaviour:
     alphaEnabled: 1
   defaultBooleanCapabilities:
   - entryId: capability.biology.is-construct
-    runtimeCapabilityKey: capability.biology.is-construct
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000003, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -35,7 +34,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: capability.biology.accepts-repair
-    runtimeCapabilityKey: capability.biology.accepts-repair
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000010, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -43,7 +41,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: capability.biology.is-corporeal
-    runtimeCapabilityKey: capability.biology.is-corporeal
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000011, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -51,7 +48,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: capability.biology.has-physical-body
-    runtimeCapabilityKey: capability.biology.has-physical-body
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000012, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -59,7 +55,6 @@ MonoBehaviour:
     priority: 0
     alphaEnabled: 1
   - entryId: species.basic-construct.can-die
-    runtimeCapabilityKey: can.die
     capability: {fileID: 11400000, guid: 7a120000000000000000000000000014, type: 2}
     booleanValue: 1
     numericValue: 0
@@ -78,5 +73,3 @@ MonoBehaviour:
   defaultDefeatPolicy: {fileID: 11400000, guid: 63f00000000000000000000000000034, type: 2}
   anatomyDefinition: {fileID: 11400000, guid: 7a190000000000000000000000000002, type: 2}
   compatibleOriginIds: []
-  futureAnatomyDefinitionId: 
-  futureBiologicalMetadata: Anatomy resolves through anatomy.basic-construct.

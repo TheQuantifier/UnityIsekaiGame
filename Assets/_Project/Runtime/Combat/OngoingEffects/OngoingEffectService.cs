@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.ActorLifecycle;
+using UnityIsekaiGame.Beings.Biology;
 using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.GameData;
@@ -716,7 +717,14 @@ namespace UnityIsekaiGame.Combat.OngoingEffects
                 return false;
             }
 
-            target = new TargetRuntime(resolvedObject, actorId, resources, character, character == null ? resolvedObject.GetComponentInParent<CharacterTraitCollection>() : character.Traits);
+            target = new TargetRuntime(
+                resolvedObject,
+                actorId,
+                resources,
+                character,
+                character == null ? resolvedObject.GetComponentInParent<CharacterTraitCollection>() : character.Traits,
+                character == null ? resolvedObject.GetComponentInParent<CharacterCapabilityCollection>() : character.Capabilities,
+                character == null ? resolvedObject.GetComponentInParent<ActorBodyRuntime>() : character.Body);
             return true;
         }
 
@@ -808,7 +816,7 @@ namespace UnityIsekaiGame.Combat.OngoingEffects
             }
 
             RequirementEvaluationResult result = target.Character == null
-                ? CapabilityRequirementEvaluator.Evaluate(definition.Requirements, new RequirementEvaluationContext { Resources = target.Resources, Traits = target.Traits })
+                ? CapabilityRequirementEvaluator.Evaluate(definition.Requirements, new RequirementEvaluationContext { Resources = target.Resources, Traits = target.Traits, Capabilities = target.Capabilities, Body = target.Body })
                 : target.Character.Query.EvaluateRequirement(definition.Requirements);
             summary = string.Join("; ", result.TestLabFailureReasons);
             return result.Passed;
@@ -822,15 +830,15 @@ namespace UnityIsekaiGame.Combat.OngoingEffects
                 return true;
             }
 
-            if (target.Traits == null)
+            if (target.Capabilities == null)
             {
-                summary = "Target has no Trait capability runtime.";
+                summary = "Target has no capability runtime.";
                 return false;
             }
 
             foreach (string capabilityId in definition.RequiredCapabilityIds)
             {
-                CapabilitySnapshot snapshot = target.Traits.Capabilities.Evaluate(capabilityId);
+                CapabilitySnapshot snapshot = target.Capabilities == null ? null : target.Capabilities.Evaluate(capabilityId);
                 if (snapshot == null || snapshot.Blocked || !snapshot.BooleanValue)
                 {
                     summary = $"Required Capability '{capabilityId}' is missing, false, or blocked.";
@@ -911,13 +919,15 @@ namespace UnityIsekaiGame.Combat.OngoingEffects
 
         private readonly struct TargetRuntime
         {
-            public TargetRuntime(GameObject gameObject, string actorId, CharacterResourceCollection resources, CharacterSystemCoordinator character, CharacterTraitCollection traits)
+            public TargetRuntime(GameObject gameObject, string actorId, CharacterResourceCollection resources, CharacterSystemCoordinator character, CharacterTraitCollection traits, CharacterCapabilityCollection capabilities, ActorBodyRuntime body)
             {
                 GameObject = gameObject;
                 ActorId = actorId ?? string.Empty;
                 Resources = resources;
                 Character = character;
                 Traits = traits;
+                Capabilities = capabilities;
+                Body = body;
             }
 
             public GameObject GameObject { get; }
@@ -925,6 +935,8 @@ namespace UnityIsekaiGame.Combat.OngoingEffects
             public CharacterResourceCollection Resources { get; }
             public CharacterSystemCoordinator Character { get; }
             public CharacterTraitCollection Traits { get; }
+            public CharacterCapabilityCollection Capabilities { get; }
+            public ActorBodyRuntime Body { get; }
         }
     }
 }

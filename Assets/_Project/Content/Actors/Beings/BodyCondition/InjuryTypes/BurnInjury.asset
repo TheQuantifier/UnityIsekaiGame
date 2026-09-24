@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Beings.Biology.Condition.InjuryTypeDefinition
   injuryTypeId: injury.burn
   displayName: Burn
-  description: Heat or corrosive structural damage; future treatment, pain, and infection systems are deferred.
+  description: Heat or corrosive structural damage that can cause pain, healing demand, and infection risk.
   compatibleDamageTypes: []
   compatibleAnatomyTags: []
   compatibleNodeCategories:
@@ -32,8 +32,8 @@ MonoBehaviour:
   canCauseStructuralFailure: 1
   canCauseRuntimeAbsence: 0
   canAffectVitalStructures: 1
-  futureBleedingMetadata: 0
-  futurePainMetadata: 0
-  futureHealingMetadata: 0
-  futureInfectionMetadata: 0
+  causesBleeding: 0
+  causesPain: 0
+  supportsHealing: 0
+  carriesInfectionRisk: 0
   tags: []

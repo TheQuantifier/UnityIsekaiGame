@@ -11,7 +11,7 @@ namespace UnityIsekaiGame.Requirements
         [SerializeField] private string nodeId;
         [SerializeField] private RequirementNodeType nodeType;
         [SerializeField] private RequirementComparison comparison = RequirementComparison.GreaterOrEqual;
-        [SerializeField] private string targetId;
+        [SerializeField] private ScriptableObject targetDefinition;
         [SerializeField] private float numericValue;
         [SerializeField] private int integerValue;
         [SerializeField] private bool booleanValue = true;
@@ -24,7 +24,8 @@ namespace UnityIsekaiGame.Requirements
         public string NodeId => nodeId ?? string.Empty;
         public RequirementNodeType NodeType => nodeType;
         public RequirementComparison Comparison => comparison;
-        public string TargetId => targetId ?? string.Empty;
+        public ScriptableObject TargetDefinition => targetDefinition;
+        public string TargetId => targetDefinition is IGameDefinition definition ? definition.Id : string.Empty;
         public float NumericValue => numericValue;
         public int IntegerValue => integerValue;
         public bool BooleanValue => booleanValue;

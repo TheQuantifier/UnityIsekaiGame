@@ -54,9 +54,8 @@ MonoBehaviour:
       magnitude: 2
       priority: 10
     abilityUnlocks: []
-    capabilityUnlockIds:
-    - capability.weapon.sword.basic
-    futureInteractionMetadata: 
+    capabilityUnlocks:
+    - {fileID: 11400000, guid: 6e100000000000000000000000000006, type: 2}
   - grade: 1
     calculatedStatContributions:
     - calculatedStat: {fileID: 11400000, guid: c1000000000000000000000000000052, type: 2}
@@ -65,8 +64,7 @@ MonoBehaviour:
       magnitude: 3
       priority: 10
     abilityUnlocks: []
-    capabilityUnlockIds: []
-    futureInteractionMetadata: 
+    capabilityUnlocks: []
   - grade: 2
     calculatedStatContributions:
     - calculatedStat: {fileID: 11400000, guid: cc000000000000000000000000000052, type: 2}
@@ -75,8 +73,6 @@ MonoBehaviour:
       magnitude: 2
       priority: 10
     abilityUnlocks: []
-    capabilityUnlockIds: []
-    futureInteractionMetadata: 
+    capabilityUnlocks: []
   abilityUnlocks: []
   directGrantDefaultGrade: 0
-  futureMetadata: 

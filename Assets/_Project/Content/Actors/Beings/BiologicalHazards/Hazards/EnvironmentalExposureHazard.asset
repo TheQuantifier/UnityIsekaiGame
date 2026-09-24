@@ -14,17 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Beings.Biology.Hazards.BiologicalHazardDefinition
   hazardId: hazard.environment.exposure
   displayName: Environmental Exposure
-  description: General environmental exposure marker and future consequence source.
+  description: General environmental exposure source evaluated by the biological hazard runtime.
   stackingPolicy: 1
   defaultSeverity: 1
-  targetResourceId: 
+  targetResource: {fileID: 0}
   resourceOperation: 0
   baseResourceRatePerHour: 0
   baseDamagePerHour: 0
   damageType: {fileID: 0}
   lifecycleRequest: 1
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   alphaEnabled: 1
-  futureResistanceMetadata: Deferred atmosphere, weather, and shelter hooks.
   tags: []

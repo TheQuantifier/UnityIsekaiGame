@@ -4,7 +4,6 @@ namespace UnityIsekaiGame.Beings
     {
         NotInitialized,
         InitializedFromProfile,
-        InitializedFromLegacyFallback,
         MissingProfile,
         InvalidProfile,
         AlreadyInitialized

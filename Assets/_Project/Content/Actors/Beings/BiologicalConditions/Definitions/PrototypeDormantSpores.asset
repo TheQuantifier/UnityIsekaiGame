@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Fictional dormant-condition fixture for relapse and carrier foundations.
   family: 18
   strainId: strain.prototype.dormant-alpha
-  biologicalInteractionDefinitionId: interaction.condition.infection
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000124, type: 2}
   allowedRoutes: [2, 9]
   targetAnatomyTagIds: []
   requiredAnatomyNodeId: 
@@ -28,9 +28,9 @@ MonoBehaviour:
   baseRegressionRate: 0.05
   immuneClearanceRate: 0.01
   symptomThreshold: 30
-  vitalResourceId: 
+  vitalResource: {fileID: 0}
   vitalPressurePerTick: 0
-  hazardDefinitionId: 
+  hazardDefinition: {fileID: 0}
   hazardRateMultiplier: 1
   damageType: {fileID: 0}
   step6DamagePerTick: 0

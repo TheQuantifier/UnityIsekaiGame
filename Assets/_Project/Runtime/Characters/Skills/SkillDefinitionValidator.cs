@@ -116,11 +116,15 @@ namespace UnityIsekaiGame.Skills
 
                 ValidateAbilityUnlocks(skill, package.AbilityUnlocks, definitionsById, $"grade {package.Grade}", report);
 
-                foreach (string capabilityId in package.CapabilityUnlockIds)
+                foreach (Capabilities.CapabilityDefinition capability in package.CapabilityUnlocks)
                 {
-                    if (string.IsNullOrWhiteSpace(capabilityId))
+                    if (capability == null)
                     {
-                        report.AddError($"Skill '{skill.DisplayName}' grade {package.Grade} has an empty capability unlock ID.");
+                        report.AddError($"Skill '{skill.DisplayName}' grade {package.Grade} has a missing Capability unlock.");
+                    }
+                    else if (definitionsById == null || !definitionsById.TryGetValue(capability.Id, out IGameDefinition registered) || !ReferenceEquals(registered, capability))
+                    {
+                        report.AddError($"Skill '{skill.DisplayName}' grade {package.Grade} references missing Capability '{capability.Id}'.");
                     }
                 }
             }

@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Fictional parasite load fixture.
   family: 5
   strainId: strain.prototype.parasite-alpha
-  biologicalInteractionDefinitionId: interaction.condition.parasite
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000125, type: 2}
   allowedRoutes: [3, 6]
   targetAnatomyTagIds: []
   requiredAnatomyNodeId: 
@@ -28,9 +28,9 @@ MonoBehaviour:
   baseRegressionRate: 0.1
   immuneClearanceRate: 0.02
   symptomThreshold: 14
-  vitalResourceId: resource.biology.nutrition
+  vitalResource: {fileID: 11400000, guid: 7a250000000000000000000000000013, type: 2}
   vitalPressurePerTick: 1
-  hazardDefinitionId: 
+  hazardDefinition: {fileID: 0}
   hazardRateMultiplier: 1
   damageType: {fileID: 0}
   step6DamagePerTick: 0

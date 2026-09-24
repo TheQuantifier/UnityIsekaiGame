@@ -22,13 +22,13 @@ MonoBehaviour:
   allowRevival: 0
   recoveryMinimumHealth: 0
   revivalMinimumHealth: 0
+  revivalWaitRealSeconds: 0
   recoveryRequirements: {fileID: 0}
   revivalRequirements: {fileID: 0}
   deathRequirements: {fileID: 0}
-  canBecomeUnconsciousCapabilityId: can.become-unconscious
-  canDieCapabilityId: can.die
-  canRecoverCapabilityId: can.recover
-  canBeRevivedCapabilityId: can.be-revived
-  deathImmunityCapabilityId: immunity.death
+  canBecomeUnconsciousCapability: {fileID: 11400000, guid: 7a120000000000000000000000000013, type: 2}
+  canDieCapability: {fileID: 11400000, guid: 7a120000000000000000000000000014, type: 2}
+  canRecoverCapability: {fileID: 11400000, guid: 7a120000000000000000000000000018, type: 2}
+  canBeRevivedCapability: {fileID: 11400000, guid: 7a120000000000000000000000000015, type: 2}
+  deathImmunityCapability: {fileID: 11400000, guid: 7a120000000000000000000000000019, type: 2}
   alphaEnabled: 1
-  futureMetadata: Reserved for traps, props, or special bodies that should not enter actor defeat lifecycle.

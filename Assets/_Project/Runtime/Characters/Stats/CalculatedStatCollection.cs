@@ -9,7 +9,6 @@ namespace UnityIsekaiGame.Stats
     public sealed class CalculatedStatCollection : MonoBehaviour
     {
         [SerializeField] private CharacterAttributes attributes;
-        [SerializeField] private List<CalculatedStatDefinition> fallbackDefinitions = new List<CalculatedStatDefinition>();
 
         private readonly Dictionary<string, CalculatedStatDefinition> definitionsById = new Dictionary<string, CalculatedStatDefinition>(StringComparer.Ordinal);
         private readonly Dictionary<string, float> cachedValues = new Dictionary<string, float>(StringComparer.Ordinal);
@@ -32,10 +31,6 @@ namespace UnityIsekaiGame.Stats
                 attributes = GetComponent<CharacterAttributes>();
             }
 
-            if (!IsConfigured && fallbackDefinitions.Count > 0)
-            {
-                Configure(fallbackDefinitions, attributes);
-            }
         }
 
         private void OnEnable()
@@ -108,25 +103,21 @@ namespace UnityIsekaiGame.Stats
 
         public bool HasStat(string statId)
         {
-            EnsureConfiguredFromFallback();
             return definitionsById.ContainsKey(statId);
         }
 
         public float GetValue(string statId)
         {
-            EnsureConfiguredFromFallback();
             return cachedValues.TryGetValue(statId, out float value) ? value : 0f;
         }
 
         public CalculatedStatEvaluationBreakdown GetBreakdown(string statId)
         {
-            EnsureConfiguredFromFallback();
             return cachedBreakdowns.TryGetValue(statId, out CalculatedStatEvaluationBreakdown breakdown) ? breakdown : null;
         }
 
         public IReadOnlyList<CalculatedStatDefinition> GetOrderedDefinitions(bool characterMenuOnly)
         {
-            EnsureConfiguredFromFallback();
             return definitionsById.Values
                 .Where(definition => !characterMenuOnly || definition.ExposedOnCharacterMenu)
                 .OrderBy(definition => definition.SortOrder)
@@ -137,7 +128,6 @@ namespace UnityIsekaiGame.Stats
         public bool AddContribution(RuntimeCalculatedStatContribution contribution, out string failureReason, bool restoring = false)
         {
             failureReason = string.Empty;
-            EnsureConfiguredFromFallback();
             if (!ValidateContribution(contribution, out failureReason))
             {
                 return false;
@@ -191,7 +181,6 @@ namespace UnityIsekaiGame.Stats
 
         public void ForceRecalculateAll(bool restoring = false)
         {
-            EnsureConfiguredFromFallback();
             if (recalculating)
             {
                 return;
@@ -226,12 +215,11 @@ namespace UnityIsekaiGame.Stats
 
         public string BuildDiagnosticSummary()
         {
-            EnsureConfiguredFromFallback();
             List<string> lines = new List<string> { "Feature 5.4a Calculated Stats" };
             foreach (CalculatedStatDefinition definition in GetOrderedDefinitions(characterMenuOnly: false))
             {
                 CalculatedStatEvaluationBreakdown breakdown = GetBreakdown(definition.Id);
-                string resource = definition.IsResourceMaximum ? $" Resource={definition.LinkedFutureResourceId}" : string.Empty;
+                string resource = definition.IsResourceMaximum ? $" Resource={definition.LinkedResourceId}" : string.Empty;
                 lines.Add($"{definition.DisplayName}: {GetValue(definition.Id):0.###} ({definition.Id}) Purpose={definition.Purpose}{resource} Base={breakdown?.BaseValue ?? 0f:0.###} Attr={breakdown?.AttributeWeightedTotal ?? 0f:0.###} +Flat={breakdown?.PositiveFlatTotal ?? 0f:0.###} -Flat={breakdown?.NegativeFlatTotal ?? 0f:0.###}");
             }
 
@@ -437,14 +425,6 @@ namespace UnityIsekaiGame.Stats
             }
 
             RecalculateChanged(statIds.ToList(), restoring);
-        }
-
-        private void EnsureConfiguredFromFallback()
-        {
-            if (!IsConfigured && fallbackDefinitions.Count > 0)
-            {
-                Configure(fallbackDefinitions, attributes);
-            }
         }
 
         private static string SourceKey(int sourceCategory, string sourceId)

@@ -17,6 +17,7 @@ MonoBehaviour:
   description: Prototype enemy actor profile preserving current enemy health, defense,
     and movement metadata.
   beingDefinition: {fileID: 11400000, guid: 7651a66743cd448594e86f1f4774376c, type: 2}
+  defaultSpecies: {fileID: 11400000, guid: 7a170000000000000000000000000002, type: 2}
   primaryCategory: {fileID: 11400000, guid: 02c94266952742b4921d4ab8cefe3141, type: 2}
   tags:
   - {fileID: 11400000, guid: 42afd05984f545cab3198148adf73183, type: 2}
@@ -53,5 +54,3 @@ MonoBehaviour:
     magnitude: 3.2
     priority: 0
   baseResistances: []
-  futureSensesPlaceholder: 
-  futureMovementProfilePlaceholder: 

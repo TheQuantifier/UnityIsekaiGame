@@ -55,9 +55,8 @@ MonoBehaviour:
       magnitude: 2
       priority: 10
     abilityUnlocks: []
-    capabilityUnlockIds:
-    - capability.magic.arcane.basic
-    futureInteractionMetadata: 
+    capabilityUnlocks:
+    - {fileID: 11400000, guid: 6e100000000000000000000000000003, type: 2}
   - grade: 1
     calculatedStatContributions:
     - calculatedStat: {fileID: 11400000, guid: c2000000000000000000000000000052, type: 2}
@@ -66,18 +65,14 @@ MonoBehaviour:
       magnitude: 3
       priority: 10
     abilityUnlocks: []
-    capabilityUnlockIds: []
-    futureInteractionMetadata: 
+    capabilityUnlocks: []
   abilityUnlocks:
   - ability: {fileID: 11400000, guid: 639aa4a2f0594102aab8d3119e667cb9, type: 2}
     requiredGrade: 0
     sourceIdentity: skill.arcane-magic.unlock.arcane-bolt
     alphaAvailable: 1
-    futureMetadata: 
   - ability: {fileID: 11400000, guid: 0cd85663eeb0438f80077353d3735bc2, type: 2}
     requiredGrade: 2
     sourceIdentity: skill.arcane-magic.unlock.heavy-arcane-bolt
     alphaAvailable: 1
-    futureMetadata: 
   directGrantDefaultGrade: 0
-  futureMetadata: 

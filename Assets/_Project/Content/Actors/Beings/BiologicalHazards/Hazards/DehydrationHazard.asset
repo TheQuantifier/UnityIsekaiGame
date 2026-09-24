@@ -17,14 +17,13 @@ MonoBehaviour:
   description: Critical hydration deficit pressure.
   stackingPolicy: 7
   defaultSeverity: 4
-  targetResourceId: 
+  targetResource: {fileID: 0}
   resourceOperation: 0
   baseResourceRatePerHour: 0
   baseDamagePerHour: 3
   damageType: {fileID: 0}
   lifecycleRequest: 1
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   alphaEnabled: 1
-  futureResistanceMetadata: Deferred hydration and desiccation resistance hooks.
   tags: []

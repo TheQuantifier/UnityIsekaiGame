@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Beings.Biology.Anatomy;
+using UnityIsekaiGame.Capabilities;
 
 namespace UnityIsekaiGame.Beings.Biology.Compatibility
 {
@@ -10,7 +12,7 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
         [SerializeField] private string entryId;
         [SerializeField] private BiologicalCompatibilitySourceKind sourceKind = BiologicalCompatibilitySourceKind.System;
         [SerializeField] private string sourceId;
-        [SerializeField] private string interactionDefinitionId;
+        [SerializeField] private BiologicalInteractionDefinition interactionDefinition;
         [SerializeField] private BiologicalInteractionCategory category = BiologicalInteractionCategory.Unknown;
         [SerializeField] private BiologicalInteractionRuleKind ruleKind = BiologicalInteractionRuleKind.Resistance;
         [SerializeField] private BiologicalCompatibilityState compatibilityState = BiologicalCompatibilityState.Compatible;
@@ -20,9 +22,9 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
         [SerializeField, Min(0f)] private float minimumEffectFloor;
         [SerializeField, Min(0f)] private float maximumSeverity = float.PositiveInfinity;
         [SerializeField] private int priority;
-        [SerializeField] private string convertedInteractionDefinitionId;
-        [SerializeField] private string[] requiredRuntimeCapabilityKeys;
-        [SerializeField] private string[] blockingRuntimeCapabilityKeys;
+        [SerializeField] private BiologicalInteractionDefinition convertedInteractionDefinition;
+        [SerializeField] private CapabilityDefinition[] requiredCapabilities;
+        [SerializeField] private CapabilityDefinition[] blockingCapabilities;
         [SerializeField] private string[] requiredAnatomyTagIds;
         [SerializeField] private AnatomyStructuralCategory[] requiredNodeCategories;
         [SerializeField] private string requiredNodeId;
@@ -32,7 +34,8 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
         public string EntryId => entryId ?? string.Empty;
         public BiologicalCompatibilitySourceKind SourceKind => sourceKind;
         public string SourceId => sourceId ?? string.Empty;
-        public string InteractionDefinitionId => interactionDefinitionId ?? string.Empty;
+        public BiologicalInteractionDefinition InteractionDefinition => interactionDefinition;
+        public string InteractionDefinitionId => interactionDefinition == null ? string.Empty : interactionDefinition.Id;
         public BiologicalInteractionCategory Category => category;
         public BiologicalInteractionRuleKind RuleKind => ruleKind;
         public BiologicalCompatibilityState CompatibilityState => compatibilityState;
@@ -42,9 +45,12 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
         public float MinimumEffectFloor => Mathf.Max(0f, minimumEffectFloor);
         public float MaximumSeverity => float.IsNaN(maximumSeverity) ? float.PositiveInfinity : Mathf.Max(0f, maximumSeverity);
         public int Priority => priority;
-        public string ConvertedInteractionDefinitionId => convertedInteractionDefinitionId ?? string.Empty;
-        public string[] RequiredRuntimeCapabilityKeys => requiredRuntimeCapabilityKeys ?? Array.Empty<string>();
-        public string[] BlockingRuntimeCapabilityKeys => blockingRuntimeCapabilityKeys ?? Array.Empty<string>();
+        public BiologicalInteractionDefinition ConvertedInteractionDefinition => convertedInteractionDefinition;
+        public string ConvertedInteractionDefinitionId => convertedInteractionDefinition == null ? string.Empty : convertedInteractionDefinition.Id;
+        public CapabilityDefinition[] RequiredCapabilities => requiredCapabilities ?? Array.Empty<CapabilityDefinition>();
+        public CapabilityDefinition[] BlockingCapabilities => blockingCapabilities ?? Array.Empty<CapabilityDefinition>();
+        public string[] RequiredRuntimeCapabilityKeys => RequiredCapabilities.Select(definition => definition.Id).ToArray();
+        public string[] BlockingRuntimeCapabilityKeys => BlockingCapabilities.Select(definition => definition.Id).ToArray();
         public string[] RequiredAnatomyTagIds => requiredAnatomyTagIds ?? Array.Empty<string>();
         public AnatomyStructuralCategory[] RequiredNodeCategories => requiredNodeCategories ?? Array.Empty<AnatomyStructuralCategory>();
         public string RequiredNodeId => requiredNodeId ?? string.Empty;

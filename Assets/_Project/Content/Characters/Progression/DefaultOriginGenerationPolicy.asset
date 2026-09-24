@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4c9a1d8e72b4a90b0d5c3e6147f289a, type: 3}
+  m_Name: DefaultOriginGenerationPolicy
+  m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Progression.OriginGenerationPolicyDefinition
+  policyId: origin-generation.default
+  displayName: Default Origin Generation
+  favoredGiftWeightMultiplier: 2
+  unfavoredGiftWeightMultiplier: 0.75

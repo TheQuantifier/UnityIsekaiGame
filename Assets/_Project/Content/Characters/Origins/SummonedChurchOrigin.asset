@@ -24,7 +24,7 @@ MonoBehaviour:
   startingAttributeGrants:
   - attribute: {fileID: 11400000, guid: a9000000000000000000000000000052, type: 2}
     amount: 1
-  influencedGiftPool:
+  favoredGiftPool:
   - {fileID: 11400000, guid: 3ff07fc0b978464fba2c0941c1887703, type: 2}
   - {fileID: 11400000, guid: 04aff63d3e324479b25cb92534f74028, type: 2}
   giftWeightModifiers: []
@@ -57,7 +57,3 @@ MonoBehaviour:
     customContextTargetId: 
     acquisitionReason: Sponsored arrival record
   startingTitle: {fileID: 0}
-  futureHomeReference: church-guest-quarter
-  futureRelationshipReferences: church-sponsor-placeholder
-  futureFactionObligations: church-duty-placeholder
-  futureStartingLocationReference: place.prototype-town

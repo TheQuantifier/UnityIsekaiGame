@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Beings.Biology.Hazards.EnvironmentalExposureDefinition
   exposureId: exposure.environment.general
   displayName: General Environmental Exposure
-  description: General exposure marker for future world-environment integration.
-  hazardDefinitionId: hazard.environment.exposure
+  description: General environmental exposure routed into the biological hazard runtime.
+  hazardDefinition: {fileID: 11400000, guid: 7a750000000000000000000000000018, type: 2}
   defaultSeverity: 1
   defaultRateMultiplier: 1
   alphaEnabled: 1

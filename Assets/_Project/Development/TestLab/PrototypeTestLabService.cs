@@ -17,6 +17,7 @@ using UnityIsekaiGame.Beings.Biology.VitalProcesses;
 using UnityIsekaiGame.Development.Automation;
 using UnityIsekaiGame.Development.Automation.Fixtures.History;
 using UnityIsekaiGame.Abilities;
+using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.ActorLifecycle;
 using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.Combat;
@@ -186,7 +187,7 @@ namespace UnityIsekaiGame.Development
             context = newContext;
             combatExecutionService = context?.Persistence == null ? combatExecutionService : context.Persistence.CombatExecution;
             registry = CreateRegistry(context?.DefinitionCatalog);
-            context?.IdentityProgression?.RegisterDefinitionCache(registry);
+            context?.IdentityProgression?.ConfigureDefinitions(registry);
             if (EnsureResources(out CharacterResourceCollection resources))
             {
                 resources.Configure(registry, context.PlayerCalculatedStats, PersistenceService.LocalPlayerId);
@@ -195,7 +196,9 @@ namespace UnityIsekaiGame.Development
             context?.PlayerSkills?.Configure(registry, context.PlayerCalculatedStats, context.SpellLoadout);
             if (EnsureTraits(out CharacterTraitCollection traits))
             {
-                traits.Configure(registry, context.PlayerCalculatedStats, context.PlayerSkills, PersistenceService.LocalPlayerId);
+                CharacterCapabilityCollection capabilityCollection = context?.CharacterSystem?.Capabilities ?? context?.PlayerTransform?.GetComponentInParent<CharacterCapabilityCollection>();
+                capabilityCollection?.Configure(registry);
+                traits.Configure(registry, context.PlayerCalculatedStats, context.PlayerSkills, capabilityCollection, PersistenceService.LocalPlayerId);
             }
 
             EnsureKnowledgeRuntime(out _);
@@ -1338,7 +1341,7 @@ namespace UnityIsekaiGame.Development
                 return "Player identity/progression component is missing.";
             }
 
-            context.IdentityProgression.RegisterDefinitionCache(registry);
+            context.IdentityProgression.ConfigureDefinitions(registry);
             return context.IdentityProgression.BuildDiagnosticSummary();
         }
 
@@ -9229,7 +9232,7 @@ namespace UnityIsekaiGame.Development
                 return RecordFailure("Initialize Character System", "Character System coordinator is missing.", "MissingCharacterSystem");
             }
 
-            bool succeeded = character.InitializeFromRegistry(registry, restoring: false, addMissingCore: true);
+            bool succeeded = character.InitializeFromRegistry(registry, restoring: false);
             return Record(succeeded, "Initialize Character System", succeeded ? "Ready" : "Failed", succeeded ? $"Readiness={character.Readiness}, Revision={character.Revision}." : character.LastFailureReason);
         }
 
@@ -12506,7 +12509,10 @@ namespace UnityIsekaiGame.Development
             string health = resources != null && resources.TryGetResource(ResourceIds.Health, out ResourceSnapshot snapshot)
                 ? $"{snapshot.Current:0.###}/{snapshot.Maximum:0.###}"
                 : "Missing";
-            return $"{label}: State={state} Actor={actorId} Health={health} Policy={policy}";
+            string deathTiming = lifecycle == null || lifecycle.State != ActorLifecycleState.Dead
+                ? ""
+                : $" DiedUtc={lifecycle.DiedAtUtc:O} RevivalUtc={lifecycle.RevivalAvailableAtUtc:O} WaitRemaining={lifecycle.RevivalWaitRemainingSeconds:0}s";
+            return $"{label}: State={state} Actor={actorId} Health={health} Policy={policy}{deathTiming}";
         }
 
         private static string FormatOngoingEffectTarget(string label, OngoingEffectService service, GameObject target, CharacterResourceCollection resources, ActorLifecycleController lifecycle)
@@ -13793,7 +13799,7 @@ namespace UnityIsekaiGame.Development
                 return false;
             }
 
-            progression.RegisterDefinitionCache(registry);
+            progression.ConfigureDefinitions(registry);
             return true;
         }
 
@@ -13817,11 +13823,6 @@ namespace UnityIsekaiGame.Development
                 resources = context.PlayerTransform.GetComponentInParent<CharacterResourceCollection>();
             }
 
-            if (resources == null && context?.PlayerTransform != null)
-            {
-                resources = context.PlayerTransform.gameObject.AddComponent<CharacterResourceCollection>();
-            }
-
             if (resources == null)
             {
                 return false;
@@ -13840,18 +13841,15 @@ namespace UnityIsekaiGame.Development
                 traits = context.PlayerTransform.GetComponentInParent<CharacterTraitCollection>();
             }
 
-            if (traits == null && context?.PlayerTransform != null)
-            {
-                traits = context.PlayerTransform.gameObject.AddComponent<CharacterTraitCollection>();
-            }
-
             if (traits == null)
             {
                 return false;
             }
 
             context.PlayerTraits = traits;
-            traits.Configure(registry, context.PlayerCalculatedStats, context.PlayerSkills, PersistenceService.LocalPlayerId);
+            CharacterCapabilityCollection capabilityCollection = context?.CharacterSystem?.Capabilities ?? context?.PlayerTransform?.GetComponentInParent<CharacterCapabilityCollection>();
+            capabilityCollection?.Configure(registry);
+            traits.Configure(registry, context.PlayerCalculatedStats, context.PlayerSkills, capabilityCollection, PersistenceService.LocalPlayerId);
             return true;
         }
 
@@ -13863,11 +13861,6 @@ namespace UnityIsekaiGame.Development
                 character = context.PlayerTransform.GetComponentInParent<CharacterSystemCoordinator>();
             }
 
-            if (character == null && context?.PlayerTransform != null)
-            {
-                character = context.PlayerTransform.gameObject.AddComponent<CharacterSystemCoordinator>();
-            }
-
             if (character == null)
             {
                 return false;
@@ -13876,7 +13869,7 @@ namespace UnityIsekaiGame.Development
             context.CharacterSystem = character;
             if (initialize && !character.IsReady)
             {
-                character.InitializeFromRegistry(registry, restoring: false, addMissingCore: true);
+                character.InitializeFromRegistry(registry, restoring: false);
             }
 
             return true;
@@ -13898,11 +13891,6 @@ namespace UnityIsekaiGame.Development
             if (body == null)
             {
                 body = context.PlayerTransform.GetComponentInParent<ActorBodyRuntime>();
-            }
-
-            if (body == null)
-            {
-                body = context.PlayerTransform.gameObject.AddComponent<ActorBodyRuntime>();
             }
 
             string actorId = character == null ? ResolveActorId(context.PlayerTransform.gameObject) : character.ActorId;

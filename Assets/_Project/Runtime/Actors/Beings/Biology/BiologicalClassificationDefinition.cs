@@ -95,8 +95,6 @@ namespace UnityIsekaiGame.Beings.Biology
                 {
                     report.AddError($"Biological classification '{DisplayName}' references Capability '{grant.Capability.Id}' outside the configured catalog.");
                 }
-
-                ValidateRuntimeCapabilityKey(grant, $"Biological classification '{DisplayName}' Capability grant '{grant.EntryId}'", report);
             }
 
             foreach (BiologicalTraitGrantDefinition grant in DefaultTraitGrants.Where(grant => grant != null && grant.AlphaEnabled))
@@ -112,40 +110,5 @@ namespace UnityIsekaiGame.Beings.Biology
             }
         }
 
-        private static void ValidateRuntimeCapabilityKey(BiologicalCapabilityGrantDefinition grant, string label, DefinitionValidationReport report)
-        {
-            string runtimeCapabilityKey = grant == null ? string.Empty : grant.RuntimeCapabilityKey;
-            if (string.IsNullOrWhiteSpace(runtimeCapabilityKey))
-            {
-                report.AddError($"{label} is missing a runtime Capability key.");
-            }
-            else if (!runtimeCapabilityKey.StartsWith("capability.", StringComparison.Ordinal)
-                     && !runtimeCapabilityKey.StartsWith("can.", StringComparison.Ordinal)
-                     && !runtimeCapabilityKey.StartsWith("immunity.", StringComparison.Ordinal))
-            {
-                report.AddWarning($"{label} runtime Capability key '{runtimeCapabilityKey}' should use 'capability.', 'can.', or 'immunity.'.");
-            }
-            else if (!RuntimeKeyMatchesDefinition(grant?.Capability?.Id, runtimeCapabilityKey))
-            {
-                report.AddError($"{label} runtime Capability key '{runtimeCapabilityKey}' does not match canonical Capability definition '{grant?.Capability?.Id ?? string.Empty}'.");
-            }
-            else if ((runtimeCapabilityKey.StartsWith("can.", StringComparison.Ordinal) || runtimeCapabilityKey.StartsWith("immunity.", StringComparison.Ordinal))
-                     && grant?.Capability != null
-                     && grant.Capability.ValueType != Capabilities.CapabilityValueType.Boolean)
-            {
-                report.AddError($"{label} runtime Capability key '{runtimeCapabilityKey}' is lifecycle-style and must reference a Boolean Capability definition.");
-            }
-        }
-
-        private static bool RuntimeKeyMatchesDefinition(string definitionId, string runtimeCapabilityKey)
-        {
-            if (string.IsNullOrWhiteSpace(definitionId) || string.IsNullOrWhiteSpace(runtimeCapabilityKey))
-            {
-                return false;
-            }
-
-            return string.Equals(definitionId, runtimeCapabilityKey, StringComparison.Ordinal)
-                || string.Equals(definitionId, $"capability.{runtimeCapabilityKey}", StringComparison.Ordinal);
-        }
     }
 }

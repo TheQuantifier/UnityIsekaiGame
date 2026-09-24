@@ -20,7 +20,6 @@ namespace UnityIsekaiGame.Capabilities
         [SerializeField] private float minimumValue;
         [SerializeField] private float maximumValue;
         [SerializeField] private bool alphaEnabled = true;
-        [SerializeField] private string futureMetadata;
 
         public string Id => capabilityId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
@@ -35,7 +34,6 @@ namespace UnityIsekaiGame.Capabilities
         public float MinimumValue => minimumValue;
         public float MaximumValue => maximumValue;
         public bool AlphaEnabled => alphaEnabled;
-        public string FutureMetadata => futureMetadata ?? string.Empty;
 
         private void OnValidate()
         {
