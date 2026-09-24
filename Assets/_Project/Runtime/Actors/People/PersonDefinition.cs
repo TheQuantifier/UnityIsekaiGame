@@ -9,7 +9,7 @@ using UnityIsekaiGame.Places;
 namespace UnityIsekaiGame.People
 {
     [CreateAssetMenu(fileName = "Person", menuName = "Unity Isekai Game/People/Person")]
-    public sealed class PersonDefinition : ScriptableObject, IGameDefinition, ICategorizableDefinition, ITaggedDefinition, ILegacyStringTaggedDefinition, IDefinitionCatalogValidationParticipant
+    public sealed class PersonDefinition : ScriptableObject, IGameDefinition, ICategorizableDefinition, ITaggedDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string personId;
         [SerializeField] private string displayName;
@@ -24,7 +24,6 @@ namespace UnityIsekaiGame.People
         [SerializeField] private FactionDefinition primaryFaction;
         [SerializeField] private string publicRoleTitle;
         [SerializeField] private FactionDefinition leadershipOfFaction;
-        [SerializeField] private string[] roleTags;
         [SerializeField] private string factionIdPlaceholder;
         [SerializeField] private string settlementIdPlaceholder;
         [SerializeField] private PersonImportance importance = PersonImportance.Standard;
@@ -44,9 +43,6 @@ namespace UnityIsekaiGame.People
         public FactionDefinition PrimaryFaction => primaryFaction;
         public string PublicRoleTitle => publicRoleTitle;
         public FactionDefinition LeadershipOfFaction => leadershipOfFaction;
-        public IReadOnlyList<string> RoleTags => roleTags ?? Array.Empty<string>();
-        public IReadOnlyList<string> LegacyTags => RoleTags;
-        public string LegacyTagLabel => "role";
         public string FactionIdPlaceholder => factionIdPlaceholder;
         public string SettlementIdPlaceholder => settlementIdPlaceholder;
         public PersonImportance Importance => importance;

@@ -4,16 +4,42 @@ using UnityEngine;
 
 namespace UnityIsekaiGame.GameData
 {
+    [Serializable]
+    public sealed class DefinitionCatalogSection
+    {
+        [SerializeField] private string domainId;
+        [SerializeField] private ScriptableObject[] definitions = Array.Empty<ScriptableObject>();
+
+        public string DomainId => domainId ?? string.Empty;
+        public IReadOnlyList<ScriptableObject> Definitions => definitions ?? Array.Empty<ScriptableObject>();
+    }
+
     [CreateAssetMenu(fileName = "DefinitionCatalog", menuName = "Unity Isekai Game/Game Data/Definition Catalog")]
     public sealed class DefinitionCatalog : ScriptableObject
     {
         [SerializeField] private string catalogId = "catalog.prototype";
-        [SerializeField] private string contentVersion = "0.3.0-step-3";
-        [SerializeField] private ScriptableObject[] definitions;
+        [SerializeField] private string contentVersion = "phase-3.group-1";
+        [SerializeField] private string contentHash;
+        [SerializeField] private GameDataDefaultsDefinition defaults;
+        [SerializeField] private DefinitionCatalogSection[] sections = Array.Empty<DefinitionCatalogSection>();
 
         public string CatalogId => catalogId;
         public string ContentVersion => contentVersion;
-        public IReadOnlyList<ScriptableObject> DefinitionAssets => definitions ?? Array.Empty<ScriptableObject>();
+        public string ContentHash => contentHash ?? string.Empty;
+        public GameDataDefaultsDefinition Defaults => defaults;
+        public IReadOnlyList<DefinitionCatalogSection> Sections => sections ?? Array.Empty<DefinitionCatalogSection>();
+        public IReadOnlyList<ScriptableObject> DefinitionAssets
+        {
+            get
+            {
+                List<ScriptableObject> assets = new List<ScriptableObject>();
+                foreach (DefinitionCatalogSection section in Sections)
+                {
+                    if (section != null) assets.AddRange(section.Definitions);
+                }
+                return assets;
+            }
+        }
 
         public IEnumerable<IGameDefinition> GetDefinitions()
         {
@@ -29,7 +55,7 @@ namespace UnityIsekaiGame.GameData
 
         public DefinitionRegistry CreateRegistry(DefinitionValidationReport report = null)
         {
-            return new DefinitionRegistry(GetDefinitions(), report);
+            return new DefinitionRegistry(GetDefinitions(), report, defaults);
         }
     }
 }

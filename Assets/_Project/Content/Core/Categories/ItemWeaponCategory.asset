@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b583f31bc4c47b49e4fd097c8c30d5c, type: 3}
   m_Name: ItemWeaponCategory
   m_EditorClassIdentifier: UnityIsekaiGame.GameData::UnityIsekaiGame.GameData.CategoryDefinition
-  categoryId: item.weapon
+  categoryId: category.item.weapon
   displayName: Weapon
   description: Item category for weapons.
   parentCategory: {fileID: 11400000, guid: 911382aaa3d3414a8bb7a890e37f1f31, type: 2}

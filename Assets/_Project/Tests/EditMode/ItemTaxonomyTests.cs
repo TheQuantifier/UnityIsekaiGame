@@ -10,18 +10,18 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void ItemTaxonomyUtility_DetectsWeaponArmorConsumableAndMaterialCategories()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
-            CategoryDefinition equipment = ClassificationTestFactory.CreateCategory("item.equipment", "Equipment", CategoryDomain.Item, item);
-            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("item.weapon", "Weapon", CategoryDomain.Item, equipment);
-            CategoryDefinition armor = ClassificationTestFactory.CreateCategory("item.armor", "Armor", CategoryDomain.Item, equipment);
-            CategoryDefinition consumable = ClassificationTestFactory.CreateCategory("item.consumable", "Consumable", CategoryDomain.Item, item);
-            CategoryDefinition material = ClassificationTestFactory.CreateCategory("item.material", "Material", CategoryDomain.Item, item);
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
+            CategoryDefinition equipment = ClassificationTestFactory.CreateCategory("category.item.equipment", "Equipment", CategoryDomain.Item, item);
+            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("category.item.weapon", "Weapon", CategoryDomain.Item, equipment);
+            CategoryDefinition armor = ClassificationTestFactory.CreateCategory("category.item.armor", "Armor", CategoryDomain.Item, equipment);
+            CategoryDefinition consumable = ClassificationTestFactory.CreateCategory("category.item.consumable", "Consumable", CategoryDomain.Item, item);
+            CategoryDefinition material = ClassificationTestFactory.CreateCategory("category.item.material", "Material", CategoryDomain.Item, item);
 
             Assert.That(ItemTaxonomyUtility.IsWeapon(new TestItemDefinition(weapon)), Is.True);
             Assert.That(ItemTaxonomyUtility.IsEquipment(new TestItemDefinition(weapon)), Is.True);
             Assert.That(ItemTaxonomyUtility.IsArmor(new TestItemDefinition(armor)), Is.True);
             Assert.That(ItemTaxonomyUtility.IsConsumable(new TestItemDefinition(consumable)), Is.True);
-            Assert.That(ItemTaxonomyUtility.IsInItemCategory(new TestItemDefinition(material), "item"), Is.True);
+            Assert.That(ItemTaxonomyUtility.IsInItemCategory(new TestItemDefinition(material), "category.item"), Is.True);
         }
 
         [Test]
@@ -36,7 +36,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Registry_LooksUpInventoryItemDefinitionById()
         {
-            CategoryDefinition consumable = ClassificationTestFactory.CreateCategory("item.consumable", "Consumable", CategoryDomain.Item);
+            CategoryDefinition consumable = ClassificationTestFactory.CreateCategory("category.item.consumable", "Consumable", CategoryDomain.Item);
             TestUnityItemDefinition potion = ScriptableObject.CreateInstance<TestUnityItemDefinition>();
             potion.Initialize("item.health-potion", "Health Potion", consumable, true, 10);
             DefinitionRegistry registry = new DefinitionRegistry(new IGameDefinition[] { potion });
@@ -50,8 +50,8 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Validate_WarnsWhenEquipmentCategoryLacksEquipCapability()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
-            CategoryDefinition equipment = ClassificationTestFactory.CreateCategory("item.equipment", "Equipment", CategoryDomain.Item, item);
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
+            CategoryDefinition equipment = ClassificationTestFactory.CreateCategory("category.item.equipment", "Equipment", CategoryDomain.Item, item);
             TestUnityItemDefinition sword = ScriptableObject.CreateInstance<TestUnityItemDefinition>();
             sword.Initialize("item.prototype-sword", "Prototype Sword", equipment, false, 1, usable: false, equippable: false);
 
@@ -64,29 +64,29 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Validate_WarnsWhenEquippableItemIsOutsideEquipmentHierarchy()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
-            CategoryDefinition material = ClassificationTestFactory.CreateCategory("item.material", "Material", CategoryDomain.Item, item);
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
+            CategoryDefinition material = ClassificationTestFactory.CreateCategory("category.item.material", "Material", CategoryDomain.Item, item);
             TestUnityItemDefinition sword = ScriptableObject.CreateInstance<TestUnityItemDefinition>();
             sword.Initialize("item.prototype-sword", "Prototype Sword", material, false, 1, usable: false, equippable: true);
 
             DefinitionValidationReport report = DefinitionCatalogValidator.Validate(ClassificationTestFactory.CreateCatalog(item, material, sword));
 
             Assert.That(report.WarningCount, Is.GreaterThan(0));
-            Assert.That(report.GetSummary(), Does.Contain("equippable but is not in the item.equipment"));
+            Assert.That(report.GetSummary(), Does.Contain("equippable but is not in the category.item.equipment"));
         }
 
         [Test]
         public void Validate_WarnsWhenUsableItemIsOutsideConsumableCategory()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
-            CategoryDefinition material = ClassificationTestFactory.CreateCategory("item.material", "Material", CategoryDomain.Item, item);
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
+            CategoryDefinition material = ClassificationTestFactory.CreateCategory("category.item.material", "Material", CategoryDomain.Item, item);
             TestUnityItemDefinition potion = ScriptableObject.CreateInstance<TestUnityItemDefinition>();
             potion.Initialize("item.health-potion", "Health Potion", material, true, 10, usable: true, equippable: false);
 
             DefinitionValidationReport report = DefinitionCatalogValidator.Validate(ClassificationTestFactory.CreateCatalog(item, material, potion));
 
             Assert.That(report.WarningCount, Is.GreaterThan(0));
-            Assert.That(report.GetSummary(), Does.Contain("has use effects but is not categorized under item.consumable"));
+            Assert.That(report.GetSummary(), Does.Contain("has use effects but is not categorized under category.item.consumable"));
         }
 
         [Test]

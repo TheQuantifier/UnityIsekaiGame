@@ -33,13 +33,9 @@ namespace UnityIsekaiGame.Tests
 
             string originalId = first.Snapshot.ItemInstanceId;
             ItemInstanceOperationResult rename = runtime.Rename(originalId, "Borrowed Trial Sword");
-            ItemInstanceOperationResult condition = runtime.SetCondition(originalId, ItemConditionState.Worn, 0.72f, "test", "training");
 
             Assert.That(rename.Succeeded, Is.True, rename.Message);
-            Assert.That(condition.Succeeded, Is.True, condition.Message);
             Assert.That(rename.Snapshot.ItemInstanceId, Is.EqualTo(originalId), "Mutable labels must not replace stable item identity.");
-            Assert.That(condition.Snapshot.ConditionState, Is.EqualTo(ItemConditionState.Worn));
-            Assert.That(condition.Snapshot.ConditionNormalized, Is.EqualTo(0.72f).Within(0.001f));
             Assert.That(runtime.QueryByDefinition(SwordId).Count, Is.EqualTo(2));
         }
 
@@ -91,7 +87,6 @@ namespace UnityIsekaiGame.Tests
             ItemInstanceIdentityRuntime runtime = new ItemInstanceIdentityRuntime();
             string id = runtime.CreateItem(sword, creatorPersonId: "person.smith", ownerPersonId: "person.owner").Snapshot.ItemInstanceId;
             Assert.That(runtime.AssignMakerMarkAndSerial(id, "smith.mark", "S-0001").Succeeded, Is.True);
-            Assert.That(runtime.SetQuality(id, ItemQualityTier.Fine, ItemQualitySource.Authored, 0.8f, workmanship: "clean-forge").Succeeded, Is.True);
             Assert.That(runtime.SetInventoryLocation(id, "person.owner").Succeeded, Is.True);
 
             ItemInstanceRuntimeSaveData saveData = runtime.CreateSaveData();
@@ -102,7 +97,6 @@ namespace UnityIsekaiGame.Tests
             Assert.That(restored.TryGetSnapshot(id, out ItemInstanceSnapshot snapshot), Is.True);
             Assert.That(snapshot.MakerMark, Is.EqualTo("smith.mark"));
             Assert.That(snapshot.SerialNumber, Is.EqualTo("S-0001"));
-            Assert.That(snapshot.QualityTier, Is.EqualTo(ItemQualityTier.Fine));
             Assert.That(snapshot.LocationKind, Is.EqualTo(ItemLocationKind.Inventory));
 
             ItemInstanceRuntimeSaveData corrupt = saveData.Clone();
@@ -146,13 +140,13 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void LegacyInventoryEquipmentSaveMigratesIntoOneCoherentIdentityGraph()
+        public void InventoryEquipmentProjectionBuildsOneCoherentIdentityGraph()
         {
             ItemDefinition sword = LoadItem(SwordId, out DefinitionRegistry registry);
             ItemDefinition potion = LoadItem("item.health-potion", out _);
             string inventorySwordId = ItemInstanceId.Generate();
             string equippedSwordId = ItemInstanceId.Generate();
-            PlayerInventoryEquipmentSaveData legacy = new PlayerInventoryEquipmentSaveData
+            PlayerInventoryEquipmentSaveData projection = new PlayerInventoryEquipmentSaveData
             {
                 inventory = new InventorySaveData
                 {
@@ -160,19 +154,19 @@ namespace UnityIsekaiGame.Tests
                     entries =
                     {
                         new InventoryEntrySaveData { mode = InventoryEntrySaveMode.DefinitionStack, definitionId = potion.ItemId, quantity = 2 },
-                        new InventoryEntrySaveData { mode = InventoryEntrySaveMode.StatefulInstance, itemInstance = StatefulSave(sword, inventorySwordId, condition: 0.64f) }
+                        new InventoryEntrySaveData { mode = InventoryEntrySaveMode.StatefulInstance, definitionId = sword.ItemId, itemInstanceId = inventorySwordId, quantity = 1 }
                     }
                 },
                 equipment = new EquipmentSaveData
                 {
                     slots =
                     {
-                        new EquipmentSlotSaveData { slotType = EquipmentSlotType.MainHand, mode = EquipmentEntrySaveMode.StatefulInstance, itemInstance = StatefulSave(sword, equippedSwordId, condition: 0.9f) }
+                        new EquipmentSlotSaveData { slotType = EquipmentSlotType.MainHand, mode = EquipmentEntrySaveMode.StatefulInstance, definitionId = sword.ItemId, itemInstanceId = equippedSwordId }
                     }
                 }
             };
 
-            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.MigrateInventoryEquipmentSave(legacy, registry, "person.prototype.player", "test.legacy");
+            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.MigrateInventoryEquipmentSave(projection, registry, "person.prototype.player", "test.projection");
 
             Assert.That(migration.Succeeded, Is.True, migration.Message);
             Assert.That(migration.SaveData.records.Count, Is.EqualTo(3));
@@ -183,7 +177,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(stack.classification, Is.EqualTo(ItemInstanceClassification.Fungible));
             Assert.That(stack.stackQuantity, Is.EqualTo(2));
 
-            ItemIdentityInventoryBridgeResult audit = ItemIdentityInventoryBridge.ValidateInventoryEquipmentProjection(legacy, migration.SaveData, "person.prototype.player");
+            ItemIdentityInventoryBridgeResult audit = ItemIdentityInventoryBridge.ValidateInventoryEquipmentProjection(projection, migration.SaveData, "person.prototype.player");
             Assert.That(audit.Succeeded, Is.True, audit.Message);
         }
 
@@ -244,14 +238,12 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(inventoryEntry.mode, Is.EqualTo(InventoryEntrySaveMode.StatefulInstance));
                 Assert.That(inventoryEntry.definitionId, Is.EqualTo(SwordId));
                 Assert.That(ItemInstanceId.IsValid(inventoryEntry.itemInstanceId), Is.True);
-                Assert.That(inventoryEntry.itemInstance, Is.Null, "Current saves should not write the legacy nested item instance payload.");
 
                 Assert.That(equipment.EquipFromInventorySlot(0).Succeeded, Is.True);
                 EquipmentSlotSaveData equippedEntry = equipment.CreateSaveData().slots.Find(slot => slot.slotType == EquipmentSlotType.MainHand);
                 Assert.That(equippedEntry, Is.Not.Null);
                 Assert.That(equippedEntry.definitionId, Is.EqualTo(SwordId));
                 Assert.That(equippedEntry.itemInstanceId, Is.EqualTo(inventoryEntry.itemInstanceId));
-                Assert.That(equippedEntry.itemInstance, Is.Null, "Current equipment saves should be identity projections only.");
             }
             finally
             {
@@ -300,23 +292,23 @@ namespace UnityIsekaiGame.Tests
         {
             ItemDefinition sword = LoadItem(SwordId, out DefinitionRegistry registry);
             string swordId = ItemInstanceId.Generate();
-            PlayerInventoryEquipmentSaveData legacy = new PlayerInventoryEquipmentSaveData
+            PlayerInventoryEquipmentSaveData projection = new PlayerInventoryEquipmentSaveData
             {
                 inventory = new InventorySaveData
                 {
                     slotCapacity = 1,
                     entries =
                     {
-                        new InventoryEntrySaveData { mode = InventoryEntrySaveMode.StatefulInstance, itemInstance = StatefulSave(sword, swordId, condition: 1f) }
+                        new InventoryEntrySaveData { mode = InventoryEntrySaveMode.StatefulInstance, definitionId = sword.ItemId, itemInstanceId = swordId, quantity = 1 }
                     }
                 },
                 equipment = new EquipmentSaveData()
             };
-            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.MigrateInventoryEquipmentSave(legacy, registry, "person.prototype.player", "test.divergent");
+            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.MigrateInventoryEquipmentSave(projection, registry, "person.prototype.player", "test.divergent");
             Assert.That(migration.Succeeded, Is.True, migration.Message);
 
             migration.SaveData.records[0].location = new ItemLocationStateData { kind = ItemLocationKind.WorldPlacement, worldPlacementId = "placement.test", worldEntityId = "world.item.test" };
-            ItemIdentityInventoryBridgeResult audit = ItemIdentityInventoryBridge.ValidateInventoryEquipmentProjection(legacy, migration.SaveData, "person.prototype.player");
+            ItemIdentityInventoryBridgeResult audit = ItemIdentityInventoryBridge.ValidateInventoryEquipmentProjection(projection, migration.SaveData, "person.prototype.player");
 
             Assert.That(audit.Succeeded, Is.False);
             Assert.That(audit.Status, Is.EqualTo("ProjectionMismatch"));
@@ -411,17 +403,6 @@ namespace UnityIsekaiGame.Tests
             Assert.That(after.OwnerPersonId, Is.EqualTo(before.OwnerPersonId));
         }
 
-        private static ItemInstanceSaveData StatefulSave(ItemDefinition item, string instanceId, float condition)
-        {
-            return new ItemInstanceSaveData
-            {
-                definitionId = item.ItemId,
-                instanceId = instanceId,
-                hasCondition = true,
-                conditionNormalized = condition
-            };
-        }
-
         private static ItemInstanceRecordData BaseRecord(ItemDefinition item, string instanceId)
         {
             return new ItemInstanceRecordData
@@ -433,8 +414,6 @@ namespace UnityIsekaiGame.Tests
                 lifecycleState = ItemLifecycleState.Active,
                 location = new ItemLocationStateData { kind = ItemLocationKind.Inventory, inventoryOwnerId = "person.owner" },
                 ownership = new ItemOwnershipStateData { kind = ItemOwnershipKind.PersonOwned, ownerPersonId = "person.owner" },
-                condition = new ItemConditionStateData { state = ItemConditionState.Pristine, normalized = 1f },
-                quality = new ItemQualityStateData { tier = ItemQualityTier.Unknown, source = ItemQualitySource.Unknown },
                 labels = new ItemIdentityLabelData(),
                 provenance = new ItemProvenanceData()
             };

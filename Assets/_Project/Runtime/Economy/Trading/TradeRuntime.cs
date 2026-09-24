@@ -4,6 +4,8 @@ using System.Linq;
 using UnityIsekaiGame.Economy.Markets;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Inventory.Identity;
+using UnityIsekaiGame.Inventory.Durability;
+using UnityIsekaiGame.Inventory.Quality;
 using UnityIsekaiGame.Knowledge.Access;
 using static UnityIsekaiGame.Economy.Trading.TradeModelHelpers;
 
@@ -384,7 +386,7 @@ namespace UnityIsekaiGame.Economy.Trading
             return TradeOperationResult.Success("Trade reservations released.", before, Revision, offer: offer);
         }
 
-        public TradeOperationResult ValueAsset(string valuationId, string sessionId, string offerId, string evaluatingParticipantId, TradeAssetEntryData asset, EconomyRuntime economy, MarketRuntime markets, ItemInstanceIdentityRuntime items, bool privilegedHiddenFactors, double worldTime, bool preview = false)
+        public TradeOperationResult ValueAsset(string valuationId, string sessionId, string offerId, string evaluatingParticipantId, TradeAssetEntryData asset, EconomyRuntime economy, MarketRuntime markets, ItemInstanceIdentityRuntime items, bool privilegedHiddenFactors, double worldTime, bool preview = false, ItemQualityAffixRuntime qualityRuntime = null, ItemDurabilityRuntime durabilityRuntime = null)
         {
             long before = Revision;
             if (asset == null)
@@ -427,13 +429,13 @@ namespace UnityIsekaiGame.Economy.Trading
 
                 if (items != null && items.TryGetSnapshot(asset.itemInstanceId, out ItemInstanceSnapshot snapshot))
                 {
-                    if (snapshot.QualityTier is ItemQualityTier.Fine or ItemQualityTier.Excellent or ItemQualityTier.Masterwork or ItemQualityTier.Legendary)
+                    if (qualityRuntime != null && qualityRuntime.TryGetQualityForItem(asset.itemInstanceId, out ItemQualitySnapshot quality) && quality.OverallQuality >= 0.7f)
                     {
                         estimated = checked(estimated * 12500L / 10000L);
                         known.Add("quality");
                     }
 
-                    if (snapshot.ConditionNormalized < 0.75f)
+                    if (durabilityRuntime != null && durabilityRuntime.TryGetDurabilityForItem(asset.itemInstanceId, out ItemDurabilitySnapshot durability) && durability.NormalizedDurability < 0.75f)
                     {
                         estimated = Math.Max(1L, estimated * 7500L / 10000L);
                         known.Add("condition");

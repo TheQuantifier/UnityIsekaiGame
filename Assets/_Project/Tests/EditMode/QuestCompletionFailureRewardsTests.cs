@@ -42,8 +42,8 @@ namespace UnityIsekaiGame.Tests
             CompleteGuildObjectives(fixture, assignment);
 
             QuestCompletionEvaluationResult wrongCounter = fixture.Outcomes.EvaluateCompletion(new QuestCompletionEvaluationRequest { assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.other", worldTime = 3d });
-            QuestOutcomeOperationResult complete = fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.complete.turn-in", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.guild-counter", issuerId = "organization.prototype.guild", locationId = "location.prototype.adventurers-guild", worldTime = 4d });
-            QuestOutcomeOperationResult duplicate = fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.complete.turn-in", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.guild-counter", worldTime = 5d });
+            QuestOutcomeOperationResult complete = fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.complete.turn-in", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", issuerId = "organization.prototype.guild", locationId = "location.prototype.adventurers-guild", worldTime = 4d });
+            QuestOutcomeOperationResult duplicate = fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.complete.turn-in", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", worldTime = 5d });
 
             Assert.That(wrongCounter.Status, Is.EqualTo(QuestOutcomeOperationStatus.TurnInRequired));
             Assert.That(complete.Succeeded, Is.True, complete.Message);
@@ -65,7 +65,7 @@ namespace UnityIsekaiGame.Tests
 
             QuestOutcomeOperationResult first = fixture.Outcomes.EvaluateDeadlines(assignment.AssignedWorldTime + 3d, "tx.15.4.deadline");
             QuestOutcomeOperationResult second = fixture.Outcomes.EvaluateDeadlines(assignment.AssignedWorldTime + 3d, "tx.15.4.deadline");
-            QuestCompletionEvaluationResult completion = fixture.Outcomes.EvaluateCompletion(new QuestCompletionEvaluationRequest { assignmentId = assignment.AssignmentId, interactionPointId = "interaction-point.prototype.guild-counter", worldTime = assignment.AssignedWorldTime + 3.1d });
+            QuestCompletionEvaluationResult completion = fixture.Outcomes.EvaluateCompletion(new QuestCompletionEvaluationRequest { assignmentId = assignment.AssignmentId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", worldTime = assignment.AssignedWorldTime + 3.1d });
 
             Assert.That(first.Succeeded, Is.True, first.Message);
             Assert.That(first.Outcome.OutcomeKind, Is.EqualTo(QuestTerminalOutcomeKind.Expired));
@@ -81,7 +81,7 @@ namespace UnityIsekaiGame.Tests
             QuestAssignmentSnapshot assignment = fixture.AcceptedGuildAssignment("reward");
             fixture.Objectives.InstantiateForAssignment(assignment, transactionId: "tx.15.4.reward.objectives");
             CompleteGuildObjectives(fixture, assignment);
-            QuestOutcomeOperationResult complete = fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.reward.complete", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.guild-counter", worldTime = 4d });
+            QuestOutcomeOperationResult complete = fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.reward.complete", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", worldTime = 4d });
             QuestRewardEntitlementSnapshot reward = complete.Rewards.First(value => value.Category == QuestRewardCategory.Currency);
 
             QuestOutcomeOperationResult claim = fixture.Outcomes.ClaimReward(new QuestRewardClaimRequest { transactionId = "tx.15.4.reward.claim", entitlementId = reward.EntitlementId, claimantPersonId = assignment.AssigneePersonId, worldTime = 5d });
@@ -121,7 +121,7 @@ namespace UnityIsekaiGame.Tests
             fixture.Objectives.InstantiateForAssignment(assignment, transactionId: "tx.15.4.persist.objectives");
             fixture.Outcomes.TrackAssignment(assignment, "tx.15.4.persist.track");
             CompleteGuildObjectives(fixture, assignment);
-            fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.persist.complete", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.guild-counter", worldTime = 4d });
+            fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.persist.complete", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", worldTime = 4d });
 
             QuestOutcomePersistenceParticipant participant = fixture.Participant(fixture.Outcomes);
             PersistenceParticipantSaveResult save = participant.CapturePayload();
@@ -148,12 +148,12 @@ namespace UnityIsekaiGame.Tests
 
         private static void CompleteGuildObjectives(RuntimeFixture fixture, QuestAssignmentSnapshot assignment)
         {
-            fixture.Objectives.ApplySignal(Signal(assignment, QuestObjectiveCategory.UseInteractionPoint, "interaction-point.prototype.guild-counter", "event.15.4.counter"));
+            fixture.Objectives.ApplySignal(Signal(assignment, QuestObjectiveCategory.UseInteractionPoint, "interaction-point.prototype.adventurer-guild-counter", "event.15.4.counter"));
             fixture.Objectives.ApplySignal(Signal(assignment, QuestObjectiveCategory.VisitLocation, "location.prototype.dungeon-entry", "event.15.4.dungeon", InformationSubjectType.Location));
             fixture.Objectives.ApplySignal(Signal(assignment, QuestObjectiveCategory.DefeatCount, "enemy-family.prototype.monster", "event.15.4.defeat.1"));
             fixture.Objectives.ApplySignal(Signal(assignment, QuestObjectiveCategory.DefeatCount, "enemy-family.prototype.monster", "event.15.4.defeat.2"));
             fixture.Objectives.ApplySignal(Signal(assignment, QuestObjectiveCategory.DefeatCount, "enemy-family.prototype.monster", "event.15.4.defeat.3"));
-            fixture.Objectives.ApplySignal(Signal(assignment, QuestObjectiveCategory.UseInteractionPoint, "interaction-point.prototype.guild-counter", "event.15.4.report"));
+            fixture.Objectives.ApplySignal(Signal(assignment, QuestObjectiveCategory.UseInteractionPoint, "interaction-point.prototype.adventurer-guild-counter", "event.15.4.report"));
         }
 
         private static QuestObjectiveSignal Signal(QuestAssignmentSnapshot assignment, QuestObjectiveCategory category, string targetId, string sourceEventId, InformationSubjectType targetType = InformationSubjectType.Custom)
@@ -221,7 +221,7 @@ namespace UnityIsekaiGame.Tests
                     questDefinitionId = PrototypeQuestDefinitionFactory.GuildPostingDefinitionId,
                     issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
                     intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = "person.prototype.player" },
-                    origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.adventurers-guild", interactionPointId = "interaction-point.prototype.guild-counter" },
+                    origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.adventurers-guild", interactionPointId = "interaction-point.prototype.adventurer-guild-counter" },
                     createdWorldTime = 1d
                 });
                 QuestParticipationOperationResult offer = Participation.CreateOffer(new QuestOfferRequest
@@ -232,7 +232,7 @@ namespace UnityIsekaiGame.Tests
                     institutionalIssuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
                     offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild", actingPersonId = "person.prototype.guild-clerk" },
                     channel = QuestOfferChannel.GuildCounter,
-                    sourceInteractionPointId = "interaction-point.prototype.guild-counter",
+                    sourceInteractionPointId = "interaction-point.prototype.adventurer-guild-counter",
                     sourceLocationId = "location.prototype.adventurers-guild",
                     authorityBasisId = "authority.prototype.guild.quest-offer",
                     eligibilityContext = EligibleContext(),
@@ -282,7 +282,7 @@ namespace UnityIsekaiGame.Tests
                 return new QuestEligibilityContext
                 {
                     personId = "person.prototype.player",
-                    interactionPointId = "interaction-point.prototype.guild-counter",
+                    interactionPointId = "interaction-point.prototype.adventurer-guild-counter",
                     locationId = "location.prototype.adventurers-guild",
                     worldTime = 1d,
                     privilegedDiagnostics = true,

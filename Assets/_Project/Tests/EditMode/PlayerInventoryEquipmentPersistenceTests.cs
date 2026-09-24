@@ -37,7 +37,7 @@ namespace UnityIsekaiGame.Tests
             object participant = CreateParticipant(fixture.Inventory, fixture.Equipment, fixture.Registry);
 
             Assert.That(Get<string>(participant, "ParticipantKey"), Is.EqualTo("player.inventory-equipment"));
-            Assert.That(Get<int>(participant, "ParticipantSchemaVersion"), Is.EqualTo(1));
+            Assert.That(Get<int>(participant, "ParticipantSchemaVersion"), Is.EqualTo(2));
             Assert.That(Get<bool>(participant, "IsRequired"), Is.True);
             Assert.That(Get<PersistenceScope>(participant, "Scope"), Is.EqualTo(PersistenceScope.Player));
             Assert.That(Get<string>(participant, "OwnerId"), Is.EqualTo(PersistenceService.LocalPlayerId));
@@ -76,7 +76,7 @@ namespace UnityIsekaiGame.Tests
             AddInventoryStatefulEntry(payload, fixture.Sword, SwordInstanceId);
             AddEquipmentStatefulEntry(payload, fixture.Sword, SwordInstanceId);
 
-            object result = Invoke(participant, "PreparePayload", JsonUtility.ToJson(payload), 1);
+            object result = Invoke(participant, "PreparePayload", JsonUtility.ToJson(payload), 2);
 
             Assert.That(Get<bool>(result, "Succeeded"), Is.False);
             Assert.That(Get<string>(result, "Message"), Does.Contain("both inventory and equipment"));
@@ -88,10 +88,10 @@ namespace UnityIsekaiGame.Tests
         {
             using RuntimeFixture fixture = RuntimeFixture.Create();
             object participant = CreateParticipant(fixture.Inventory, fixture.Equipment, fixture.Registry);
-            object payload = CreatePayload(1);
+            object payload = CreatePayload(3);
 
-            object futureResult = Invoke(participant, "PreparePayload", JsonUtility.ToJson(payload), 2);
-            SetField(payload, "schemaVersion", 0);
+            object futureResult = Invoke(participant, "PreparePayload", JsonUtility.ToJson(payload), 3);
+            SetField(payload, "schemaVersion", 1);
             object oldResult = Invoke(participant, "PreparePayload", JsonUtility.ToJson(payload), 1);
 
             Assert.That(Get<bool>(futureResult, "Succeeded"), Is.False);
@@ -166,7 +166,9 @@ namespace UnityIsekaiGame.Tests
             IList entries = (IList)inventorySave.GetType().GetField("entries").GetValue(inventorySave);
             object entry = Activator.CreateInstance(RequiredType("UnityIsekaiGame.Inventory.InventoryEntrySaveData"));
             SetField(entry, "mode", Enum.Parse(RequiredType("UnityIsekaiGame.Inventory.InventoryEntrySaveMode"), "StatefulInstance"));
-            SetField(entry, "itemInstance", CreateInstanceSaveData((IGameDefinition)item, instanceId));
+            SetField(entry, "definitionId", ((IGameDefinition)item).Id);
+            SetField(entry, "itemInstanceId", instanceId);
+            SetField(entry, "quantity", 1);
             entries.Add(entry);
         }
 
@@ -177,17 +179,9 @@ namespace UnityIsekaiGame.Tests
             object entry = Activator.CreateInstance(RequiredType("UnityIsekaiGame.Equipment.EquipmentSlotSaveData"));
             SetField(entry, "slotType", MainHandValue());
             SetField(entry, "mode", Enum.Parse(RequiredType("UnityIsekaiGame.Equipment.EquipmentEntrySaveMode"), "StatefulInstance"));
-            SetField(entry, "itemInstance", CreateInstanceSaveData((IGameDefinition)item, instanceId));
+            SetField(entry, "definitionId", ((IGameDefinition)item).Id);
+            SetField(entry, "itemInstanceId", instanceId);
             slots.Add(entry);
-        }
-
-        private static ItemInstanceSaveData CreateInstanceSaveData(IGameDefinition item, string instanceId)
-        {
-            return new ItemInstanceSaveData
-            {
-                definitionId = item.Id,
-                instanceId = instanceId
-            };
         }
 
         private static Component CreateInventory(int slotCapacity)

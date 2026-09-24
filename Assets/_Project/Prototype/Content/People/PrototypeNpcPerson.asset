@@ -27,7 +27,6 @@ MonoBehaviour:
   primaryFaction: {fileID: 11400000, guid: 70bb165840944ae696f652b7a5f99744, type: 2}
   publicRoleTitle: Guild Representative
   leadershipOfFaction: {fileID: 0}
-  roleTags: []
   factionIdPlaceholder:
   settlementIdPlaceholder:
   importance: 1

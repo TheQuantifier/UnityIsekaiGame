@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 
@@ -34,7 +35,7 @@ namespace UnityIsekaiGame.Inventory.Quality
 
         public bool Contains(float quality)
         {
-            return quality >= minimumQuality && quality <= maximumQuality;
+            return quality >= minimumQuality && (quality < maximumQuality || Mathf.Approximately(maximumQuality, 1f) && quality <= maximumQuality);
         }
 
         private void OnValidate()
@@ -61,11 +62,29 @@ namespace UnityIsekaiGame.Inventory.Quality
                 report.AddError($"Quality tier '{DisplayName}' has an invalid quality range {minimumQuality:0.###}..{maximumQuality:0.###}.");
             }
 
+            if (!Id.StartsWith("quality.", StringComparison.Ordinal))
+            {
+                report.AddError($"Quality tier '{Id}' must use the 'quality.<name>' namespace.");
+            }
+
             foreach (TagDefinition tag in Tags)
             {
                 if (tag == null)
                 {
                     report.AddError($"Quality tier '{DisplayName}' has a missing tag.");
+                }
+            }
+
+            QualityTierDefinition[] catalogTiers = definitionsById?.Values
+                .OfType<QualityTierDefinition>()
+                .OrderBy(tier => tier.Id, StringComparer.Ordinal)
+                .ToArray() ?? Array.Empty<QualityTierDefinition>();
+            if (catalogTiers.Length > 0 && ReferenceEquals(catalogTiers[0], this))
+            {
+                ValidateTierRanges(catalogTiers, report, requireGapless: true);
+                foreach (IGrouping<int, QualityTierDefinition> duplicateOrder in catalogTiers.GroupBy(tier => tier.SortOrder).Where(group => group.Count() > 1))
+                {
+                    report.AddError($"Quality sort order {duplicateOrder.Key} is shared by {string.Join(", ", duplicateOrder.Select(tier => $"'{tier.Id}'"))}.");
                 }
             }
         }
@@ -91,6 +110,11 @@ namespace UnityIsekaiGame.Inventory.Quality
             });
 
             bool valid = true;
+            if (requireGapless && ordered.Count > 0 && ordered[0].MinimumQuality > 0.0001f)
+            {
+                valid = false;
+                report?.AddError($"Quality tiers have a gap from 0 to '{ordered[0].Id}'.");
+            }
             float previousMax = -1f;
             string previousId = string.Empty;
             for (int i = 0; i < ordered.Count; i++)
@@ -110,6 +134,12 @@ namespace UnityIsekaiGame.Inventory.Quality
 
                 previousMax = tier.MaximumQuality;
                 previousId = tier.Id;
+            }
+
+            if (requireGapless && ordered.Count > 0 && previousMax < 0.9999f)
+            {
+                valid = false;
+                report?.AddError($"Quality tiers have a gap after '{previousId}' through 1.");
             }
 
             return valid;

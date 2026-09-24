@@ -96,11 +96,7 @@ namespace UnityIsekaiGame.Inventory.Quality
                 return ItemQualityAffixOperationResult.Failure(ItemQualityAffixOperationStatus.MissingItem, $"Item instance '{itemInstanceId}' was not found.");
             }
 
-            float inherited = item.Data.quality?.normalized ?? -1f;
-            if (inherited < 0f)
-            {
-                inherited = 0.5f;
-            }
+            float inherited = registry?.Defaults?.DefaultQualityNormalized ?? 0.5f;
 
             ItemQualityRecordData record = new ItemQualityRecordData
             {
@@ -108,9 +104,7 @@ namespace UnityIsekaiGame.Inventory.Quality
                 itemInstanceId = itemInstanceId,
                 itemDefinitionId = item.ItemDefinitionId,
                 overallQuality = inherited,
-                source = item.Data.quality != null && item.Data.quality.source != ItemQualitySource.Unknown
-                    ? ItemQualityRecordSource.Migration
-                    : ItemQualityRecordSource.DefinitionDefault,
+                source = ItemQualityRecordSource.DefinitionDefault,
                 generationPolicyId = "quality-policy.default",
                 relatedCompositionRevision = compositionRuntime != null && compositionRuntime.TryGetSnapshotForItem(itemInstanceId, out ItemCompositionSnapshot composition) ? composition.Revision : 0L,
                 workmanship =
@@ -1017,36 +1011,17 @@ namespace UnityIsekaiGame.Inventory.Quality
                 .OrderByDescending(candidate => candidate.SortOrder)
                 .ThenBy(candidate => candidate.Id, StringComparer.Ordinal)
                 .FirstOrDefault();
-            return tier?.Id ?? LegacyTierId(quality);
+            return tier?.Id ?? (registry?.Defaults?.DefaultQualityTier as QualityTierDefinition)?.Id ?? string.Empty;
         }
 
         private static string ResolveRarity(float score, DefinitionRegistry registry)
         {
             RarityDefinition[] rarities = registry?.DefinitionsById.Values.OfType<RarityDefinition>().OrderBy(rarity => rarity.Rank).ThenBy(rarity => rarity.Id, StringComparer.Ordinal).ToArray()
                 ?? Array.Empty<RarityDefinition>();
-            if (rarities.Length == 0)
-            {
-                return score >= 0.9f ? "rarity.legendary" : score >= 0.7f ? "rarity.rare" : "rarity.common";
-            }
+            if (rarities.Length == 0) return registry?.Defaults?.DefaultRarity?.Id ?? string.Empty;
 
             int index = Mathf.Clamp(Mathf.FloorToInt(score * rarities.Length), 0, rarities.Length - 1);
             return rarities[index].Id;
-        }
-
-        private static string LegacyTierId(float quality)
-        {
-            if (quality < 0f)
-            {
-                return "quality-tier.unknown";
-            }
-
-            if (quality < 0.2f) return "quality-tier.ruined";
-            if (quality < 0.35f) return "quality-tier.poor";
-            if (quality < 0.55f) return "quality-tier.common";
-            if (quality < 0.7f) return "quality-tier.serviceable";
-            if (quality < 0.85f) return "quality-tier.fine";
-            if (quality < 0.95f) return "quality-tier.masterwork";
-            return "quality-tier.legendary-foundation";
         }
 
         private static void NormalizeQuality(ItemQualityRecordData record)

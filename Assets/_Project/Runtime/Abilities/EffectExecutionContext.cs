@@ -14,7 +14,7 @@ namespace UnityIsekaiGame.Abilities
             Vector3 targetPosition,
             Vector3 direction,
             ItemDefinition sourceItem = null,
-            ItemInstance sourceItemInstance = null,
+            string sourceItemInstanceId = "",
             float magnitudeMultiplier = 1f)
         {
             Ability = ability;
@@ -24,7 +24,7 @@ namespace UnityIsekaiGame.Abilities
             TargetPosition = targetPosition;
             Direction = direction.sqrMagnitude > 0f ? direction.normalized : Vector3.forward;
             SourceItem = sourceItem;
-            SourceItemInstance = sourceItemInstance;
+            SourceItemInstanceId = sourceItemInstanceId ?? string.Empty;
             MagnitudeMultiplier = magnitudeMultiplier;
         }
 
@@ -35,7 +35,7 @@ namespace UnityIsekaiGame.Abilities
         public Vector3 TargetPosition { get; }
         public Vector3 Direction { get; }
         public ItemDefinition SourceItem { get; }
-        public ItemInstance SourceItemInstance { get; }
+        public string SourceItemInstanceId { get; }
         public float MagnitudeMultiplier { get; }
     }
 }

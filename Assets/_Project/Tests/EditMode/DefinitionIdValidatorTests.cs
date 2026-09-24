@@ -15,21 +15,20 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void Validate_AcceptsLegacyUnderscoreIdWithNamespaceWarning()
+        public void Validate_RejectsUnderscoreIds()
         {
             DefinitionIdValidationResult result = DefinitionIdValidator.Validate("legacy_id");
 
-            Assert.That(result.IsValid, Is.True, result.GetSummary());
-            Assert.That(result.WarningCount, Is.EqualTo(1));
+            Assert.That(result.IsValid, Is.False, result.GetSummary());
+            Assert.That(result.NormalizedSuggestion, Is.EqualTo("legacy-id"));
         }
 
         [Test]
-        public void Validate_AcceptsReservedTaxonomyRootWithoutNamespaceWarning()
+        public void Validate_RejectsUnnamespacedTaxonomyRoot()
         {
             DefinitionIdValidationResult result = DefinitionIdValidator.Validate("item");
 
-            Assert.That(result.IsValid, Is.True, result.GetSummary());
-            Assert.That(result.WarningCount, Is.Zero);
+            Assert.That(result.IsValid, Is.False, result.GetSummary());
         }
 
         [TestCase(null)]
@@ -39,6 +38,8 @@ namespace UnityIsekaiGame.Tests
         [TestCase("Item.HealthPotion")]
         [TestCase("item health potion")]
         [TestCase("item..health-potion")]
+        [TestCase("item.-health-potion")]
+        [TestCase("item_.health-potion")]
         [TestCase("item.health-potion!")]
         public void Validate_RejectsInvalidIds(string id)
         {

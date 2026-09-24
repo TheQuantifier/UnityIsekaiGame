@@ -1,5 +1,4 @@
 using System;
-using UnityIsekaiGame.GameData;
 
 namespace UnityIsekaiGame.Equipment
 {
@@ -10,6 +9,5 @@ namespace UnityIsekaiGame.Equipment
         public EquipmentEntrySaveMode mode;
         public string definitionId;
         public string itemInstanceId;
-        public ItemInstanceSaveData itemInstance;
     }
 }

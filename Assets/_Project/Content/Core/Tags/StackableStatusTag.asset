@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ee90b64dbd74221aa0c35e4df92ffaa, type: 3}
   m_Name: StackableStatusTag
   m_EditorClassIdentifier: UnityIsekaiGame.GameData::UnityIsekaiGame.GameData.TagDefinition
-  tagId: tag.stackable
+  tagId: tag.general.stackable
   displayName: Stackable
   description: Runtime status effect that can increase stack count.
   domain: 0

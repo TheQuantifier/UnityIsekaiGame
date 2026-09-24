@@ -754,7 +754,6 @@ namespace UnityIsekaiGame.Development.Automation
             string id = runtime.CreateItem(sword, itemInstanceId: RunGuid(context, "persist"), creatorPersonId: "person.smith", ownerPersonId: "person.owner").Snapshot.ItemInstanceId;
             runtime.Rename(id, "Persistent Prototype Sword");
             runtime.AssignMakerMarkAndSerial(id, "smith.mark", "P-0001");
-            runtime.SetQuality(id, ItemQualityTier.Fine, ItemQualitySource.Authored, 0.8f);
             ItemInstanceRuntimeSaveData saveData = runtime.CreateSaveData();
             ItemInstanceIdentityRuntime restored = new ItemInstanceIdentityRuntime();
             ItemInstanceOperationResult restore = restored.RestoreFromSaveData(saveData, context.ScenarioContext.Runtimes.DefinitionRegistry);
@@ -762,8 +761,7 @@ namespace UnityIsekaiGame.Development.Automation
             bool valid = restore.Succeeded
                 && restored.TryGetSnapshot(id, out snapshot)
                 && snapshot.CustomName == "Persistent Prototype Sword"
-                && snapshot.MakerMark == "smith.mark"
-                && snapshot.QualityTier == ItemQualityTier.Fine;
+                && snapshot.MakerMark == "smith.mark";
             return valid
                 ? Pass(context, "step9-items-persistence", $"Restored={id} Revision={snapshot.Revision}")
                 : Fail(context, "step9-items-persistence", restore.Message);
@@ -807,7 +805,7 @@ namespace UnityIsekaiGame.Development.Automation
 
             string inventorySword = RunGuid(context, "migration-inventory-sword");
             string equippedSword = RunGuid(context, "migration-equipped-sword");
-            PlayerInventoryEquipmentSaveData legacy = new PlayerInventoryEquipmentSaveData
+            PlayerInventoryEquipmentSaveData projection = new PlayerInventoryEquipmentSaveData
             {
                 inventory = new InventorySaveData
                 {
@@ -815,25 +813,25 @@ namespace UnityIsekaiGame.Development.Automation
                     entries =
                     {
                         new InventoryEntrySaveData { mode = InventoryEntrySaveMode.DefinitionStack, definitionId = potion.ItemId, quantity = 2 },
-                        new InventoryEntrySaveData { mode = InventoryEntrySaveMode.StatefulInstance, itemInstance = StatefulSave(sword, inventorySword, 0.7f) }
+                        new InventoryEntrySaveData { mode = InventoryEntrySaveMode.StatefulInstance, definitionId = sword.ItemId, itemInstanceId = inventorySword, quantity = 1 }
                     }
                 },
                 equipment = new EquipmentSaveData
                 {
                     slots =
                     {
-                        new EquipmentSlotSaveData { slotType = EquipmentSlotType.MainHand, mode = EquipmentEntrySaveMode.StatefulInstance, itemInstance = StatefulSave(sword, equippedSword, 1f) }
+                        new EquipmentSlotSaveData { slotType = EquipmentSlotType.MainHand, mode = EquipmentEntrySaveMode.StatefulInstance, definitionId = sword.ItemId, itemInstanceId = equippedSword }
                     }
                 }
             };
 
-            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.MigrateInventoryEquipmentSave(legacy, registry, "person.prototype.player", context.ScenarioContext.Namespace);
+            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.MigrateInventoryEquipmentSave(projection, registry, "person.prototype.player", context.ScenarioContext.Namespace);
             if (!migration.Succeeded)
             {
                 return Fail(context, "step9-items-migration", $"{migration.Status}: {migration.Message}");
             }
 
-            ItemIdentityInventoryBridgeResult audit = ItemIdentityInventoryBridge.ValidateInventoryEquipmentProjection(legacy, migration.SaveData, "person.prototype.player");
+            ItemIdentityInventoryBridgeResult audit = ItemIdentityInventoryBridge.ValidateInventoryEquipmentProjection(projection, migration.SaveData, "person.prototype.player");
             bool valid = audit.Succeeded
                 && migration.SaveData.records.Count == 3
                 && migration.SaveData.records.Any(record => record.itemInstanceId == inventorySword && record.location.kind == ItemLocationKind.Inventory)
@@ -1147,7 +1145,7 @@ namespace UnityIsekaiGame.Development.Automation
 
             bool valid = defaultQuality.Succeeded
                 && masterworkQuality.Succeeded
-                && masterworkQuality.Quality.QualityTierId == "quality-tier.masterwork"
+                && masterworkQuality.Quality.QualityTierId == "quality.masterwork"
                 && masterworkQuality.Quality.Data.workmanship.Any(entry => entry.value.state == QualityValueState.NotApplicable);
             return valid
                 ? Pass(context, "step9-quality-workmanship", $"Default={defaultQuality.Quality.QualityTierId} Masterwork={masterworkQuality.Quality.QualityTierId}")
@@ -1260,10 +1258,9 @@ namespace UnityIsekaiGame.Development.Automation
                 return Fail(context, "step9-quality-persistence", failure);
             }
 
-            string legacy = itemRuntime.CreateItem(sword, itemInstanceId: RunGuid(context, "legacy"), creationSourceId: "feature.9.1").Snapshot.ItemInstanceId;
-            itemRuntime.SetQuality(legacy, ItemQualityTier.Fine, ItemQualitySource.Authored, 0.82f);
-            ItemQualityAffixOperationResult migrated = quality.EnsureDefaultQuality(itemRuntime, compositions, registry, legacy);
-            ItemQualityAffixOperationResult affix = quality.ApplyAffix(itemRuntime, compositions, registry, legacy, keen, seed: "restore");
+            string item = itemRuntime.CreateItem(sword, itemInstanceId: RunGuid(context, "quality-persistence"), creationSourceId: "feature.9.5").Snapshot.ItemInstanceId;
+            ItemQualityAffixOperationResult authored = quality.SetQualityRecord(itemRuntime, compositions, registry, QualityRecord(item, 0.82f));
+            ItemQualityAffixOperationResult affix = quality.ApplyAffix(itemRuntime, compositions, registry, item, keen, seed: "restore");
             ItemQualityAffixRuntimeSaveData save = quality.CreateSaveData();
             ItemQualityAffixRuntime restored = new ItemQualityAffixRuntime();
             ItemQualityAffixOperationResult restore = restored.RestoreFromSaveData(save, registry, itemRuntime);
@@ -1271,15 +1268,15 @@ namespace UnityIsekaiGame.Development.Automation
             corrupt.affixInstances[0].affixDefinitionId = "affix.prototype.missing";
             bool corruptRejected = !ItemQualityAffixRuntime.ValidateSaveData(corrupt, registry, itemRuntime, out _);
 
-            bool valid = migrated.Succeeded
+            bool valid = authored.Succeeded
                 && affix.Succeeded
                 && restore.Succeeded
-                && restored.GetAffixesForItem(legacy).Count == 1
-                && Math.Abs(restored.GetAffixesForItem(legacy)[0].Data.rolledValues[0].value - affix.Affixes[0].Data.rolledValues[0].value) < 0.0001f
+                && restored.GetAffixesForItem(item).Count == 1
+                && Math.Abs(restored.GetAffixesForItem(item)[0].Data.rolledValues[0].value - affix.Affixes[0].Data.rolledValues[0].value) < 0.0001f
                 && corruptRejected;
             return valid
-                ? Pass(context, "step9-quality-persistence", $"Migrated={migrated.Quality.QualityTierId} Restore={restore.Status} CorruptRejected={corruptRejected}")
-                : Fail(context, "step9-quality-persistence", $"Migrated={migrated.Status} Affix={affix.Status} Restore={restore.Status} Count={restored.GetAffixesForItem(legacy).Count} Corrupt={corruptRejected}");
+                ? Pass(context, "step9-quality-persistence", $"Authored={authored.Quality.QualityTierId} Restore={restore.Status} CorruptRejected={corruptRejected}")
+                : Fail(context, "step9-quality-persistence", $"Authored={authored.Status} Affix={affix.Status} Restore={restore.Status} Count={restored.GetAffixesForItem(item).Count} Corrupt={corruptRejected}");
         }
 
         private static TestLabAutomationStepResult DurabilityMigration(TestLabAutomationContext context)
@@ -1290,16 +1287,15 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             string item = itemRuntime.CreateItem(sword, itemInstanceId: RunGuid(context, "durability-migration"), creationSourceId: "feature.9.1").Snapshot.ItemInstanceId;
-            itemRuntime.SetCondition(item, ItemConditionState.Damaged, 0.42f, "legacy.condition", "migration-test");
             compositions.SetComposition(itemRuntime, registry, Composition(item, "material.prototype.iron"));
             ItemDurabilityOperationResult ensured = durability.EnsureDefaultDurability(itemRuntime, compositions, quality, registry, item);
             bool valid = ensured.Succeeded
-                && ensured.Snapshot.ConditionCategory == ItemDurabilityConditionCategory.Damaged
-                && ensured.Snapshot.Data.source == ItemDurabilityRecordSource.Migration
+                && ensured.Snapshot.NormalizedDurability >= 0.999f
+                && ensured.Snapshot.Data.source == ItemDurabilityRecordSource.DefinitionDefault
                 && ensured.Snapshot.Data.relatedItemRevision > 0L;
             return valid
-                ? Pass(context, "step9-durability-migration", $"Condition={ensured.Snapshot.ConditionCategory} Current={ensured.Snapshot.CurrentDurability:0.###}/{ensured.Snapshot.MaximumDurability:0.###}")
-                : Fail(context, "step9-durability-migration", $"Ensure={ensured.Status}:{ensured.Message} Condition={ensured.Snapshot?.ConditionCategory}");
+                ? Pass(context, "step9-durability-migration", $"Condition={ensured.Snapshot.ConditionBandId} Current={ensured.Snapshot.CurrentDurability:0.###}/{ensured.Snapshot.MaximumDurability:0.###}")
+                : Fail(context, "step9-durability-migration", $"Ensure={ensured.Status}:{ensured.Message} Condition={ensured.Snapshot?.ConditionBandId}");
         }
 
         private static TestLabAutomationStepResult DurabilityDamage(TestLabAutomationContext context)
@@ -2318,10 +2314,10 @@ namespace UnityIsekaiGame.Development.Automation
         private static DefinitionRegistry CreateQualityRegistry(TestLabAutomationContext context, out string failure, out QualityTierDefinition masterwork, out ItemAffixDefinition keen)
         {
             DefinitionRegistry compositionRegistry = CreateCompositionRegistry(context, includeRule: false, out failure, includeComposite: true);
-            masterwork = QualityTier("quality-tier.masterwork", "Masterwork", 0.85f, 0.98f, 80);
-            QualityTierDefinition common = QualityTier("quality-tier.common", "Common", 0.35f, 0.65f, 30);
-            QualityTierDefinition fine = QualityTier("quality-tier.fine", "Fine", 0.65f, 0.85f, 60);
-            QualityTierDefinition legendary = QualityTier("quality-tier.legendary-foundation", "Legendary Quality Foundation", 0.98f, 1f, 100);
+            masterwork = QualityTier("quality.masterwork", "Masterwork", 0.85f, 0.98f, 80);
+            QualityTierDefinition common = QualityTier("quality.common", "Common", 0.35f, 0.65f, 30);
+            QualityTierDefinition fine = QualityTier("quality.fine", "Fine", 0.65f, 0.85f, 60);
+            QualityTierDefinition legendary = QualityTier("quality.legendary-foundation", "Legendary Quality Foundation", 0.98f, 1f, 100);
             keen = Affix("affix.prototype.keen-edge", "Keen Edge", ItemAffixClassification.Prefix, "affix-tier.prototype.keen.fine", 0.55f, 1f, 1f, 1f, 0.08f, 2f, exclusiveGroup: "affix-group.edge-sharpness");
             ItemAffixDefinition precise = Affix("affix.prototype.precise", "Precise", ItemAffixClassification.Suffix, "affix-tier.prototype.precise.fine", 0.45f, 1f, 0.5f, 0.5f, 0.04f, 1f, exclusiveGroup: "affix-group.precision");
 
@@ -2817,17 +2813,6 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredRuntimeAreas: TestLabRuntimeArea.Items,
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[] { SwordId, PotionId });
-        }
-
-        private static ItemInstanceSaveData StatefulSave(ItemDefinition item, string instanceId, float condition)
-        {
-            return new ItemInstanceSaveData
-            {
-                definitionId = item.ItemId,
-                instanceId = instanceId,
-                hasCondition = true,
-                conditionNormalized = condition
-            };
         }
 
         private static ITestLabScenarioStep Step(string stepId, string displayName, Func<TestLabAutomationContext, TestLabAutomationStepResult> action)

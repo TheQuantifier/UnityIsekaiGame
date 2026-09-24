@@ -891,7 +891,7 @@ namespace UnityIsekaiGame.Economy.Properties
 
     public static class PropertyInformationSubject
     {
-        public const string PropertySubjectTag = "tag.property";
+        public const string PropertySubjectTag = "tag.economy.property";
 
         public static InformationSubjectReferenceData Create(string propertyId, string ownerOrScopeId = "")
         {

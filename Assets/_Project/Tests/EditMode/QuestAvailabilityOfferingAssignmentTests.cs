@@ -188,7 +188,7 @@ namespace UnityIsekaiGame.Tests
                 questDefinitionId = PrototypeQuestDefinitionFactory.GuildPostingDefinitionId,
                 issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
                 intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Open },
-                origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.adventurers-guild", interactionPointId = "interaction-point.prototype.guild-counter" },
+                origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.adventurers-guild", interactionPointId = "interaction-point.prototype.adventurer-guild-counter" },
                 subjectLinks = new[] { Subject("location.prototype.dungeon-entry", QuestSubjectRole.Location, InformationSubjectType.Location) }
             });
         }
@@ -203,7 +203,7 @@ namespace UnityIsekaiGame.Tests
                 institutionalIssuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
                 offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild", actingPersonId = "person.prototype.guild-clerk" },
                 channel = QuestOfferChannel.GuildCounter,
-                sourceInteractionPointId = "interaction-point.prototype.guild-counter",
+                sourceInteractionPointId = "interaction-point.prototype.adventurer-guild-counter",
                 sourceLocationId = "location.prototype.adventurers-guild",
                 authorityBasisId = "authority.prototype.guild.quest-offer",
                 eligibilityContext = context,
@@ -217,7 +217,7 @@ namespace UnityIsekaiGame.Tests
             return new QuestEligibilityContext
             {
                 personId = personId,
-                interactionPointId = eligible ? "interaction-point.prototype.guild-counter" : string.Empty,
+                interactionPointId = eligible ? "interaction-point.prototype.adventurer-guild-counter" : string.Empty,
                 locationId = eligible ? "location.prototype.adventurers-guild" : string.Empty,
                 worldTime = 1d,
                 privilegedDiagnostics = true,

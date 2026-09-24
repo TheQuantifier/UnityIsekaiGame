@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b583f31bc4c47b49e4fd097c8c30d5c, type: 3}
   m_Name: AbilityHealingCategory
   m_EditorClassIdentifier: UnityIsekaiGame.GameData::UnityIsekaiGame.GameData.CategoryDefinition
-  categoryId: ability.healing
+  categoryId: category.ability.healing
   displayName: Healing Ability
   description: Ability category for restoration effects.
   parentCategory: {fileID: 11400000, guid: 8e018dcbe98745a7b8f2bce9e939cfb0, type: 2}

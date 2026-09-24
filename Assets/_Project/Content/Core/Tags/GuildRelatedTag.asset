@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ee90b64dbd74221aa0c35e4df92ffaa, type: 3}
   m_Name: GuildRelatedTag
   m_EditorClassIdentifier: UnityIsekaiGame.GameData::UnityIsekaiGame.GameData.TagDefinition
-  tagId: tag.guild-related
+  tagId: tag.general.guild-related
   displayName: Guild Related
   description: Trait for places related to guild activity.
   domain: 6

@@ -28,7 +28,7 @@ MonoBehaviour:
   skillContributionScale: 0.2
   requiresEquipmentSource: 1
   requiredEquipmentCategoryId: 
-  requiredEquipmentTagId: tag.parry-capable
+  requiredEquipmentTagId: tag.general.parry-capable
   timingWindowSeconds: 0.35
   maintained: 0
   consumedAfterAttempt: 1

@@ -16,21 +16,20 @@ namespace UnityIsekaiGame.Tests
     public sealed class ItemDurabilityWearRepairSalvageTests
     {
         [Test]
-        public void LegacyIdentityConditionMigratesIntoAuthoritativeDurability()
+        public void DefaultDurabilityUsesDedicatedAuthoritativeRecord()
         {
             Fixture fixture = CreateFixture();
             string itemId = fixture.Items.CreateItem(fixture.Sword, itemInstanceId: GuidFor("durability.migration")).Snapshot.ItemInstanceId;
-            fixture.Items.SetCondition(itemId, ItemConditionState.Damaged, 0.4f, "legacy", "test");
             fixture.Compositions.SetComposition(fixture.Items, fixture.Registry, Composition(itemId));
 
             ItemDurabilityOperationResult result = fixture.Durability.EnsureDefaultDurability(fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId);
 
             Assert.That(result.Succeeded, Is.True, result.Message);
-            Assert.That(result.Snapshot.ConditionCategory, Is.EqualTo(ItemDurabilityConditionCategory.Damaged));
-            Assert.That(result.Snapshot.Data.source, Is.EqualTo(ItemDurabilityRecordSource.Migration));
+            Assert.That(result.Snapshot.NormalizedDurability, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(result.Snapshot.Data.source, Is.EqualTo(ItemDurabilityRecordSource.DefinitionDefault));
             Assert.That(result.Snapshot.CurrentDurability, Is.GreaterThan(0f));
             Assert.That(fixture.Items.TryGetSnapshot(itemId, out ItemInstanceSnapshot identity), Is.True);
-            Assert.That(identity.ConditionState, Is.EqualTo(ItemConditionState.Damaged));
+            Assert.That(identity.ItemInstanceId, Is.EqualTo(itemId));
         }
 
         [Test]

@@ -200,7 +200,7 @@ namespace UnityIsekaiGame.Tests
                     questSourceId = sourceId,
                     questSourceDefinitionId = PrototypeQuestSourceDefinitionFactory.AdventurerGuildCounterDefinitionId,
                     hostLocationId = "location.prototype.adventurers-guild",
-                    interactionPointId = "interaction-point.prototype.guild-counter",
+                    interactionPointId = "interaction-point.prototype.adventurer-guild-counter",
                     operatingOrganizationId = "organization.prototype.guild",
                     sceneBindingKey = "scene.prototype.guild.counter",
                     worldTime = 1d
@@ -217,7 +217,7 @@ namespace UnityIsekaiGame.Tests
                     questSourceId = sourceId,
                     questSourceDefinitionId = PrototypeQuestSourceDefinitionFactory.MerchantGuildCounterDefinitionId,
                     hostLocationId = "location.prototype.market-stall",
-                    interactionPointId = "interaction-point.prototype.merchant-counter",
+                    interactionPointId = "interaction-point.prototype.merchant-guild-counter",
                     operatingOrganizationId = "organization.prototype.merchant-guild",
                     sceneBindingKey = "scene.prototype.guild.merchant-counter",
                     worldTime = 1d
@@ -235,7 +235,7 @@ namespace UnityIsekaiGame.Tests
                     questDefinitionId = PrototypeQuestDefinitionFactory.GuildPostingDefinitionId,
                     issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
                     intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Open },
-                    origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.adventurers-guild", interactionPointId = "interaction-point.prototype.guild-counter" },
+                    origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.adventurers-guild", interactionPointId = "interaction-point.prototype.adventurer-guild-counter" },
                     subjectLinks = new[] { Subject("location.prototype.dungeon-entry", QuestSubjectRole.Location, InformationSubjectType.Location) },
                     createdWorldTime = 1d
                 });
@@ -252,7 +252,7 @@ namespace UnityIsekaiGame.Tests
                     questDefinitionId = PrototypeQuestDefinitionFactory.MerchantDeliveryDefinitionId,
                     issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.merchant-guild" },
                     intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = "person.prototype.player" },
-                    origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.Contract, locationId = "location.prototype.market-stall", interactionPointId = "interaction-point.prototype.merchant-counter" },
+                    origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.Contract, locationId = "location.prototype.market-stall", interactionPointId = "interaction-point.prototype.merchant-guild-counter" },
                     subjectLinks = new[] { Subject("item.prototype.merchant-parcel", QuestSubjectRole.Item, InformationSubjectType.Custom) },
                     createdWorldTime = 1d
                 });
@@ -267,7 +267,7 @@ namespace UnityIsekaiGame.Tests
             {
                 personId = personId,
                 locationId = "location.prototype.adventurers-guild",
-                interactionPointId = "interaction-point.prototype.guild-counter",
+                interactionPointId = "interaction-point.prototype.adventurer-guild-counter",
                 privilegedDiagnostics = true,
                 worldTime = 1d,
                 facts = new QuestEligibilityFactSet(

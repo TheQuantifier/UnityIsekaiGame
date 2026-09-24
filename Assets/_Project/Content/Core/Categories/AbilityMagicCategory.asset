@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b583f31bc4c47b49e4fd097c8c30d5c, type: 3}
   m_Name: AbilityMagicCategory
   m_EditorClassIdentifier: UnityIsekaiGame.GameData::UnityIsekaiGame.GameData.CategoryDefinition
-  categoryId: ability.magic
+  categoryId: category.ability.magic
   displayName: Magic Ability
   description: Ability category for magical actions.
   parentCategory: {fileID: 11400000, guid: 78eb2622b611482088f3dce6150641f2, type: 2}

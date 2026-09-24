@@ -253,10 +253,7 @@ namespace UnityIsekaiGame.Tests
 
             public static DefinitionCatalog Catalog(params ScriptableObject[] definitions)
             {
-                DefinitionCatalog catalog = ScriptableObject.CreateInstance<DefinitionCatalog>();
-                SetPrivate(catalog, "catalogId", "catalog.production.test");
-                SetPrivate(catalog, "definitions", definitions);
-                return catalog;
+                return ClassificationTestFactory.CreateCatalog(definitions);
             }
 
             private static ItemDefinition Item(string id, string displayName, CategoryDefinition category, RarityDefinition rarity)

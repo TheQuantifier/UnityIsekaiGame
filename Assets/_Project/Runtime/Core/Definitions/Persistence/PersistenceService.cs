@@ -10,7 +10,7 @@ namespace UnityIsekaiGame.GameData.Persistence
     public sealed class PersistenceService
     {
         public const string FormatIdentifier = "UnityIsekaiGame.Save";
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
         public const string PrototypeSlotId = "slot-0001";
         public const string LocalWorldId = "local-world";
         public const string LocalPlayerId = "local-player";
@@ -1138,7 +1138,7 @@ namespace UnityIsekaiGame.GameData.Persistence
                 return PersistenceValidationResult.Failure(PersistenceValidationStatus.WrongFormatIdentifier, slotId, path, $"Wrong save format '{envelope.formatIdentifier}'.");
             }
 
-            if (envelope.schemaVersion > CurrentSchemaVersion || envelope.schemaVersion < 1)
+            if (envelope.schemaVersion != CurrentSchemaVersion)
             {
                 return PersistenceValidationResult.Failure(PersistenceValidationStatus.UnsupportedSchemaVersion, slotId, path, $"Unsupported save schema version {envelope.schemaVersion}.");
             }

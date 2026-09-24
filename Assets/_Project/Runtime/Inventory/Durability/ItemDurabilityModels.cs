@@ -157,7 +157,7 @@ namespace UnityIsekaiGame.Inventory.Durability
         public float recoverableDamage;
         public float irrecoverableDamage;
         public float wear;
-        public ItemDurabilityConditionCategory conditionCategory = ItemDurabilityConditionCategory.Pristine;
+        public string conditionBandId;
         public ItemFunctionalState functionalState = ItemFunctionalState.FullyFunctional;
         public ItemBreakageState breakageState = ItemBreakageState.None;
         public ItemMaintenanceState maintenanceState = ItemMaintenanceState.Maintained;
@@ -193,7 +193,7 @@ namespace UnityIsekaiGame.Inventory.Durability
                 recoverableDamage = recoverableDamage,
                 irrecoverableDamage = irrecoverableDamage,
                 wear = wear,
-                conditionCategory = conditionCategory,
+                conditionBandId = conditionBandId ?? string.Empty,
                 functionalState = functionalState,
                 breakageState = breakageState,
                 maintenanceState = maintenanceState,
@@ -225,7 +225,7 @@ namespace UnityIsekaiGame.Inventory.Durability
     [Serializable]
     public sealed class ItemDurabilityRuntimeSaveData
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
         public int schemaVersion = CurrentSchemaVersion;
         public long revision;
         public List<ItemDurabilityRecordData> records = new List<ItemDurabilityRecordData>();
@@ -255,7 +255,7 @@ namespace UnityIsekaiGame.Inventory.Durability
         public float CurrentDurability => Data.currentDurability;
         public float MaximumDurability => Data.maximumDurability;
         public float NormalizedDurability => MaximumDurability <= 0f ? 0f : CurrentDurability / MaximumDurability;
-        public ItemDurabilityConditionCategory ConditionCategory => Data.conditionCategory;
+        public string ConditionBandId => Data.conditionBandId ?? string.Empty;
         public ItemFunctionalState FunctionalState => Data.functionalState;
         public ItemBreakageState BreakageState => Data.breakageState;
         public long Revision => Data.revision;

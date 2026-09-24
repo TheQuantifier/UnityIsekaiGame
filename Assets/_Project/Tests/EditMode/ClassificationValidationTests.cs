@@ -10,9 +10,9 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Validate_AcceptsValidCategoryHierarchyAndAssignments()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
-            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("item.weapon", "Weapon", CategoryDomain.Item, item);
-            TagDefinition prototype = ClassificationTestFactory.CreateTag("tag.prototype", "Prototype");
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
+            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("category.item.weapon", "Weapon", CategoryDomain.Item, item);
+            TagDefinition prototype = ClassificationTestFactory.CreateTag("tag.general.prototype", "Prototype");
             TestClassifiedDefinition sword = ScriptableObject.CreateInstance<TestClassifiedDefinition>();
             sword.Initialize("item.prototype-sword", "Prototype Sword", CategoryDomain.Item, weapon, prototype);
 
@@ -26,7 +26,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Validate_ReportsSelfParentCategory()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
             SetCategoryParent(item, item);
 
             DefinitionCatalog catalog = ClassificationTestFactory.CreateCatalog(item);
@@ -40,8 +40,8 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Validate_ReportsCircularCategoryHierarchy()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
-            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("item.weapon", "Weapon", CategoryDomain.Item, item);
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
+            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("category.item.weapon", "Weapon", CategoryDomain.Item, item);
             SetCategoryParent(item, weapon);
 
             DefinitionCatalog catalog = ClassificationTestFactory.CreateCatalog(item, weapon);
@@ -55,7 +55,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Validate_ReportsMissingAssignedCategoryFromCatalog()
         {
-            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("item.weapon", "Weapon", CategoryDomain.Item);
+            CategoryDefinition weapon = ClassificationTestFactory.CreateCategory("category.item.weapon", "Weapon", CategoryDomain.Item);
             TestClassifiedDefinition sword = ScriptableObject.CreateInstance<TestClassifiedDefinition>();
             sword.Initialize("item.prototype-sword", "Prototype Sword", CategoryDomain.Item, weapon);
 
@@ -70,8 +70,8 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Validate_ReportsDuplicateTagAssignment()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
-            TagDefinition prototype = ClassificationTestFactory.CreateTag("tag.prototype", "Prototype");
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
+            TagDefinition prototype = ClassificationTestFactory.CreateTag("tag.general.prototype", "Prototype");
             TestClassifiedDefinition sword = ScriptableObject.CreateInstance<TestClassifiedDefinition>();
             sword.Initialize("item.prototype-sword", "Prototype Sword", CategoryDomain.Item, item, prototype, prototype);
 
@@ -86,7 +86,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Validate_ReportsWrongDomainCategory()
         {
-            CategoryDefinition spell = ClassificationTestFactory.CreateCategory("ability.spell", "Spell", CategoryDomain.Ability);
+            CategoryDefinition spell = ClassificationTestFactory.CreateCategory("category.ability.spell", "Spell", CategoryDomain.Ability);
             TestClassifiedDefinition sword = ScriptableObject.CreateInstance<TestClassifiedDefinition>();
             sword.Initialize("item.prototype-sword", "Prototype Sword", CategoryDomain.Item, spell);
 
@@ -101,8 +101,8 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Validate_ReportsMissingAssignedTagFromCatalog()
         {
-            CategoryDefinition item = ClassificationTestFactory.CreateCategory("item", "Item", CategoryDomain.Item);
-            TagDefinition prototype = ClassificationTestFactory.CreateTag("tag.prototype", "Prototype");
+            CategoryDefinition item = ClassificationTestFactory.CreateCategory("category.item", "Item", CategoryDomain.Item);
+            TagDefinition prototype = ClassificationTestFactory.CreateTag("tag.general.prototype", "Prototype");
             TestClassifiedDefinition sword = ScriptableObject.CreateInstance<TestClassifiedDefinition>();
             sword.Initialize("item.prototype-sword", "Prototype Sword", CategoryDomain.Item, item, prototype);
 
@@ -112,20 +112,6 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(report.HasErrors, Is.True);
             Assert.That(report.GetSummary(), Does.Contain("references tag"));
-        }
-
-        [Test]
-        public void Validate_ReportsLegacyStringTags()
-        {
-            TestLegacyTaggedDefinition person = ScriptableObject.CreateInstance<TestLegacyTaggedDefinition>();
-            person.Initialize("person.prototype-npc", "Prototype NPC", "old_role_tag");
-
-            DefinitionCatalog catalog = ClassificationTestFactory.CreateCatalog(person);
-
-            DefinitionValidationReport report = DefinitionCatalogValidator.Validate(catalog);
-
-            Assert.That(report.WarningCount, Is.GreaterThan(0));
-            Assert.That(report.GetSummary(), Does.Contain("legacy raw role tag"));
         }
 
         private static void SetCategoryParent(CategoryDefinition category, CategoryDefinition parent)
@@ -164,23 +150,5 @@ namespace UnityIsekaiGame.Tests
             }
         }
 
-        private sealed class TestLegacyTaggedDefinition : ScriptableObject, IGameDefinition, ILegacyStringTaggedDefinition
-        {
-            private string id;
-            private string displayName;
-            private string[] tags;
-
-            public string Id => id;
-            public string DisplayName => displayName;
-            public IReadOnlyList<string> LegacyTags => tags;
-            public string LegacyTagLabel => "role";
-
-            public void Initialize(string definitionId, string definitionDisplayName, params string[] definitionTags)
-            {
-                id = definitionId;
-                displayName = definitionDisplayName;
-                tags = definitionTags;
-            }
-        }
     }
 }

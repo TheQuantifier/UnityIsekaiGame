@@ -28,7 +28,7 @@ MonoBehaviour:
   skillContributionScale: 0
   requiresEquipmentSource: 1
   requiredEquipmentCategoryId: 
-  requiredEquipmentTagId: tag.shield-compatible
+  requiredEquipmentTagId: tag.general.shield-compatible
   timingWindowSeconds: 0.75
   maintained: 0
   consumedAfterAttempt: 1

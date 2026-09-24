@@ -209,10 +209,6 @@ namespace UnityIsekaiGame.Inventory.Identity
                 && string.Equals(a.labels?.serialNumber, b.labels?.serialNumber, StringComparison.Ordinal)
                 && a.labels?.authenticity == b.labels?.authenticity
                 && string.Equals(a.accessPolicyId, b.accessPolicyId, StringComparison.Ordinal)
-                && a.condition?.state == b.condition?.state
-                && Math.Abs((a.condition?.normalized ?? 1f) - (b.condition?.normalized ?? 1f)) < 0.0001f
-                && a.quality?.tier == b.quality?.tier
-                && a.quality?.source == b.quality?.source
                 && string.Equals(a.ownership?.ownerPersonId, b.ownership?.ownerPersonId, StringComparison.Ordinal)
                 && string.Equals(a.ownership?.custodianPersonId, b.ownership?.custodianPersonId, StringComparison.Ordinal)
                 && SequenceEquals(a.provenance?.parentItemInstanceIds, b.provenance?.parentItemInstanceIds)
@@ -242,7 +238,7 @@ namespace UnityIsekaiGame.Inventory.Identity
                 ItemInstanceRecordData record;
                 if (entry.mode == InventoryEntrySaveMode.StatefulInstance)
                 {
-                    if (!TryCreateStatefulRecord(entry.itemInstance, entry.definitionId, entry.itemInstanceId, registry, owner, ItemLocationKind.Inventory, owner, string.Empty, out record, out failure))
+                    if (!TryCreateStatefulRecord(entry.definitionId, entry.itemInstanceId, registry, owner, ItemLocationKind.Inventory, owner, string.Empty, out record, out failure))
                     {
                         return false;
                     }
@@ -330,16 +326,6 @@ namespace UnityIsekaiGame.Inventory.Identity
             existing.ownership.kind = projected.ownership?.kind ?? existing.ownership.kind;
             existing.ownership.ownerPersonId = projected.ownership?.ownerPersonId ?? existing.ownership.ownerPersonId;
             existing.ownership.custodianPersonId = projected.ownership?.custodianPersonId ?? existing.ownership.custodianPersonId;
-            if (existing.condition == null || existing.condition.state == ItemConditionState.Unknown)
-            {
-                existing.condition = projected.condition?.Clone() ?? new ItemConditionStateData();
-            }
-
-            if (existing.quality == null || existing.quality.tier == ItemQualityTier.Unknown)
-            {
-                existing.quality = projected.quality?.Clone() ?? new ItemQualityStateData();
-            }
-
             existing.revision = Math.Max(1L, existing.revision + 1L);
         }
 
@@ -391,7 +377,7 @@ namespace UnityIsekaiGame.Inventory.Identity
                 ItemInstanceRecordData record;
                 if (slot.mode == EquipmentEntrySaveMode.StatefulInstance)
                 {
-                    if (!TryCreateStatefulRecord(slot.itemInstance, slot.definitionId, slot.itemInstanceId, registry, owner, ItemLocationKind.Equipped, owner, slot.slotType.ToString(), out record, out failure))
+                    if (!TryCreateStatefulRecord(slot.definitionId, slot.itemInstanceId, registry, owner, ItemLocationKind.Equipped, owner, slot.slotType.ToString(), out record, out failure))
                     {
                         return false;
                     }
@@ -422,7 +408,6 @@ namespace UnityIsekaiGame.Inventory.Identity
         }
 
         private static bool TryCreateStatefulRecord(
-            ItemInstanceSaveData instance,
             string definitionId,
             string itemInstanceId,
             DefinitionRegistry registry,
@@ -435,13 +420,8 @@ namespace UnityIsekaiGame.Inventory.Identity
         {
             record = null;
             failure = string.Empty;
-            bool hasLegacyPayload = HasLegacyItemInstancePayload(instance);
-            string resolvedInstanceId = !string.IsNullOrWhiteSpace(itemInstanceId)
-                ? itemInstanceId
-                : hasLegacyPayload ? instance.instanceId : string.Empty;
-            string resolvedDefinitionId = !string.IsNullOrWhiteSpace(definitionId)
-                ? definitionId
-                : hasLegacyPayload ? instance.definitionId : string.Empty;
+            string resolvedInstanceId = itemInstanceId;
+            string resolvedDefinitionId = definitionId;
             if (string.IsNullOrWhiteSpace(resolvedInstanceId))
             {
                 failure = "Stateful item entry is missing a persistent instance ID.";
@@ -461,10 +441,6 @@ namespace UnityIsekaiGame.Inventory.Identity
             }
 
             record = CreateBaseRecord(item.ItemId, resolvedInstanceId, owner, ItemInstanceClassification.IndividuallyTracked);
-            if (hasLegacyPayload)
-            {
-                ApplyMetadata(record, instance);
-            }
             record.location = locationKind == ItemLocationKind.Equipped
                 ? new ItemLocationStateData { kind = ItemLocationKind.Equipped, equipmentHolderId = locationOwner, equipmentSlotId = equipmentSlot }
                 : new ItemLocationStateData { kind = ItemLocationKind.Inventory, inventoryOwnerId = locationOwner };
@@ -511,48 +487,10 @@ namespace UnityIsekaiGame.Inventory.Identity
                 lifecycleState = ItemLifecycleState.Active,
                 location = new ItemLocationStateData { kind = ItemLocationKind.Inventory, inventoryOwnerId = owner },
                 ownership = new ItemOwnershipStateData { kind = ItemOwnershipKind.PersonOwned, ownerPersonId = owner, custodianPersonId = owner, originalOwnerId = owner, legalOwnerId = owner },
-                condition = new ItemConditionStateData { state = ItemConditionState.Pristine, normalized = 1f, sourceId = "legacy.inventory-equipment", cause = "Legacy inventory/equipment migration" },
-                quality = new ItemQualityStateData { tier = ItemQualityTier.Unknown, source = ItemQualitySource.Unknown, normalized = 0f },
-                provenance = new ItemProvenanceData { provenanceRootId = $"item-provenance.{instanceId}", creationSourceId = "legacy.inventory-equipment" },
-                tags = new[] { "item.instance", "legacy.inventory-equipment" },
+                provenance = new ItemProvenanceData { provenanceRootId = $"item-provenance.{instanceId}", creationSourceId = "inventory-equipment-projection" },
+                tags = new[] { "item.instance", "source.inventory-equipment" },
                 revision = 1L
             };
-        }
-
-        private static void ApplyMetadata(ItemInstanceRecordData record, ItemInstanceSaveData instance)
-        {
-            if (instance.hasCondition)
-            {
-                record.condition = new ItemConditionStateData
-                {
-                    state = instance.conditionNormalized >= 0.999f ? ItemConditionState.Pristine : ItemConditionState.Worn,
-                    normalized = Math.Max(0f, Math.Min(1f, instance.conditionNormalized)),
-                    sourceId = "legacy.item-instance",
-                    cause = "Migrated condition metadata"
-                };
-            }
-
-            if (instance.hasQuality)
-            {
-                record.quality = new ItemQualityStateData
-                {
-                    tier = ItemQualityTier.Custom,
-                    source = ItemQualitySource.Authored,
-                    normalized = 0f,
-                    qualityDefinitionId = instance.qualityId ?? string.Empty,
-                    workmanship = "legacy.item-instance"
-                };
-            }
-        }
-
-        private static bool HasLegacyItemInstancePayload(ItemInstanceSaveData itemInstance)
-        {
-            return itemInstance != null
-                && (!string.IsNullOrWhiteSpace(itemInstance.definitionId)
-                    || !string.IsNullOrWhiteSpace(itemInstance.instanceId)
-                    || itemInstance.hasCondition
-                    || itemInstance.hasQuality
-                    || !string.IsNullOrWhiteSpace(itemInstance.qualityId));
         }
 
         private static void ValidateInventoryEntries(
@@ -566,7 +504,7 @@ namespace UnityIsekaiGame.Inventory.Identity
             for (int i = 0; i < entries.Count; i++)
             {
                 InventoryEntrySaveData entry = entries[i];
-                string itemInstanceId = ResolveEntryItemInstanceId(entry?.itemInstanceId, entry?.itemInstance);
+                string itemInstanceId = entry?.itemInstanceId ?? string.Empty;
                 if (entry?.mode == InventoryEntrySaveMode.Empty || string.IsNullOrWhiteSpace(itemInstanceId))
                 {
                     continue;
@@ -601,7 +539,7 @@ namespace UnityIsekaiGame.Inventory.Identity
             for (int i = 0; i < slots.Count; i++)
             {
                 EquipmentSlotSaveData slot = slots[i];
-                string itemInstanceId = ResolveEntryItemInstanceId(slot?.itemInstanceId, slot?.itemInstance);
+                string itemInstanceId = slot?.itemInstanceId ?? string.Empty;
                 if (slot?.mode == EquipmentEntrySaveMode.Empty || string.IsNullOrWhiteSpace(itemInstanceId))
                 {
                     continue;
@@ -630,11 +568,6 @@ namespace UnityIsekaiGame.Inventory.Identity
         private static string ResolveProjectionItemInstanceId(string itemInstanceId, string deterministicSeed)
         {
             return !string.IsNullOrWhiteSpace(itemInstanceId) ? itemInstanceId : DeterministicGuid(deterministicSeed);
-        }
-
-        private static string ResolveEntryItemInstanceId(string itemInstanceId, ItemInstanceSaveData itemInstance)
-        {
-            return !string.IsNullOrWhiteSpace(itemInstanceId) ? itemInstanceId : itemInstance?.instanceId ?? string.Empty;
         }
 
         private static bool SequenceEquals(string[] left, string[] right)

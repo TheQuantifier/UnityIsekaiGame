@@ -24,6 +24,8 @@ namespace UnityIsekaiGame.Combat
         public float HitRadius => Mathf.Max(0.01f, hitRadius);
         public DamageTypeDefinition DamageType => damageType;
 
+        public void SetEnabled(bool value) => weapon = value;
+
         public void Validate()
         {
             baseDamage = Mathf.Max(0f, baseDamage);

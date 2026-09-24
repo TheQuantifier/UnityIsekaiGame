@@ -4,7 +4,7 @@ namespace UnityIsekaiGame.GameData
 {
     public static class DefinitionIdValidator
     {
-        public const string AllowedFormatDescription = "lowercase letters, digits, periods, hyphens, and underscores; no whitespace; no leading, trailing, or repeated separators";
+        public const string AllowedFormatDescription = "lowercase letters, digits, periods, and hyphens; no whitespace; no leading, trailing, or adjacent separators";
 
         public static DefinitionIdValidationResult Validate(string id, string context = null)
         {
@@ -60,7 +60,7 @@ namespace UnityIsekaiGame.GameData
                     hasUnsupported = true;
                 }
 
-                if (IsSeparator(character) && character == previous)
+                if (IsSeparator(character) && IsSeparator(previous))
                 {
                     hasRepeatedSeparator = true;
                 }
@@ -98,9 +98,9 @@ namespace UnityIsekaiGame.GameData
                 result.Add(DefinitionIdValidationSeverity.Error, $"{prefix} contains repeated separators.");
             }
 
-            if (!id.Contains(".") && !IsReservedRootId(id))
+            if (!id.Contains("."))
             {
-                result.Add(DefinitionIdValidationSeverity.Warning, $"{prefix} is valid but has no namespace/domain prefix. Prefer IDs like item.health-potion for new content.");
+                result.Add(DefinitionIdValidationSeverity.Error, $"{prefix} has no namespace/domain prefix. Use IDs like item.health-potion.");
             }
 
             string suggestion = CreateNormalizedSuggestion(id);
@@ -168,7 +168,8 @@ namespace UnityIsekaiGame.GameData
         {
             return character >= 'a' && character <= 'z'
                 || character >= '0' && character <= '9'
-                || IsSeparator(character);
+                || character == '.'
+                || character == '-';
         }
 
         private static bool IsSeparator(char character)
@@ -176,18 +177,5 @@ namespace UnityIsekaiGame.GameData
             return character == '.' || character == '-' || character == '_';
         }
 
-        private static bool IsReservedRootId(string id)
-        {
-            return id == "object"
-                || id == "item"
-                || id == "ability"
-                || id == "being"
-                || id == "person"
-                || id == "place"
-                || id == "faction"
-                || id == "quest"
-                || id == "contract"
-                || id == "profession";
-        }
     }
 }

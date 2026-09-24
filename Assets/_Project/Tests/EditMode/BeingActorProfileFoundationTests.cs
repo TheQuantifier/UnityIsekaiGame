@@ -12,7 +12,7 @@ namespace UnityIsekaiGame.Tests
         public void BeingDefinition_ExposesStableClassificationMetadata()
         {
             CategoryDefinition category = CreateCategory("category.being.person", CategoryDomain.Being);
-            TagDefinition humanoid = CreateTag("tag.humanoid", CategoryDomain.Being);
+            TagDefinition humanoid = CreateTag("tag.being.humanoid", CategoryDomain.Being);
             ScriptableObject being = CreateBeing("being.person", "Person", category, new[] { humanoid });
 
             Assert.That(Get<string>(being, "Id"), Is.EqualTo("being.person"));
@@ -20,7 +20,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(Get<object>(being, "SocialCapability").ToString(), Is.EqualTo("Institutional"));
             Assert.That(Convert.ToInt32(Get<object>(being, "LocomotionCapabilities")), Is.EqualTo(1));
             Assert.That(ClassificationUtility.IsInCategory((ICategorizableDefinition)being, "category.being.person"), Is.True);
-            Assert.That(ClassificationUtility.HasTag((ITaggedDefinition)being, "tag.humanoid"), Is.True);
+            Assert.That(ClassificationUtility.HasTag((ITaggedDefinition)being, "tag.being.humanoid"), Is.True);
         }
 
         [Test]
@@ -246,10 +246,7 @@ namespace UnityIsekaiGame.Tests
 
         private static DefinitionCatalog CreateCatalog(params ScriptableObject[] definitions)
         {
-            DefinitionCatalog catalog = ScriptableObject.CreateInstance<DefinitionCatalog>();
-            SetString(catalog, "catalogId", "catalog.test");
-            SetObjectArray(catalog, "definitions", definitions);
-            return catalog;
+            return ClassificationTestFactory.CreateCatalog(definitions);
         }
 
         private static object CreateSource(string sourceType, string sourceId)

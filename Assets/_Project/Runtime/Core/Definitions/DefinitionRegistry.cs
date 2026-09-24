@@ -6,8 +6,9 @@ namespace UnityIsekaiGame.GameData
     {
         private readonly Dictionary<string, IGameDefinition> definitionsById = new Dictionary<string, IGameDefinition>();
 
-        public DefinitionRegistry(IEnumerable<IGameDefinition> definitions, DefinitionValidationReport report = null)
+        public DefinitionRegistry(IEnumerable<IGameDefinition> definitions, DefinitionValidationReport report = null, GameDataDefaultsDefinition defaults = null)
         {
+            Defaults = defaults;
             if (definitions == null)
             {
                 report?.AddError("Cannot initialize definition registry from a null definition collection.");
@@ -21,6 +22,7 @@ namespace UnityIsekaiGame.GameData
         }
 
         public IReadOnlyDictionary<string, IGameDefinition> DefinitionsById => definitionsById;
+        public GameDataDefaultsDefinition Defaults { get; }
         public int Count => definitionsById.Count;
 
         public bool TryGet(string id, out IGameDefinition definition)

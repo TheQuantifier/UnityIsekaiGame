@@ -31,8 +31,7 @@ namespace UnityIsekaiGame.GameData
                 ValidateDefinitionClassification(definition, definitionsById, report);
             }
 
-            ValidateRankedDefinitions(definitions, report);
-            ValidateConditionRanges(definitions, report);
+            ValidateRarityDefinitions(definitions, report);
         }
 
         private static void ValidateCategory(
@@ -43,6 +42,11 @@ namespace UnityIsekaiGame.GameData
             if (category == null)
             {
                 return;
+            }
+
+            if (!category.Id.StartsWith("category.", System.StringComparison.Ordinal))
+            {
+                report.AddError($"Category '{category.Id}' must use the 'category.<domain>[.<path>]' namespace.");
             }
 
             if (category.ParentCategory == null)
@@ -82,9 +86,9 @@ namespace UnityIsekaiGame.GameData
                 return;
             }
 
-            if (!tag.Id.StartsWith("tag."))
+            if (!tag.Id.StartsWith("tag.", System.StringComparison.Ordinal) || tag.Id.Split('.').Length < 3)
             {
-                report.AddWarning($"Tag '{tag.Id}' should use the 'tag.' namespace prefix for new content.");
+                report.AddError($"Tag '{tag.Id}' must use the 'tag.<domain>.<name>' namespace.");
             }
         }
 
@@ -122,10 +126,6 @@ namespace UnityIsekaiGame.GameData
                 ValidateRarityReference(definition, rarityOwner, definitionsById, report);
             }
 
-            if (definition is ILegacyStringTaggedDefinition legacyStringTagged)
-            {
-                ValidateLegacyTags(definition, legacyStringTagged, report);
-            }
         }
 
         private static void ValidateRarityReference(
@@ -225,21 +225,6 @@ namespace UnityIsekaiGame.GameData
             }
         }
 
-        private static void ValidateLegacyTags(
-            IGameDefinition owner,
-            ILegacyStringTaggedDefinition legacyStringTagged,
-            DefinitionValidationReport report)
-        {
-            IReadOnlyList<string> legacyTags = legacyStringTagged.LegacyTags;
-            for (int i = 0; i < legacyTags.Count; i++)
-            {
-                if (!string.IsNullOrWhiteSpace(legacyTags[i]))
-                {
-                    report.AddWarning($"{owner.GetType().Name} '{owner.DisplayName}' still has legacy raw {legacyStringTagged.LegacyTagLabel} tag '{legacyTags[i]}'. Prefer typed TagDefinition references for new content.");
-                }
-            }
-        }
-
         private static void ValidateInventoryItem(IInventoryItemDefinition item, DefinitionValidationReport report)
         {
             if (item.PrimaryCategory == null)
@@ -280,7 +265,7 @@ namespace UnityIsekaiGame.GameData
                 && !inWeaponCategory
                 && !inArmorCategory)
             {
-                report.AddWarning($"Item definition '{item.DisplayName}' is equippable but is not in the item.equipment, item.weapon, or item.armor category hierarchy.");
+                report.AddWarning($"Item definition '{item.DisplayName}' is equippable but is not in the category.item.equipment, category.item.weapon, or category.item.armor hierarchy.");
             }
 
             if (item is IUsableItemDefinition usable)
@@ -297,7 +282,7 @@ namespace UnityIsekaiGame.GameData
 
                 if (usable.IsUsable && !inConsumableCategory)
                 {
-                    report.AddWarning($"Item definition '{item.DisplayName}' has use effects but is not categorized under item.consumable.");
+                    report.AddWarning($"Item definition '{item.DisplayName}' has use effects but is not categorized under category.item.consumable.");
                 }
 
                 if (inConsumableCategory && !usable.IsUsable)
@@ -332,13 +317,6 @@ namespace UnityIsekaiGame.GameData
             {
                 report.AddWarning($"Item definition '{item.DisplayName}' allows item instances with maximum stack size {item.MaximumStackSize}. Future stateful instances should not share indistinguishable stacks.");
             }
-        }
-
-        private static void ValidateRankedDefinitions(IReadOnlyList<IGameDefinition> definitions, DefinitionValidationReport report)
-        {
-            ValidateRarityDefinitions(definitions, report);
-            ValidateQualityDefinitions(definitions, report);
-            ValidateConditionDefinitions(definitions, report);
         }
 
         private static void ValidateRarityDefinitions(IReadOnlyList<IGameDefinition> definitions, DefinitionValidationReport report)
@@ -384,158 +362,5 @@ namespace UnityIsekaiGame.GameData
             }
         }
 
-        private static void ValidateQualityDefinitions(IReadOnlyList<IGameDefinition> definitions, DefinitionValidationReport report)
-        {
-            Dictionary<int, QualityDefinition> ranks = new Dictionary<int, QualityDefinition>();
-            bool defaultSeen = false;
-
-            for (int i = 0; i < definitions.Count; i++)
-            {
-                if (definitions[i] is not QualityDefinition quality)
-                {
-                    continue;
-                }
-
-                if (!quality.Id.StartsWith("quality."))
-                {
-                    report.AddWarning($"Quality '{quality.Id}' should use the 'quality.' namespace prefix.");
-                }
-
-                if (quality.Rank < 0)
-                {
-                    report.AddError($"Quality '{quality.Id}' has a negative rank.");
-                }
-
-                if (ranks.TryGetValue(quality.Rank, out QualityDefinition existing))
-                {
-                    report.AddError($"Quality rank {quality.Rank} is used by both '{existing.Id}' and '{quality.Id}'.");
-                }
-                else
-                {
-                    ranks.Add(quality.Rank, quality);
-                }
-
-                if (quality.IsDefault)
-                {
-                    if (defaultSeen)
-                    {
-                        report.AddError($"Multiple quality definitions are marked as default; '{quality.Id}' is an extra default.");
-                    }
-
-                    defaultSeen = true;
-                }
-            }
-        }
-
-        private static void ValidateConditionDefinitions(IReadOnlyList<IGameDefinition> definitions, DefinitionValidationReport report)
-        {
-            Dictionary<int, ConditionDefinition> ranks = new Dictionary<int, ConditionDefinition>();
-            bool defaultSeen = false;
-
-            for (int i = 0; i < definitions.Count; i++)
-            {
-                if (definitions[i] is not ConditionDefinition condition)
-                {
-                    continue;
-                }
-
-                if (!condition.Id.StartsWith("condition."))
-                {
-                    report.AddWarning($"Condition '{condition.Id}' should use the 'condition.' namespace prefix.");
-                }
-
-                if (condition.Rank < 0)
-                {
-                    report.AddError($"Condition '{condition.Id}' has a negative rank.");
-                }
-
-                if (ranks.TryGetValue(condition.Rank, out ConditionDefinition existing))
-                {
-                    report.AddError($"Condition rank {condition.Rank} is used by both '{existing.Id}' and '{condition.Id}'.");
-                }
-                else
-                {
-                    ranks.Add(condition.Rank, condition);
-                }
-
-                if (condition.IsDefault)
-                {
-                    if (defaultSeen)
-                    {
-                        report.AddError($"Multiple condition definitions are marked as default; '{condition.Id}' is an extra default.");
-                    }
-
-                    defaultSeen = true;
-                }
-            }
-        }
-
-        private static void ValidateConditionRanges(IReadOnlyList<IGameDefinition> definitions, DefinitionValidationReport report)
-        {
-            List<ConditionDefinition> conditions = new List<ConditionDefinition>();
-            for (int i = 0; i < definitions.Count; i++)
-            {
-                if (definitions[i] is ConditionDefinition condition)
-                {
-                    conditions.Add(condition);
-                    ValidateConditionRange(condition, report);
-                }
-            }
-
-            if (conditions.Count == 0)
-            {
-                return;
-            }
-
-            conditions.Sort(CompareConditionRanges);
-            const float epsilon = 0.0001f;
-            float expectedMinimum = 0f;
-
-            for (int i = 0; i < conditions.Count; i++)
-            {
-                ConditionDefinition condition = conditions[i];
-
-                if (condition.MinimumNormalized > expectedMinimum + epsilon)
-                {
-                    report.AddError($"Condition ranges have a gap from {expectedMinimum:0.###} to {condition.MinimumNormalized:0.###} before '{condition.Id}'.");
-                }
-
-                if (condition.MinimumNormalized < expectedMinimum - epsilon)
-                {
-                    report.AddError($"Condition range '{condition.Id}' overlaps a previous condition range near {condition.MinimumNormalized:0.###}.");
-                }
-
-                expectedMinimum = condition.MaximumNormalized;
-            }
-
-            if (expectedMinimum < 1f - epsilon)
-            {
-                report.AddError($"Condition ranges have a gap from {expectedMinimum:0.###} to 1.");
-            }
-        }
-
-        private static void ValidateConditionRange(ConditionDefinition condition, DefinitionValidationReport report)
-        {
-            if (condition.MinimumNormalized < 0f || condition.MinimumNormalized > 1f)
-            {
-                report.AddError($"Condition '{condition.Id}' minimum normalized value must be between 0 and 1.");
-            }
-
-            if (condition.MaximumNormalized < 0f || condition.MaximumNormalized > 1f)
-            {
-                report.AddError($"Condition '{condition.Id}' maximum normalized value must be between 0 and 1.");
-            }
-
-            if (condition.MinimumNormalized > condition.MaximumNormalized)
-            {
-                report.AddError($"Condition '{condition.Id}' minimum normalized value is greater than its maximum.");
-            }
-        }
-
-        private static int CompareConditionRanges(ConditionDefinition left, ConditionDefinition right)
-        {
-            int minimumComparison = left.MinimumNormalized.CompareTo(right.MinimumNormalized);
-            return minimumComparison != 0 ? minimumComparison : left.Rank.CompareTo(right.Rank);
-        }
     }
 }

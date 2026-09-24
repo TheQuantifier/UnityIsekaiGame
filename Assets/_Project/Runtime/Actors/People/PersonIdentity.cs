@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityIsekaiGame.GameData;
 
 namespace UnityIsekaiGame.People
 {
@@ -13,7 +14,7 @@ namespace UnityIsekaiGame.People
         public string Title => definition == null ? string.Empty : definition.Title;
         public string ShortDescription => definition == null ? string.Empty : definition.ShortDescription;
         public Sprite Portrait => definition == null ? null : definition.Portrait;
-        public IReadOnlyList<string> RoleTags => definition == null ? System.Array.Empty<string>() : definition.RoleTags;
+        public IReadOnlyList<TagDefinition> Tags => definition == null ? System.Array.Empty<TagDefinition>() : definition.Tags;
         public string FactionIdPlaceholder => definition == null ? string.Empty : definition.FactionIdPlaceholder;
         public string SettlementIdPlaceholder => definition == null ? string.Empty : definition.SettlementIdPlaceholder;
         public string HomePlaceId => definition == null || definition.HomePlace == null ? string.Empty : definition.HomePlace.Id;

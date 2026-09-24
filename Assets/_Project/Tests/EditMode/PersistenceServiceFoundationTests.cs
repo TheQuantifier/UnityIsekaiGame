@@ -198,6 +198,12 @@ namespace UnityIsekaiGame.Tests
             envelope.contentChecksum = PersistenceService.ComputeChecksum(envelope);
             File.WriteAllText(paths.PrimaryPath, JsonUtility.ToJson(envelope, true));
             Assert.That(service.ValidateSlot("slot-0001").Status, Is.EqualTo(PersistenceValidationStatus.UnsupportedSchemaVersion));
+
+            envelope = ValidEnvelope("slot-0001");
+            envelope.schemaVersion = PersistenceService.CurrentSchemaVersion - 1;
+            envelope.contentChecksum = PersistenceService.ComputeChecksum(envelope);
+            File.WriteAllText(paths.PrimaryPath, JsonUtility.ToJson(envelope, true));
+            Assert.That(service.ValidateSlot("slot-0001").Status, Is.EqualTo(PersistenceValidationStatus.UnsupportedSchemaVersion));
         }
 
         [Test]
@@ -307,16 +313,6 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(result.Succeeded, Is.False);
             Assert.That(result.Status, Is.EqualTo(PersistenceSaveStatus.ParticipantCaptureFailed));
-        }
-
-        [Test]
-        public void MigrationRegistryRejectsInvalidAndDuplicateMigrations()
-        {
-            SaveMigrationRegistry registry = new SaveMigrationRegistry();
-
-            Assert.That(registry.Register(new TestMigration(1, 2), out string failure), Is.True, failure);
-            Assert.That(registry.Register(new TestMigration(1, 2), out failure), Is.False);
-            Assert.That(registry.Register(new TestMigration(2, 2), out failure), Is.False);
         }
 
         private PersistenceService CreateService(TestState state)
@@ -452,23 +448,5 @@ namespace UnityIsekaiGame.Tests
             }
         }
 
-        private sealed class TestMigration : ISaveMigration
-        {
-            public TestMigration(int from, int to)
-            {
-                FromSchemaVersion = from;
-                ToSchemaVersion = to;
-            }
-
-            public int FromSchemaVersion { get; }
-            public int ToSchemaVersion { get; }
-
-            public bool TryMigrate(GameSaveEnvelope envelope, out GameSaveEnvelope migratedEnvelope, out string failureReason)
-            {
-                migratedEnvelope = envelope;
-                failureReason = string.Empty;
-                return true;
-            }
-        }
     }
 }

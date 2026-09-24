@@ -40,7 +40,7 @@ namespace UnityIsekaiGame.Tests
             });
 
             Assert.That(result.Succeeded, Is.True, result.Message);
-            Assert.That(result.Quality.QualityTierId, Is.EqualTo("quality-tier.masterwork"));
+            Assert.That(result.Quality.QualityTierId, Is.EqualTo("quality.masterwork"));
             Assert.That(result.Quality.Data.workmanship.Any(entry => entry.value.state == QualityValueState.Unknown), Is.True);
             Assert.That(result.Quality.Data.workmanship.Any(entry => entry.value.state == QualityValueState.NotApplicable), Is.True);
         }
@@ -134,17 +134,15 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void LegacyIdentityQualityMigratesToAuthoritativeQualityWithoutAffixes()
+        public void DefaultQualityCreatesOneAuthoritativeRecordWithoutAffixes()
         {
             RuntimeFixture fixture = CreateFixture();
             string item = fixture.Items.CreateItem(fixture.Sword, itemInstanceId: ItemInstanceId.Generate()).Snapshot.ItemInstanceId;
-            fixture.Items.SetQuality(item, ItemQualityTier.Fine, ItemQualitySource.Authored, 0.82f);
-
             ItemQualityAffixOperationResult migrated = fixture.Quality.EnsureDefaultQuality(fixture.Items, fixture.Compositions, fixture.Registry, item);
             ItemQualityAffixOperationResult migratedAgain = fixture.Quality.EnsureDefaultQuality(fixture.Items, fixture.Compositions, fixture.Registry, item);
 
             Assert.That(migrated.Succeeded, Is.True, migrated.Message);
-            Assert.That(migrated.Quality.OverallQuality, Is.EqualTo(0.82f).Within(0.001f));
+            Assert.That(migrated.Quality.OverallQuality, Is.EqualTo(0.5f).Within(0.001f));
             Assert.That(migratedAgain.Succeeded, Is.True);
             Assert.That(fixture.Quality.QualityRecordCount, Is.EqualTo(1));
             Assert.That(fixture.Quality.AffixCount, Is.EqualTo(0));
@@ -218,9 +216,9 @@ namespace UnityIsekaiGame.Tests
         {
             ItemDefinition sword = Item(SwordId, "Prototype Sword");
             MaterialDefinition iron = Material("material.prototype.iron", MaterialCategory.Metal);
-            QualityTierDefinition common = Tier("quality-tier.common", "Common", 0.35f, 0.65f, 30);
-            QualityTierDefinition fine = Tier("quality-tier.fine", "Fine", 0.65f, 0.85f, 60);
-            QualityTierDefinition masterwork = Tier("quality-tier.masterwork", "Masterwork", 0.85f, 1f, 90);
+            QualityTierDefinition common = Tier("quality.common", "Common", 0.35f, 0.65f, 30);
+            QualityTierDefinition fine = Tier("quality.fine", "Fine", 0.65f, 0.85f, 60);
+            QualityTierDefinition masterwork = Tier("quality.masterwork", "Masterwork", 0.85f, 1f, 90);
             ItemAffixDefinition keen = Affix("affix.prototype.keen-edge", ItemAffixClassification.Prefix, hidden: false);
             ItemAffixDefinition hidden = Affix("affix.prototype.hidden-edge", ItemAffixClassification.Hidden, hidden: true);
             DefinitionRegistry registry = new DefinitionRegistry(new IGameDefinition[] { sword, iron, common, fine, masterwork, keen, hidden });
