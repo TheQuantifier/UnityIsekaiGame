@@ -175,6 +175,8 @@ namespace UnityIsekaiGame.Inventory.Production
         SafetyObserver = 70,
         Apprentice = 80,
         Specialist = 90,
+        Disassembler = 100,
+        Salvager = 110,
         Custom = 1000
     }
 

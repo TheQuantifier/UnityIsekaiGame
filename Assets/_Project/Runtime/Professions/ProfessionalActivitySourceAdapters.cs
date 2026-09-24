@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using UnityIsekaiGame.Inventory.Crafting;
 using UnityIsekaiGame.Inventory.Durability;
+using UnityIsekaiGame.Inventory.Disassembly;
 using UnityIsekaiGame.Inventory.Experimentation;
 using UnityIsekaiGame.Inventory.Production;
 
@@ -81,27 +82,27 @@ namespace UnityIsekaiGame.Professions
                 repair.repairQuality.ToString());
         }
 
-        public static ProfessionalActivitySourceSnapshot FromSalvageRecord(ItemDurabilityRecordData record)
+        public static ProfessionalActivitySourceSnapshot FromItemRecoveryOperation(DisassemblyOperationRecordData record)
         {
             if (record == null)
             {
-                return Missing(ProfessionalActivitySourceType.SalvageOperation, "missing");
+                return Missing(ProfessionalActivitySourceType.ItemRecoveryOperation, "missing");
             }
 
             return new ProfessionalActivitySourceSnapshot(
-                new ProfessionalActivitySourceReferenceData { sourceType = ProfessionalActivitySourceType.SalvageOperation, sourceId = $"salvage.{record.itemInstanceId}", parentSourceId = record.itemInstanceId, sourceRevision = record.revision },
-                string.Empty,
-                record.lastRepairWorldTime,
-                record.salvageState == ItemSalvageState.Salvaged ? ProfessionalActivityOutcomeState.Successful : ProfessionalActivityOutcomeState.PartialSuccess,
-                Math.Max(1f, record.salvageOutputs?.Sum(output => output?.quantity ?? 0f) ?? 1f),
+                new ProfessionalActivitySourceReferenceData { sourceType = ProfessionalActivitySourceType.ItemRecoveryOperation, sourceId = record.operationId, parentSourceId = record.itemInstanceId, sourceRevision = record.revision },
+                record.actorPersonId,
+                record.worldTime,
+                record.state == DisassemblyOperationState.Completed ? ProfessionalActivityOutcomeState.Successful : ProfessionalActivityOutcomeState.PartialSuccess,
+                Math.Max(1f, record.outcomes?.Sum(output => output?.returnedQuantity ?? 0) ?? 1f),
                 ProfessionalActivityDifficulty.Routine,
-                record.salvageState == ItemSalvageState.Salvaged ? 650 : 300,
-                new[] { "source.salvage", record.itemDefinitionId },
-                new[] { record.itemInstanceId }.Concat(record.salvageOutputs?.Select(output => output?.outputId) ?? Array.Empty<string>()),
-                record.salvageState == ItemSalvageState.Salvaged,
+                Math.Max(100, Math.Min(1000, (int)Math.Round(record.actualEfficiency * 1000f))),
+                new[] { "source.item-recovery", $"recovery.{record.operationKind.ToString().ToLowerInvariant()}", record.itemDefinitionId },
+                new[] { record.itemInstanceId }.Concat(record.outcomes?.SelectMany(output => output?.outputItemInstanceIds ?? Array.Empty<string>()) ?? Array.Empty<string>()),
+                record.state == DisassemblyOperationState.Completed,
                 false,
                 true,
-                record.salvageState.ToString());
+                record.efficiencyTier.ToString());
         }
 
         public static ProfessionalActivitySourceSnapshot FromExperimentTrial(ExperimentTrialData trial, string actingPersonId = "")

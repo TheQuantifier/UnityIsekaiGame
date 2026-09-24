@@ -22,11 +22,10 @@ namespace UnityIsekaiGame.Inventory.Durability
     {
         Unknown,
         DefinitionDefault,
-        Migration,
         Authored,
         Generated,
         Repair,
-        Salvage,
+        ItemRecovery,
         TestLab,
         SceneAuthored,
         Custom
@@ -110,11 +109,4 @@ namespace UnityIsekaiGame.Inventory.Durability
         Masterwork
     }
 
-    public enum ItemSalvageState
-    {
-        None,
-        Eligible,
-        Salvaged,
-        Destroyed
-    }
 }

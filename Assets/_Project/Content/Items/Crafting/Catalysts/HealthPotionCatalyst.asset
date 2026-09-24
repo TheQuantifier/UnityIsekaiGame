@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7b9cc3b7bd44aeda3ea65c839267dad, type: 3}
+  m_Name: HealthPotionCatalyst
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Crafting.CraftingCatalystEffectDefinition
+  effectId: crafting-catalyst.health-potion
+  displayName: Health Potion Infusion
+  description: Consumes Health Potion for a deterministic weighted chance to apply
+    Vitality Infused to the crafted item.
+  catalystItems:
+  - {fileID: 11400000, guid: 9fc1c54f96724ef8b03354950feaae17, type: 2}
+  catalystCategories: []
+  catalystTags: []
+  resultingAffix: {fileID: 11400000, guid: e8bda5773e5691d488947b16222d67a9, type: 2}
+  generationWeight: 1
+  baseChance: 0.08
+  chancePerRarityRank: 0.1
+  chancePerAdditionalItem: 0.07
+  chancePerSkillGrade: 0.02
+  maximumChance: 0.9
+  additionalItemsPerAffixTier: 2

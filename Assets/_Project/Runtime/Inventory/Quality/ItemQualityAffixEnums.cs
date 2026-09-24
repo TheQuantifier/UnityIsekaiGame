@@ -58,7 +58,6 @@ namespace UnityIsekaiGame.Inventory.Quality
         ProductionGenerated = 4,
         WorkmanshipDerived = 5,
         CompositionDerived = 6,
-        Migration = 7,
         Modification = 8,
         MagicalAlteration = 9,
         TestLab = 10,
@@ -112,7 +111,6 @@ namespace UnityIsekaiGame.Inventory.Quality
         Crafted = 3,
         MaterialDerived = 4,
         QualityDerived = 5,
-        Migration = 6,
         MagicalAlteration = 7,
         TestLab = 8,
         Custom = 100

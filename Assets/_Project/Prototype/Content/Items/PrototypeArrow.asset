@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PrototypeArrow
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Inventory.ItemDefinition
   itemId: item.prototype-arrow
-  displayName: Prototype Arrow
+  displayName: Wood Arrows with Iron Heads
   description: Prototype ammunition for bows.
   icon: {fileID: 0}
   worldPickupPrefab: {fileID: 2957400843694463010, guid: 15bb85083ec393f4fbcd5c69dc4ee1cc, type: 3}
@@ -62,10 +62,60 @@ MonoBehaviour:
       projectileVisualPrefab: {fileID: 0}
       damageType: {fileID: 0}
   defaultCompositionTemplate:
-    templateVersionId: template.v1
-    required: 0
-    massAuthority: 0
-    completeness: 0
-    materials: []
-    components: []
-    tags: []
+    templateVersionId: template.group-6.v1
+    required: 1
+    massAuthority: 1
+    completeness: 2
+    materials:
+    - entryId: material.1
+      materialDefinitionId: material.wood
+      sourceItemDefinitionId: 
+      role: 1
+      quantity:
+        value: 0.8
+        unit: 7
+      purity: 1
+      processedForm: 
+      layerIndex: 0
+      componentEntryId: component.main
+      accessPolicyId: 
+      hidden: 0
+      tags:
+      - material.wood
+      - material.organic
+    - entryId: material.2
+      materialDefinitionId: material.iron
+      sourceItemDefinitionId: 
+      role: 4
+      quantity:
+        value: 0.2
+        unit: 7
+      purity: 1
+      processedForm: 
+      layerIndex: 0
+      componentEntryId: component.main
+      accessPolicyId: 
+      hidden: 0
+      tags:
+      - material.metal
+      - material.iron
+    components:
+    - componentEntryId: component.main
+      parentComponentEntryId: 
+      componentName: Main Body
+      kind: 1
+      componentItemInstanceId: 
+      componentItemDefinitionId: 
+      materialEntryIds:
+      - material.1
+      - material.2
+      detachable: 0
+      replaceable: 0
+      optional: 0
+      count: 1
+      accessPolicyId: 
+      hidden: 0
+      tags: []
+    tags:
+    - item.composition
+    - composition.authored

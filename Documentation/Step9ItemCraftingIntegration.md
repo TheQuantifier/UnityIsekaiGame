@@ -9,7 +9,8 @@ Authoritative ownership remains split by responsibility:
 - `ItemInstanceIdentityRuntime` owns stable item instance IDs, lifecycle, location, ownership, custody, world representation, and Step 8 item subject identity.
 - `ItemCompositionRuntime` owns material and component structure for item instances.
 - `ItemQualityAffixRuntime` owns workmanship, quality records, affixes, defects, rarity derivation, and affix stat contribution source IDs.
-- `ItemDurabilityRuntime` owns wear, damage, breakage, repair, salvage state, and durability-derived equipment availability.
+- `ItemDurabilityRuntime` owns wear, damage, breakage, repair, and durability-derived equipment availability.
+- `DisassemblyRuntime` owns item-recovery operation history and persisted schedules for workstation disassembly, natural decomposition, and field salvage pickups.
 - `ProductionRequirementRuntime` owns tool, station, resource, material, skill, knowledge, access, and reservation plans.
 - `RecipeKnowledgeRuntime` owns person-facing recipe knowledge projections.
 - `CraftingExecutionRuntime` owns crafting operation history, input consumption, tool use, output creation records, and rollback boundaries.
@@ -40,7 +41,7 @@ It currently checks:
 - composition ownership and tracked component references;
 - quality, affix, and durability item references;
 - active affixes on terminal item instances;
-- salvaged durability state against active item identity;
+- item-recovery-closed durability state against active item identity;
 - production reservation conflicts;
 - crafting, production workflow, recipe knowledge, and experimentation references;
 - deterministic canonical fingerprints.
@@ -55,11 +56,12 @@ Step 9 persistence dependencies are ordered by owning runtime:
 2. Item composition.
 3. Quality and affixes.
 4. Durability.
-5. Production requirements.
-6. Recipe knowledge.
-7. Crafting execution.
-8. Production workflow.
-9. Experimentation and discovery.
+5. Item recovery.
+6. Production requirements.
+7. Recipe knowledge.
+8. Crafting execution.
+9. Production workflow.
+10. Experimentation and discovery.
 
 This order ensures downstream systems can validate references against upstream ownership without replaying gameplay operations during restore.
 

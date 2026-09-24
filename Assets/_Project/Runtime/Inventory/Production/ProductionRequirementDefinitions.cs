@@ -116,7 +116,7 @@ namespace UnityIsekaiGame.Inventory.Production
     }
 
     [CreateAssetMenu(fileName = "ProductionStationDefinition", menuName = "Unity Isekai Game/Inventory/Production Station Definition")]
-    public sealed class ProductionStationDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public sealed partial class ProductionStationDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string stationId;
         [SerializeField] private string displayName;
@@ -232,7 +232,7 @@ namespace UnityIsekaiGame.Inventory.Production
     }
 
     [CreateAssetMenu(fileName = "ProductionRequirementDefinition", menuName = "Unity Isekai Game/Inventory/Production Requirement Definition")]
-    public sealed class ProductionRequirementDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public sealed partial class ProductionRequirementDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string requirementId;
         [SerializeField] private string displayName;

@@ -64,10 +64,44 @@ MonoBehaviour:
       projectileVisualPrefab: {fileID: 0}
       damageType: {fileID: 0}
   defaultCompositionTemplate:
-    templateVersionId: template.v1
-    required: 0
-    massAuthority: 0
-    completeness: 0
-    materials: []
-    components: []
-    tags: []
+    templateVersionId: template.group-6.v1
+    required: 1
+    massAuthority: 1
+    completeness: 2
+    materials:
+    - entryId: material.1
+      materialDefinitionId: material.iron-ore
+      sourceItemDefinitionId: 
+      role: 1
+      quantity:
+        value: 1
+        unit: 1
+      purity: 1
+      processedForm: 
+      layerIndex: 0
+      componentEntryId: component.main
+      accessPolicyId: 
+      hidden: 0
+      tags:
+      - material.mineral
+      - material.iron-bearing
+      - material.metal
+    components:
+    - componentEntryId: component.main
+      parentComponentEntryId: 
+      componentName: Main Body
+      kind: 1
+      componentItemInstanceId: 
+      componentItemDefinitionId: 
+      materialEntryIds:
+      - material.1
+      detachable: 0
+      replaceable: 0
+      optional: 0
+      count: 1
+      accessPolicyId: 
+      hidden: 0
+      tags: []
+    tags:
+    - item.composition
+    - composition.authored

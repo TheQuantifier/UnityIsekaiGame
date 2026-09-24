@@ -39,7 +39,7 @@ Runtime or saveable instance data belongs outside shared assets:
 - future custom names;
 - future unique serial identity.
 
-`ItemInstanceMetadata` is the runtime model for optional quality and condition. Step 3.5 places it inside `ItemInstance` for future persisted state. It is serializable, has no UI or scene dependency, clamps condition values to `0..1`, copies safely, and does not mutate shared definitions.
+Runtime item state now uses the Step 9 authority split. `ItemInstanceIdentityRuntime` owns stable identity and general condition, `ItemQualityAffixRuntime` owns quality and affixes, `ItemDurabilityRuntime` owns durability, wear, and repair, and `DisassemblyRuntime` owns item-recovery history. Inventory/equipment entries carry item-instance IDs and do not store a second nested metadata model.
 
 ## Definition Architecture
 
@@ -69,13 +69,18 @@ Higher rarity rank means more scarce or significant, not necessarily stronger. H
 
 Condition definitions divide normalized values from `0` to `1`.
 
-The prototype bands are:
+The current authored prototype bands are:
 
-- `condition.broken`: `0.00` to `0.01`
-- `condition.damaged`: `0.01` to `0.31`
-- `condition.worn`: `0.31` to `0.61`
-- `condition.good`: `0.61` to `0.91`
-- `condition.excellent`: `0.91` to `1.00`
+- `condition.destroyed`: `0.00` to `0.01%`
+- `condition.near-failure`: `0.01%` to `10%`
+- `condition.severely-damaged`: `10%` to `25%`
+- `condition.damaged`: `25%` to `50%`
+- `condition.worn`: `50%` to `70%`
+- `condition.used`: `70%` to `85%`
+- `condition.good`: `85%` to `95%`
+- `condition.pristine`: `95%` to `100%`
+
+`condition.broken` is assigned dynamically by `ItemDurabilityRuntime` when one of the per-percentage break rolls succeeds; it is not a fixed numeric band.
 
 Ranges are resolved as half-open intervals, except the final range includes `1.00`. This makes shared boundaries deterministic: `0.31` resolves to Worn, not Damaged.
 

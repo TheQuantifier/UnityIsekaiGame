@@ -16,7 +16,6 @@ namespace UnityIsekaiGame.Inventory.Durability
         [Range(0f, 1f)] public float equipmentContribution = 1f;
         public ItemFunctionalState functionalState = ItemFunctionalState.FullyFunctional;
         public ItemBreakageState breakageState = ItemBreakageState.None;
-        public bool salvageEligible;
 
         public bool Contains(float value, bool isLast)
         {

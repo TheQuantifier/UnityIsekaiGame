@@ -44,7 +44,7 @@ Runtime state is owned by components or runtime instances:
 - `CameraInteractionDetector` owns the current raycast target; interactables own their own behavior.
 - `PlayerInventory` owns slot contents and quantities.
 - `InventorySlot` is runtime slot state, not static item data.
-- `ItemInstance` and `ItemInstanceMetadata` are serializable runtime foundations for optional item identity, quality, and condition, but current inventory slots do not store them yet.
+- `ItemInstanceIdentityRuntime` owns item-instance identity, lifecycle, location, ownership, custody, and stack quantity; inventory/equipment slots carry the authoritative instance ID projection, while composition, quality/affixes, and durability remain in their dedicated runtimes.
 - `PlayerEquipment` owns equipped items by equipment slot.
 - `ActorStats` owns generic runtime stat calculation for combat-capable actors.
 - `RuntimeResistanceCollection` is owned per actor by `ActorStats` and calculates typed resistance from profile, equipment, statuses, and future source-owned modifiers.

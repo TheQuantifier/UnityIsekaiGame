@@ -83,7 +83,6 @@ namespace UnityIsekaiGame.Tests
                 value.FindPropertyRelative("equipmentContribution").floatValue = bands[i].equipmentContribution;
                 value.FindPropertyRelative("functionalState").enumValueIndex = (int)bands[i].functionalState;
                 value.FindPropertyRelative("breakageState").enumValueIndex = (int)bands[i].breakageState;
-                value.FindPropertyRelative("salvageEligible").boolValue = bands[i].salvageEligible;
             }
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return scale;

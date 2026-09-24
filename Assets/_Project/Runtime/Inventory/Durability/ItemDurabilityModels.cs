@@ -118,38 +118,12 @@ namespace UnityIsekaiGame.Inventory.Durability
     }
 
     [Serializable]
-    public sealed class ItemSalvageOutputData
-    {
-        public string outputId;
-        public string itemDefinitionId;
-        public string materialDefinitionId;
-        public float quantity;
-        public string unit;
-        public string sourceComponentEntryId;
-        public string sourceMaterialEntryId;
-
-        public ItemSalvageOutputData Clone()
-        {
-            return new ItemSalvageOutputData
-            {
-                outputId = outputId ?? string.Empty,
-                itemDefinitionId = itemDefinitionId ?? string.Empty,
-                materialDefinitionId = materialDefinitionId ?? string.Empty,
-                quantity = quantity,
-                unit = unit ?? string.Empty,
-                sourceComponentEntryId = sourceComponentEntryId ?? string.Empty,
-                sourceMaterialEntryId = sourceMaterialEntryId ?? string.Empty
-            };
-        }
-    }
-
-    [Serializable]
     public sealed class ItemDurabilityRecordData
     {
         public string durabilityRecordId;
         public string itemInstanceId;
         public string itemDefinitionId;
-        public string policyId = "durability-policy.default";
+        public string policyId = ItemDegradationPolicyDefinition.StandardPolicyId;
         public float currentDurability = 100f;
         public float maximumDurability = 100f;
         public float originalMaximumDurability = 100f;
@@ -157,11 +131,14 @@ namespace UnityIsekaiGame.Inventory.Durability
         public float recoverableDamage;
         public float irrecoverableDamage;
         public float wear;
+        public int lastBreakCheckPercent = 11;
+        public long breakCheckSequence;
+        public bool hasBroken;
+        public bool pendingForcedDecomposition;
         public string conditionBandId;
         public ItemFunctionalState functionalState = ItemFunctionalState.FullyFunctional;
         public ItemBreakageState breakageState = ItemBreakageState.None;
         public ItemMaintenanceState maintenanceState = ItemMaintenanceState.Maintained;
-        public ItemSalvageState salvageState = ItemSalvageState.None;
         public ItemDurabilityRecordSource source = ItemDurabilityRecordSource.Unknown;
         public long relatedItemRevision;
         public long relatedCompositionRevision;
@@ -173,7 +150,6 @@ namespace UnityIsekaiGame.Inventory.Durability
         public List<ItemComponentDurabilityData> components = new List<ItemComponentDurabilityData>();
         public List<ItemDamageChannelStateData> damageChannels = new List<ItemDamageChannelStateData>();
         public List<ItemRepairRecordData> repairHistory = new List<ItemRepairRecordData>();
-        public List<ItemSalvageOutputData> salvageOutputs = new List<ItemSalvageOutputData>();
         public string[] tags = Array.Empty<string>();
         public List<ItemDurabilityRevisionData> revisionHistory = new List<ItemDurabilityRevisionData>();
         public long revision = 1L;
@@ -193,11 +169,14 @@ namespace UnityIsekaiGame.Inventory.Durability
                 recoverableDamage = recoverableDamage,
                 irrecoverableDamage = irrecoverableDamage,
                 wear = wear,
+                lastBreakCheckPercent = lastBreakCheckPercent,
+                breakCheckSequence = breakCheckSequence,
+                hasBroken = hasBroken,
+                pendingForcedDecomposition = pendingForcedDecomposition,
                 conditionBandId = conditionBandId ?? string.Empty,
                 functionalState = functionalState,
                 breakageState = breakageState,
                 maintenanceState = maintenanceState,
-                salvageState = salvageState,
                 source = source,
                 relatedItemRevision = relatedItemRevision,
                 relatedCompositionRevision = relatedCompositionRevision,
@@ -209,7 +188,6 @@ namespace UnityIsekaiGame.Inventory.Durability
                 components = components == null ? new List<ItemComponentDurabilityData>() : components.Select(entry => entry?.Clone()).Where(entry => entry != null).ToList(),
                 damageChannels = damageChannels == null ? new List<ItemDamageChannelStateData>() : damageChannels.Select(entry => entry?.Clone()).Where(entry => entry != null).ToList(),
                 repairHistory = repairHistory == null ? new List<ItemRepairRecordData>() : repairHistory.Select(entry => entry?.Clone()).Where(entry => entry != null).ToList(),
-                salvageOutputs = salvageOutputs == null ? new List<ItemSalvageOutputData>() : salvageOutputs.Select(entry => entry?.Clone()).Where(entry => entry != null).ToList(),
                 tags = CloneIds(tags),
                 revisionHistory = revisionHistory == null ? new List<ItemDurabilityRevisionData>() : revisionHistory.Select(entry => entry?.Clone()).Where(entry => entry != null).OrderBy(entry => entry.revision).ThenBy(entry => entry.operationId, StringComparer.Ordinal).ToList(),
                 revision = revision
@@ -225,7 +203,7 @@ namespace UnityIsekaiGame.Inventory.Durability
     [Serializable]
     public sealed class ItemDurabilityRuntimeSaveData
     {
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
         public int schemaVersion = CurrentSchemaVersion;
         public long revision;
         public List<ItemDurabilityRecordData> records = new List<ItemDurabilityRecordData>();
@@ -255,6 +233,9 @@ namespace UnityIsekaiGame.Inventory.Durability
         public float CurrentDurability => Data.currentDurability;
         public float MaximumDurability => Data.maximumDurability;
         public float NormalizedDurability => MaximumDurability <= 0f ? 0f : CurrentDurability / MaximumDurability;
+        public int LastBreakCheckPercent => Data.lastBreakCheckPercent;
+        public bool HasBroken => Data.hasBroken;
+        public bool PendingForcedDecomposition => Data.pendingForcedDecomposition;
         public string ConditionBandId => Data.conditionBandId ?? string.Empty;
         public ItemFunctionalState FunctionalState => Data.functionalState;
         public ItemBreakageState BreakageState => Data.breakageState;
@@ -269,14 +250,13 @@ namespace UnityIsekaiGame.Inventory.Durability
 
     public sealed class ItemDurabilityOperationResult
     {
-        private ItemDurabilityOperationResult(bool succeeded, bool preview, ItemDurabilityOperationStatus status, string message, ItemDurabilitySnapshot snapshot, IReadOnlyList<ItemSalvageOutputData> salvageOutputs)
+        private ItemDurabilityOperationResult(bool succeeded, bool preview, ItemDurabilityOperationStatus status, string message, ItemDurabilitySnapshot snapshot)
         {
             Succeeded = succeeded;
             Preview = preview;
             Status = status;
             Message = message ?? string.Empty;
             Snapshot = snapshot;
-            SalvageOutputs = (salvageOutputs ?? Array.Empty<ItemSalvageOutputData>()).Select(entry => entry.Clone()).ToArray();
         }
 
         public bool Succeeded { get; }
@@ -284,16 +264,14 @@ namespace UnityIsekaiGame.Inventory.Durability
         public ItemDurabilityOperationStatus Status { get; }
         public string Message { get; }
         public ItemDurabilitySnapshot Snapshot { get; }
-        public IReadOnlyList<ItemSalvageOutputData> SalvageOutputs { get; }
-
-        public static ItemDurabilityOperationResult Success(ItemDurabilitySnapshot snapshot, string message = "Item durability operation succeeded.", bool preview = false, IReadOnlyList<ItemSalvageOutputData> salvageOutputs = null)
+        public static ItemDurabilityOperationResult Success(ItemDurabilitySnapshot snapshot, string message = "Item durability operation succeeded.", bool preview = false)
         {
-            return new ItemDurabilityOperationResult(true, preview, preview ? ItemDurabilityOperationStatus.Preview : ItemDurabilityOperationStatus.Succeeded, message, snapshot, salvageOutputs);
+            return new ItemDurabilityOperationResult(true, preview, preview ? ItemDurabilityOperationStatus.Preview : ItemDurabilityOperationStatus.Succeeded, message, snapshot);
         }
 
         public static ItemDurabilityOperationResult Failure(ItemDurabilityOperationStatus status, string message)
         {
-            return new ItemDurabilityOperationResult(false, false, status, message, null, Array.Empty<ItemSalvageOutputData>());
+            return new ItemDurabilityOperationResult(false, false, status, message, null);
         }
     }
 

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7b9cc3b7bd44aeda3ea65c839267dad, type: 3}
+  m_Name: ManaPotionCatalyst
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Crafting.CraftingCatalystEffectDefinition
+  effectId: crafting-catalyst.mana-potion
+  displayName: Mana Potion Infusion
+  description: Consumes Mana Potion for a deterministic weighted chance to apply
+    Mana Infused to the crafted item.
+  catalystItems:
+  - {fileID: 11400000, guid: b59763ae864849a1a5a87968f595aada, type: 2}
+  catalystCategories: []
+  catalystTags: []
+  resultingAffix: {fileID: 11400000, guid: 282fb791f8dd4254698237eaa948e57c, type: 2}
+  generationWeight: 1
+  baseChance: 0.08
+  chancePerRarityRank: 0.1
+  chancePerAdditionalItem: 0.07
+  chancePerSkillGrade: 0.02
+  maximumChance: 0.9
+  additionalItemsPerAffixTier: 2

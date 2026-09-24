@@ -33,14 +33,14 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void DamageRepairAndSalvageArePersistentAndValidated()
+        public void DamageRepairAndItemRecoveryClosureArePersistentAndValidated()
         {
             Fixture fixture = CreateFixture();
             string itemId = CreateComposedItem(fixture, "durability.persist");
 
             ItemDurabilityOperationResult damage = fixture.Durability.ApplyDamage(fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId, 90f, ItemDamageChannel.Impact, "component.blade", "damage", permanent: true);
             ItemDurabilityOperationResult repair = fixture.Durability.Repair(fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId, 20f, ItemRepairQuality.Good, "component.blade", "repair.persist");
-            ItemDurabilityOperationResult salvage = fixture.Durability.ExecuteSalvage(fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId, "salvage.persist");
+            ItemDurabilityOperationResult recovery = fixture.Durability.MarkDestroyedByItemRecovery(fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId, "recovery.persist");
             ItemDurabilityRuntimeSaveData save = fixture.Durability.CreateSaveData();
             ItemDurabilityRuntime restored = new ItemDurabilityRuntime();
             ItemDurabilityOperationResult restore = restored.RestoreFromSaveData(save, fixture.Registry, fixture.Items, fixture.Compositions);
@@ -49,11 +49,11 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(damage.Succeeded, Is.True, damage.Message);
             Assert.That(repair.Succeeded, Is.True, repair.Message);
-            Assert.That(salvage.Succeeded, Is.True, salvage.Message);
-            Assert.That(salvage.SalvageOutputs.Count, Is.GreaterThan(0));
+            Assert.That(recovery.Succeeded, Is.True, recovery.Message);
+            Assert.That(recovery.Snapshot.BreakageState, Is.EqualTo(ItemBreakageState.Destroyed));
             Assert.That(restore.Succeeded, Is.True, restore.Message);
             Assert.That(restored.TryGetDurabilityForItem(itemId, out ItemDurabilitySnapshot restoredSnapshot), Is.True);
-            Assert.That(restoredSnapshot.Data.salvageState, Is.EqualTo(ItemSalvageState.Salvaged));
+            Assert.That(restoredSnapshot.BreakageState, Is.EqualTo(ItemBreakageState.Destroyed));
             Assert.That(ItemDurabilityRuntime.ValidateSaveData(corrupt, fixture.Registry, fixture.Items, fixture.Compositions, out _), Is.False);
         }
 
@@ -92,13 +92,139 @@ namespace UnityIsekaiGame.Tests
         public void BrokenDurabilityDisablesEquipmentContribution()
         {
             Fixture fixture = CreateFixture();
-            string itemId = CreateComposedItem(fixture, "durability.equipment");
+            string itemId = CreateComposedItem(fixture, FindSeed(breakAtTen: true));
             fixture.Durability.EnsureDefaultDurability(fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId);
             float healthy = fixture.Durability.GetEquipmentContributionFactor(itemId);
             fixture.Durability.ApplyDamage(fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId, 999f, ItemDamageChannel.Impact, "component.blade", "break");
 
             Assert.That(healthy, Is.EqualTo(1f).Within(0.001f));
             Assert.That(fixture.Durability.GetEquipmentContributionFactor(itemId), Is.EqualTo(0f).Within(0.001f));
+        }
+
+        [Test]
+        public void BreakChecksRunPerCrossedPercentAndPersistTheirOutcome()
+        {
+            Fixture fixture = CreateFixture();
+            string itemId = CreateComposedItem(fixture, FindSeed(breakAtTen: true));
+            ItemDurabilityOperationResult initial = fixture.Durability.EnsureDefaultDurability(fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId);
+            Assert.That(initial.Succeeded, Is.True, initial.Message);
+            Assert.That(fixture.Policy.BreakChanceForPercent(10), Is.EqualTo(0.05f));
+            Assert.That(fixture.Policy.BreakChanceForPercent(9), Is.EqualTo(0.07f));
+            Assert.That(fixture.Policy.BreakChanceForPercent(8), Is.EqualTo(0.10f));
+            Assert.That(fixture.Policy.BreakChanceForPercent(7), Is.EqualTo(0.14f));
+            Assert.That(fixture.Policy.BreakChanceForPercent(6), Is.EqualTo(0.19f));
+            Assert.That(fixture.Policy.BreakChanceForPercent(5), Is.EqualTo(0.25f));
+
+            ItemDurabilityOperationResult breakingHit = fixture.Durability.ApplyDamage(
+                fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId, 999f, ItemDamageChannel.Impact, sourceId: "break.first-hit");
+
+            Assert.That(breakingHit.Succeeded, Is.True, breakingHit.Message);
+            Assert.That(breakingHit.Snapshot.FunctionalState, Is.EqualTo(ItemFunctionalState.Broken));
+            Assert.That(breakingHit.Snapshot.BreakageState, Is.EqualTo(ItemBreakageState.Broken));
+            Assert.That(breakingHit.Snapshot.NormalizedDurability, Is.EqualTo(0.10f).Within(0.00001f));
+            Assert.That(breakingHit.Snapshot.LastBreakCheckPercent, Is.EqualTo(10));
+            Assert.That(breakingHit.Snapshot.HasBroken, Is.True);
+            Assert.That(breakingHit.Snapshot.PendingForcedDecomposition, Is.False);
+            Assert.That(breakingHit.Snapshot.CurrentDurability, Is.GreaterThan(0f));
+
+            ItemDurabilityRuntime restored = new ItemDurabilityRuntime();
+            ItemDurabilityOperationResult restore = restored.RestoreFromSaveData(fixture.Durability.CreateSaveData(), fixture.Registry, fixture.Items, fixture.Compositions);
+            Assert.That(restore.Succeeded, Is.True, restore.Message);
+            Assert.That(restored.TryGetDurabilityForItem(itemId, out ItemDurabilitySnapshot restoredSnapshot), Is.True);
+            Assert.That(restoredSnapshot.HasBroken, Is.True);
+            Assert.That(restoredSnapshot.LastBreakCheckPercent, Is.EqualTo(10));
+
+            ItemDurabilityOperationResult furtherDamage = restored.ApplyDamage(
+                fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId, 999f, ItemDamageChannel.Impact, sourceId: "break.follow-up-hit");
+            Assert.That(furtherDamage.Snapshot.FunctionalState, Is.EqualTo(ItemFunctionalState.Broken));
+            Assert.That(furtherDamage.Snapshot.NormalizedDurability, Is.EqualTo(0.10f).Within(0.00001f));
+        }
+
+        [Test]
+        public void UnbrokenItemStopsAtFivePercentAndRequestsForcedDecomposition()
+        {
+            Fixture fixture = CreateFixture();
+            string itemId = CreateComposedItem(fixture, FindSeed(breakAtTen: false));
+            ItemDurabilityOperationResult initial = fixture.Durability.EnsureDefaultDurability(fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId);
+
+            ItemDurabilityOperationResult result = fixture.Durability.ApplyDamage(
+                fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId, 999f, ItemDamageChannel.Impact, sourceId: "decompose.at-five");
+
+            Assert.That(result.Succeeded, Is.True, result.Message);
+            Assert.That(result.Snapshot.HasBroken, Is.False);
+            Assert.That(result.Snapshot.PendingForcedDecomposition, Is.True);
+            Assert.That(result.Snapshot.NormalizedDurability, Is.EqualTo(0.05f).Within(0.00001f));
+            Assert.That(result.Snapshot.LastBreakCheckPercent, Is.EqualTo(5));
+        }
+
+        [Test]
+        public void SuccessfulFivePercentRollLeavesTheItemBrokenInsteadOfForcingDecomposition()
+        {
+            Fixture fixture = CreateFixture();
+            string itemId = CreateComposedItem(fixture, FindSeedForFirstBreakAt(5));
+            fixture.Durability.EnsureDefaultDurability(fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId);
+
+            ItemDurabilityOperationResult result = fixture.Durability.ApplyDamage(
+                fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId, 999f, ItemDamageChannel.Impact, sourceId: "break.at-five");
+
+            Assert.That(result.Succeeded, Is.True, result.Message);
+            Assert.That(result.Snapshot.HasBroken, Is.True);
+            Assert.That(result.Snapshot.PendingForcedDecomposition, Is.False);
+            Assert.That(result.Snapshot.LastBreakCheckPercent, Is.EqualTo(5));
+            Assert.That(result.Snapshot.NormalizedDurability, Is.EqualTo(0.05f).Within(0.00001f));
+        }
+
+        [Test]
+        public void CatalogDegradationPolicyControlsBreakChanceAndIsRecordedOnTheItem()
+        {
+            Fixture fixture = CreateFixture();
+            ItemBreakChanceEntryData[] authored = ItemDegradationPolicyDefinition.CreateStandardBreakChances();
+            authored.Single(entry => entry.durabilityPercent == 10).breakChance = 1f;
+            SetPrivate(fixture.Policy, "breakChances", authored);
+            string itemId = CreateComposedItem(fixture, "durability.catalog-policy");
+
+            ItemDurabilityOperationResult result = fixture.Durability.ApplyDamage(
+                fixture.Items, fixture.Compositions, fixture.Quality, fixture.Registry, itemId, 999f, ItemDamageChannel.Impact, sourceId: "policy.authored");
+
+            Assert.That(result.Succeeded, Is.True, result.Message);
+            Assert.That(result.Snapshot.HasBroken, Is.True);
+            Assert.That(result.Snapshot.LastBreakCheckPercent, Is.EqualTo(10));
+            Assert.That(result.Snapshot.NormalizedDurability, Is.EqualTo(0.10f).Within(0.00001f));
+            Assert.That(result.Snapshot.Data.policyId, Is.EqualTo(ItemDegradationPolicyDefinition.StandardPolicyId));
+            Assert.That(fixture.Durability.DegradationPolicy, Is.SameAs(fixture.Policy));
+        }
+
+        private static string FindSeed(bool breakAtTen)
+        {
+            return FindSeedForFirstBreakAt(breakAtTen ? 10 : 0);
+        }
+
+        private static string FindSeedForFirstBreakAt(int expectedBreakPercent)
+        {
+            for (int index = 0; index < 10000; index++)
+            {
+                string seed = $"durability.break-roll.{expectedBreakPercent}.{index}";
+                string itemId = GuidFor(seed);
+                int firstBreakPercent = 0;
+                long sequence = 0L;
+                for (int percent = 10; percent >= 5; percent--)
+                {
+                    sequence++;
+                    if (ItemDurabilityRuntime.DeterministicBreakRoll(itemId, percent, sequence) < ItemDegradationPolicyDefinition.StandardBreakChanceForPercent(percent))
+                    {
+                        firstBreakPercent = percent;
+                        break;
+                    }
+                }
+
+                if (firstBreakPercent == expectedBreakPercent)
+                {
+                    return seed;
+                }
+            }
+
+            Assert.Fail("Could not find a deterministic item seed for the requested break-roll outcome.");
+            return string.Empty;
         }
 
         private static string CreateComposedItem(Fixture fixture, string seed)
@@ -161,8 +287,10 @@ namespace UnityIsekaiGame.Tests
                 flammability = 0.1f,
                 biologicalCompatibility = 0.5f
             });
-            DefinitionRegistry registry = new DefinitionRegistry(new IGameDefinition[] { sword, iron });
-            return new Fixture(sword, registry, new ItemInstanceIdentityRuntime(), new ItemCompositionRuntime(), new ItemQualityAffixRuntime(), new ItemDurabilityRuntime());
+            ItemDegradationPolicyDefinition policy = ScriptableObject.CreateInstance<ItemDegradationPolicyDefinition>();
+            SetPrivate(policy, "breakChances", ItemDegradationPolicyDefinition.CreateStandardBreakChances());
+            DefinitionRegistry registry = new DefinitionRegistry(new IGameDefinition[] { sword, iron, policy });
+            return new Fixture(sword, policy, registry, new ItemInstanceIdentityRuntime(), new ItemCompositionRuntime(), new ItemQualityAffixRuntime(), new ItemDurabilityRuntime());
         }
 
         private static void SetPrivate(object target, string fieldName, object value)
@@ -179,9 +307,10 @@ namespace UnityIsekaiGame.Tests
 
         private sealed class Fixture
         {
-            public Fixture(ItemDefinition sword, DefinitionRegistry registry, ItemInstanceIdentityRuntime items, ItemCompositionRuntime compositions, ItemQualityAffixRuntime quality, ItemDurabilityRuntime durability)
+            public Fixture(ItemDefinition sword, ItemDegradationPolicyDefinition policy, DefinitionRegistry registry, ItemInstanceIdentityRuntime items, ItemCompositionRuntime compositions, ItemQualityAffixRuntime quality, ItemDurabilityRuntime durability)
             {
                 Sword = sword;
+                Policy = policy;
                 Registry = registry;
                 Items = items;
                 Compositions = compositions;
@@ -190,6 +319,7 @@ namespace UnityIsekaiGame.Tests
             }
 
             public ItemDefinition Sword { get; }
+            public ItemDegradationPolicyDefinition Policy { get; }
             public DefinitionRegistry Registry { get; }
             public ItemInstanceIdentityRuntime Items { get; }
             public ItemCompositionRuntime Compositions { get; }

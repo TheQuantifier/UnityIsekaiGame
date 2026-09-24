@@ -30,7 +30,7 @@ namespace UnityIsekaiGame.Inventory.Identity
         Consumed,
         Depleted,
         Broken,
-        Salvaged,
+        Disassembled,
         Archived,
         Quarantined
     }

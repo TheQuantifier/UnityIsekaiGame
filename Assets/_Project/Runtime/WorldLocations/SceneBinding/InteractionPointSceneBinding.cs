@@ -4,13 +4,29 @@ using UnityIsekaiGame.Interaction;
 
 namespace UnityIsekaiGame.WorldLocations.SceneBinding
 {
+    public interface IInteractionPointDestinationHandler
+    {
+        string InteractionPrompt { get; }
+        bool CanHandleInteraction(in InteractionContext context, InteractionPointSnapshot point);
+        void HandleInteraction(in InteractionContext context, InteractionPointSnapshot point);
+    }
+
     public sealed class InteractionPointSceneBinding : WorldSceneBindingComponent, IInteractable
     {
         [SerializeField] private float interactionRange = 3f;
         [SerializeField] private bool requirePhysicalRange = true;
 
         public override WorldSceneBindingCategory Category => WorldSceneBindingCategory.InteractionPoint;
-        public string InteractionPrompt => string.IsNullOrWhiteSpace(DisplayName) ? "Interact" : $"Interact: {DisplayName}";
+        public string InteractionPrompt
+        {
+            get
+            {
+                IInteractionPointDestinationHandler handler = ResolveDestinationHandler();
+                return handler == null || string.IsNullOrWhiteSpace(handler.InteractionPrompt)
+                    ? string.IsNullOrWhiteSpace(DisplayName) ? "Interact" : $"Interact: {DisplayName}"
+                    : handler.InteractionPrompt;
+            }
+        }
         public float InteractionRange => interactionRange;
         public bool RequiresPhysicalRange => requirePhysicalRange;
         public InteractionPointSnapshot LastPoint { get; private set; }
@@ -33,7 +49,13 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 return false;
             }
 
-            return Runtime.TryGetInteractionPoint(LogicalId, out InteractionPointSnapshot point) && point.IsActive;
+            if (!Runtime.TryGetInteractionPoint(LogicalId, out InteractionPointSnapshot point) || !point.IsActive)
+            {
+                return false;
+            }
+
+            IInteractionPointDestinationHandler handler = ResolveDestinationHandler();
+            return handler == null || handler.CanHandleInteraction(context, point);
         }
 
         public void Interact(in InteractionContext context)
@@ -45,8 +67,29 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             }
 
             LastPoint = point;
+            IInteractionPointDestinationHandler handler = ResolveDestinationHandler();
+            if (handler != null)
+            {
+                handler.HandleInteraction(context, point);
+                return;
+            }
+
             PrototypeHudMessageBus.Show($"Interacted with {DisplayName}.");
             Debug.Log($"Scene interaction routed to logical interaction point '{point.InteractionPointId}'.");
+        }
+
+        private IInteractionPointDestinationHandler ResolveDestinationHandler()
+        {
+            MonoBehaviour[] behaviours = GetComponents<MonoBehaviour>();
+            for (int i = 0; i < behaviours.Length; i++)
+            {
+                if (behaviours[i] != this && behaviours[i] is IInteractionPointDestinationHandler handler)
+                {
+                    return handler;
+                }
+            }
+
+            return null;
         }
 
         private bool IsWithinPhysicalRange(in InteractionContext context)

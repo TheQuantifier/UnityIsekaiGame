@@ -24,6 +24,13 @@ namespace UnityIsekaiGame.Inventory.Crafting
         public string locationId;
         public string worldTime;
         public string deterministicSeed;
+        public string craftingSkillId;
+        public int craftingSkillGrade;
+        public bool craftingSkillUsed;
+        public float craftDurationSeconds;
+        public float craftingQualityAdjustment;
+        public float craftingAffixChanceBonus;
+        public List<CraftingCatalystUseData> catalysts = new List<CraftingCatalystUseData>();
         public ProductionContextData productionContext = new ProductionContextData();
         public CraftingFailurePolicy failurePolicy = CraftingFailurePolicy.FullRollback;
         public RecipeProjectionAccessLevel accessLevel = RecipeProjectionAccessLevel.Privileged;
@@ -47,6 +54,13 @@ namespace UnityIsekaiGame.Inventory.Crafting
                 locationId = locationId ?? string.Empty,
                 worldTime = worldTime ?? string.Empty,
                 deterministicSeed = deterministicSeed ?? string.Empty,
+                craftingSkillId = craftingSkillId ?? string.Empty,
+                craftingSkillGrade = craftingSkillGrade,
+                craftingSkillUsed = craftingSkillUsed,
+                craftDurationSeconds = Math.Max(0f, craftDurationSeconds),
+                craftingQualityAdjustment = craftingQualityAdjustment,
+                craftingAffixChanceBonus = Math.Max(0f, craftingAffixChanceBonus),
+                catalysts = catalysts == null ? new List<CraftingCatalystUseData>() : catalysts.Select(entry => entry?.Clone()).Where(entry => entry != null).ToList(),
                 productionContext = productionContext?.Clone() ?? new ProductionContextData(),
                 failurePolicy = failurePolicy,
                 accessLevel = accessLevel,
@@ -156,6 +170,13 @@ namespace UnityIsekaiGame.Inventory.Crafting
         public string locationId;
         public string worldTime;
         public string deterministicSeed;
+        public string craftingSkillId;
+        public int craftingSkillGrade;
+        public bool craftingSkillUsed;
+        public float craftDurationSeconds;
+        public float craftingQualityAdjustment;
+        public float craftingAffixChanceBonus;
+        public List<CraftingCatalystUseData> catalysts = new List<CraftingCatalystUseData>();
         public string recipeSignature;
         public string requirementPlanId;
         public CraftingOperationState state = CraftingOperationState.Prepared;
@@ -181,6 +202,13 @@ namespace UnityIsekaiGame.Inventory.Crafting
                 locationId = locationId ?? string.Empty,
                 worldTime = worldTime ?? string.Empty,
                 deterministicSeed = deterministicSeed ?? string.Empty,
+                craftingSkillId = craftingSkillId ?? string.Empty,
+                craftingSkillGrade = craftingSkillGrade,
+                craftingSkillUsed = craftingSkillUsed,
+                craftDurationSeconds = Math.Max(0f, craftDurationSeconds),
+                craftingQualityAdjustment = craftingQualityAdjustment,
+                craftingAffixChanceBonus = Math.Max(0f, craftingAffixChanceBonus),
+                catalysts = catalysts == null ? new List<CraftingCatalystUseData>() : catalysts.Select(entry => entry?.Clone()).Where(entry => entry != null).ToList(),
                 recipeSignature = recipeSignature ?? string.Empty,
                 requirementPlanId = requirementPlanId ?? string.Empty,
                 state = state,
@@ -219,7 +247,7 @@ namespace UnityIsekaiGame.Inventory.Crafting
     [Serializable]
     public sealed class CraftingExecutionRuntimeSaveData
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
         public int schemaVersion = CurrentSchemaVersion;
         public long revision;
         public List<CraftingOperationRecordData> operations = new List<CraftingOperationRecordData>();

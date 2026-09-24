@@ -13,8 +13,9 @@ namespace UnityIsekaiGame.Inventory.Durability
         {
             "hidden-damage",
             "structural-weakness",
+            "break-check-history",
             "repair-history",
-            "salvage-yield",
+            "item-recovery-yield",
             "maintenance-source",
             "access-policy"
         };

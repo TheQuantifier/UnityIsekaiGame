@@ -100,7 +100,7 @@ Access-aware projection rules:
 
 Commit restores from prepared data only after validation. If validation fails, live runtime state remains unchanged.
 
-Legacy 9.1 item saves are migrated by creating default quality records on demand with `EnsureDefaultQuality`. That migration is explicit and idempotent; it does not invent affixes or change item identity.
+When a current item has no quality record, `EnsureDefaultQuality` performs idempotent default initialization. It does not invent affixes or change item identity.
 
 Participant ordering is explicit:
 
@@ -146,4 +146,4 @@ The 9.3 suite covers:
 - deterministic affix generation and duplicate prevention;
 - conflict groups and stackable affixes;
 - stat modifier projection;
-- save/restore and legacy default-quality migration.
+- save/restore and default-quality initialization.

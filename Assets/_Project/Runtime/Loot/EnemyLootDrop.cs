@@ -124,20 +124,26 @@ namespace UnityIsekaiGame.Loot
                 return string.Empty;
             }
 
-            WorldItemPickup worldPickup = WorldItemPickupFactory.Create(
-                roll.Item,
-                roll.Quantity,
-                GetSpawnPosition(index, totalCount),
-                Quaternion.identity,
-                dropParent,
-                pickupMaterial);
+            Vector3 spawnPosition = GetSpawnPosition(index, totalCount);
+            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            bool trackForDecomposition = roll.Quantity == 1
+                && roll.Item.InstanceMode == UnityIsekaiGame.GameData.ItemInstanceMode.AlwaysInstanced
+                && roll.Item.DefaultCompositionTemplate != null
+                && !roll.Item.DefaultCompositionTemplate.IsEmpty
+                && services != null;
+            PrototypeItemDropResult tracked = trackForDecomposition
+                ? services.CreateTrackedWorldDrop(roll.Item, spawnPosition, Quaternion.identity, dropParent, pickupMaterial)
+                : null;
+            WorldItemPickup worldPickup = tracked?.Succeeded == true
+                ? tracked.Pickup
+                : WorldItemPickupFactory.Create(roll.Item, roll.Quantity, spawnPosition, Quaternion.identity, dropParent, pickupMaterial);
             if (worldPickup == null)
             {
                 return string.Empty;
             }
 
             GameObject pickup = worldPickup.gameObject;
-            if (assignPersistentWorldEntityIdsToDrops)
+            if (assignPersistentWorldEntityIdsToDrops && pickup.GetComponent<WorldEntityIdentity>() == null)
             {
                 WorldEntitySpawnResult identityResult = WorldEntityIdentityFactory.CreateRuntimeIdentity(pickup, sceneKey, worldId, roll.Item.Id);
                 if (!identityResult.Succeeded)

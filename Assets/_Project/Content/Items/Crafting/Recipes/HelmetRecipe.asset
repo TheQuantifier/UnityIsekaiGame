@@ -1,0 +1,179 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ab92f1ec3e4cc141b51744745eb7559, type: 3}
+  m_Name: HelmetRecipe
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Recipes.RecipeDefinition
+  recipeId: recipe.prototype-helmet
+  displayName: Forge Prototype Helmet
+  description: Produces 1 x Iron Helmet from collected Prototype resources.
+  category: 40
+  state: 0
+  currentVersionId: recipe-version.prototype-helmet.v1
+  tags:
+  - recipe.prototype
+  - recipe.crafting
+  - craftable.helmet
+  versions:
+  - versionId: recipe-version.prototype-helmet.v1
+    versionLabel: 1.0
+    priorVersionId: 
+    supersedingVersionId: 
+    worldTime: 
+    authorOrSourceId: source.prototype.workstation
+    changeReason: 
+    state: 0
+    accessPolicyId: 
+  variants: []
+  inputs:
+  - inputId: input.shell
+    role: 10
+    requirementState: 0
+    classification: 0
+    itemDefinitionId: 
+    materialDefinitionId: 
+    itemCategoryIds: []
+    materialTagIds:
+    - material.metal
+    componentRoleId: component.shell
+    quantity: 3
+    unit: 0
+    minimumQuality: 0
+    minimumDurability: 0
+    minimumPurity: 0
+    allowPartialStacks: 1
+    allowMultipleSources: 1
+    accessPolicyId: 
+    substitutionIds: []
+    transferPolicy: 30
+    hidden: 0
+    selected: 0
+  - inputId: input.fittings
+    role: 10
+    requirementState: 0
+    classification: 0
+    itemDefinitionId: 
+    materialDefinitionId: 
+    itemCategoryIds: []
+    materialTagIds:
+    - material.metal
+    componentRoleId: component.fittings
+    quantity: 1
+    unit: 0
+    minimumQuality: 0
+    minimumDurability: 0
+    minimumPurity: 0
+    allowPartialStacks: 1
+    allowMultipleSources: 1
+    accessPolicyId: 
+    substitutionIds: []
+    transferPolicy: 30
+    hidden: 0
+    selected: 0
+  outputs:
+  - outputId: output.primary
+    role: 10
+    itemDefinitionId: item.prototype-helmet
+    materialDefinitionId: material.iron
+    componentFoundationId: 
+    quantity: 1
+    unit: 0
+    compositionTemplateId: 
+    compositionTransferPolicy: 30
+    qualityPolicy: 30
+    qualityPolicyId: quality-policy.crafting.standard
+    affixPolicy: 40
+    affixPolicyId: affix-policy.crafting.standard
+    durabilityPolicy: 30
+    durabilityPolicyId: durability-policy.crafting.standard
+    conditional: 0
+    failureOutput: 0
+  transferMappings:
+  - mappingId: mapping.input.shell
+    sourceInputId: input.shell
+    targetOutputId: output.primary
+    targetComponentId: component.shell
+    quantityTransferPolicy: 30
+    lossFraction: 0
+    preserveTrackedComponent: 0
+    transferProvenance: 1
+  - mappingId: mapping.input.fittings
+    sourceInputId: input.fittings
+    targetOutputId: output.primary
+    targetComponentId: component.fittings
+    quantityTransferPolicy: 30
+    lossFraction: 0
+    preserveTrackedComponent: 0
+    transferProvenance: 1
+  procedureSteps:
+  - stepId: step.prepare
+    stepKind: 10
+    displayName: Prepare materials
+    dependsOnStepIds: []
+    optional: 0
+    conditional: 0
+    repeatCount: 1
+    requiredKnowledgeFactId: 
+    requirementId: 
+    hidden: 0
+  - stepId: step.shape
+    stepKind: 40
+    displayName: Shape components
+    dependsOnStepIds:
+    - step.prepare
+    optional: 0
+    conditional: 0
+    repeatCount: 1
+    requiredKnowledgeFactId: 
+    requirementId: 
+    hidden: 0
+  - stepId: step.finish
+    stepKind: 80
+    displayName: Finish and inspect
+    dependsOnStepIds:
+    - step.shape
+    optional: 0
+    conditional: 0
+    repeatCount: 1
+    requiredKnowledgeFactId: 
+    requirementId: 
+    hidden: 0
+  recipeRequirementIds:
+  - production-requirement.prototype-workstation
+  batchPolicy:
+    scalingPolicy: 0
+    baseBatchSize: 1
+    minimumBatchSize: 1
+    maximumBatchSize: 1
+    batchIncrement: 1
+  craftingScaling:
+    baseDurationSeconds: 14
+    minimumDurationSeconds: 2
+    eligibleSkillIds:
+    - skill.smithing
+    unskilledDurationMultiplier: 1.25
+    durationReductionPerSkillGrade: 0.06
+    minimumSkillDurationMultiplier: 0.55
+    rarityDurationMultiplierPerRank: 0.12
+    statDurationMultiplierPerComplexityPoint: 0.03
+    unskilledQualityAdjustment: -0.05
+    qualityBonusPerSkillGrade: 0.04
+    maximumSkillQualityBonus: 0.35
+    affixChanceBonusPerSkillGrade: 0.025
+  compositionTransferPolicyId: composition-policy.input-derived
+  qualityGenerationPolicyId: quality-policy.crafting.standard
+  affixGenerationPolicyId: affix-policy.crafting.standard
+  durabilityInitializationPolicyId: durability-policy.crafting.standard
+  knowledgeDifficulty: 1
+  teachingDifficulty: 1
+  secrecyAccessPolicyId: 
+  sourceId: source.prototype.workstation
+  schemaVersion: 1

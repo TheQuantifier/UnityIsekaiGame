@@ -1,0 +1,105 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 389db4201f024a3895f7c81a530a3538, type: 3}
+  m_Name: LeatherStrip
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.ItemDefinition
+  itemId: item.leather-strip
+  displayName: Leather Strip
+  description: A prepared leather resource used for grips, bindings, armor, and future
+    crafting recipes.
+  icon: {fileID: 0}
+  worldPickupPrefab: {fileID: 0}
+  primaryCategory: {fileID: 11400000, guid: 64af3b87e219425d80d8ed087afeb9b1, type: 2}
+  tags:
+  - {fileID: 11400000, guid: e5be8b436490435e82ffad358874362c, type: 2}
+  rarity: {fileID: 11400000, guid: d4b0d27a07fa46c085d39f87ffff6cbb, type: 2}
+  instanceMode: 0
+  stackable: 1
+  maximumStackSize: 20
+  useEffects: []
+  equipment:
+    equippable: 0
+    slotType: 0
+    statModifiers:
+      maximumHealth: 0
+      maximumStamina: 0
+      maximumMana: 0
+      attackPower: 0
+      defense: 0
+    resistanceModifiers: []
+    view:
+      firstPersonPrefab: {fileID: 0}
+      firstPersonLocalPosition: {x: 0, y: 0, z: 0}
+      firstPersonLocalEulerAngles: {x: 0, y: 0, z: 0}
+      firstPersonLocalScale: {x: 1, y: 1, z: 1}
+    meleeWeapon:
+      weapon: 0
+      attackName: Attack
+      baseDamage: 5
+      attackRange: 2
+      execution: {fileID: 0}
+      hitRadius: 0.35
+      damageType: {fileID: 0}
+    rangedWeapon:
+      weapon: 0
+      attackName: Ranged Attack
+      baseDamage: 5
+      execution: {fileID: 0}
+      projectileSpeed: 18
+      projectileLifetime: 3
+      projectileHitRadius: 0.08
+      launchOffset: {x: 0.18, y: -0.12, z: 0.55}
+      ammoItem: {fileID: 0}
+      projectilePrefab: {fileID: 0}
+      projectileVisualPrefab: {fileID: 0}
+      damageType: {fileID: 0}
+  defaultCompositionTemplate:
+    templateVersionId: template.group-6.v1
+    required: 1
+    massAuthority: 1
+    completeness: 2
+    materials:
+    - entryId: material.1
+      materialDefinitionId: material.leather
+      sourceItemDefinitionId: 
+      role: 1
+      quantity:
+        value: 1
+        unit: 1
+      purity: 1
+      processedForm: 
+      layerIndex: 0
+      componentEntryId: component.main
+      accessPolicyId: 
+      hidden: 0
+      tags:
+      - material.leather
+      - material.organic
+    components:
+    - componentEntryId: component.main
+      parentComponentEntryId: 
+      componentName: Main Body
+      kind: 1
+      componentItemInstanceId: 
+      componentItemDefinitionId: 
+      materialEntryIds:
+      - material.1
+      detachable: 0
+      replaceable: 0
+      optional: 0
+      count: 1
+      accessPolicyId: 
+      hidden: 0
+      tags: []
+    tags:
+    - item.composition
+    - composition.authored

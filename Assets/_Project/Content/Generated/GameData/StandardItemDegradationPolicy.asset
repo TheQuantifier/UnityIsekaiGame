@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 644a564d9560c6149968bffba4732ce0, type: 3}
+  m_Name: StandardItemDegradationPolicy
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Durability.ItemDegradationPolicyDefinition
+  policyId: durability-policy.standard
+  displayName: Standard Item Degradation
+  fastDecompositionThreshold: 0.1
+  immediateDecompositionThreshold: 0.05
+  slowDecompositionSeconds: 3600
+  fastDecompositionSeconds: 300
+  brokenWorldItemsContinueDecay: 1
+  breakChances:
+  - durabilityPercent: 10
+    breakChance: 0.05
+  - durabilityPercent: 9
+    breakChance: 0.07
+  - durabilityPercent: 8
+    breakChance: 0.1
+  - durabilityPercent: 7
+    breakChance: 0.14
+  - durabilityPercent: 6
+    breakChance: 0.19
+  - durabilityPercent: 5
+    breakChance: 0.25

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 546911ffa5af01e4f929e5aa570e2879, type: 3}
+  m_Name: PrototypeWorkstationRequirement
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Production.ProductionRequirementDefinition
+  requirementId: production-requirement.prototype-workstation
+  displayName: Prototype Workstation
+  description: Requires access to the Prototype Workstation at its authoritative
+    location.
+  requirementGroupId: requirement-group.station
+  requirementType: 20
+  strictness: 0
+  allowSubstitution: 0
+  toolDefinition: {fileID: 0}
+  toolRole: 0
+  toolCategory: 0
+  toolCapabilityId: 
+  stationDefinition: {fileID: 11400000, guid: 7cc8064c12f313e4795be5f18670297c, type: 2}
+  stationCategory: 10
+  stationCapabilityId: production-capability.assembly
+  capabilityId: 
+  knowledgeFactDefinitionId: 
+  resourceId: 
+  itemDefinition: {fileID: 0}
+  materialDefinition: {fileID: 0}
+  quantity: 1
+  quantityUnit: 0
+  environmentKey: 
+  accessKey: 
+  bodyCapabilityId: 
+  alternatives: []
+  priority: 0

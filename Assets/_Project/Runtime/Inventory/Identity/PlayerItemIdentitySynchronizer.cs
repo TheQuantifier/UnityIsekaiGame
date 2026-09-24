@@ -20,6 +20,7 @@ namespace UnityIsekaiGame.Inventory.Identity
         private Func<DefinitionRegistry> registryProvider;
         private bool subscribed;
         private bool synchronizing;
+        private int automaticSynchronizationPauseDepth;
         private string lastFailure;
 
         public ItemInstanceIdentityRuntime Runtime => runtime;
@@ -135,6 +136,12 @@ namespace UnityIsekaiGame.Inventory.Identity
                 synchronizationNamespace);
         }
 
+        public IDisposable PauseAutomaticSynchronization()
+        {
+            automaticSynchronizationPauseDepth++;
+            return new AutomaticSynchronizationPause(this);
+        }
+
         public PlayerInventoryEquipmentSaveData CreateProjectionSaveData()
         {
             return new PlayerInventoryEquipmentSaveData
@@ -211,10 +218,36 @@ namespace UnityIsekaiGame.Inventory.Identity
 
         private void OnInventoryOrEquipmentChanged()
         {
+            if (automaticSynchronizationPauseDepth > 0)
+            {
+                return;
+            }
+
             ItemIdentityInventoryBridgeResult result = SynchronizeNow();
             if (!result.Succeeded)
             {
                 Debug.LogWarning($"Item identity synchronization failed: {result.Message}");
+            }
+        }
+
+        private sealed class AutomaticSynchronizationPause : IDisposable
+        {
+            private PlayerItemIdentitySynchronizer owner;
+
+            public AutomaticSynchronizationPause(PlayerItemIdentitySynchronizer owner)
+            {
+                this.owner = owner;
+            }
+
+            public void Dispose()
+            {
+                if (owner == null)
+                {
+                    return;
+                }
+
+                owner.automaticSynchronizationPauseDepth = Math.Max(0, owner.automaticSynchronizationPauseDepth - 1);
+                owner = null;
             }
         }
     }

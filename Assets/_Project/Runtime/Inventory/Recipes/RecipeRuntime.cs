@@ -145,7 +145,7 @@ namespace UnityIsekaiGame.Inventory.Recipes
                 steps,
                 requirementIds,
                 !privileged,
-                ComputeSnapshotSignature(recipe.Id, version.versionId, variant?.variantId ?? string.Empty, working.batchSize, inputs, outputs, steps, requirementIds));
+                ComputeSnapshotSignature(recipe.Id, version.versionId, variant?.variantId ?? string.Empty, working.batchSize, inputs, outputs, transfers, steps, requirementIds));
 
             if (!working.buildRequirementPlan)
             {
@@ -437,6 +437,15 @@ namespace UnityIsekaiGame.Inventory.Recipes
                 {
                     requirements.Add(CreateTransientRequirement($"production-requirement.recipe.{recipe.Id}.{input.inputId}", ProductionRequirementType.Item, input.quantity, input.unit, item, null, input.requirementState));
                 }
+                else if ((input.itemCategoryIds?.Length ?? 0) > 0 || (input.materialTagIds?.Length ?? 0) > 0)
+                {
+                    requirements.Add(CreateTransientItemFamilyRequirement(
+                        $"production-requirement.recipe.{recipe.Id}.{input.inputId}",
+                        input.quantity,
+                        input.unit,
+                        RecipeInputMatcher.FindMatchingItems(input, registry),
+                        input.requirementState));
+                }
                 else if (!string.IsNullOrWhiteSpace(input.materialDefinitionId) && registry.TryGet(input.materialDefinitionId, out MaterialDefinition material))
                 {
                     requirements.Add(CreateTransientRequirement($"production-requirement.recipe.{recipe.Id}.{input.inputId}", ProductionRequirementType.Material, input.quantity, input.unit, null, material, input.requirementState));
@@ -444,6 +453,38 @@ namespace UnityIsekaiGame.Inventory.Recipes
             }
 
             return requirements.OrderBy(requirement => requirement.Priority).ThenBy(requirement => requirement.Id, StringComparer.Ordinal).ToList();
+        }
+
+        private static ProductionRequirementDefinition CreateTransientItemFamilyRequirement(
+            string id,
+            float quantity,
+            ProductionQuantityUnit unit,
+            IReadOnlyList<ItemDefinition> candidates,
+            RecipeRequirementState state)
+        {
+            ItemDefinition[] ordered = (candidates ?? Array.Empty<ItemDefinition>())
+                .Where(candidate => candidate != null)
+                .OrderBy(candidate => candidate.Id, StringComparer.Ordinal)
+                .ToArray();
+            ProductionRequirementDefinition requirement = CreateTransientRequirement(
+                id,
+                ProductionRequirementType.Item,
+                quantity,
+                unit,
+                ordered.FirstOrDefault(),
+                null,
+                state);
+            ProductionRequirementAlternativeDefinition[] alternatives = ordered.Skip(1).Select(candidate =>
+            {
+                ProductionRequirementAlternativeDefinition alternative = new ProductionRequirementAlternativeDefinition();
+                SetField(alternative, "requirementType", ProductionRequirementType.Item);
+                SetField(alternative, "itemDefinition", candidate);
+                SetField(alternative, "quantity", quantity);
+                SetField(alternative, "quantityUnit", unit);
+                return alternative;
+            }).ToArray();
+            SetField(requirement, "alternatives", alternatives);
+            return requirement;
         }
 
         private static ProductionRequirementDefinition CreateTransientRequirement(string id, ProductionRequirementType type, float quantity, ProductionQuantityUnit unit, ItemDefinition item, MaterialDefinition material, RecipeRequirementState state)
@@ -468,7 +509,7 @@ namespace UnityIsekaiGame.Inventory.Recipes
             target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(target, value);
         }
 
-        private static string ComputeSnapshotSignature(string recipeId, string versionId, string variantId, float batchSize, IReadOnlyList<RecipeInputSpecificationData> inputs, IReadOnlyList<RecipeOutputSpecificationData> outputs, IReadOnlyList<RecipeProcedureStepData> steps, IReadOnlyList<string> requirementIds)
+        private static string ComputeSnapshotSignature(string recipeId, string versionId, string variantId, float batchSize, IReadOnlyList<RecipeInputSpecificationData> inputs, IReadOnlyList<RecipeOutputSpecificationData> outputs, IReadOnlyList<RecipeTransferMappingData> transfers, IReadOnlyList<RecipeProcedureStepData> steps, IReadOnlyList<string> requirementIds)
         {
             string payload = string.Join("|", new[]
             {
@@ -476,8 +517,9 @@ namespace UnityIsekaiGame.Inventory.Recipes
                 versionId ?? string.Empty,
                 variantId ?? string.Empty,
                 batchSize.ToString("0.###"),
-                string.Join(",", (inputs ?? Array.Empty<RecipeInputSpecificationData>()).Select(input => $"{input.inputId}:{input.itemDefinitionId}:{input.materialDefinitionId}:{input.quantity:0.###}:{input.hidden}")),
+                string.Join(",", (inputs ?? Array.Empty<RecipeInputSpecificationData>()).Select(input => $"{input.inputId}:{input.itemDefinitionId}:{input.materialDefinitionId}:{string.Join("+", input.itemCategoryIds ?? Array.Empty<string>())}:{string.Join("+", input.materialTagIds ?? Array.Empty<string>())}:{input.componentRoleId}:{input.quantity:0.###}:{input.hidden}")),
                 string.Join(",", (outputs ?? Array.Empty<RecipeOutputSpecificationData>()).Select(output => $"{output.outputId}:{output.itemDefinitionId}:{output.materialDefinitionId}:{output.quantity:0.###}")),
+                string.Join(",", (transfers ?? Array.Empty<RecipeTransferMappingData>()).Select(transfer => $"{transfer.sourceInputId}:{transfer.targetOutputId}:{transfer.targetComponentId}:{transfer.quantityTransferPolicy}")),
                 string.Join(",", (steps ?? Array.Empty<RecipeProcedureStepData>()).Select(step => $"{step.stepId}:{step.stepKind}:{string.Join("+", step.dependsOnStepIds ?? Array.Empty<string>())}")),
                 string.Join(",", requirementIds ?? Array.Empty<string>())
             });

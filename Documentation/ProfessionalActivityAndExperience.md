@@ -2,7 +2,7 @@
 
 Feature 10.4 adds the professional activity and experience layer for Step 10.
 
-Professional activities are records that adapt completed work from owning systems into professional experience evidence. Crafting, production, repair, salvage, experimentation, and training remain the owners of their source records. The professional activity runtime records the professional meaning of those source records, validates whether they can count as experience, and derives summaries for entry and training requirements.
+Professional activities are records that adapt completed work from owning systems into professional experience evidence. Crafting, production, repair, item recovery, experimentation, and training remain the owners of their source records. The professional activity runtime records the professional meaning of those source records, validates whether they can count as experience, and derives summaries for entry and training requirements.
 
 ## Ownership
 
@@ -18,7 +18,7 @@ Professional activities are records that adapt completed work from owning system
 - crafting operations
 - production jobs and work orders
 - repair records
-- salvage records
+- item-recovery records, distinguished by disassembly or salvage-pickup tags
 - experimentation trials and discovery claims
 - training practical assignments
 - supervised work records

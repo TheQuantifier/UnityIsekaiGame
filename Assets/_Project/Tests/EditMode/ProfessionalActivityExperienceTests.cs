@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Inventory.Crafting;
 using UnityIsekaiGame.Inventory.Durability;
+using UnityIsekaiGame.Inventory.Disassembly;
 using UnityIsekaiGame.Inventory.Experimentation;
 using UnityIsekaiGame.Inventory.Production;
 using UnityIsekaiGame.Knowledge.Access;
@@ -70,13 +71,18 @@ namespace UnityIsekaiGame.Tests
                 repairQuality = ItemRepairQuality.Good,
                 worldTime = "13"
             };
-            ItemDurabilityRecordData salvage = new ItemDurabilityRecordData
+            DisassemblyOperationRecordData recovery = new DisassemblyOperationRecordData
             {
+                operationId = "item-recovery.professional.test",
                 itemInstanceId = "item.instance.scrap-source",
                 itemDefinitionId = "item.prototype-sword",
-                salvageState = ItemSalvageState.Salvaged,
-                lastRepairWorldTime = "14",
-                salvageOutputs = { new ItemSalvageOutputData { outputId = "salvage.output.iron", quantity = 1f } }
+                actorPersonId = PersonId,
+                worldTime = "14",
+                operationKind = ItemRecoveryOperationKind.Salvage,
+                state = DisassemblyOperationState.Completed,
+                actualEfficiency = 0.65f,
+                efficiencyTier = DisassemblyEfficiencyTier.Skilled,
+                outcomes = { new DisassemblyComponentOutcomeData { outcomeId = "recovery.output.iron", returnedQuantity = 1, outputItemInstanceIds = new[] { "item.instance.iron" } } }
             };
             ExperimentTrialData trial = new ExperimentTrialData
             {
@@ -91,7 +97,7 @@ namespace UnityIsekaiGame.Tests
             ProfessionalActivitySourceSnapshot craftingSnapshot = ProfessionalActivitySourceAdapters.FromCraftingOperation(crafting);
             ProfessionalActivitySourceSnapshot productionSnapshot = ProfessionalActivitySourceAdapters.FromProductionJob(production, new ProductionWorkerAssignmentData { personId = PersonId, role = ProductionWorkerRole.PrimaryCrafter });
             ProfessionalActivitySourceSnapshot repairSnapshot = ProfessionalActivitySourceAdapters.FromRepairRecord(repair);
-            ProfessionalActivitySourceSnapshot salvageSnapshot = ProfessionalActivitySourceAdapters.FromSalvageRecord(salvage);
+            ProfessionalActivitySourceSnapshot salvageSnapshot = ProfessionalActivitySourceAdapters.FromItemRecoveryOperation(recovery);
             ProfessionalActivitySourceSnapshot trialSnapshot = ProfessionalActivitySourceAdapters.FromExperimentTrial(trial);
 
             Assert.That(craftingSnapshot.Reference.sourceType, Is.EqualTo(ProfessionalActivitySourceType.CraftingOperation));
@@ -100,6 +106,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(productionSnapshot.RelatedSubjectIds, Does.Contain("item.instance.sword"));
             Assert.That(repairSnapshot.Quality, Is.EqualTo(700));
             Assert.That(salvageSnapshot.Completed, Is.True);
+            Assert.That(salvageSnapshot.ActingPersonId, Is.EqualTo(PersonId));
             Assert.That(trialSnapshot.Difficulty, Is.EqualTo(ProfessionalActivityDifficulty.Advanced));
         }
 

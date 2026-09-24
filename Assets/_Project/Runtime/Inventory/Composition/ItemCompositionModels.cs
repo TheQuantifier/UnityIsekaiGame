@@ -24,6 +24,7 @@ namespace UnityIsekaiGame.Inventory.Composition
     {
         public string entryId;
         public string materialDefinitionId;
+        public string sourceItemDefinitionId;
         public MaterialEntryRole role = MaterialEntryRole.PrimaryStructure;
         public MaterialQuantityData quantity = new MaterialQuantityData { value = 1f, unit = MaterialQuantityUnit.Count };
         public float purity = 1f;
@@ -40,6 +41,7 @@ namespace UnityIsekaiGame.Inventory.Composition
             {
                 entryId = entryId ?? string.Empty,
                 materialDefinitionId = materialDefinitionId ?? string.Empty,
+                sourceItemDefinitionId = sourceItemDefinitionId ?? string.Empty,
                 role = role,
                 quantity = quantity?.Clone() ?? new MaterialQuantityData(),
                 purity = purity,
@@ -208,7 +210,7 @@ namespace UnityIsekaiGame.Inventory.Composition
                 source = source ?? string.Empty,
                 templateVersionId = templateVersionId ?? string.Empty,
                 massAuthority = massAuthority,
-                lastMutationPurpose = ItemCompositionMutationPurpose.Migration,
+                lastMutationPurpose = ItemCompositionMutationPurpose.DefaultInitialization,
                 materials = materials == null ? new List<ItemMaterialEntryData>() : materials.Select(entry => entry?.Clone()).Where(entry => entry != null).ToList(),
                 components = components == null ? new List<ItemComponentEntryData>() : components.Select(entry => entry?.Clone()).Where(entry => entry != null).ToList(),
                 tags = (tags ?? Array.Empty<string>()).Concat(new[] { "item.composition", "composition.default" }).Where(tag => !string.IsNullOrWhiteSpace(tag)).Distinct(StringComparer.Ordinal).OrderBy(tag => tag, StringComparer.Ordinal).ToArray()

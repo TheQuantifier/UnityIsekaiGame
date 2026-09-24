@@ -1,0 +1,180 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ab92f1ec3e4cc141b51744745eb7559, type: 3}
+  m_Name: ArrowsRecipe
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Recipes.RecipeDefinition
+  recipeId: recipe.prototype-arrows
+  displayName: Craft Prototype Arrows
+  description: Produces 10 x Wood Arrows with Iron Heads from collected Prototype
+    resources.
+  category: 20
+  state: 0
+  currentVersionId: recipe-version.prototype-arrows.v1
+  tags:
+  - recipe.prototype
+  - recipe.crafting
+  - craftable.arrow
+  versions:
+  - versionId: recipe-version.prototype-arrows.v1
+    versionLabel: 1.0
+    priorVersionId: 
+    supersedingVersionId: 
+    worldTime: 
+    authorOrSourceId: source.prototype.workstation
+    changeReason: 
+    state: 0
+    accessPolicyId: 
+  variants: []
+  inputs:
+  - inputId: input.shafts
+    role: 10
+    requirementState: 0
+    classification: 0
+    itemDefinitionId: 
+    materialDefinitionId: 
+    itemCategoryIds: []
+    materialTagIds:
+    - material.wood
+    componentRoleId: component.shafts
+    quantity: 1
+    unit: 0
+    minimumQuality: 0
+    minimumDurability: 0
+    minimumPurity: 0
+    allowPartialStacks: 1
+    allowMultipleSources: 1
+    accessPolicyId: 
+    substitutionIds: []
+    transferPolicy: 30
+    hidden: 0
+    selected: 0
+  - inputId: input.heads
+    role: 10
+    requirementState: 0
+    classification: 0
+    itemDefinitionId: 
+    materialDefinitionId: 
+    itemCategoryIds: []
+    materialTagIds:
+    - material.metal
+    componentRoleId: component.heads
+    quantity: 1
+    unit: 0
+    minimumQuality: 0
+    minimumDurability: 0
+    minimumPurity: 0
+    allowPartialStacks: 1
+    allowMultipleSources: 1
+    accessPolicyId: 
+    substitutionIds: []
+    transferPolicy: 30
+    hidden: 0
+    selected: 0
+  outputs:
+  - outputId: output.primary
+    role: 10
+    itemDefinitionId: item.prototype-arrow
+    materialDefinitionId: material.wood
+    componentFoundationId: 
+    quantity: 10
+    unit: 0
+    compositionTemplateId: 
+    compositionTransferPolicy: 30
+    qualityPolicy: 30
+    qualityPolicyId: quality-policy.crafting.standard
+    affixPolicy: 0
+    affixPolicyId: 
+    durabilityPolicy: 30
+    durabilityPolicyId: durability-policy.crafting.standard
+    conditional: 0
+    failureOutput: 0
+  transferMappings:
+  - mappingId: mapping.input.shafts
+    sourceInputId: input.shafts
+    targetOutputId: output.primary
+    targetComponentId: component.shafts
+    quantityTransferPolicy: 30
+    lossFraction: 0
+    preserveTrackedComponent: 0
+    transferProvenance: 1
+  - mappingId: mapping.input.heads
+    sourceInputId: input.heads
+    targetOutputId: output.primary
+    targetComponentId: component.heads
+    quantityTransferPolicy: 30
+    lossFraction: 0
+    preserveTrackedComponent: 0
+    transferProvenance: 1
+  procedureSteps:
+  - stepId: step.prepare
+    stepKind: 10
+    displayName: Prepare materials
+    dependsOnStepIds: []
+    optional: 0
+    conditional: 0
+    repeatCount: 1
+    requiredKnowledgeFactId: 
+    requirementId: 
+    hidden: 0
+  - stepId: step.shape
+    stepKind: 70
+    displayName: Shape components
+    dependsOnStepIds:
+    - step.prepare
+    optional: 0
+    conditional: 0
+    repeatCount: 1
+    requiredKnowledgeFactId: 
+    requirementId: 
+    hidden: 0
+  - stepId: step.finish
+    stepKind: 80
+    displayName: Finish and inspect
+    dependsOnStepIds:
+    - step.shape
+    optional: 0
+    conditional: 0
+    repeatCount: 1
+    requiredKnowledgeFactId: 
+    requirementId: 
+    hidden: 0
+  recipeRequirementIds:
+  - production-requirement.prototype-workstation
+  batchPolicy:
+    scalingPolicy: 0
+    baseBatchSize: 1
+    minimumBatchSize: 1
+    maximumBatchSize: 1
+    batchIncrement: 1
+  craftingScaling:
+    baseDurationSeconds: 5
+    minimumDurationSeconds: 1
+    eligibleSkillIds:
+    - skill.woodworking
+    unskilledDurationMultiplier: 1.25
+    durationReductionPerSkillGrade: 0.06
+    minimumSkillDurationMultiplier: 0.55
+    rarityDurationMultiplierPerRank: 0.12
+    statDurationMultiplierPerComplexityPoint: 0.03
+    unskilledQualityAdjustment: -0.05
+    qualityBonusPerSkillGrade: 0.04
+    maximumSkillQualityBonus: 0.35
+    affixChanceBonusPerSkillGrade: 0.025
+  compositionTransferPolicyId: composition-policy.input-derived
+  qualityGenerationPolicyId: quality-policy.crafting.standard
+  affixGenerationPolicyId: affix-policy.crafting.standard
+  durabilityInitializationPolicyId: durability-policy.crafting.standard
+  knowledgeDifficulty: 1
+  teachingDifficulty: 1
+  secrecyAccessPolicyId: 
+  sourceId: source.prototype.workstation
+  schemaVersion: 1

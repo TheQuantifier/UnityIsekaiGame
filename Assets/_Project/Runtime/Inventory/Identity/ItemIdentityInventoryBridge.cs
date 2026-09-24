@@ -51,13 +51,13 @@ namespace UnityIsekaiGame.Inventory.Identity
                 return ItemIdentityInventoryBridgeResult.Failure("MissingRuntime", "Item identity runtime is missing.");
             }
 
-            ItemIdentityInventoryBridgeResult migration = MigrateInventoryEquipmentSave(saveData, registry, ownerPersonId, synchronizationNamespace);
-            if (!migration.Succeeded)
+            ItemIdentityInventoryBridgeResult projection = BuildInventoryEquipmentProjection(saveData, registry, ownerPersonId, synchronizationNamespace);
+            if (!projection.Succeeded)
             {
-                return migration;
+                return projection;
             }
 
-            ItemInstanceRuntimeSaveData merged = MergeInventoryEquipmentProjection(runtime.CreateSaveData(), migration.SaveData, ownerPersonId);
+            ItemInstanceRuntimeSaveData merged = MergeInventoryEquipmentProjection(runtime.CreateSaveData(), projection.SaveData, ownerPersonId);
             if (!ItemInstanceIdentityRuntime.ValidateSaveData(merged, registry, out string validationFailure))
             {
                 return ItemIdentityInventoryBridgeResult.Failure("IdentityValidationFailed", validationFailure);
@@ -65,15 +65,15 @@ namespace UnityIsekaiGame.Inventory.Identity
 
             ItemInstanceOperationResult restore = runtime.RestoreFromSaveData(merged, registry);
             return restore.Succeeded
-                ? ItemIdentityInventoryBridgeResult.Success(merged, $"Synchronized {migration.SaveData.records.Count} inventory/equipment item identity record(s).")
+                ? ItemIdentityInventoryBridgeResult.Success(merged, $"Synchronized {projection.SaveData.records.Count} inventory/equipment item identity record(s).")
                 : ItemIdentityInventoryBridgeResult.Failure(restore.Status.ToString(), restore.Message);
         }
 
-        public static ItemIdentityInventoryBridgeResult MigrateInventoryEquipmentSave(
+        public static ItemIdentityInventoryBridgeResult BuildInventoryEquipmentProjection(
             PlayerInventoryEquipmentSaveData saveData,
             DefinitionRegistry registry,
             string ownerPersonId,
-            string migrationNamespace)
+            string synchronizationNamespace)
         {
             if (saveData == null)
             {
@@ -86,29 +86,29 @@ namespace UnityIsekaiGame.Inventory.Identity
             }
 
             string owner = string.IsNullOrWhiteSpace(ownerPersonId) ? "person.local-player" : ownerPersonId;
-            string scope = string.IsNullOrWhiteSpace(migrationNamespace) ? "migration.inventory-equipment" : migrationNamespace;
+            string scope = string.IsNullOrWhiteSpace(synchronizationNamespace) ? "projection.inventory-equipment" : synchronizationNamespace;
             List<ItemInstanceRecordData> records = new List<ItemInstanceRecordData>();
             HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
 
             if (!CollectInventory(saveData.inventory, registry, owner, scope, records, ids, out string failure))
             {
-                return ItemIdentityInventoryBridgeResult.Failure("InventoryMigrationFailed", failure);
+                return ItemIdentityInventoryBridgeResult.Failure("InventoryProjectionFailed", failure);
             }
 
             if (!CollectEquipment(saveData.equipment, registry, owner, scope, records, ids, out failure))
             {
-                return ItemIdentityInventoryBridgeResult.Failure("EquipmentMigrationFailed", failure);
+                return ItemIdentityInventoryBridgeResult.Failure("EquipmentProjectionFailed", failure);
             }
 
-            ItemInstanceRuntimeSaveData migrated = new ItemInstanceRuntimeSaveData
+            ItemInstanceRuntimeSaveData projected = new ItemInstanceRuntimeSaveData
             {
                 schemaVersion = ItemInstanceRuntimeSaveData.CurrentSchemaVersion,
                 revision = Math.Max(1L, records.Count),
                 records = records.OrderBy(record => record.itemInstanceId, StringComparer.Ordinal).Select(record => record.Clone()).ToList()
             };
 
-            return ItemInstanceIdentityRuntime.ValidateSaveData(migrated, registry, out failure)
-                ? ItemIdentityInventoryBridgeResult.Success(migrated, $"Migrated {records.Count} inventory/equipment item identity record(s).")
+            return ItemInstanceIdentityRuntime.ValidateSaveData(projected, registry, out failure)
+                ? ItemIdentityInventoryBridgeResult.Success(projected, $"Projected {records.Count} inventory/equipment item identity record(s).")
                 : ItemIdentityInventoryBridgeResult.Failure("IdentityValidationFailed", failure);
         }
 
@@ -148,7 +148,7 @@ namespace UnityIsekaiGame.Inventory.Identity
             string ownerPersonId,
             string synchronizationNamespace)
         {
-            ItemIdentityInventoryBridgeResult expected = MigrateInventoryEquipmentSave(saveData, registry, ownerPersonId, synchronizationNamespace);
+            ItemIdentityInventoryBridgeResult expected = BuildInventoryEquipmentProjection(saveData, registry, ownerPersonId, synchronizationNamespace);
             if (!expected.Succeeded)
             {
                 return expected;
@@ -238,7 +238,7 @@ namespace UnityIsekaiGame.Inventory.Identity
                 ItemInstanceRecordData record;
                 if (entry.mode == InventoryEntrySaveMode.StatefulInstance)
                 {
-                    if (!TryCreateStatefulRecord(entry.definitionId, entry.itemInstanceId, registry, owner, ItemLocationKind.Inventory, owner, string.Empty, out record, out failure))
+                    if (!TryCreateStatefulRecord(entry.definitionId, entry.itemInstanceId, entry.quantity, registry, owner, ItemLocationKind.Inventory, owner, string.Empty, out record, out failure))
                     {
                         return false;
                     }
@@ -377,7 +377,7 @@ namespace UnityIsekaiGame.Inventory.Identity
                 ItemInstanceRecordData record;
                 if (slot.mode == EquipmentEntrySaveMode.StatefulInstance)
                 {
-                    if (!TryCreateStatefulRecord(slot.definitionId, slot.itemInstanceId, registry, owner, ItemLocationKind.Equipped, owner, slot.slotType.ToString(), out record, out failure))
+                    if (!TryCreateStatefulRecord(slot.definitionId, slot.itemInstanceId, 1, registry, owner, ItemLocationKind.Equipped, owner, slot.slotType.ToString(), out record, out failure))
                     {
                         return false;
                     }
@@ -410,6 +410,7 @@ namespace UnityIsekaiGame.Inventory.Identity
         private static bool TryCreateStatefulRecord(
             string definitionId,
             string itemInstanceId,
+            int quantity,
             DefinitionRegistry registry,
             string owner,
             ItemLocationKind locationKind,
@@ -440,7 +441,11 @@ namespace UnityIsekaiGame.Inventory.Identity
                 return false;
             }
 
-            record = CreateBaseRecord(item.ItemId, resolvedInstanceId, owner, ItemInstanceClassification.IndividuallyTracked);
+            ItemInstanceClassification classification = quantity > 1
+                ? ItemInstanceClassification.StackableWhileEquivalent
+                : ItemInstanceClassification.IndividuallyTracked;
+            record = CreateBaseRecord(item.ItemId, resolvedInstanceId, owner, classification);
+            record.stackQuantity = Math.Max(1, quantity);
             record.location = locationKind == ItemLocationKind.Equipped
                 ? new ItemLocationStateData { kind = ItemLocationKind.Equipped, equipmentHolderId = locationOwner, equipmentSlotId = equipmentSlot }
                 : new ItemLocationStateData { kind = ItemLocationKind.Inventory, inventoryOwnerId = locationOwner };

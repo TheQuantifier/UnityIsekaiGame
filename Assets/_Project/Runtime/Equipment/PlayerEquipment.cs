@@ -141,6 +141,35 @@ namespace UnityIsekaiGame.Equipment
             return EquipmentOperationResult.Success(message);
         }
 
+        public bool RemoveItemForDecomposition(string itemInstanceId, bool notifyChange = true)
+        {
+            if (string.IsNullOrWhiteSpace(itemInstanceId))
+            {
+                return false;
+            }
+
+            EnsureSlots();
+            foreach (EquipmentSlotState slot in slots)
+            {
+                if (slot != null && string.Equals(slot.ItemInstanceId, itemInstanceId, StringComparison.Ordinal))
+                {
+                    slot.Clear();
+                    if (notifyChange)
+                    {
+                        EquipmentChanged?.Invoke();
+                    }
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void NotifyEquipmentStateChanged()
+        {
+            EquipmentChanged?.Invoke();
+        }
+
         public EquipmentSlotState GetSlot(EquipmentSlotType slotType)
         {
             EnsureSlots();

@@ -825,7 +825,7 @@ namespace UnityIsekaiGame.Development.Automation
                 }
             };
 
-            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.MigrateInventoryEquipmentSave(projection, registry, "person.prototype.player", context.ScenarioContext.Namespace);
+            ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.BuildInventoryEquipmentProjection(projection, registry, "person.prototype.player", context.ScenarioContext.Namespace);
             if (!migration.Succeeded)
             {
                 return Fail(context, "step9-items-migration", $"{migration.Status}: {migration.Message}");
@@ -1347,25 +1347,23 @@ namespace UnityIsekaiGame.Development.Automation
 
             string item = CreateComposedItem(context, itemRuntime, compositions, registry, sword, "durability-salvage");
             durability.ApplyDamage(itemRuntime, compositions, quality, registry, item, 999f, ItemDamageChannel.Crushing, "component.blade", "break");
-            ItemDurabilityOperationResult preview = durability.PreviewSalvage(item);
-            ItemDurabilityOperationResult salvage = durability.ExecuteSalvage(itemRuntime, compositions, quality, registry, item, "salvage");
+            ItemDurabilityOperationResult recoveryClose = durability.MarkDestroyedByItemRecovery(itemRuntime, compositions, quality, registry, item, "item-recovery");
             ItemDurabilityRuntimeSaveData save = durability.CreateSaveData();
             ItemDurabilityRuntime restored = new ItemDurabilityRuntime();
             ItemDurabilityOperationResult restore = restored.RestoreFromSaveData(save, registry, itemRuntime, compositions);
             ItemDurabilityRuntimeSaveData corrupt = save.Clone();
             corrupt.records[0].itemInstanceId = RunGuid(context, "missing-durability-item");
             bool corruptRejected = !ItemDurabilityRuntime.ValidateSaveData(corrupt, registry, itemRuntime, compositions, out _);
-            bool valid = preview.Preview
-                && preview.SalvageOutputs.Count > 0
-                && salvage.Succeeded
-                && salvage.Snapshot.Data.salvageState == ItemSalvageState.Salvaged
+            bool valid = recoveryClose.Succeeded
+                && recoveryClose.Snapshot.BreakageState == ItemBreakageState.Destroyed
+                && recoveryClose.Snapshot.FunctionalState == ItemFunctionalState.Destroyed
                 && restore.Succeeded
                 && restored.TryGetDurabilityForItem(item, out ItemDurabilitySnapshot restoredSnapshot)
-                && restoredSnapshot.Data.salvageOutputs.Count == salvage.SalvageOutputs.Count
+                && restoredSnapshot.BreakageState == ItemBreakageState.Destroyed
                 && corruptRejected;
             return valid
-                ? Pass(context, "step9-durability-salvage-save", $"Outputs={salvage.SalvageOutputs.Count} Restore={restore.Status} CorruptRejected={corruptRejected}")
-                : Fail(context, "step9-durability-salvage-save", $"Preview={preview.Status} Salvage={salvage.Status}:{salvage.Message} Restore={restore.Status}:{restore.Message} Corrupt={corruptRejected}");
+                ? Pass(context, "step9-durability-salvage-save", $"RecoveryClose={recoveryClose.Status} Restore={restore.Status} CorruptRejected={corruptRejected}")
+                : Fail(context, "step9-durability-salvage-save", $"RecoveryClose={recoveryClose.Status}:{recoveryClose.Message} Restore={restore.Status}:{restore.Message} Corrupt={corruptRejected}");
         }
 
         private static TestLabAutomationStepResult DurabilityProjectionStack(TestLabAutomationContext context)
