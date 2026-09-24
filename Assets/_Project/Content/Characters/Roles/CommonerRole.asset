@@ -19,7 +19,7 @@ MonoBehaviour:
   tags:
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
   - {fileID: 11400000, guid: e1a0084395594246817ec0a1444abeaa, type: 2}
-  statModifiers: []
+  calculatedStatModifiers: []
   resistanceModifiers: []
   grantedAbilities: []
   blockedAbilities: []

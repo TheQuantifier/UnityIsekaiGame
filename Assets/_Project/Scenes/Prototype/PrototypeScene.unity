@@ -3846,7 +3846,7 @@ MonoBehaviour:
     awakenedAtPlaytimeSeconds: 0
     assignmentSource: 
     futureConditionData: 
-  permanentStatGrants: []
+  permanentAttributeGrants: []
   roles: []
   socialStatuses: []
   titles: []

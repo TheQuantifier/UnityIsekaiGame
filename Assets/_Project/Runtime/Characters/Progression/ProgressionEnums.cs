@@ -2,7 +2,7 @@ namespace UnityIsekaiGame.Progression
 {
     public enum BirthGiftType
     {
-        PermanentStatGrant,
+        PermanentAttributeGrant,
         LatentSkill,
         GrowthAffinity
     }

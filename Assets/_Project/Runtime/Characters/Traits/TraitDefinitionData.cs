@@ -32,14 +32,13 @@ namespace UnityIsekaiGame.Traits
     {
         [SerializeField] private string entryId;
         [SerializeField] private AbilityDefinition ability;
-        [SerializeField] private string actionOrAbilityId;
         [SerializeField] private TraitLifecycleState requiredLifecycle = TraitLifecycleState.Active;
         [SerializeField] private bool requireDiscovered;
         [SerializeField] private bool alphaEnabled = true;
 
-        public string EntryId => string.IsNullOrWhiteSpace(entryId) ? AbilityOrActionId : entryId;
+        public string EntryId => string.IsNullOrWhiteSpace(entryId) ? AbilityId : entryId;
         public AbilityDefinition Ability => ability;
-        public string AbilityOrActionId => ability == null ? actionOrAbilityId ?? string.Empty : ability.Id;
+        public string AbilityId => ability == null ? string.Empty : ability.Id;
         public TraitLifecycleState RequiredLifecycle => requiredLifecycle;
         public bool RequireDiscovered => requireDiscovered;
         public bool AlphaEnabled => alphaEnabled;

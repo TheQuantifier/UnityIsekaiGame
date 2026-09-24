@@ -42,6 +42,16 @@ namespace UnityIsekaiGame.Abilities
                 report.AddError($"Ability '{ability.DisplayName}' has invalid delivery mode.");
             }
 
+            if (ability.TargetingMode == AbilityTargetingMode.DirectTarget && ability.TargetingMask.value == 0)
+            {
+                report.AddError($"Ability '{ability.DisplayName}' has an empty targeting mask.");
+            }
+
+            if (ability.RequiresLineOfSight && ability.ObstructionMask.value == 0)
+            {
+                report.AddError($"Ability '{ability.DisplayName}' requires line of sight but has an empty obstruction mask.");
+            }
+
             ValidateEffects(ability, definitionsById, report);
             ValidateDelivery(ability, report);
         }

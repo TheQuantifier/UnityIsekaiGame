@@ -19,8 +19,8 @@ MonoBehaviour:
   tags:
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
   - {fileID: 11400000, guid: eac27d0065b44f969205af5ca702cbe7, type: 2}
-  statModifiers:
-  - statType: 2
+  calculatedStatModifiers:
+  - stat: {fileID: 11400000, guid: c9000000000000000000000000000052, type: 2}
     operation: 0
     value: 1
     scaleWithStacks: 1

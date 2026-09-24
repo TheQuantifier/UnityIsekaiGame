@@ -21,7 +21,7 @@ namespace UnityIsekaiGame.Requirements
         public PlayerInventory Inventory { get; set; }
         public PlayerEquipment Equipment { get; set; }
         public StatusEffectController Statuses { get; set; }
-        public HashSet<string> OwnedAbilityOrActionIds { get; } = new HashSet<string>();
+        public HashSet<string> OwnedAbilityIds { get; } = new HashSet<string>();
         public Dictionary<string, string> ContextIds { get; } = new Dictionary<string, string>();
         public bool TestLabDiagnostics { get; set; }
     }

@@ -90,12 +90,17 @@ namespace UnityIsekaiGame.Tests
             Assert.That(stats.AttackPower, Is.EqualTo(5f));
             Assert.That(stats.TryInitializeBaseStats().Status, Is.EqualTo(ActorProfileInitializationStatus.AlreadyInitialized));
 
-            RuntimeStatModifier modifier = new RuntimeStatModifier(
-                StatType.AttackPower,
-                StatModifierOperation.FlatAdd,
-                3f,
-                new StatModifierSource(StatModifierSourceType.StatusEffect, "status.test"));
-            Assert.That(stats.AddModifier(modifier), Is.True);
+            RuntimeCalculatedStatContribution modifier = new RuntimeCalculatedStatContribution
+            {
+                contributionId = "status.test.physical-power",
+                statId = CalculatedStatIds.PhysicalPower,
+                sourceId = "status.test",
+                sourceCategory = (int)CalculatedStatContributionSourceCategory.CombatStatus,
+                kind = (int)CalculatedStatContributionKind.Flat,
+                direction = (int)CalculatedStatContributionDirection.Improve,
+                magnitude = 3f
+            };
+            Assert.That(stats.AddCalculatedStatContribution(modifier), Is.True);
             Assert.That(stats.AttackPower, Is.EqualTo(8f));
             Assert.That(stats.TryInitializeBaseStats().Status, Is.EqualTo(ActorProfileInitializationStatus.AlreadyInitialized));
             Assert.That(stats.AttackPower, Is.EqualTo(8f));

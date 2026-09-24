@@ -4,6 +4,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Stats;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -165,10 +166,10 @@ namespace UnityIsekaiGame.Tests
             serialized.FindProperty("stackingPolicy").enumValueIndex = EnumIndex("UnityIsekaiGame.StatusEffects.StatusStackingPolicy", stackingPolicy);
             serialized.FindProperty("refreshPolicy").enumValueIndex = EnumIndex("UnityIsekaiGame.StatusEffects.StatusRefreshPolicy", "ResetToFullDuration");
             serialized.FindProperty("maximumStacks").intValue = maxStacks;
-            SerializedProperty modifiers = serialized.FindProperty("statModifiers");
+            SerializedProperty modifiers = serialized.FindProperty("calculatedStatModifiers");
             modifiers.arraySize = 1;
             SerializedProperty modifier = modifiers.GetArrayElementAtIndex(0);
-            modifier.FindPropertyRelative("statType").enumValueIndex = EnumIndex("UnityIsekaiGame.Stats.StatType", stat);
+            modifier.FindPropertyRelative("stat").objectReferenceValue = GetCalculatedStat(stat);
             modifier.FindPropertyRelative("operation").enumValueIndex = EnumIndex("UnityIsekaiGame.Stats.StatModifierOperation", operation);
             modifier.FindPropertyRelative("value").floatValue = value;
             modifier.FindPropertyRelative("scaleWithStacks").boolValue = true;
@@ -205,7 +206,16 @@ namespace UnityIsekaiGame.Tests
         private static float GetStat(GameObject target, string stat)
         {
             object stats = target.GetComponent(RequiredType("UnityIsekaiGame.Equipment.PlayerStats"));
-            return (float)Invoke(stats, "GetStatValue", EnumValue("UnityIsekaiGame.Stats.StatType", stat));
+            return (float)Invoke(stats, "GetCalculatedStatValue", stat == "Defense" ? CalculatedStatIds.PhysicalDefense : CalculatedStatIds.PhysicalPower);
+        }
+
+        private static CalculatedStatDefinition GetCalculatedStat(string legacyName)
+        {
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
+            Assert.That(catalog, Is.Not.Null);
+            string statId = legacyName == "Defense" ? CalculatedStatIds.PhysicalDefense : CalculatedStatIds.PhysicalPower;
+            Assert.That(catalog.CreateRegistry().TryGet(statId, out CalculatedStatDefinition stat), Is.True, statId);
+            return stat;
         }
 
         private static object CreateSource(string sourceType, string sourceId)
@@ -214,13 +224,6 @@ namespace UnityIsekaiGame.Tests
                 RequiredType("UnityIsekaiGame.Stats.StatModifierSource"),
                 EnumValue("UnityIsekaiGame.Stats.StatModifierSourceType", sourceType),
                 sourceId);
-        }
-
-        private static object CreateRuntimeModifier(object stat, object operation, float value, object source)
-        {
-            return Activator.CreateInstance(
-                RequiredType("UnityIsekaiGame.Stats.RuntimeStatModifier"),
-                stat, operation, value, source, 0);
         }
 
         private static object EnumValue(string fullName, string name)

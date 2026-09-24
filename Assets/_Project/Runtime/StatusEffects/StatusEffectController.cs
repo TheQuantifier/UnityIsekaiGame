@@ -14,7 +14,7 @@ namespace UnityIsekaiGame.StatusEffects
     {
         private readonly List<RuntimeStatusEffect> activeStatuses = new List<RuntimeStatusEffect>();
         private readonly Dictionary<string, List<string>> ongoingInstanceIdsByStatus = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        private IRuntimeStatReceiver statReceiver;
+        private IRuntimeCalculatedStatReceiver statReceiver;
         private IDamageResistanceReceiver resistanceReceiver;
         [SerializeField] private OngoingEffectService ongoingEffects;
         [SerializeField] private bool useLocalTime = true;
@@ -30,7 +30,7 @@ namespace UnityIsekaiGame.StatusEffects
 
         private void Awake()
         {
-            statReceiver = GetComponentInParent<IRuntimeStatReceiver>();
+            statReceiver = GetComponentInParent<IRuntimeCalculatedStatReceiver>();
             resistanceReceiver = GetComponentInParent<IDamageResistanceReceiver>();
             ongoingEffects ??= GetComponentInParent<OngoingEffectService>();
         }
@@ -200,6 +200,61 @@ namespace UnityIsekaiGame.StatusEffects
                 UnregisterOngoingEffects(status);
                 activeStatuses.RemoveAt(i);
                 StatusExpired?.Invoke(status);
+            }
+        }
+
+        public StatusEffectTransactionSnapshot CaptureTransactionSnapshot(string definitionId)
+        {
+            List<StatusEffectTransactionSnapshot.Entry> entries = new List<StatusEffectTransactionSnapshot.Entry>();
+            for (int i = 0; i < activeStatuses.Count; i++)
+            {
+                RuntimeStatusEffect status = activeStatuses[i];
+                if (status.Definition != null && string.Equals(status.Definition.Id, definitionId, StringComparison.Ordinal))
+                {
+                    entries.Add(new StatusEffectTransactionSnapshot.Entry
+                    {
+                        Definition = status.Definition,
+                        ApplicationId = status.ApplicationId,
+                        SourceId = status.SourceId,
+                        Source = status.Source,
+                        RemainingDuration = status.RemainingDuration,
+                        ElapsedDuration = status.ElapsedDuration,
+                        StackCount = status.StackCount,
+                        AppliedAt = status.AppliedAt
+                    });
+                }
+            }
+            return new StatusEffectTransactionSnapshot(definitionId, entries);
+        }
+
+        public void RestoreTransactionSnapshot(StatusEffectTransactionSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            for (int i = activeStatuses.Count - 1; i >= 0; i--)
+            {
+                if (activeStatuses[i].Definition != null && string.Equals(activeStatuses[i].Definition.Id, snapshot.DefinitionId, StringComparison.Ordinal))
+                {
+                    ForceRemoveStatus(activeStatuses[i].ApplicationId);
+                }
+            }
+
+            foreach (StatusEffectTransactionSnapshot.Entry entry in snapshot.Entries)
+            {
+                RuntimeStatusEffect restored = new RuntimeStatusEffect(entry.Definition, entry.ApplicationId, entry.SourceId, entry.Source, gameObject, entry.RemainingDuration, entry.AppliedAt);
+                restored.RestoreStackCount(entry.StackCount);
+                restored.RestoreElapsed(entry.ElapsedDuration);
+                if (!RegisterModifiers(restored) || !RegisterOngoingEffects(restored))
+                {
+                    UnregisterModifiers(restored);
+                    UnregisterOngoingEffects(restored);
+                    throw new InvalidOperationException($"Could not restore status transaction snapshot '{snapshot.DefinitionId}'.");
+                }
+                activeStatuses.Add(restored);
+                StatusAdded?.Invoke(restored);
             }
         }
 
@@ -401,23 +456,23 @@ namespace UnityIsekaiGame.StatusEffects
 
         private bool CanReceiveModifiers(StatusEffectDefinition definition)
         {
-            if (definition.StatModifiers.Count == 0 && definition.ResistanceModifiers.Count == 0)
+            if (definition.CalculatedStatModifiers.Count == 0 && definition.ResistanceModifiers.Count == 0)
             {
                 return true;
             }
 
-            if (definition.StatModifiers.Count > 0)
+            if (definition.CalculatedStatModifiers.Count > 0)
             {
-                statReceiver ??= GetComponentInParent<IRuntimeStatReceiver>();
+                statReceiver ??= GetComponentInParent<IRuntimeCalculatedStatReceiver>();
                 if (statReceiver == null)
                 {
                     return false;
                 }
 
-                for (int i = 0; i < definition.StatModifiers.Count; i++)
+                for (int i = 0; i < definition.CalculatedStatModifiers.Count; i++)
                 {
-                    StatModifierDefinition modifier = definition.StatModifiers[i];
-                    if (modifier == null || !modifier.IsValid || !statReceiver.HasStat(modifier.StatType))
+                    CalculatedStatModifierDefinition modifier = definition.CalculatedStatModifiers[i];
+                    if (modifier == null || !modifier.IsValid || !statReceiver.HasCalculatedStat(modifier.Stat.Id))
                     {
                         return false;
                     }
@@ -447,7 +502,7 @@ namespace UnityIsekaiGame.StatusEffects
 
         private bool RegisterModifiers(RuntimeStatusEffect status)
         {
-            if (status.Definition.StatModifiers.Count == 0 && status.Definition.ResistanceModifiers.Count == 0)
+            if (status.Definition.CalculatedStatModifiers.Count == 0 && status.Definition.ResistanceModifiers.Count == 0)
             {
                 return true;
             }
@@ -484,23 +539,23 @@ namespace UnityIsekaiGame.StatusEffects
 
         private bool RegisterStatModifiers(RuntimeStatusEffect status)
         {
-            if (status.Definition.StatModifiers.Count == 0)
+            if (status.Definition.CalculatedStatModifiers.Count == 0)
             {
                 return true;
             }
 
-            statReceiver ??= GetComponentInParent<IRuntimeStatReceiver>();
+            statReceiver ??= GetComponentInParent<IRuntimeCalculatedStatReceiver>();
             if (statReceiver == null)
             {
                 return false;
             }
 
-            for (int i = 0; i < status.Definition.StatModifiers.Count; i++)
+            for (int i = 0; i < status.Definition.CalculatedStatModifiers.Count; i++)
             {
-                RuntimeStatModifier modifier = status.Definition.StatModifiers[i].CreateRuntimeModifier(status.ModifierSource, status.StackCount);
-                if (!statReceiver.AddModifier(modifier))
+                CalculatedStatModifierDefinition modifier = status.Definition.CalculatedStatModifiers[i];
+                if (!statReceiver.AddCalculatedStatContribution(modifier.CreateRuntimeContribution(status.ModifierSource, status.StackCount, $"status.{status.ApplicationId}.{i}.{modifier.Stat.Id}")))
                 {
-                    statReceiver.RemoveModifiersFromSource(status.ModifierSource);
+                    statReceiver.RemoveCalculatedStatContributions(status.ModifierSource);
                     return false;
                 }
             }
@@ -536,8 +591,8 @@ namespace UnityIsekaiGame.StatusEffects
 
         private void UnregisterModifiers(RuntimeStatusEffect status)
         {
-            statReceiver ??= GetComponentInParent<IRuntimeStatReceiver>();
-            statReceiver?.RemoveModifiersFromSource(status.ModifierSource);
+            statReceiver ??= GetComponentInParent<IRuntimeCalculatedStatReceiver>();
+            statReceiver?.RemoveCalculatedStatContributions(status.ModifierSource);
             resistanceReceiver ??= GetComponentInParent<IDamageResistanceReceiver>();
             resistanceReceiver?.RemoveResistanceModifiersFromSource(status.ModifierSource);
         }

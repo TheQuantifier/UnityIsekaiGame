@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace UnityIsekaiGame.Abilities
@@ -43,12 +44,30 @@ namespace UnityIsekaiGame.Abilities
             }
 
             string message = string.Empty;
+            List<Action> rollbacks = new List<Action>();
             for (int i = 0; i < effects.Count; i++)
             {
-                EffectExecutionResult result = effects[i].Execute(in context);
+                EffectExecutionContext effectContext = context.WithExecutionId(string.IsNullOrWhiteSpace(context.ExecutionId) ? $"effect.{i}" : $"{context.ExecutionId}.{i}");
+                EffectExecutionResult result = effects[i].Execute(in effectContext);
                 if (!result.Succeeded)
                 {
+                    for (int rollbackIndex = rollbacks.Count - 1; rollbackIndex >= 0; rollbackIndex--)
+                    {
+                        try
+                        {
+                            rollbacks[rollbackIndex]?.Invoke();
+                        }
+                        catch (Exception)
+                        {
+                            // Continue rolling back the remainder of the batch.
+                        }
+                    }
                     return AbilityExecutionResult.Failure(AbilityExecutionStatus.EffectExecutionFailure, result.Message, i, result);
+                }
+
+                if (result.Rollback != null)
+                {
+                    rollbacks.Add(result.Rollback);
                 }
 
                 if (!string.IsNullOrWhiteSpace(result.Message))

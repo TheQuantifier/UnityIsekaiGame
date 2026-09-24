@@ -71,7 +71,7 @@ namespace UnityIsekaiGame.Abilities
             CharacterResourceCollection resources = context.Target.GetComponentInParent<CharacterResourceCollection>();
             return resources != null
                 && resources.HasResource(ResourceIds.Health)
-                && !string.IsNullOrWhiteSpace(ResolveActorId(context.Target));
+                && !string.IsNullOrWhiteSpace(AbilityActorIdentityUtility.ResolveActorId(context.Target));
         }
 
         private bool TryExecuteDamagePipeline(in EffectExecutionContext context, out EffectExecutionResult result)
@@ -80,10 +80,10 @@ namespace UnityIsekaiGame.Abilities
             DamagePacket packet = CreateDamagePacket(in context, out _);
             DamageHealingService service = new DamageHealingService();
             DamageApplicationRequest request = new DamageApplicationRequest(
-                $"ability-effect.{Id}.{System.Guid.NewGuid():N}",
-                ResolveActorId(context.Source),
+                string.IsNullOrWhiteSpace(context.ExecutionId) ? $"ability-effect.{Id}.{System.Guid.NewGuid():N}" : $"{context.ExecutionId}.effect.{Id}",
+                context.SourceActorId,
                 context.Source,
-                ResolveActorId(context.Target),
+                context.TargetActorId,
                 context.Target,
                 packet,
                 DisplayName,
@@ -93,29 +93,19 @@ namespace UnityIsekaiGame.Abilities
             string damageMessage = damageResult.Succeeded && damageResult.HealthChanged
                 ? $"{targetName} took {damageResult.FinalDamageAmount:0.#} damage. Health: {damageResult.NewHealth:0.#} / {damageResult.HealthMaximum:0.#}."
                 : damageResult.Message;
+            GameObject rollbackTarget = context.Target;
+            string rollbackSourceActorId = context.SourceActorId;
+            string rollbackExecutionId = context.ExecutionId;
             result = damageResult.Succeeded && damageResult.HealthChanged
-                ? EffectExecutionResult.Success(damageMessage, damageResult.FinalDamageAmount)
+                ? EffectExecutionResult.Success(damageMessage, damageResult.FinalDamageAmount, () =>
+                {
+                    CharacterResourceCollection resources = rollbackTarget == null ? null : rollbackTarget.GetComponentInParent<CharacterResourceCollection>();
+                    resources?.ApplyChange(new ResourceChangeRequest(ResourceIds.Health, ResourceChangeOperation.Heal, damageResult.FinalDamageAmount, ResourceChangeSourceCategory.Ability, rollbackSourceActorId, $"Rollback {DisplayName}", $"{rollbackExecutionId}.rollback.{Id}", allowPartial: true, authorityValidated: true));
+                })
                 : damageResult.Succeeded
                     ? EffectExecutionResult.Failure(EffectExecutionStatus.BlockedOrImmune, damageMessage)
                     : EffectExecutionResult.Failure(EffectExecutionStatus.UnsupportedTarget, damageMessage);
             return true;
-        }
-
-        private static string ResolveActorId(GameObject actor)
-        {
-            if (actor == null)
-            {
-                return string.Empty;
-            }
-
-            CharacterSystemCoordinator character = actor.GetComponentInParent<CharacterSystemCoordinator>();
-            if (character != null && !string.IsNullOrWhiteSpace(character.ActorId))
-            {
-                return character.ActorId;
-            }
-
-            WorldEntityIdentity identity = actor.GetComponentInParent<WorldEntityIdentity>();
-            return identity == null ? string.Empty : identity.EntityId;
         }
 
         public override void ValidateDefinition(UnityIsekaiGame.GameData.DefinitionValidationReport report)

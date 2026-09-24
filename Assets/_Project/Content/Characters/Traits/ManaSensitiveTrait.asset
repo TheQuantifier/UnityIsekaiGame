@@ -32,13 +32,7 @@ MonoBehaviour:
     direction: 0
     magnitude: 1
     priority: 0
-  abilityActionGrants:
-  - entryId: detect-mana
-    ability: {fileID: 0}
-    actionOrAbilityId: ability.detect-mana
-    requiredLifecycle: 1
-    requireDiscovered: 0
-    alphaEnabled: 1
+  abilityGrants: []
   booleanCapabilityGrants:
   - entryId: mana-sense
     capability: {fileID: 11400000, guid: 55d30000000000000000000000000055, type: 2}

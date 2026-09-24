@@ -59,8 +59,7 @@ MonoBehaviour:
     capabilityUnlockIds: []
     futureInteractionMetadata: 
   abilityUnlocks:
-  - ability: {fileID: 0}
-    futureAbilityOrActionId: ability.restore-health
+  - ability: {fileID: 11400000, guid: 905f1237ab314a1e82bec294e8d4a55e, type: 2}
     requiredGrade: 0
     sourceIdentity: skill.healing-magic.unlock.restore-health
     alphaAvailable: 1

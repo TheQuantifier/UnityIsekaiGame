@@ -14,7 +14,7 @@ namespace UnityIsekaiGame.Progression
         [SerializeField, TextArea] private string description;
         [SerializeField] private CategoryDefinition primaryCategory;
         [SerializeField] private TagDefinition[] tags;
-        [SerializeField] private StatModifierDefinition[] statModifiers;
+        [SerializeField] private CalculatedStatModifierDefinition[] calculatedStatModifiers;
         [SerializeField] private ResistanceModifierDefinition[] resistanceModifiers;
         [SerializeField] private ProgressionAbilityReference[] grantedAbilities;
         [SerializeField] private ProgressionAbilityReference[] blockedAbilities;
@@ -43,7 +43,7 @@ namespace UnityIsekaiGame.Progression
         public CategoryDefinition PrimaryCategory => primaryCategory;
         public CategoryDomain ClassificationDomain => CategoryDomain.Role;
         public IReadOnlyList<TagDefinition> Tags => tags ?? System.Array.Empty<TagDefinition>();
-        public IReadOnlyList<StatModifierDefinition> StatModifiers => statModifiers ?? System.Array.Empty<StatModifierDefinition>();
+        public IReadOnlyList<CalculatedStatModifierDefinition> CalculatedStatModifiers => calculatedStatModifiers ?? System.Array.Empty<CalculatedStatModifierDefinition>();
         public IReadOnlyList<ResistanceModifierDefinition> ResistanceModifiers => resistanceModifiers ?? System.Array.Empty<ResistanceModifierDefinition>();
         public IReadOnlyList<ProgressionAbilityReference> GrantedAbilities => grantedAbilities ?? System.Array.Empty<ProgressionAbilityReference>();
         public IReadOnlyList<ProgressionAbilityReference> BlockedAbilities => blockedAbilities ?? System.Array.Empty<ProgressionAbilityReference>();
@@ -102,14 +102,16 @@ namespace UnityIsekaiGame.Progression
                 }
             }
 
-            ValidateStatModifiers("Role", DisplayName, StatModifiers, report);
+            ValidateStatModifiers("Role", DisplayName, CalculatedStatModifiers, definitionsById, report);
+            ValidateAbilityReferences("Role", DisplayName, "grant", GrantedAbilities, definitionsById, report);
+            ValidateAbilityReferences("Role", DisplayName, "block", BlockedAbilities, definitionsById, report);
             ValidateResistanceModifiers("Role", DisplayName, ResistanceModifiers, definitionsById, report);
         }
 
-        internal static void ValidateStatModifiers(string ownerType, string ownerName, IReadOnlyList<StatModifierDefinition> modifiers, DefinitionValidationReport report)
+        internal static void ValidateStatModifiers(string ownerType, string ownerName, IReadOnlyList<CalculatedStatModifierDefinition> modifiers, IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
             HashSet<string> keys = new HashSet<string>();
-            foreach (StatModifierDefinition modifier in modifiers)
+            foreach (CalculatedStatModifierDefinition modifier in modifiers)
             {
                 if (modifier == null || !modifier.IsValid)
                 {
@@ -117,7 +119,12 @@ namespace UnityIsekaiGame.Progression
                     continue;
                 }
 
-                string key = $"{modifier.StatType}:{modifier.Operation}:{modifier.Priority}";
+                if (definitionsById == null || !definitionsById.TryGetValue(modifier.Stat.Id, out IGameDefinition registeredStat) || !ReferenceEquals(registeredStat, modifier.Stat))
+                {
+                    report.AddError($"{ownerType} '{ownerName}' references calculated stat '{modifier.Stat.Id}' outside the configured catalog.");
+                }
+
+                string key = $"{modifier.Stat.Id}:{modifier.Operation}:{modifier.Priority}";
                 if (!keys.Add(key))
                 {
                     report.AddError($"{ownerType} '{ownerName}' has duplicate stat modifier key '{key}'.");
@@ -145,6 +152,19 @@ namespace UnityIsekaiGame.Progression
                 if (!keys.Add(key))
                 {
                     report.AddError($"{ownerType} '{ownerName}' has duplicate resistance modifier key '{key}'.");
+                }
+            }
+        }
+
+        internal static void ValidateAbilityReferences(string ownerType, string ownerName, string operation, IReadOnlyList<ProgressionAbilityReference> references, IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
+        {
+            HashSet<string> abilityIds = new HashSet<string>();
+            foreach (ProgressionAbilityReference abilityReference in references)
+            {
+                UnityIsekaiGame.Abilities.AbilityDefinition ability = abilityReference?.Ability;
+                if (ability == null || !abilityIds.Add(ability.Id) || definitionsById == null || !definitionsById.TryGetValue(ability.Id, out IGameDefinition registeredAbility) || !ReferenceEquals(registeredAbility, ability))
+                {
+                    report.AddError($"{ownerType} '{ownerName}' has a missing, duplicate, or unregistered ability {operation}.");
                 }
             }
         }

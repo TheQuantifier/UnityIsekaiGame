@@ -26,7 +26,7 @@ MonoBehaviour:
   conflictGroupIds: []
   incompatibleTraits: []
   calculatedStatContributions: []
-  abilityActionGrants: []
+  abilityGrants: []
   booleanCapabilityGrants:
   - entryId: poison-immunity
     capability: {fileID: 11400000, guid: 55d50000000000000000000000000055, type: 2}

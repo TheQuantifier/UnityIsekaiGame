@@ -26,7 +26,7 @@ MonoBehaviour:
   conflictGroupIds: [trait.conflict.body-form]
   incompatibleTraits: []
   calculatedStatContributions: []
-  abilityActionGrants: []
+  abilityGrants: []
   booleanCapabilityGrants: []
   numericCapabilityGrants: []
   resistanceGrants: []

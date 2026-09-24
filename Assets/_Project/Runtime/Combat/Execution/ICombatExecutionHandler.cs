@@ -103,7 +103,7 @@ namespace UnityIsekaiGame.Combat.Execution
 
         public CombatExecutionHandlerResult Preview(CombatExecutionDefinition definition, object payload, string transactionId)
         {
-            AbilityExecutionContext context = (AbilityExecutionContext)payload;
+            AbilityExecutionContext context = ((AbilityExecutionContext)payload).WithExecutionId(transactionId);
             AbilityExecutionResult result = Validate(context, definition);
             return result.Succeeded
                 ? CombatExecutionHandlerResult.Success(result.Message, result)
@@ -112,7 +112,7 @@ namespace UnityIsekaiGame.Combat.Execution
 
         public CombatExecutionHandlerResult Execute(CombatExecutionDefinition definition, object payload, string transactionId)
         {
-            AbilityExecutionContext context = (AbilityExecutionContext)payload;
+            AbilityExecutionContext context = ((AbilityExecutionContext)payload).WithExecutionId(transactionId);
             AbilityExecutionResult validation = Validate(context, definition);
             if (!validation.Succeeded)
             {
@@ -125,7 +125,7 @@ namespace UnityIsekaiGame.Combat.Execution
                 UnityEngine.Vector3 spawnPosition = context.DeliveryOrigin.TransformPoint(delivery.CastPointOffset);
                 UnityEngine.Quaternion spawnRotation = UnityEngine.Quaternion.LookRotation(context.Direction, UnityEngine.Vector3.up);
                 UnityIsekaiGame.Magic.SpellProjectile projectile = UnityEngine.Object.Instantiate(delivery.ProjectilePrefab, spawnPosition, spawnRotation);
-                projectile.Initialize(context.Source, context.Direction, delivery.ProjectileSpeed, context.Ability, delivery.MaximumLifetime);
+                projectile.Initialize(context.Source, context.Direction, delivery.ProjectileSpeed, context.Ability, delivery.MaximumLifetime, transactionId);
                 context.ProjectileSpawned?.Invoke(projectile);
                 return CombatExecutionHandlerResult.Success($"Cast {context.Ability.DisplayName}.", AbilityExecutionResult.Success($"Cast {context.Ability.DisplayName}."));
             }

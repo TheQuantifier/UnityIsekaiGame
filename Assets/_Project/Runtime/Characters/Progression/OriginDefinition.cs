@@ -16,7 +16,7 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private OriginFamilyDefinition family;
         [SerializeField, Min(0f)] private float selectionWeight = 1f;
         [SerializeField] private bool enabledForAlpha = true;
-        [SerializeField] private PermanentStatGrantDefinition[] startingStatGrants;
+        [SerializeField] private PermanentAttributeGrantDefinition[] startingAttributeGrants;
         [SerializeField] private SkillGrantDefinition[] startingSkillGrants;
         [SerializeField] private BirthGiftDefinition[] influencedGiftPool;
         [SerializeField] private BirthGiftWeightModifierDefinition[] giftWeightModifiers;
@@ -40,7 +40,7 @@ namespace UnityIsekaiGame.Progression
         public OriginFamilyDefinition Family => family;
         public float SelectionWeight => Mathf.Max(0f, selectionWeight);
         public bool EnabledForAlpha => enabledForAlpha;
-        public IReadOnlyList<PermanentStatGrantDefinition> StartingStatGrants => startingStatGrants ?? System.Array.Empty<PermanentStatGrantDefinition>();
+        public IReadOnlyList<PermanentAttributeGrantDefinition> StartingAttributeGrants => startingAttributeGrants ?? System.Array.Empty<PermanentAttributeGrantDefinition>();
         public IReadOnlyList<SkillGrantDefinition> StartingSkillGrants => startingSkillGrants ?? System.Array.Empty<SkillGrantDefinition>();
         public IReadOnlyList<BirthGiftDefinition> InfluencedGiftPool => influencedGiftPool ?? System.Array.Empty<BirthGiftDefinition>();
         public IReadOnlyList<BirthGiftWeightModifierDefinition> GiftWeightModifiers => giftWeightModifiers ?? System.Array.Empty<BirthGiftWeightModifierDefinition>();
@@ -81,17 +81,22 @@ namespace UnityIsekaiGame.Progression
                 report.AddError($"Origin '{DisplayName}' is alpha-enabled but has no selection weight.");
             }
 
-            foreach (PermanentStatGrantDefinition grant in StartingStatGrants)
+            foreach (PermanentAttributeGrantDefinition grant in StartingAttributeGrants)
             {
                 if (grant == null || !grant.IsValid)
                 {
-                    report.AddError($"Origin '{DisplayName}' has an invalid starting stat grant.");
+                    report.AddError($"Origin '{DisplayName}' has an invalid starting attribute grant.");
                     continue;
                 }
 
-                if (grant.Value > 5f)
+                if (definitionsById == null || !definitionsById.TryGetValue(grant.Attribute.Id, out IGameDefinition registeredAttribute) || !ReferenceEquals(registeredAttribute, grant.Attribute))
                 {
-                    report.AddWarning($"Origin '{DisplayName}' grants {grant.Value:0.##} {grant.StatType}; alpha origin grants should stay small.");
+                    report.AddError($"Origin '{DisplayName}' references attribute '{grant.Attribute.Id}', which is not in the configured catalog.");
+                }
+
+                if (grant.Amount > 5f)
+                {
+                    report.AddWarning($"Origin '{DisplayName}' grants {grant.Amount:0.##} {grant.Attribute.DisplayName}; alpha origin grants should stay small.");
                 }
             }
 

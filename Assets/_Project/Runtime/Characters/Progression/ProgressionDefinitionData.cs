@@ -11,14 +11,14 @@ using UnityIsekaiGame.Stats;
 namespace UnityIsekaiGame.Progression
 {
     [Serializable]
-    public sealed class PermanentStatGrantDefinition
+    public sealed class PermanentAttributeGrantDefinition
     {
-        [SerializeField] private StatType statType;
-        [SerializeField, Min(0f)] private float value;
+        [SerializeField] private AttributeDefinition attribute;
+        [SerializeField, Min(0f)] private float amount;
 
-        public StatType StatType => statType;
-        public float Value => Mathf.Max(0f, value);
-        public bool IsValid => value >= 0f && !float.IsNaN(value) && !float.IsInfinity(value);
+        public AttributeDefinition Attribute => attribute;
+        public float Amount => Mathf.Max(0f, amount);
+        public bool IsValid => attribute != null && amount > 0f && !float.IsNaN(amount) && !float.IsInfinity(amount);
     }
 
     [Serializable]
@@ -88,11 +88,9 @@ namespace UnityIsekaiGame.Progression
     public sealed class ProgressionAbilityReference
     {
         [SerializeField] private AbilityDefinition ability;
-        [SerializeField] private string futureAbilityId;
 
         public AbilityDefinition Ability => ability;
-        public string FutureAbilityId => futureAbilityId ?? string.Empty;
-        public string AbilityId => ability == null ? FutureAbilityId : ability.Id;
+        public string AbilityId => ability == null ? string.Empty : ability.Id;
     }
 
     [Serializable]

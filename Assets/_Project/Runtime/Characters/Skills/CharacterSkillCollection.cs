@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Abilities;
 using UnityIsekaiGame.Magic;
 using UnityIsekaiGame.Stats;
 
@@ -12,6 +13,7 @@ namespace UnityIsekaiGame.Skills
     {
         [SerializeField] private CalculatedStatCollection calculatedStats;
         [SerializeField] private PlayerSpellLoadout spellLoadout;
+        [SerializeField] private CharacterAbilityCollection abilities;
         [SerializeField] private List<SkillDefinition> fallbackDefinitions = new List<SkillDefinition>();
 
         private readonly Dictionary<string, SkillDefinition> definitionsById = new Dictionary<string, SkillDefinition>(StringComparer.Ordinal);
@@ -43,6 +45,8 @@ namespace UnityIsekaiGame.Skills
                 spellLoadout = GetComponent<PlayerSpellLoadout>();
             }
 
+            abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
+
             if (!IsConfigured && fallbackDefinitions.Count > 0)
             {
                 Configure(fallbackDefinitions, null, calculatedStats, spellLoadout);
@@ -64,6 +68,7 @@ namespace UnityIsekaiGame.Skills
             registry = definitionRegistry ?? registry;
             calculatedStats = statCollection == null ? calculatedStats == null ? GetComponent<CalculatedStatCollection>() : calculatedStats : statCollection;
             spellLoadout = loadout == null ? spellLoadout == null ? GetComponent<PlayerSpellLoadout>() : spellLoadout : loadout;
+            abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
             definitionsById.Clear();
 
             foreach (SkillDefinition definition in definitions ?? Enumerable.Empty<SkillDefinition>())
@@ -223,14 +228,13 @@ namespace UnityIsekaiGame.Skills
         private SkillOperationResult RebuildSkillEffects(bool restoring, bool notify)
         {
             EnsureConfiguredFromFallback();
-            if (calculatedStats != null)
+            foreach (RuntimeSkillRecord record in learnedSkills)
             {
-                foreach (RuntimeSkillRecord record in learnedSkills)
+                for (int gradeIndex = SkillGradeUtility.MinimumIndex; gradeIndex <= SkillGradeUtility.MaximumIndex; gradeIndex++)
                 {
-                    for (int gradeIndex = SkillGradeUtility.MinimumIndex; gradeIndex <= SkillGradeUtility.MaximumIndex; gradeIndex++)
-                    {
-                        calculatedStats.RemoveContributionsFromSource(CalculatedStatContributionSourceCategory.Skill, GradeSourceId(record.skillDefinitionId, (SkillGrade)gradeIndex), restoring);
-                    }
+                    string sourceId = GradeSourceId(record.skillDefinitionId, (SkillGrade)gradeIndex);
+                    calculatedStats?.RemoveContributionsFromSource(CalculatedStatContributionSourceCategory.Skill, sourceId, restoring);
+                    abilities?.RemoveSource(AbilityGrantSourceCategory.Skill, sourceId, restoring);
                 }
             }
 
@@ -239,7 +243,7 @@ namespace UnityIsekaiGame.Skills
                 foreach (RuntimeSkillRecord record in learnedSkills)
                 {
                     record.appliedGradeSourceIds.Clear();
-                    record.unlockedAbilityOrActionIds.Clear();
+                    record.unlockedAbilityIds.Clear();
                     record.unlockedCapabilityIds.Clear();
                     if (definitionsById.TryGetValue(record.skillDefinitionId, out SkillDefinition definition))
                     {
@@ -263,14 +267,13 @@ namespace UnityIsekaiGame.Skills
                 return SkillOperationResult.Failure("ConfirmationRequired", "Repeat the destructive action to clear Skill development state.");
             }
 
-            if (calculatedStats != null)
+            foreach (RuntimeSkillRecord record in learnedSkills)
             {
-                foreach (RuntimeSkillRecord record in learnedSkills)
+                for (int gradeIndex = SkillGradeUtility.MinimumIndex; gradeIndex <= SkillGradeUtility.MaximumIndex; gradeIndex++)
                 {
-                    for (int gradeIndex = SkillGradeUtility.MinimumIndex; gradeIndex <= SkillGradeUtility.MaximumIndex; gradeIndex++)
-                    {
-                        calculatedStats.RemoveContributionsFromSource(CalculatedStatContributionSourceCategory.Skill, GradeSourceId(record.skillDefinitionId, (SkillGrade)gradeIndex));
-                    }
+                    string sourceId = GradeSourceId(record.skillDefinitionId, (SkillGrade)gradeIndex);
+                    calculatedStats?.RemoveContributionsFromSource(CalculatedStatContributionSourceCategory.Skill, sourceId);
+                    abilities?.RemoveSource(AbilityGrantSourceCategory.Skill, sourceId);
                 }
             }
 
@@ -654,21 +657,23 @@ namespace UnityIsekaiGame.Skills
         {
             foreach (SkillAbilityUnlockDefinition unlock in unlocks ?? Array.Empty<SkillAbilityUnlockDefinition>())
             {
-                if (unlock == null || !unlock.AlphaAvailable || unlock.RequiredGrade > reachedGrade || string.IsNullOrWhiteSpace(unlock.AbilityOrActionId))
+                if (unlock?.Ability == null || !unlock.AlphaAvailable || unlock.RequiredGrade > reachedGrade)
                 {
                     continue;
                 }
 
-                if (!record.unlockedAbilityOrActionIds.Contains(unlock.AbilityOrActionId))
+                if (!record.unlockedAbilityIds.Contains(unlock.AbilityId))
                 {
-                    record.unlockedAbilityOrActionIds.Add(unlock.AbilityOrActionId);
+                    record.unlockedAbilityIds.Add(unlock.AbilityId);
                 }
+
+                abilities?.Grant(unlock.Ability, AbilityGrantSourceCategory.Skill, sourceId);
 
                 if (spellLoadout != null && registry != null)
                 {
                     SpellDefinition spell = registry.DefinitionsById.Values
                         .OfType<SpellDefinition>()
-                        .FirstOrDefault(candidate => candidate.Ability != null && string.Equals(candidate.Ability.Id, unlock.AbilityOrActionId, StringComparison.Ordinal));
+                        .FirstOrDefault(candidate => candidate.Ability != null && string.Equals(candidate.Ability.Id, unlock.AbilityId, StringComparison.Ordinal));
                     if (spell != null)
                     {
                         spellLoadout.LearnSpell(spell);
@@ -855,7 +860,7 @@ namespace UnityIsekaiGame.Skills
                     lastUseAtPlaytimeSeconds = record.lastUseAtPlaytimeSeconds,
                     promotionHistory = record.promotionHistory == null ? new List<SkillPromotionRecord>() : record.promotionHistory.Select(ClonePromotion).ToList(),
                     appliedGradeSourceIds = record.appliedGradeSourceIds == null ? new List<string>() : new List<string>(record.appliedGradeSourceIds),
-                    unlockedAbilityOrActionIds = record.unlockedAbilityOrActionIds == null ? new List<string>() : new List<string>(record.unlockedAbilityOrActionIds),
+                    unlockedAbilityIds = record.unlockedAbilityIds == null ? new List<string>() : new List<string>(record.unlockedAbilityIds),
                     unlockedCapabilityIds = record.unlockedCapabilityIds == null ? new List<string>() : new List<string>(record.unlockedCapabilityIds)
                 };
         }

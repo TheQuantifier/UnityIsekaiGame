@@ -22,9 +22,9 @@ MonoBehaviour:
   family: {fileID: 11400000, guid: eaf0fe8924f34463b21cf0575130ce6d, type: 2}
   selectionWeight: 1
   enabledForAlpha: 1
-  startingStatGrants:
-  - statType: 3
-    value: 3
+  startingAttributeGrants:
+  - attribute: {fileID: 11400000, guid: a1000000000000000000000000000052, type: 2}
+    amount: 3
   influencedGiftPool:
   - {fileID: 11400000, guid: 9886ab69802e43ebbaa24675354f2a01, type: 2}
   - {fileID: 11400000, guid: a7010ad03cea4e54b53500f538022681, type: 2}

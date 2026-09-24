@@ -450,6 +450,12 @@ namespace UnityIsekaiGame.Combat.Execution
                 return CombatExecutionResult.Failure(!execute, CombatExecutionResultCode.FailedUnderlyingAction, handlerPreview.Message, request.TransactionId, record.Definition, actor.ActorId, actor.BodyId, record.ToSnapshot(record.Phase, record.CommittedCosts), executionCosts, GetCooldownState(actor.ActorId, record.Definition.ResolveCooldownKey()), handlerPreview.PayloadResult);
             }
 
+            List<CombatExecutionCostPreview> successCostPreview = CommitCostsPreviewOnly(record.Definition, actor.Resources, CombatExecutionCostCommitPoint.OnSuccessfulExecution);
+            if (!AllCostsSucceeded(successCostPreview, out string successCostCode, out string successCostMessage))
+            {
+                return CombatExecutionResult.Failure(!execute, successCostCode, successCostMessage, request.TransactionId, record.Definition, actor.ActorId, actor.BodyId, record.ToSnapshot(record.Phase, record.CommittedCosts), executionCosts.Concat(successCostPreview).ToList(), GetCooldownState(actor.ActorId, record.Definition.ResolveCooldownKey()));
+            }
+
             if (!execute)
             {
                 CombatExecutionStateSnapshot previewState = record.ToSnapshot(CombatExecutionPhase.ReadyToCommit, record.CommittedCosts);
@@ -464,8 +470,16 @@ namespace UnityIsekaiGame.Combat.Execution
 
             record.CommittedCosts.AddRange(committedCosts);
             CombatExecutionCooldownSnapshot cooldown = GetCooldownState(actor.ActorId, record.Definition.ResolveCooldownKey());
+            RuntimeCooldownRecord consumedCooldown = null;
+            int previousCharges = 0;
+            float previousNextChargeReadyAt = 0f;
+            float previousCooldownReadyAt = 0f;
             if (record.Definition.CooldownStartPoint == CombatExecutionCooldownStartPoint.OnExecution)
             {
+                consumedCooldown = GetOrCreateCooldown(actor.ActorId, record.Definition, request.Now);
+                previousCharges = consumedCooldown.CurrentCharges;
+                previousNextChargeReadyAt = consumedCooldown.NextChargeReadyAt;
+                previousCooldownReadyAt = consumedCooldown.CooldownReadyAt;
                 ConsumeCooldownCharge(actor.ActorId, record.Definition, request.Now);
                 cooldown = GetCooldownState(actor.ActorId, record.Definition.ResolveCooldownKey());
             }
@@ -474,6 +488,13 @@ namespace UnityIsekaiGame.Combat.Execution
             if (!handlerResult.Succeeded)
             {
                 TryRefund(record, committedCosts.Where(cost => cost.ResourceResult != null).ToList(), $"{request.TransactionId}.refund", out _);
+                if (consumedCooldown != null)
+                {
+                    consumedCooldown.CurrentCharges = previousCharges;
+                    consumedCooldown.NextChargeReadyAt = previousNextChargeReadyAt;
+                    consumedCooldown.CooldownReadyAt = previousCooldownReadyAt;
+                    cooldown = consumedCooldown.ToSnapshot(actor.ActorId, record.Definition.ResolveCooldownKey());
+                }
                 return CombatExecutionResult.Failure(false, CombatExecutionResultCode.FailedUnderlyingAction, handlerResult.Message, request.TransactionId, record.Definition, actor.ActorId, actor.BodyId, record.ToSnapshot(record.Phase, record.CommittedCosts), committedCosts, cooldown, handlerResult.PayloadResult);
             }
 

@@ -24,8 +24,12 @@ MonoBehaviour:
   range: 0
   targetingMode: 0
   allowSelfTarget: 1
+  allowInactiveTargets: 0
   requiresLineOfSight: 0
   targetingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  obstructionMask:
     serializedVersion: 2
     m_Bits: 4294967295
   targetingTriggerInteraction: 1

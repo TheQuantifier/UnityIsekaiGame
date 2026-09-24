@@ -78,15 +78,13 @@ namespace UnityIsekaiGame.Skills
     public sealed class SkillAbilityUnlockDefinition
     {
         [SerializeField] private AbilityDefinition ability;
-        [SerializeField] private string futureAbilityOrActionId;
         [SerializeField] private SkillGrade requiredGrade;
         [SerializeField] private string sourceIdentity;
         [SerializeField] private bool alphaAvailable = true;
         [SerializeField] private string futureMetadata;
 
         public AbilityDefinition Ability => ability;
-        public string FutureAbilityOrActionId => futureAbilityOrActionId ?? string.Empty;
-        public string AbilityOrActionId => ability == null ? FutureAbilityOrActionId : ability.Id;
+        public string AbilityId => ability == null ? string.Empty : ability.Id;
         public SkillGrade RequiredGrade => SkillGradeUtility.Clamp(requiredGrade);
         public string SourceIdentity => sourceIdentity ?? string.Empty;
         public bool AlphaAvailable => alphaAvailable;

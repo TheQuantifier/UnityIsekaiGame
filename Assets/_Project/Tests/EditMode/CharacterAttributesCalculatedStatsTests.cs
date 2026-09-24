@@ -295,10 +295,10 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void RuntimeStatModifierAdapter_FeedsCanonicalCalculatedStats()
+        public void ActorStats_AcceptsCanonicalCalculatedStatContribution()
         {
             DefinitionRegistry registry = LoadRegistry();
-            GameObject owner = new GameObject("Legacy Bridge Fixture");
+            GameObject owner = new GameObject("Calculated Stat Fixture");
             try
             {
                 owner.AddComponent(RequiredType("UnityIsekaiGame.Stats.CharacterAttributes"));
@@ -307,12 +307,12 @@ namespace UnityIsekaiGame.Tests
                 Invoke(actorStats, "ConfigureDerivedStats", registry);
                 float initialPower = GetProperty<float>(actorStats, "AttackPower");
 
-                object modifier = CreateRuntimeStatModifier("AttackPower", "FlatAdd", 5f, "Equipment", "test.equipment.weapon");
-                Assert.That(Invoke<bool>(actorStats, "AddModifier", modifier), Is.True);
+                object modifier = CreateCalculatedContribution("calculated-stat.physical-power", "test.equipment.weapon", 5f, "Equipment");
+                Assert.That(Invoke<bool>(actorStats, "AddCalculatedStatContribution", modifier), Is.True);
                 Assert.That(GetProperty<float>(actorStats, "AttackPower"), Is.EqualTo(initialPower + 5f));
 
                 object source = CreateStatModifierSource("Equipment", "test.equipment.weapon");
-                Assert.That(Invoke<bool>(actorStats, "RemoveModifiersFromSource", source), Is.True);
+                Assert.That(Invoke<bool>(actorStats, "RemoveCalculatedStatContributions", source), Is.True);
                 Assert.That(GetProperty<float>(actorStats, "AttackPower"), Is.EqualTo(initialPower));
             }
             finally
@@ -372,28 +372,13 @@ namespace UnityIsekaiGame.Tests
             return contribution;
         }
 
-        private static object CreateRuntimeStatModifier(string statTypeName, string operationName, float value, string sourceTypeName, string sourceId)
-        {
-            Type modifierType = RequiredType("UnityIsekaiGame.Stats.RuntimeStatModifier");
-            Type statType = RequiredType("UnityIsekaiGame.Stats.StatType");
-            Type operationType = RequiredType("UnityIsekaiGame.Stats.StatModifierOperation");
-            object source = CreateStatModifierSource(sourceTypeName, sourceId);
-            return Activator.CreateInstance(
-                modifierType,
-                Enum.Parse(statType, statTypeName),
-                Enum.Parse(operationType, operationName),
-                value,
-                source,
-                0);
-        }
-
-        private static object CreateCalculatedContribution(string statId, string sourceId, float magnitude)
+        private static object CreateCalculatedContribution(string statId, string sourceId, float magnitude, string sourceCategory = "Development")
         {
             object contribution = Activator.CreateInstance(RequiredType("UnityIsekaiGame.Stats.RuntimeCalculatedStatContribution"));
             SetField(contribution, "contributionId", $"{sourceId}.contribution");
             SetField(contribution, "statId", statId);
             SetField(contribution, "sourceId", sourceId);
-            SetField(contribution, "sourceCategory", (int)Enum.Parse(RequiredType("UnityIsekaiGame.Stats.CalculatedStatContributionSourceCategory"), "Development"));
+            SetField(contribution, "sourceCategory", (int)Enum.Parse(RequiredType("UnityIsekaiGame.Stats.CalculatedStatContributionSourceCategory"), sourceCategory));
             SetField(contribution, "kind", (int)Enum.Parse(RequiredType("UnityIsekaiGame.Stats.CalculatedStatContributionKind"), "Flat"));
             SetField(contribution, "direction", (int)Enum.Parse(RequiredType("UnityIsekaiGame.Stats.CalculatedStatContributionDirection"), "Improve"));
             SetField(contribution, "magnitude", magnitude);

@@ -19,7 +19,8 @@ namespace UnityIsekaiGame.Abilities
             ItemDefinition sourceItem = null,
             string sourceItemInstanceId = "",
             float magnitudeMultiplier = 1f,
-            Action<UnityIsekaiGame.Magic.SpellProjectile> projectileSpawned = null)
+            Action<UnityIsekaiGame.Magic.SpellProjectile> projectileSpawned = null,
+            string executionId = "")
         {
             Ability = ability;
             Source = source;
@@ -33,6 +34,9 @@ namespace UnityIsekaiGame.Abilities
             SourceItemInstanceId = sourceItemInstanceId ?? string.Empty;
             MagnitudeMultiplier = magnitudeMultiplier;
             ProjectileSpawned = projectileSpawned;
+            ExecutionId = executionId ?? string.Empty;
+            SourceActorId = AbilityActorIdentityUtility.ResolveActorId(source);
+            TargetActorId = AbilityActorIdentityUtility.ResolveActorId(target);
         }
 
         public AbilityDefinition Ability { get; }
@@ -47,6 +51,14 @@ namespace UnityIsekaiGame.Abilities
         public string SourceItemInstanceId { get; }
         public float MagnitudeMultiplier { get; }
         public Action<UnityIsekaiGame.Magic.SpellProjectile> ProjectileSpawned { get; }
+        public string ExecutionId { get; }
+        public string SourceActorId { get; }
+        public string TargetActorId { get; }
+
+        public AbilityExecutionContext WithExecutionId(string executionId)
+        {
+            return new AbilityExecutionContext(Ability, Source, Target, DeliveryOrigin, SourcePosition, TargetPosition, Direction, GameplayBlocked, SourceItem, SourceItemInstanceId, MagnitudeMultiplier, ProjectileSpawned, executionId);
+        }
 
         public EffectExecutionContext ToEffectContext(GameObject targetOverride = null, Vector3 targetPositionOverride = default)
         {
@@ -61,7 +73,10 @@ namespace UnityIsekaiGame.Abilities
                 Direction,
                 SourceItem,
                 SourceItemInstanceId,
-                MagnitudeMultiplier);
+                MagnitudeMultiplier,
+                ExecutionId,
+                SourceActorId,
+                AbilityActorIdentityUtility.ResolveActorId(resolvedTarget));
         }
     }
 }

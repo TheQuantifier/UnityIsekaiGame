@@ -1239,9 +1239,9 @@ namespace UnityIsekaiGame.Development.Automation
             ItemQualityAffixOperationResult applied = quality.ApplyAffix(itemRuntime, compositions, registry, item, keen, seed: "modifier");
             AutomationStatReceiver stats = new AutomationStatReceiver(10f);
             ItemQualityAffixOperationResult first = quality.ApplyActiveAffixModifiers(item, registry, stats, out IReadOnlyList<StatModifierSource> sources);
-            float afterApply = stats.GetStatValue(StatType.AttackPower);
-            foreach (StatModifierSource source in sources) stats.RemoveModifiersFromSource(source);
-            float afterRemove = stats.GetStatValue(StatType.AttackPower);
+            float afterApply = stats.GetCalculatedStatValue(CalculatedStatIds.PhysicalPower);
+            foreach (StatModifierSource source in sources) stats.RemoveCalculatedStatContributions(source);
+            float afterRemove = stats.GetCalculatedStatValue(CalculatedStatIds.PhysicalPower);
 
             bool valid = applied.Succeeded && first.Succeeded && Math.Abs(afterApply - 12f) < 0.001f && Math.Abs(afterRemove - 10f) < 0.001f;
             return valid
@@ -2312,12 +2312,14 @@ namespace UnityIsekaiGame.Development.Automation
         private static DefinitionRegistry CreateQualityRegistry(TestLabAutomationContext context, out string failure, out QualityTierDefinition masterwork, out ItemAffixDefinition keen)
         {
             DefinitionRegistry compositionRegistry = CreateCompositionRegistry(context, includeRule: false, out failure, includeComposite: true);
+            CalculatedStatDefinition physicalPower = null;
+            compositionRegistry?.TryGet(CalculatedStatIds.PhysicalPower, out physicalPower);
             masterwork = QualityTier("quality.masterwork", "Masterwork", 0.85f, 0.98f, 80);
             QualityTierDefinition common = QualityTier("quality.common", "Common", 0.35f, 0.65f, 30);
             QualityTierDefinition fine = QualityTier("quality.fine", "Fine", 0.65f, 0.85f, 60);
             QualityTierDefinition legendary = QualityTier("quality.legendary-foundation", "Legendary Quality Foundation", 0.98f, 1f, 100);
-            keen = Affix("affix.prototype.keen-edge", "Keen Edge", ItemAffixClassification.Prefix, "affix-tier.prototype.keen.fine", 0.55f, 1f, 1f, 1f, 0.08f, 2f, exclusiveGroup: "affix-group.edge-sharpness");
-            ItemAffixDefinition precise = Affix("affix.prototype.precise", "Precise", ItemAffixClassification.Suffix, "affix-tier.prototype.precise.fine", 0.45f, 1f, 0.5f, 0.5f, 0.04f, 1f, exclusiveGroup: "affix-group.precision");
+            keen = Affix("affix.prototype.keen-edge", "Keen Edge", ItemAffixClassification.Prefix, "affix-tier.prototype.keen.fine", 0.55f, 1f, 1f, 1f, 0.08f, 2f, physicalPower, exclusiveGroup: "affix-group.edge-sharpness");
+            ItemAffixDefinition precise = Affix("affix.prototype.precise", "Precise", ItemAffixClassification.Suffix, "affix-tier.prototype.precise.fine", 0.45f, 1f, 0.5f, 0.5f, 0.04f, 1f, physicalPower, exclusiveGroup: "affix-group.precision");
 
             List<IGameDefinition> definitions = compositionRegistry?.DefinitionsById.Values.ToList() ?? new List<IGameDefinition>();
             definitions.RemoveAll(definition => definition is QualityTierDefinition || definition is ItemAffixDefinition);
@@ -2383,7 +2385,7 @@ namespace UnityIsekaiGame.Development.Automation
             return tier;
         }
 
-        private static ItemAffixDefinition Affix(string id, string name, ItemAffixClassification classification, string tierId, float minQuality, float maxQuality, float minValue, float maxValue, float rarityContribution, float modifierValue, string exclusiveGroup)
+        private static ItemAffixDefinition Affix(string id, string name, ItemAffixClassification classification, string tierId, float minQuality, float maxQuality, float minValue, float maxValue, float rarityContribution, float modifierValue, CalculatedStatDefinition calculatedStat, string exclusiveGroup)
         {
             ItemAffixDefinition definition = UnityEngine.ScriptableObject.CreateInstance<ItemAffixDefinition>();
             SetPrivate(definition, "affixId", id);
@@ -2407,16 +2409,16 @@ namespace UnityIsekaiGame.Development.Automation
                     valueMinimum = minValue,
                     valueMaximum = maxValue,
                     rarityContribution = rarityContribution,
-                    modifierTemplates = new[] { StatModifier(StatType.AttackPower, StatModifierOperation.FlatAdd, modifierValue) }
+                    modifierTemplates = new[] { StatModifier(calculatedStat, StatModifierOperation.FlatAdd, modifierValue) }
                 }
             });
             return definition;
         }
 
-        private static StatModifierDefinition StatModifier(StatType statType, StatModifierOperation operation, float value)
+        private static CalculatedStatModifierDefinition StatModifier(CalculatedStatDefinition stat, StatModifierOperation operation, float value)
         {
-            StatModifierDefinition modifier = new StatModifierDefinition();
-            SetPrivate(modifier, "statType", statType);
+            CalculatedStatModifierDefinition modifier = new CalculatedStatModifierDefinition();
+            SetPrivate(modifier, "stat", stat);
             SetPrivate(modifier, "operation", operation);
             SetPrivate(modifier, "value", value);
             SetPrivate(modifier, "scaleWithStacks", false);
@@ -2840,28 +2842,28 @@ namespace UnityIsekaiGame.Development.Automation
             registry.TryRegister(suite, out _);
         }
 
-        private sealed class AutomationStatReceiver : IRuntimeStatReceiver
+        private sealed class AutomationStatReceiver : IRuntimeCalculatedStatReceiver
         {
             private readonly float baseAttackPower;
-            private readonly Dictionary<StatModifierSource, List<RuntimeStatModifier>> modifiers = new Dictionary<StatModifierSource, List<RuntimeStatModifier>>();
+            private readonly Dictionary<string, List<RuntimeCalculatedStatContribution>> modifiers = new Dictionary<string, List<RuntimeCalculatedStatContribution>>(StringComparer.Ordinal);
 
             public AutomationStatReceiver(float baseAttackPower) => this.baseAttackPower = baseAttackPower;
-            public bool HasStat(StatType statType) => statType == StatType.AttackPower;
-            public float GetStatValue(StatType statType) => statType == StatType.AttackPower
-                ? baseAttackPower + modifiers.Values.SelectMany(value => value).Where(modifier => modifier.StatType == statType && modifier.Operation == StatModifierOperation.FlatAdd).Sum(modifier => modifier.Value)
+            public bool HasCalculatedStat(string statId) => statId == CalculatedStatIds.PhysicalPower;
+            public float GetCalculatedStatValue(string statId) => statId == CalculatedStatIds.PhysicalPower
+                ? baseAttackPower + modifiers.Values.SelectMany(value => value).Where(modifier => modifier.statId == statId && modifier.kind == (int)CalculatedStatContributionKind.Flat).Sum(modifier => modifier.direction == (int)CalculatedStatContributionDirection.Reduce ? -modifier.magnitude : modifier.magnitude)
                 : 0f;
-            public bool AddModifier(RuntimeStatModifier modifier)
+            public bool AddCalculatedStatContribution(RuntimeCalculatedStatContribution modifier)
             {
-                if (!modifier.IsValid || !HasStat(modifier.StatType)) return false;
-                if (!modifiers.TryGetValue(modifier.Source, out List<RuntimeStatModifier> values))
+                if (modifier == null || !HasCalculatedStat(modifier.statId) || string.IsNullOrWhiteSpace(modifier.sourceId)) return false;
+                if (!modifiers.TryGetValue(modifier.sourceId, out List<RuntimeCalculatedStatContribution> values))
                 {
-                    values = new List<RuntimeStatModifier>();
-                    modifiers.Add(modifier.Source, values);
+                    values = new List<RuntimeCalculatedStatContribution>();
+                    modifiers.Add(modifier.sourceId, values);
                 }
                 values.Add(modifier);
                 return true;
             }
-            public bool RemoveModifiersFromSource(StatModifierSource source) => modifiers.Remove(source);
+            public bool RemoveCalculatedStatContributions(StatModifierSource source) => modifiers.Remove(source.SourceId);
         }
     }
 }

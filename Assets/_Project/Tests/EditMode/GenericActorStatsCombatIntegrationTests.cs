@@ -50,8 +50,8 @@ namespace UnityIsekaiGame.Tests
             object first = CreateRuntimeModifier("AttackPower", "FlatAdd", 2f, source);
             object second = CreateRuntimeModifier("AttackPower", "FlatAdd", 3f, source);
 
-            Assert.That((bool)Invoke(stats, "AddModifier", first), Is.True);
-            Assert.That((bool)Invoke(stats, "AddModifier", second), Is.False);
+            Assert.That((bool)Invoke(stats, "AddCalculatedStatContribution", first), Is.True);
+            Assert.That((bool)Invoke(stats, "AddCalculatedStatContribution", second), Is.False);
             Assert.That(Get<float>(stats, "AttackPower"), Is.EqualTo(6f));
             Destroy(actor);
         }
@@ -85,7 +85,7 @@ namespace UnityIsekaiGame.Tests
 
             object source = CreateSource("StatusEffect", "status.max-health-test");
             object modifier = CreateRuntimeModifier("MaximumHealth", "FlatAdd", -16f, source);
-            Invoke(enemy.GetComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats")), "AddModifier", modifier);
+            Invoke(enemy.GetComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats")), "AddCalculatedStatContribution", modifier);
 
             Assert.That(Get<float>(health, "MaximumHealth"), Is.EqualTo(4f));
             Assert.That(Get<float>(health, "CurrentHealth"), Is.EqualTo(4f));
@@ -234,10 +234,10 @@ namespace UnityIsekaiGame.Tests
             serialized.FindProperty("stackingPolicy").enumValueIndex = EnumIndex("UnityIsekaiGame.StatusEffects.StatusStackingPolicy", "RefreshDuration");
             serialized.FindProperty("refreshPolicy").enumValueIndex = EnumIndex("UnityIsekaiGame.StatusEffects.StatusRefreshPolicy", "ResetToFullDuration");
             serialized.FindProperty("maximumStacks").intValue = 1;
-            SerializedProperty modifiers = serialized.FindProperty("statModifiers");
+            SerializedProperty modifiers = serialized.FindProperty("calculatedStatModifiers");
             modifiers.arraySize = 1;
             SerializedProperty modifier = modifiers.GetArrayElementAtIndex(0);
-            modifier.FindPropertyRelative("statType").enumValueIndex = EnumIndex("UnityIsekaiGame.Stats.StatType", stat);
+            modifier.FindPropertyRelative("stat").objectReferenceValue = GetCalculatedStat(stat);
             modifier.FindPropertyRelative("operation").enumValueIndex = EnumIndex("UnityIsekaiGame.Stats.StatModifierOperation", operation);
             modifier.FindPropertyRelative("value").floatValue = value;
             modifier.FindPropertyRelative("scaleWithStacks").boolValue = true;
@@ -279,6 +279,19 @@ namespace UnityIsekaiGame.Tests
             return damageType;
         }
 
+        private static CalculatedStatDefinition GetCalculatedStat(string legacyName)
+        {
+            string statId = legacyName switch
+            {
+                "MaximumHealth" => CalculatedStatIds.MaximumHealth,
+                "Defense" => CalculatedStatIds.PhysicalDefense,
+                _ => CalculatedStatIds.PhysicalPower
+            };
+            DefinitionRegistry registry = LoadCatalog().CreateRegistry();
+            Assert.That(registry.TryGet(statId, out CalculatedStatDefinition stat), Is.True, statId);
+            return stat;
+        }
+
         private static void SetCalculatedStat(CalculatedStatCollection stats, string statId, float desiredValue, string sourceId)
         {
             float delta = desiredValue - stats.GetValue(statId);
@@ -310,13 +323,17 @@ namespace UnityIsekaiGame.Tests
 
         private static object CreateRuntimeModifier(string stat, string operation, float value, object source)
         {
-            return Activator.CreateInstance(
-                RequiredType("UnityIsekaiGame.Stats.RuntimeStatModifier"),
-                EnumValue("UnityIsekaiGame.Stats.StatType", stat),
-                EnumValue("UnityIsekaiGame.Stats.StatModifierOperation", operation),
-                value,
-                source,
-                0);
+            StatModifierSource typedSource = (StatModifierSource)source;
+            return new RuntimeCalculatedStatContribution
+            {
+                contributionId = $"{typedSource.SourceId}.{stat}.{value}",
+                statId = stat == "MaximumHealth" ? CalculatedStatIds.MaximumHealth : CalculatedStatIds.PhysicalPower,
+                sourceId = typedSource.SourceId,
+                sourceCategory = (int)CalculatedStatContributionSourceUtility.Map(typedSource.SourceType),
+                kind = (int)CalculatedStatContributionKind.Flat,
+                direction = (int)(value >= 0f ? CalculatedStatContributionDirection.Improve : CalculatedStatContributionDirection.Reduce),
+                magnitude = Mathf.Abs(value)
+            };
         }
 
         private static object EnumValue(string fullName, string name)

@@ -24,10 +24,9 @@ MonoBehaviour:
   giftType: 0
   grantedAbility:
     ability: {fileID: 0}
-    futureAbilityId: 
-  permanentStatGrants:
-  - statType: 3
-    value: 3
+  permanentAttributeGrants:
+  - attribute: {fileID: 11400000, guid: a1000000000000000000000000000052, type: 2}
+    amount: 3
   futureGrowthAffinityEntries: []
   awakeningMode: 0
   requiredActivePlaytimeSeconds: 0

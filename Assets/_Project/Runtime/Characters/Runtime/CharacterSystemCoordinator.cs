@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Beings.Biology;
+using UnityIsekaiGame.Abilities;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Inventory;
+using UnityIsekaiGame.Magic;
 using UnityIsekaiGame.Progression;
 using UnityIsekaiGame.Requirements;
 using UnityIsekaiGame.ResourceSystem;
@@ -27,6 +29,7 @@ namespace UnityIsekaiGame.CharacterSystem
         [SerializeField] private CalculatedStatCollection calculatedStats;
         [SerializeField] private CharacterResourceCollection resources;
         [SerializeField] private CharacterSkillCollection skills;
+        [SerializeField] private CharacterAbilityCollection abilities;
         [SerializeField] private CharacterTraitCollection traits;
         [SerializeField] private ActorBodyRuntime body;
         [SerializeField] private StatusEffectController statuses;
@@ -61,6 +64,7 @@ namespace UnityIsekaiGame.CharacterSystem
         public CalculatedStatCollection CalculatedStats => calculatedStats;
         public CharacterResourceCollection Resources => resources;
         public CharacterSkillCollection Skills => skills;
+        public CharacterAbilityCollection Abilities => abilities;
         public CharacterTraitCollection Traits => traits;
         public ActorBodyRuntime Body => body;
         public StatusEffectController Statuses => statuses;
@@ -106,6 +110,8 @@ namespace UnityIsekaiGame.CharacterSystem
 
                 attributes?.Configure(registry);
                 calculatedStats?.Configure(registry, attributes);
+                abilities?.Configure(registry);
+                GetComponent<PlayerSpellLoadout>()?.SynchronizeAuthoredAbilityGrants(restoring);
                 if (actorStats != null)
                 {
                     actorStats.ConfigureDerivedStats(registry);
@@ -197,33 +203,11 @@ namespace UnityIsekaiGame.CharacterSystem
                 Inventory = inventory
             };
 
-            if (skills != null)
+            if (abilities != null)
             {
-                foreach (RuntimeSkillRecord skill in skills.LearnedSkills)
+                foreach (AbilityDefinition ability in abilities.GetOwnedAbilities())
                 {
-                    foreach (string abilityId in skill.unlockedAbilityOrActionIds ?? new List<string>())
-                    {
-                        context.OwnedAbilityOrActionIds.Add(abilityId);
-                    }
-                }
-            }
-
-            if (traits != null)
-            {
-                foreach (TraitSnapshot trait in traits.GetActiveTraits())
-                {
-                    if (trait?.Definition == null)
-                    {
-                        continue;
-                    }
-
-                    foreach (TraitAbilityGrantDefinition grant in trait.Definition.AbilityActionGrants)
-                    {
-                        if (grant != null && !string.IsNullOrWhiteSpace(grant.AbilityOrActionId))
-                        {
-                            context.OwnedAbilityOrActionIds.Add(grant.AbilityOrActionId);
-                        }
-                    }
+                    context.OwnedAbilityIds.Add(ability.Id);
                 }
             }
 
@@ -305,6 +289,7 @@ namespace UnityIsekaiGame.CharacterSystem
             calculatedStats = calculatedStats == null ? GetComponent<CalculatedStatCollection>() : calculatedStats;
             resources = resources == null ? GetComponent<CharacterResourceCollection>() : resources;
             skills = skills == null ? GetComponent<CharacterSkillCollection>() : skills;
+            abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
             traits = traits == null ? GetComponent<CharacterTraitCollection>() : traits;
             body = body == null ? GetComponent<ActorBodyRuntime>() : body;
             statuses = statuses == null ? GetComponent<StatusEffectController>() : statuses;
@@ -321,6 +306,7 @@ namespace UnityIsekaiGame.CharacterSystem
             calculatedStats = calculatedStats == null ? gameObject.AddComponent<CalculatedStatCollection>() : calculatedStats;
             resources = resources == null ? gameObject.AddComponent<CharacterResourceCollection>() : resources;
             skills = skills == null ? gameObject.AddComponent<CharacterSkillCollection>() : skills;
+            abilities = abilities == null ? gameObject.AddComponent<CharacterAbilityCollection>() : abilities;
             traits = traits == null ? gameObject.AddComponent<CharacterTraitCollection>() : traits;
         }
 
@@ -461,6 +447,11 @@ namespace UnityIsekaiGame.CharacterSystem
                 skills.SkillMastered += OnSkillRecordChanged;
             }
 
+            if (abilities != null)
+            {
+                abilities.OwnershipChanged += OnAbilityOwnershipChanged;
+            }
+
             if (traits != null)
             {
                 traits.TraitsChanged += OnTraitsChanged;
@@ -528,6 +519,11 @@ namespace UnityIsekaiGame.CharacterSystem
                 skills.SkillLearned -= OnSkillRecordChanged;
                 skills.SkillPromoted -= OnSkillPromoted;
                 skills.SkillMastered -= OnSkillRecordChanged;
+            }
+
+            if (abilities != null)
+            {
+                abilities.OwnershipChanged -= OnAbilityOwnershipChanged;
             }
 
             if (traits != null)
@@ -640,6 +636,7 @@ namespace UnityIsekaiGame.CharacterSystem
         private void OnSkillsChanged(CharacterSkillCollection source, bool restoring) => IncrementRevision("Skills", restoring);
         private void OnSkillRecordChanged(CharacterSkillCollection source, RuntimeSkillRecord record, bool restoring) => IncrementRevision($"Skill:{record?.skillDefinitionId}", restoring);
         private void OnSkillPromoted(CharacterSkillCollection source, SkillChangedEventArgs args) => IncrementRevision($"SkillPromotion:{args?.Skill?.skillDefinitionId}", args?.Restoring ?? false);
+        private void OnAbilityOwnershipChanged(CharacterAbilityCollection source, string abilityId, bool restoring) => IncrementRevision($"Ability:{abilityId}", restoring);
         private void OnTraitsChanged(CharacterTraitCollection source, TraitOperationResult result, bool restoring) => IncrementRevision($"Trait:{result?.TraitId}", restoring);
         private void OnTraitRecordChanged(CharacterTraitCollection source, RuntimeTraitRecord record, bool restoring) => IncrementRevision($"TraitRecord:{record?.traitDefinitionId}", restoring);
         private void OnBodyChanged(ActorBodyRuntime source, BodyOperationResult result, bool restoring) => IncrementRevision($"Body:{result?.Snapshot?.SpeciesId}", restoring);

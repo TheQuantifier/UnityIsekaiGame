@@ -120,11 +120,15 @@ namespace UnityIsekaiGame.Inventory.Quality
                     report.AddError($"Affix definition '{DisplayName}' tier '{tier.tierId}' has an invalid value range.");
                 }
 
-                foreach (StatModifierDefinition modifier in tier.modifierTemplates ?? Array.Empty<StatModifierDefinition>())
+                foreach (CalculatedStatModifierDefinition modifier in tier.modifierTemplates ?? Array.Empty<CalculatedStatModifierDefinition>())
                 {
                     if (modifier == null || !modifier.IsValid)
                     {
                         report.AddError($"Affix definition '{DisplayName}' tier '{tier.tierId}' has an invalid stat modifier template.");
+                    }
+                    else if (definitionsById == null || !definitionsById.TryGetValue(modifier.Stat.Id, out IGameDefinition registeredStat) || !ReferenceEquals(registeredStat, modifier.Stat))
+                    {
+                        report.AddError($"Affix definition '{DisplayName}' tier '{tier.tierId}' references calculated stat '{modifier.Stat.Id}' outside the configured catalog.");
                     }
                 }
             }

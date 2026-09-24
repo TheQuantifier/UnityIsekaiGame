@@ -14,7 +14,7 @@ namespace UnityIsekaiGame.Progression
         public double cumulativeActivePlaytimeSeconds;
         public RuntimeOriginAssignmentRecord origin;
         public RuntimeBirthGiftRecord birthGift;
-        public List<RuntimePermanentStatGrantRecord> permanentStatGrants = new List<RuntimePermanentStatGrantRecord>();
+        public List<RuntimePermanentAttributeGrantRecord> permanentAttributeGrants = new List<RuntimePermanentAttributeGrantRecord>();
         public List<RuntimeRoleRecord> roles = new List<RuntimeRoleRecord>();
         public List<RuntimeSocialStatusRecord> socialStatuses = new List<RuntimeSocialStatusRecord>();
         public List<RuntimeTitleRecord> titles = new List<RuntimeTitleRecord>();

@@ -18,8 +18,10 @@ namespace UnityIsekaiGame.Abilities
         [SerializeField, Min(0f)] private float range;
         [SerializeField] private AbilityTargetingMode targetingMode = AbilityTargetingMode.Direction;
         [SerializeField] private bool allowSelfTarget;
+        [SerializeField] private bool allowInactiveTargets;
         [SerializeField] private bool requiresLineOfSight = true;
         [SerializeField] private LayerMask targetingMask = ~0;
+        [SerializeField] private LayerMask obstructionMask = ~0;
         [SerializeField] private QueryTriggerInteraction targetingTriggerInteraction = QueryTriggerInteraction.Ignore;
         [SerializeField] private AbilityDeliveryMode deliveryMode = AbilityDeliveryMode.Immediate;
         [SerializeField] private AbilityProjectileDelivery projectileDelivery;
@@ -37,8 +39,10 @@ namespace UnityIsekaiGame.Abilities
         public float Range => range;
         public AbilityTargetingMode TargetingMode => targetingMode;
         public bool AllowSelfTarget => allowSelfTarget;
+        public bool AllowInactiveTargets => allowInactiveTargets;
         public bool RequiresLineOfSight => requiresLineOfSight;
         public LayerMask TargetingMask => targetingMask;
+        public LayerMask ObstructionMask => obstructionMask;
         public QueryTriggerInteraction TargetingTriggerInteraction => targetingTriggerInteraction;
         public AbilityDeliveryMode DeliveryMode => deliveryMode;
         public AbilityProjectileDelivery ProjectileDelivery => projectileDelivery;

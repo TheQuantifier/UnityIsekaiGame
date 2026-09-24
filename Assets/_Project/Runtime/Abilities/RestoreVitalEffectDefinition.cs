@@ -45,9 +45,9 @@ namespace UnityIsekaiGame.Abilities
 
             return vitalType switch
             {
-                VitalType.Health => RestoreHealth(context.Target, context.MagnitudeMultiplier),
-                VitalType.Mana => RestoreResource(context.Target, ResourceIds.Mana, context.MagnitudeMultiplier),
-                VitalType.Stamina => RestoreResource(context.Target, ResourceIds.Stamina, context.MagnitudeMultiplier),
+                VitalType.Health => RestoreHealth(in context),
+                VitalType.Mana => RestoreResource(in context, ResourceIds.Mana),
+                VitalType.Stamina => RestoreResource(in context, ResourceIds.Stamina),
                 _ => EffectExecutionResult.Failure(EffectExecutionStatus.InvalidConfiguration, $"{DisplayName} has an invalid vital type.")
             };
         }
@@ -74,34 +74,48 @@ namespace UnityIsekaiGame.Abilities
                 : EffectExecutionResult.Success($"{resourceId} can be restored.");
         }
 
-        private EffectExecutionResult RestoreHealth(GameObject target, float multiplier)
+        private EffectExecutionResult RestoreHealth(in EffectExecutionContext context)
         {
+            GameObject target = context.Target;
             if (CanUseHealingPipeline(target))
             {
-                float restoreAmount = amount * Mathf.Max(0f, multiplier);
-                HealingApplicationResult healingResult = new DamageHealingService().ApplyHealing(CreateHealingRequest(target, restoreAmount, DisplayName));
+                float restoreAmount = amount * Mathf.Max(0f, context.MagnitudeMultiplier);
+                HealingApplicationResult healingResult = new DamageHealingService().ApplyHealing(CreateHealingRequest(in context, restoreAmount, DisplayName));
+                string rollbackSourceActorId = context.SourceActorId;
+                string rollbackExecutionId = context.ExecutionId;
                 return healingResult.Succeeded && healingResult.HealthChanged
-                    ? EffectExecutionResult.Success(healingResult.Message, healingResult.FinalHealingAmount)
+                    ? EffectExecutionResult.Success(healingResult.Message, healingResult.FinalHealingAmount, () =>
+                    {
+                        CharacterResourceCollection resources = target.GetComponentInParent<CharacterResourceCollection>();
+                        resources?.ApplyChange(new ResourceChangeRequest(ResourceIds.Health, ResourceChangeOperation.Damage, healingResult.FinalHealingAmount, ResourceChangeSourceCategory.Ability, rollbackSourceActorId, $"Rollback {DisplayName}", $"{rollbackExecutionId}.rollback.{Id}", allowPartial: true, authorityValidated: true));
+                    })
                     : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, healingResult.Message);
             }
 
             return EffectExecutionResult.Failure(EffectExecutionStatus.UnsupportedTarget, $"{target.name} does not expose canonical Health and identity.");
         }
 
-        private EffectExecutionResult RestoreResource(GameObject target, string resourceId, float multiplier)
+        private EffectExecutionResult RestoreResource(in EffectExecutionContext context, string resourceId)
         {
+            GameObject target = context.Target;
             CharacterResourceCollection resources = target.GetComponentInParent<CharacterResourceCollection>();
             ResourceChangeResult result = resources?.ApplyChange(new ResourceChangeRequest(
                 resourceId,
                 ResourceChangeOperation.Gain,
-                amount * Mathf.Max(0f, multiplier),
+                amount * Mathf.Max(0f, context.MagnitudeMultiplier),
                 ResourceChangeSourceCategory.Ability,
-                ResolveActorId(target),
+                context.SourceActorId,
                 DisplayName,
+                $"{context.ExecutionId}.effect.{Id}",
                 allowPartial: true,
                 authorityValidated: true));
+            string rollbackSourceActorId = context.SourceActorId;
+            string rollbackExecutionId = context.ExecutionId;
             return result != null && result.Succeeded && result.AppliedAmount > CharacterResourceCollection.Epsilon
-                ? EffectExecutionResult.Success(result.Message, result.AppliedAmount)
+                ? EffectExecutionResult.Success(result.Message, result.AppliedAmount, () =>
+                {
+                    resources.ApplyChange(new ResourceChangeRequest(resourceId, ResourceChangeOperation.Spend, result.AppliedAmount, ResourceChangeSourceCategory.Ability, rollbackSourceActorId, $"Rollback {DisplayName}", $"{rollbackExecutionId}.rollback.{Id}", allowPartial: true, authorityValidated: true));
+                })
                 : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, result?.Message ?? $"Resource '{resourceId}' is unavailable.");
         }
 
@@ -109,7 +123,7 @@ namespace UnityIsekaiGame.Abilities
         {
             return target != null
                 && target.GetComponentInParent<CharacterResourceCollection>()?.HasResource(ResourceIds.Health) == true
-                && !string.IsNullOrWhiteSpace(ResolveActorId(target));
+                && !string.IsNullOrWhiteSpace(AbilityActorIdentityUtility.ResolveActorId(target));
         }
 
         private string ResolveResourceId()
@@ -123,34 +137,18 @@ namespace UnityIsekaiGame.Abilities
             };
         }
 
-        private static HealingApplicationRequest CreateHealingRequest(GameObject target, float restoreAmount, string reason)
+        private static HealingApplicationRequest CreateHealingRequest(in EffectExecutionContext context, float restoreAmount, string reason)
         {
             return new HealingApplicationRequest(
-                string.Empty,
-                ResolveActorId(target),
-                target,
-                ResolveActorId(target),
-                target,
+                string.IsNullOrWhiteSpace(context.ExecutionId) ? $"ability-healing.{System.Guid.NewGuid():N}" : $"{context.ExecutionId}.effect.healing",
+                context.SourceActorId,
+                context.Source,
+                context.TargetActorId,
+                context.Target,
                 restoreAmount,
                 reason,
                 authorityValidated: true);
         }
 
-        private static string ResolveActorId(GameObject actor)
-        {
-            if (actor == null)
-            {
-                return string.Empty;
-            }
-
-            CharacterSystemCoordinator character = actor.GetComponentInParent<CharacterSystemCoordinator>();
-            if (character != null && !string.IsNullOrWhiteSpace(character.ActorId))
-            {
-                return character.ActorId;
-            }
-
-            WorldEntityIdentity identity = actor.GetComponentInParent<WorldEntityIdentity>();
-            return identity == null ? string.Empty : identity.EntityId;
-        }
     }
 }

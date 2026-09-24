@@ -23,6 +23,7 @@ namespace UnityIsekaiGame.Magic
         private string pendingExecutionId;
         private string pendingActorId;
         private SpellDefinition pendingSpell;
+        private CharacterAbilityCollection abilities;
 
         public event Action<SpellDefinition, SpellCastResult> SpellCastResolved;
 
@@ -33,6 +34,7 @@ namespace UnityIsekaiGame.Magic
             input = input == null ? GetComponent<PlayerInputReader>() : input;
             loadout = loadout == null ? GetComponent<PlayerSpellLoadout>() : loadout;
             runtimeServices = runtimeServices == null ? FindAnyObjectByType<PrototypePersistenceServiceBehaviour>() : runtimeServices;
+            abilities = GetComponent<CharacterAbilityCollection>();
             if (castOrigin == null && Camera.main != null)
             {
                 castOrigin = Camera.main.transform;
@@ -60,6 +62,12 @@ namespace UnityIsekaiGame.Magic
             if (spell.Ability.Execution == null)
             {
                 return Resolve(spell, SpellCastResult.Failure($"{spell.DisplayName} has no combat execution definition."));
+            }
+
+            abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
+            if (abilities != null && !abilities.CanUseAbility(spell.Ability.Id))
+            {
+                return Resolve(spell, SpellCastResult.Failure($"{spell.DisplayName} is not owned by this character."));
             }
 
             if (Execution == null)

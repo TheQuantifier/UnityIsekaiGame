@@ -27,6 +27,7 @@ namespace UnityIsekaiGame.Magic
         private bool initialized;
         private bool completed;
         private bool payloadExecuted;
+        private string executionId;
 
         public event Action<SpellProjectile> Completed;
 
@@ -64,7 +65,7 @@ namespace UnityIsekaiGame.Magic
             projectileRigidbody.MovePosition(origin + direction * distance);
         }
 
-        public void Initialize(GameObject spellCaster, Vector3 travelDirection, float projectileSpeed, AbilityDefinition payloadAbility, float lifetime)
+        public void Initialize(GameObject spellCaster, Vector3 travelDirection, float projectileSpeed, AbilityDefinition payloadAbility, float lifetime, string payloadExecutionId = "")
         {
             caster = spellCaster;
             ability = payloadAbility;
@@ -75,6 +76,7 @@ namespace UnityIsekaiGame.Magic
             initialized = true;
             completed = false;
             payloadExecuted = false;
+            executionId = string.IsNullOrWhiteSpace(payloadExecutionId) ? $"projectile.{Guid.NewGuid():N}" : payloadExecutionId;
             IgnoreCasterColliders();
         }
 
@@ -89,6 +91,7 @@ namespace UnityIsekaiGame.Magic
             initialized = true;
             completed = false;
             payloadExecuted = false;
+            executionId = $"projectile.{Guid.NewGuid():N}";
             IgnoreCasterColliders();
         }
 
@@ -125,7 +128,8 @@ namespace UnityIsekaiGame.Magic
                 target,
                 caster == null ? transform.position : caster.transform.position,
                 hit.point,
-                direction);
+                direction,
+                executionId: $"{executionId}.impact");
             AbilityExecutionResult result = AbilityEffectPipeline.Execute(in context, ability.Effects);
             Debug.Log(result.Succeeded ? result.Message : result.Message);
         }

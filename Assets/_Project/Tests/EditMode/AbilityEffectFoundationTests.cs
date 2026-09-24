@@ -30,6 +30,46 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void EffectPipeline_RollsBackEarlierEffectsWhenExecutionUnexpectedlyFails()
+        {
+            TestEffectDefinition first = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            TestEffectDefinition second = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            second.ExecuteSuccessfully = false;
+            EffectExecutionContext context = new EffectExecutionContext(null, null, null, Vector3.zero, Vector3.zero, Vector3.forward, executionId: "execution.test.rollback");
+
+            AbilityExecutionResult result = AbilityEffectPipeline.Execute(in context, new EffectDefinition[] { first, second });
+
+            Assert.That(result.Status, Is.EqualTo(AbilityExecutionStatus.EffectExecutionFailure));
+            Assert.That(first.RollbackCount, Is.EqualTo(1));
+            Assert.That(second.RollbackCount, Is.Zero);
+            Object.DestroyImmediate(first);
+            Object.DestroyImmediate(second);
+        }
+
+        [Test]
+        public void AbilityOwnership_RemainsWhileAnyIndependentSourceStillGrantsIt()
+        {
+            GameObject owner = new GameObject("Ability Owner");
+            CharacterAbilityCollection abilities = owner.AddComponent<CharacterAbilityCollection>();
+            AbilityDefinition ability = ScriptableObject.CreateInstance<AbilityDefinition>();
+            SerializedObject serialized = new SerializedObject(ability);
+            serialized.FindProperty("abilityId").stringValue = "ability.test-owned";
+            serialized.FindProperty("displayName").stringValue = "Owned Ability";
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.That(abilities.Grant(ability, AbilityGrantSourceCategory.Skill, "skill.magic.f").Succeeded, Is.True);
+            Assert.That(abilities.Grant(ability, AbilityGrantSourceCategory.BirthGift, "birth-gift.arcane").Succeeded, Is.True);
+            Assert.That(abilities.GetGrantRecords(ability.Id).Count, Is.EqualTo(2));
+            Assert.That(abilities.RemoveSource(AbilityGrantSourceCategory.Skill, "skill.magic.f"), Is.True);
+            Assert.That(abilities.HasAbility(ability.Id), Is.True);
+            Assert.That(abilities.RemoveSource(AbilityGrantSourceCategory.BirthGift, "birth-gift.arcane"), Is.True);
+            Assert.That(abilities.HasAbility(ability.Id), Is.False);
+
+            Object.DestroyImmediate(ability);
+            Object.DestroyImmediate(owner);
+        }
+
+        [Test]
         public void AbilityDefinition_UsesSharedCombatExecutionForTimingCostsAndCooldown()
         {
             AbilityDefinition ability = ScriptableObject.CreateInstance<AbilityDefinition>();
@@ -138,7 +178,9 @@ namespace UnityIsekaiGame.Tests
         private sealed class TestEffectDefinition : EffectDefinition
         {
             public bool CanExecuteSuccessfully { get; set; } = true;
+            public bool ExecuteSuccessfully { get; set; } = true;
             public int ExecuteCount { get; private set; }
+            public int RollbackCount { get; private set; }
 
             public override EffectExecutionResult CanExecute(in EffectExecutionContext context)
             {
@@ -150,7 +192,9 @@ namespace UnityIsekaiGame.Tests
             public override EffectExecutionResult Execute(in EffectExecutionContext context)
             {
                 ExecuteCount++;
-                return EffectExecutionResult.Success("Executed test effect.");
+                return ExecuteSuccessfully
+                    ? EffectExecutionResult.Success("Executed test effect.", rollback: () => RollbackCount++)
+                    : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, "Execution failed.");
             }
         }
     }

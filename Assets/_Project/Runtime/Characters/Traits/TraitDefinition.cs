@@ -28,7 +28,7 @@ namespace UnityIsekaiGame.Traits
         [SerializeField] private string[] conflictGroupIds;
         [SerializeField] private TraitDefinition[] incompatibleTraits;
         [SerializeField] private TraitCalculatedStatContributionDefinition[] calculatedStatContributions;
-        [SerializeField] private TraitAbilityGrantDefinition[] abilityActionGrants;
+        [SerializeField] private TraitAbilityGrantDefinition[] abilityGrants;
         [SerializeField] private TraitCapabilityGrantDefinition[] booleanCapabilityGrants;
         [SerializeField] private TraitCapabilityGrantDefinition[] numericCapabilityGrants;
         [SerializeField] private TraitResistanceGrantDefinition[] resistanceGrants;
@@ -55,7 +55,7 @@ namespace UnityIsekaiGame.Traits
         public IReadOnlyList<string> ConflictGroupIds => conflictGroupIds ?? Array.Empty<string>();
         public IReadOnlyList<TraitDefinition> IncompatibleTraits => incompatibleTraits ?? Array.Empty<TraitDefinition>();
         public IReadOnlyList<TraitCalculatedStatContributionDefinition> CalculatedStatContributions => calculatedStatContributions ?? Array.Empty<TraitCalculatedStatContributionDefinition>();
-        public IReadOnlyList<TraitAbilityGrantDefinition> AbilityActionGrants => abilityActionGrants ?? Array.Empty<TraitAbilityGrantDefinition>();
+        public IReadOnlyList<TraitAbilityGrantDefinition> AbilityGrants => abilityGrants ?? Array.Empty<TraitAbilityGrantDefinition>();
         public IReadOnlyList<TraitCapabilityGrantDefinition> BooleanCapabilityGrants => booleanCapabilityGrants ?? Array.Empty<TraitCapabilityGrantDefinition>();
         public IReadOnlyList<TraitCapabilityGrantDefinition> NumericCapabilityGrants => numericCapabilityGrants ?? Array.Empty<TraitCapabilityGrantDefinition>();
         public IReadOnlyList<TraitResistanceGrantDefinition> ResistanceGrants => resistanceGrants ?? Array.Empty<TraitResistanceGrantDefinition>();
@@ -204,9 +204,9 @@ namespace UnityIsekaiGame.Traits
 
         private void ValidateAbilityGrants(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
-            foreach (TraitAbilityGrantDefinition grant in AbilityActionGrants)
+            foreach (TraitAbilityGrantDefinition grant in AbilityGrants)
             {
-                if (grant == null || string.IsNullOrWhiteSpace(grant.AbilityOrActionId))
+                if (grant == null || string.IsNullOrWhiteSpace(grant.AbilityId))
                 {
                     report.AddError($"Trait '{DisplayName}' has a missing ability/action grant.");
                     continue;

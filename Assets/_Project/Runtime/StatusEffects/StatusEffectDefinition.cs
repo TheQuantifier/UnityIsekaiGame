@@ -26,7 +26,7 @@ namespace UnityIsekaiGame.StatusEffects
         [SerializeField, Min(1)] private int maximumStacks = 1;
         [SerializeField] private bool canBeRemoved = true;
         [SerializeField] private bool visibleInHud = true;
-        [SerializeField] private StatModifierDefinition[] statModifiers;
+        [SerializeField] private CalculatedStatModifierDefinition[] calculatedStatModifiers;
         [SerializeField] private ResistanceModifierDefinition[] resistanceModifiers;
         [SerializeField] private EffectDefinition[] instantEffects;
         [SerializeField] private OngoingEffectDefinition[] ongoingEffects;
@@ -48,7 +48,7 @@ namespace UnityIsekaiGame.StatusEffects
         public int MaximumStacks => Mathf.Max(1, maximumStacks);
         public bool CanBeRemoved => canBeRemoved;
         public bool VisibleInHud => visibleInHud;
-        public IReadOnlyList<StatModifierDefinition> StatModifiers => statModifiers ?? System.Array.Empty<StatModifierDefinition>();
+        public IReadOnlyList<CalculatedStatModifierDefinition> CalculatedStatModifiers => calculatedStatModifiers ?? System.Array.Empty<CalculatedStatModifierDefinition>();
         public IReadOnlyList<ResistanceModifierDefinition> ResistanceModifiers => resistanceModifiers ?? System.Array.Empty<ResistanceModifierDefinition>();
         public IReadOnlyList<EffectDefinition> InstantEffects => instantEffects ?? System.Array.Empty<EffectDefinition>();
         public IReadOnlyList<OngoingEffectDefinition> OngoingEffects => ongoingEffects ?? System.Array.Empty<OngoingEffectDefinition>();
@@ -86,7 +86,7 @@ namespace UnityIsekaiGame.StatusEffects
                 report.AddWarning($"Instant status effect '{DisplayName}' should normally use DoNotSave persistence.");
             }
 
-            if (durationModel == StatusDurationModel.Instant && (statModifiers?.Length ?? 0) > 0)
+            if (durationModel == StatusDurationModel.Instant && CalculatedStatModifiers.Count > 0)
             {
                 report.AddWarning($"Instant status effect '{DisplayName}' has stat modifiers that will not remain active.");
             }
@@ -111,22 +111,22 @@ namespace UnityIsekaiGame.StatusEffects
                 report.AddWarning($"Status effect '{DisplayName}' has maximum stacks above one but does not use AddStack.");
             }
 
-            ValidateModifierDefinitions(report);
+            ValidateModifierDefinitions(definitionsById, report);
             ValidateResistanceModifierDefinitions(definitionsById, report);
             ValidateEffectConfiguration(definitionsById, report);
         }
 
-        private void ValidateModifierDefinitions(DefinitionValidationReport report)
+        private void ValidateModifierDefinitions(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
-            if (statModifiers == null)
+            if (calculatedStatModifiers == null)
             {
                 return;
             }
 
             HashSet<string> seenModifiers = new HashSet<string>();
-            for (int i = 0; i < statModifiers.Length; i++)
+            for (int i = 0; i < calculatedStatModifiers.Length; i++)
             {
-                StatModifierDefinition modifier = statModifiers[i];
+                CalculatedStatModifierDefinition modifier = calculatedStatModifiers[i];
                 if (modifier == null)
                 {
                     report.AddError($"Status effect '{DisplayName}' has a null stat modifier at index {i}.");
@@ -138,7 +138,12 @@ namespace UnityIsekaiGame.StatusEffects
                     report.AddError($"Status effect '{DisplayName}' has an invalid modifier value at index {i}.");
                 }
 
-                string key = $"{modifier.StatType}:{modifier.Operation}:{modifier.Value}:{modifier.Priority}";
+                if (modifier.Stat != null && (definitionsById == null || !definitionsById.TryGetValue(modifier.Stat.Id, out IGameDefinition registeredStat) || !ReferenceEquals(registeredStat, modifier.Stat)))
+                {
+                    report.AddError($"Status effect '{DisplayName}' references calculated stat '{modifier.Stat.Id}' outside the configured catalog.");
+                }
+
+                string key = $"{modifier.Stat?.Id}:{modifier.Operation}:{modifier.Value}:{modifier.Priority}";
                 if (!seenModifiers.Add(key))
                 {
                     report.AddWarning($"Status effect '{DisplayName}' has duplicate-looking stat modifier '{key}'.");

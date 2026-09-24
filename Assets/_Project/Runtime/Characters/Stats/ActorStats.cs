@@ -62,33 +62,23 @@ namespace UnityIsekaiGame.Stats
             return LastInitializationResult;
         }
 
-        public bool HasStat(StatType statType)
+        public bool HasCalculatedStat(string statId) => calculatedStats != null && calculatedStats.IsConfigured && calculatedStats.HasStat(statId);
+
+        public float GetCalculatedStatValue(string statId) => GetCalculatedValue(statId);
+
+        public bool AddCalculatedStatContribution(RuntimeCalculatedStatContribution contribution)
         {
-            return StatTypeCalculatedStatBridge.TryGetCalculatedStatId(statType, out string statId)
-                && calculatedStats != null
+            return calculatedStats != null
                 && calculatedStats.IsConfigured
-                && calculatedStats.HasStat(statId);
+                && contribution != null
+                && calculatedStats.AddContribution(contribution, out _);
         }
 
-        public float GetStatValue(StatType statType)
+        public bool RemoveCalculatedStatContributions(StatModifierSource source)
         {
-            return StatTypeCalculatedStatBridge.TryGetCalculatedStatId(statType, out string statId) ? GetCalculatedValue(statId) : 0f;
-        }
-
-        public bool AddModifier(RuntimeStatModifier modifier)
-        {
-            if (calculatedStats == null || !calculatedStats.IsConfigured || !modifier.IsValid || !StatTypeCalculatedStatBridge.TryGetCalculatedStatId(modifier.StatType, out string statId) || !calculatedStats.HasStat(statId))
-            {
-                return false;
-            }
-
-            RuntimeCalculatedStatContribution contribution = CreateContribution(modifier, statId);
-            return calculatedStats.AddContribution(contribution, out _);
-        }
-
-        public bool RemoveModifiersFromSource(StatModifierSource source)
-        {
-            return calculatedStats != null && calculatedStats.RemoveContributionsFromSource(StatTypeCalculatedStatBridge.MapSourceCategory(source.SourceType), source.SourceId);
+            return source.IsValid
+                && calculatedStats != null
+                && calculatedStats.RemoveContributionsFromSource(CalculatedStatContributionSourceUtility.Map(source.SourceType), source.SourceId);
         }
 
         public float GetDirectResistance(DamageTypeDefinition damageType) => runtimeResistances.GetDirectResistance(damageType);
@@ -171,39 +161,6 @@ namespace UnityIsekaiGame.Stats
         {
             if (calculatedStats == null || !calculatedStats.IsConfigured || !calculatedStats.HasStat(statId)) return minimum;
             return Mathf.Max(minimum, calculatedStats.GetValue(statId));
-        }
-
-        private static RuntimeCalculatedStatContribution CreateContribution(RuntimeStatModifier modifier, string statId)
-        {
-            RuntimeCalculatedStatContribution contribution = new RuntimeCalculatedStatContribution
-            {
-                contributionId = $"stat.{modifier.Source.SourceType}.{modifier.Source.SourceId}.{statId}.{Guid.NewGuid():N}",
-                statId = statId,
-                sourceId = modifier.Source.SourceId,
-                sourceCategory = (int)StatTypeCalculatedStatBridge.MapSourceCategory(modifier.Source.SourceType),
-                priority = modifier.Priority
-            };
-
-            switch (modifier.Operation)
-            {
-                case StatModifierOperation.FlatAdd:
-                    contribution.kind = (int)CalculatedStatContributionKind.Flat;
-                    contribution.direction = (int)(modifier.Value >= 0f ? CalculatedStatContributionDirection.Improve : CalculatedStatContributionDirection.Reduce);
-                    contribution.magnitude = Mathf.Abs(modifier.Value);
-                    break;
-                case StatModifierOperation.PercentAdd:
-                    contribution.kind = (int)CalculatedStatContributionKind.Percent;
-                    contribution.direction = (int)(modifier.Value >= 0f ? CalculatedStatContributionDirection.Improve : CalculatedStatContributionDirection.Reduce);
-                    contribution.magnitude = Mathf.Abs(modifier.Value);
-                    break;
-                default:
-                    contribution.kind = (int)CalculatedStatContributionKind.Multiplier;
-                    contribution.direction = (int)(modifier.Value >= 1f ? CalculatedStatContributionDirection.Improve : CalculatedStatContributionDirection.Reduce);
-                    contribution.magnitude = modifier.Value >= 1f ? modifier.Value - 1f : 1f - Mathf.Max(0f, modifier.Value);
-                    break;
-            }
-
-            return contribution;
         }
 
         private void OnCalculatedStatsChanged(CalculatedStatCollection source, IReadOnlyList<string> statIds, bool restoring) => NotifyStatsChanged();
