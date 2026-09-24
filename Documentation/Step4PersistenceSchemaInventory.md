@@ -5,11 +5,11 @@ Step 4 uses one save envelope schema plus independent participant schemas. Do no
 ## Save Envelope
 
 - Type: `GameSaveEnvelope`
-- Current version: `PersistenceService.CurrentSchemaVersion == 1`
+- Current version: `PersistenceService.CurrentSchemaVersion == 3`
 - Required fields: format identifier, schema version, game version, save ID, slot ID, display name, timestamps, world ID, player ID, account ID, participant records, content checksum.
 - Optional/diagnostic fields: play time, scene summary, place summary, player summary, transaction ID, parent transaction ID, save revision, completed-write marker.
-- Compatibility: versions less than `1` or greater than current are rejected.
-- Migration: extension point exists through `ISaveMigration`; no automatic envelope migration is currently enabled.
+- Compatibility: only the current schema, exact game version, exact context, slot, world, player/account identity, completed-write marker, and checksum are accepted.
+- Migration: none during development; recreate saves after schema changes.
 - Stable-ID dependencies: slot ID, participant keys, world ID, player ID, account ID.
 
 ## Slot Metadata
@@ -21,16 +21,6 @@ Step 4 uses one save envelope schema plus independent participant schemas. Do no
 - Compatibility: corrupt, missing, future-version, or incomplete slots remain listable with status instead of hidden.
 - Migration: descriptors are rebuilt from save metadata on demand.
 - Stable-ID dependencies: manual and autosave slot IDs.
-
-## Prototype Development State
-
-- Participant: `prototype.state`
-- Payload: `PrototypePersistenceStateSaveData`
-- Current version: `1`
-- Required fields: schema version, test value, note, flag.
-- Compatibility: unsupported participant payload versions are rejected during prepare.
-- Migration: none.
-- Stable-ID dependencies: participant key and local player owner ID.
 
 ## Inventory/Equipment
 
@@ -64,17 +54,16 @@ Step 4 uses one save envelope schema plus independent participant schemas. Do no
 - Migration: none.
 - Stable-ID dependencies: SkillDefinition IDs, ability/action unlock IDs, calculated stat IDs, action event IDs.
 
-## Stats/Vitals/Statuses
+## Status Effects And Resources
 
-- Participant: `player.stats-vitals-status`
-- Payload: `PlayerStatsVitalsStatusSaveData`
+- Participants: `player.status-effects`, `player.resources`
+- Payloads: `PlayerStatusEffectsSaveData`, `PlayerResourcesSaveData`
 - Current version: `1`
-- Required fields: schema version, current health, current mana, current stamina.
-- Optional fields: actor profile ID, status list.
-- Compatibility: unsupported participant payload versions are rejected; defeated saves are rejected.
+- Required fields: status schema/profile/status list; resource schema/player/person IDs/resource records.
+- Compatibility: unsupported or missing current participant payloads are rejected; defeated saves are rejected.
 - Migration: none.
-- Stable-ID dependencies: actor profile ID, status definition IDs, status application IDs, source IDs.
-- Feature 5.4b adds optional `player.resources` schema version 1 for generalized current Health/Mana/Stamina. The older stats/vitals/status payload remains required for status and legacy current-vital restore compatibility.
+- Stable-ID dependencies: actor profile, status definition/application/source IDs, resource definition IDs, player/person IDs.
+- Ownership is non-overlapping: status effects own statuses; resources own Health, Mana, Stamina, and other resource values.
 
 ## Quest/Contract
 

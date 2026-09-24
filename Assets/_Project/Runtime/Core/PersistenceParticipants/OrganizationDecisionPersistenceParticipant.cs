@@ -65,7 +65,7 @@ namespace UnityIsekaiGame.Persistence
         public PersistenceParticipantSaveResult CapturePayload()
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Organization decision runtime is missing.");
-            string payload = JsonUtility.ToJson(runtime.CreateSaveData());
+            string payload = PersistenceSerialization.Serialize(runtime.CreateSaveData());
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Organization decision snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -77,7 +77,7 @@ namespace UnityIsekaiGame.Persistence
             if (payloadSchemaVersion != CurrentParticipantSchemaVersion) return PersistenceParticipantPrepareResult.Failure($"Unsupported organization decision participant schema version {payloadSchemaVersion}.");
             if (string.IsNullOrWhiteSpace(payloadJson)) return PersistenceParticipantPrepareResult.Failure("Organization decision payload is empty.");
             OrganizationDecisionRuntimeSaveData saveData;
-            try { saveData = JsonUtility.FromJson<OrganizationDecisionRuntimeSaveData>(payloadJson); }
+            try { saveData = PersistenceSerialization.Deserialize<OrganizationDecisionRuntimeSaveData>(payloadJson); }
             catch { return PersistenceParticipantPrepareResult.Failure("Organization decision payload is malformed JSON."); }
             if (!OrganizationDecisionRuntime.ValidateSaveData(saveData, registryProvider?.Invoke(), organizationProvider?.Invoke(), membershipProvider?.Invoke(), authorityProvider?.Invoke(), resourceProvider?.Invoke(), ownerId, personProvider?.Invoke(), out string failure)) return PersistenceParticipantPrepareResult.Failure(failure);
             return PersistenceParticipantPrepareResult.Success(new PreparedPayload(saveData.Clone()));

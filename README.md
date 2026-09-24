@@ -109,7 +109,7 @@ Step 3 closeout documentation lives in `Documentation/Step3GameDataAndWorldTaxon
 
 Step 4 persistence foundation documentation lives in `Documentation/PersistenceServiceFoundation.md`, with the planned sequence in `Documentation/Step4PersistenceRoadmap.md`.
 Player inventory/equipment persistence is documented in `Documentation/PlayerInventoryAndEquipmentPersistence.md`.
-Player stats/vitals/status persistence is documented in `Documentation/PlayerStatsVitalsStatusPersistence.md`.
+Player resources and status-effect persistence are documented in `Documentation/PlayerResourcesAndStatusPersistence.md`.
 Quest and contract persistence is documented in `Documentation/QuestAndContractPersistence.md`.
 Player position, scene, and place persistence is documented in `Documentation/PlayerPositionSceneAndPlacePersistence.md`.
 Persistent world-entity identity is documented in `Documentation/PersistentWorldEntityIdentity.md`.

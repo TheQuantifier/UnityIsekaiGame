@@ -63,7 +63,7 @@ namespace UnityIsekaiGame.Persistence
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Narrative state runtime is missing.");
             NarrativeStateRuntimeSaveData saveData = runtime.CreateSaveData();
-            string payload = JsonUtility.ToJson(saveData);
+            string payload = PersistenceSerialization.Serialize(saveData);
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Narrative state snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -78,7 +78,7 @@ namespace UnityIsekaiGame.Persistence
             NarrativeStateRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<NarrativeStateRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<NarrativeStateRuntimeSaveData>(payloadJson);
             }
             catch
             {

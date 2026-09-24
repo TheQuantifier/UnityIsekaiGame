@@ -48,8 +48,9 @@ Participants may optionally implement `IPersistenceParticipantDependencies`.
 
 The service also provides default ordering dependencies for current player participants:
 
-- `player.stats-vitals-status` depends on `player.inventory-equipment`;
-- `player.quests-contracts` depends on `player.inventory-equipment` and `player.stats-vitals-status`;
+- `player.status-effects` depends on `player.inventory-equipment`;
+- `player.resources` depends on `player.attributes` and `player.status-effects`;
+- `player.quests-contracts` depends on inventory/equipment, resources, and status effects;
 - `player.location` depends on `player.quests-contracts`.
 
 The graph rejects explicitly declared missing required dependencies and circular dependencies. Missing ordering-only dependencies are reported as optional diagnostics, so focused participant tests can still exercise one participant in isolation. Ordering is deterministic and independent of registration order when related participants are registered together.
@@ -129,8 +130,8 @@ The same concepts map to future server persistence: server-owned transaction IDs
 
 ## Known Limitations
 
-- Full shared-world state is not persisted.
+- Shared-world systems have their own context and checkpoint; individual spawned actors, pickups, doors, and containers still need dedicated participants.
 - Cross-scene rollback remains limited.
-- Central consistency audit currently provides the hook and default success; many detailed checks still live in participants.
+- Required player-authority and world-location/scene-binding consistency validators run after restore; additional domain-specific checks can be added independently.
 - Recovery actions are explicit development/prototype operations, not final UI.
 - Checksums detect accidental corruption and interrupted writes, not malicious tampering.

@@ -67,7 +67,7 @@ Offline-world changes such as destroyed buildings, unavailable regions, ownershi
 ## Known Limitations
 
 - Cross-scene restore is rejected, not loaded.
-- World pickups, enemies, doors, containers, NPC runtime state, and shared-world simulation are not persisted.
+- World simulation uses a separate checkpoint context; spawned pickups, enemies, doors, containers, and NPC schedules still require dedicated participants.
 - World entity IDs exist for future references, but world entity mutable state is not persisted by `player.location`.
 - Safe-position validation is prototype-level and should be replaced by server/navmesh/world validation later.
 - Cross-scene rollback and final player recovery UI are still deferred.

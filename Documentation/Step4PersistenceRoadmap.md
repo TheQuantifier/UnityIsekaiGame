@@ -53,7 +53,7 @@ Feature 4.3 restores current stats/vitals after equipment has rebuilt max-stat m
 
 ## Feature 4.3 Status
 
-Feature 4.3 adds `player.stats-vitals-status` after inventory/equipment in the load order. It persists current Health, Mana, Stamina, actor-profile validation metadata, and save-eligible active statuses. Status modifiers and resistance modifiers rebuild from restored statuses rather than raw modifier save data.
+Phase 3 replaces Feature 4.3's combined payload with required `player.status-effects` and `player.resources` participants. Status modifiers rebuild from restored statuses; current resource values restore afterward against rebuilt maximums.
 
 Defeated prototype saves are rejected. Timed statuses restore with saved remaining duration; offline elapsed time is not applied yet.
 

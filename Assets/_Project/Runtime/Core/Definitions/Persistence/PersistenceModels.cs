@@ -16,8 +16,7 @@ namespace UnityIsekaiGame.GameData.Persistence
         Vitals = 500,
         QuestsAndContracts = 600,
         PositionAndPlace = 700,
-        Notification = 800,
-        Prototype = 900
+        Notification = 800
     }
 
     public enum PersistenceScope
@@ -57,6 +56,13 @@ namespace UnityIsekaiGame.GameData.Persistence
         MalformedJson,
         WrongFormatIdentifier,
         UnsupportedSchemaVersion,
+        UnsupportedGameVersion,
+        WrongSaveContext,
+        WrongSlot,
+        WrongWorld,
+        WrongPlayer,
+        WrongAccount,
+        IncompleteWrite,
         ChecksumMismatch,
         DuplicateParticipantKey,
         MissingRequiredParticipantPayload,
@@ -94,6 +100,13 @@ namespace UnityIsekaiGame.GameData.Persistence
         MalformedJson,
         WrongFormatIdentifier,
         UnsupportedSchemaVersion,
+        UnsupportedGameVersion,
+        WrongSaveContext,
+        WrongSlot,
+        WrongWorld,
+        WrongPlayer,
+        WrongAccount,
+        IncompleteWrite,
         ChecksumMismatch,
         DuplicateParticipantKey,
         DependencyValidationFailed,
@@ -110,22 +123,18 @@ namespace UnityIsekaiGame.GameData.Persistence
         Manual = 0,
         Autosave = 100,
         Quicksave = 200,
-        Recovery = 300,
-        Development = 400
+        Recovery = 300
     }
 
     public enum SaveCompatibilityStatus
     {
         Compatible = 0,
-        OlderSupported = 100,
-        MigrationRequired = 200,
         FutureVersion = 300,
-        MissingContent = 400,
         WrongWorld = 500,
         WrongPlayer = 600,
+        WrongContext = 650,
         Corrupted = 700,
-        Empty = 800,
-        Unknown = 900
+        Empty = 800
     }
 
     public enum PersistenceOperationState
@@ -241,6 +250,7 @@ namespace UnityIsekaiGame.GameData.Persistence
     {
         public string formatIdentifier;
         public int schemaVersion;
+        public int persistenceContext;
         public string gameVersion;
         public string saveId;
         public string slotId;
@@ -639,6 +649,16 @@ namespace UnityIsekaiGame.GameData.Persistence
             failureMessage = string.IsNullOrWhiteSpace(message) ? "Injected persistence failure." : message;
             return true;
         }
+    }
+
+    public sealed class PersistenceReadinessReport
+    {
+        public bool succeeded;
+        public string context;
+        public string message;
+        public string[] requiredParticipants = Array.Empty<string>();
+        public string[] registeredParticipants = Array.Empty<string>();
+        public string[] failures = Array.Empty<string>();
     }
 
     public static class PersistenceRestorationGuard

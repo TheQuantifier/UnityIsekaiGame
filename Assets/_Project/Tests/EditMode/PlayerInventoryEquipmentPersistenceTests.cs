@@ -107,10 +107,10 @@ namespace UnityIsekaiGame.Tests
             Assert.That(service.Save("slot-0001").Succeeded, Is.True);
 
             SaveSlotPaths paths = Paths("slot-0001");
-            GameSaveEnvelope envelope = JsonUtility.FromJson<GameSaveEnvelope>(File.ReadAllText(paths.PrimaryPath));
+            GameSaveEnvelope envelope = PersistenceSerialization.Deserialize<GameSaveEnvelope>(File.ReadAllText(paths.PrimaryPath));
             envelope.participants[0].ownerId = "other-player";
             envelope.contentChecksum = PersistenceService.ComputeChecksum(envelope);
-            File.WriteAllText(paths.PrimaryPath, JsonUtility.ToJson(envelope, true));
+            File.WriteAllText(paths.PrimaryPath, PersistenceSerialization.Serialize(envelope, true));
 
             Invoke(fixture.Inventory, "RemoveItemAt", 0, 1);
             PersistenceLoadResult load = service.Load("slot-0001");

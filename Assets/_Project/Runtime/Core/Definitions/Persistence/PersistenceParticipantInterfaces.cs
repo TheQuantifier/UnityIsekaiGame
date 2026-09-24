@@ -1,5 +1,102 @@
 namespace UnityIsekaiGame.GameData.Persistence
 {
+    public enum PersistenceContextKind
+    {
+        Player = 0,
+        World = 100,
+        Account = 200
+    }
+
+    public sealed class PersistenceParticipantDescriptor
+    {
+        public PersistenceParticipantDescriptor(
+            string key,
+            int schemaVersion,
+            bool required,
+            PersistenceScope scope,
+            string ownerId,
+            PersistenceLoadPhase loadPhase,
+            int loadPriority,
+            System.Collections.Generic.IReadOnlyList<string> requiredDependencies,
+            System.Collections.Generic.IReadOnlyList<string> optionalDependencies,
+            bool supportsRollback,
+            bool requiresSceneReadiness,
+            bool requiresDefinitionRegistry,
+            bool requiresWorldEntityRegistry)
+        {
+            Key = key ?? string.Empty;
+            SchemaVersion = schemaVersion;
+            Required = required;
+            Scope = scope;
+            OwnerId = ownerId ?? string.Empty;
+            LoadPhase = loadPhase;
+            LoadPriority = loadPriority;
+            RequiredDependencies = requiredDependencies ?? System.Array.Empty<string>();
+            OptionalDependencies = optionalDependencies ?? System.Array.Empty<string>();
+            SupportsRollback = supportsRollback;
+            RequiresSceneReadiness = requiresSceneReadiness;
+            RequiresDefinitionRegistry = requiresDefinitionRegistry;
+            RequiresWorldEntityRegistry = requiresWorldEntityRegistry;
+        }
+
+        public string Key { get; }
+        public int SchemaVersion { get; }
+        public bool Required { get; }
+        public PersistenceScope Scope { get; }
+        public string OwnerId { get; }
+        public PersistenceLoadPhase LoadPhase { get; }
+        public int LoadPriority { get; }
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies { get; }
+        public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies { get; }
+        public bool SupportsRollback { get; }
+        public bool RequiresSceneReadiness { get; }
+        public bool RequiresDefinitionRegistry { get; }
+        public bool RequiresWorldEntityRegistry { get; }
+
+        public static PersistenceParticipantDescriptor From(IPersistenceParticipant participant)
+        {
+            if (participant == null)
+            {
+                return null;
+            }
+
+            IPersistenceParticipantDependencies dependencies = participant as IPersistenceParticipantDependencies;
+            return new PersistenceParticipantDescriptor(
+                participant.ParticipantKey,
+                participant.ParticipantSchemaVersion,
+                participant.IsRequired,
+                participant.Scope,
+                participant.OwnerId,
+                participant.LoadPhase,
+                participant.LoadPriority,
+                dependencies?.RequiredDependencies,
+                dependencies?.OptionalDependencies,
+                dependencies?.SupportsRollback ?? true,
+                dependencies?.RequiresSceneReadiness ?? false,
+                dependencies?.RequiresDefinitionRegistry ?? false,
+                dependencies?.RequiresWorldEntityRegistry ?? false);
+        }
+    }
+
+    public interface IPersistenceConsistencyValidator
+    {
+        string ValidatorKey { get; }
+        bool IsRequired { get; }
+        PersistenceConsistencyAuditReport Validate();
+    }
+
+    public sealed class SaveMetadataSnapshot
+    {
+        public string SceneId { get; set; } = string.Empty;
+        public string PlaceId { get; set; } = string.Empty;
+        public string PlayerSummary { get; set; } = string.Empty;
+    }
+
+    public interface ISaveMetadataProvider
+    {
+        SaveMetadataSnapshot CaptureMetadata();
+    }
+
     public interface IPersistenceParticipant
     {
         string ParticipantKey { get; }

@@ -35,13 +35,13 @@ namespace UnityIsekaiGame.Persistence
 
         public string ParticipantKey => Key;
         public int ParticipantSchemaVersion => CurrentParticipantSchemaVersion;
-        public bool IsRequired => false;
+        public bool IsRequired => true;
         public PersistenceScope Scope => PersistenceScope.Player;
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Vitals;
         public int LoadPriority => 0;
-        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => Array.Empty<string>();
-        public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => new[] { PlayerStatsVitalsStatusPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { PlayerAttributesPersistenceParticipant.Key, PlayerStatusEffectsPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => Array.Empty<string>();
         public bool SupportsRollback => true;
         public bool RequiresSceneReadiness => false;
         public bool RequiresDefinitionRegistry => true;
@@ -67,21 +67,21 @@ namespace UnityIsekaiGame.Persistence
 
             string personId = identity == null ? string.Empty : identity.PersonId;
             PlayerResourcesSaveData saveData = resources.CreateSaveData(ownerId, personId);
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Player resources snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
         {
             if (payloadSchemaVersion != CurrentParticipantSchemaVersion)
             {
-                return PersistenceParticipantPrepareResult.Failure($"Unsupported player resources participant schema version {payloadSchemaVersion}. Development saves from before Feature 5.4b use legacy vitals and do not contain player.resources.");
+                return PersistenceParticipantPrepareResult.Failure($"Unsupported player resources participant schema version {payloadSchemaVersion}.");
             }
 
             if (string.IsNullOrWhiteSpace(payloadJson))
@@ -92,7 +92,7 @@ namespace UnityIsekaiGame.Persistence
             PlayerResourcesSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<PlayerResourcesSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<PlayerResourcesSaveData>(payloadJson);
             }
             catch
             {

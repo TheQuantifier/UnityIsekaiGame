@@ -31,7 +31,7 @@ The participant coordinates DTO capture, validation, prepare, and commit. `Playe
 The participant loads after:
 
 1. `player.inventory-equipment`;
-2. `player.stats-vitals-status`.
+2. `player.status-effects` and `player.resources`.
 
 This ensures inventory-backed collect objectives see restored inventory and quest/contract state exists before later position/place restoration can fire location triggers.
 

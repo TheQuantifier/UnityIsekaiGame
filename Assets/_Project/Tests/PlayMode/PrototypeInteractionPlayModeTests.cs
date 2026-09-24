@@ -189,6 +189,11 @@ namespace UnityIsekaiGame.Tests
 
         private static void CaptureCamera(Camera camera, string fileName)
         {
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+            {
+                return;
+            }
+
             Assert.That(camera, Is.Not.Null);
             const int width = 1280;
             const int height = 720;

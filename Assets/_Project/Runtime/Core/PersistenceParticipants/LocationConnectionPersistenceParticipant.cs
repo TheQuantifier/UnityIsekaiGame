@@ -56,7 +56,7 @@ namespace UnityIsekaiGame.Persistence
             }
 
             LocationConnectionRuntimeSaveData saveData = runtime.CreateSaveData();
-            string payload = JsonUtility.ToJson(saveData);
+            string payload = PersistenceSerialization.Serialize(saveData);
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
@@ -82,7 +82,7 @@ namespace UnityIsekaiGame.Persistence
             LocationConnectionRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<LocationConnectionRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<LocationConnectionRuntimeSaveData>(payloadJson);
             }
             catch
             {

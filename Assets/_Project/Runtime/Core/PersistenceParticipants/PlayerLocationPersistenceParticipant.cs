@@ -11,7 +11,7 @@ using UnityIsekaiGame.Player;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class PlayerLocationPersistenceParticipant : IPersistenceParticipant
+    public sealed class PlayerLocationPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const int CurrentParticipantSchemaVersion = 1;
         public const string ParticipantKeyValue = "player.location";
@@ -58,6 +58,12 @@ namespace UnityIsekaiGame.Persistence
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.PositionAndPlace;
         public int LoadPriority => 0;
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { PlayerQuestContractPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => Array.Empty<string>();
+        public bool SupportsRollback => true;
+        public bool RequiresSceneReadiness => true;
+        public bool RequiresDefinitionRegistry => true;
+        public bool RequiresWorldEntityRegistry => false;
 
         public PersistenceParticipantSaveResult CapturePayload()
         {
@@ -97,14 +103,14 @@ namespace UnityIsekaiGame.Persistence
                 locationMode = SameSceneOnlyMode
             };
 
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Player location snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -122,7 +128,7 @@ namespace UnityIsekaiGame.Persistence
             PlayerLocationSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<PlayerLocationSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<PlayerLocationSaveData>(payloadJson);
             }
             catch (Exception)
             {

@@ -1,7 +1,9 @@
 {
     "name": "UnityIsekaiGame.GameData",
     "rootNamespace": "UnityIsekaiGame.GameData",
-    "references": [],
+    "references": [
+        "Unity.Newtonsoft.Json"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

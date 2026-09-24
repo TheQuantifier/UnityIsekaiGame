@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.Persistence;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -354,8 +355,28 @@ namespace UnityIsekaiGame.Tests
         private PersistenceService CreateService(RuntimeFixture fixture)
         {
             PersistenceService service = new PersistenceService(new PersistencePathProvider(testRoot));
+            service.RegisterParticipant(new DependencyParticipant(PlayerInventoryEquipmentPersistenceParticipant.Key), out _);
+            service.RegisterParticipant(new DependencyParticipant(PlayerAttributesPersistenceParticipant.Key), out _);
+            service.RegisterParticipant(new DependencyParticipant(PlayerStatusEffectsPersistenceParticipant.Key), out _);
+            service.RegisterParticipant(new DependencyParticipant(PlayerResourcesPersistenceParticipant.Key), out _);
             Assert.That(service.RegisterParticipant((IPersistenceParticipant)CreateParticipant(fixture), out string failureReason), Is.True, failureReason);
             return service;
+        }
+
+        private sealed class DependencyParticipant : IPersistenceParticipant
+        {
+            public DependencyParticipant(string key) => ParticipantKey = key;
+            public string ParticipantKey { get; }
+            public int ParticipantSchemaVersion => 1;
+            public bool IsRequired => true;
+            public PersistenceScope Scope => PersistenceScope.Player;
+            public string OwnerId => PersistenceService.LocalPlayerId;
+            public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Bootstrap;
+            public int LoadPriority => -100;
+            public PersistenceParticipantSaveResult CapturePayload() => PersistenceParticipantSaveResult.Success("{}");
+            public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion) => PersistenceParticipantPrepareResult.Success(new object());
+            public PersistenceParticipantCommitResult CommitPreparedPayload(object preparedPayload) => PersistenceParticipantCommitResult.Success();
+            public void DiscardPreparedPayload(object preparedPayload) { }
         }
 
         private static object CreateParticipant(RuntimeFixture fixture)

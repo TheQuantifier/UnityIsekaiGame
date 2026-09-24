@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using UnityIsekaiGame.ActorLifecycle;
 using UnityIsekaiGame.Beings.Biology;
@@ -18,6 +19,7 @@ using UnityIsekaiGame.Economy.Properties;
 using UnityIsekaiGame.Economy.RegionalFlow;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.Diplomacy;
+using UnityIsekaiGame.Dialogue;
 using UnityIsekaiGame.Factions;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
@@ -41,6 +43,7 @@ using UnityIsekaiGame.Knowledge.Records;
 using UnityIsekaiGame.Knowledge.Sharing;
 using UnityIsekaiGame.Knowledge.Sources;
 using UnityIsekaiGame.Magic;
+using UnityIsekaiGame.Narrative;
 using UnityIsekaiGame.Organizations;
 using UnityIsekaiGame.Persistence;
 using UnityIsekaiGame.Places;
@@ -68,12 +71,12 @@ using UnityIsekaiGame.Economy.InstitutionalRevenue;
 using UnityIsekaiGame.Economy.Trading;
 using UnityIsekaiGame.WorldEntities;
 using UnityIsekaiGame.WorldLocations;
+using UnityIsekaiGame.WorldLocations.SceneBinding;
 
 namespace UnityIsekaiGame.Gameplay
 {
-    public sealed class PrototypePersistenceServiceBehaviour : MonoBehaviour, IItemDurabilityRuntimeProvider
+    public sealed partial class PrototypePersistenceServiceBehaviour : MonoBehaviour, IItemDurabilityRuntimeProvider
     {
-        [SerializeField] private PrototypePersistenceState prototypeState;
         [SerializeField] private DefinitionCatalog definitionCatalog;
         [SerializeField] private PlayerInventory playerInventory;
         [SerializeField] private PlayerEquipment playerEquipment;
@@ -163,14 +166,13 @@ namespace UnityIsekaiGame.Gameplay
         [SerializeField] private bool registerPlayerInformationTransfers = true;
         [SerializeField] private bool registerPlayerInformationAccess = true;
         [SerializeField] private bool registerPlayerKnowledgeRecords = true;
-        [SerializeField] private bool registerPlayerStatsVitalsStatus = true;
+        [SerializeField] private bool registerPlayerStatusEffects = true;
         [SerializeField] private bool registerPlayerResources = true;
         [SerializeField] private bool registerPlayerCombatExecution = true;
         [SerializeField] private bool registerPlayerActorLifecycle = true;
         [SerializeField] private bool registerPlayerOngoingEffects = true;
         [SerializeField] private bool registerPlayerQuestContract = true;
         [SerializeField] private bool registerPlayerLocation = true;
-        [SerializeField] private string prototypeSlotId = PersistenceService.PrototypeSlotId;
         [Header("Save Slots")]
         [SerializeField, Min(1)] private int manualSlotCount = PrototypeSaveSlotCatalog.DefaultManualSlotCount;
         [SerializeField, Min(1)] private int autosaveSlotCount = PrototypeSaveSlotCatalog.DefaultAutosaveSlotCount;
@@ -179,8 +181,10 @@ namespace UnityIsekaiGame.Gameplay
         [SerializeField] private GameSaveDirtyTracker dirtyTracker;
         [SerializeField] private AutosaveCoordinator autosaveCoordinator;
 
-        private PersistenceService service;
-        private PrototypePersistenceStateParticipant participant;
+        private PersistenceService playerService;
+        private PersistenceService worldService;
+        private PlayerPersistenceContext playerPersistenceContext;
+        private WorldPersistenceContext worldPersistenceContext;
         private PlayerIdentityProgressionPersistenceParticipant identityProgressionParticipant;
         private PlayerAttributesPersistenceParticipant playerAttributesParticipant;
         private PlayerSkillsPersistenceParticipant playerSkillsParticipant;
@@ -241,7 +245,7 @@ namespace UnityIsekaiGame.Gameplay
         private CraftingExecutionPersistenceParticipant craftingExecutionParticipant;
         private ProductionWorkflowPersistenceParticipant productionWorkflowParticipant;
         private ExperimentationPersistenceParticipant experimentationParticipant;
-        private PlayerStatsVitalsStatusPersistenceParticipant statsVitalsStatusParticipant;
+        private PlayerStatusEffectsPersistenceParticipant statusEffectsParticipant;
         private PlayerResourcesPersistenceParticipant playerResourcesParticipant;
         private PlayerCombatExecutionPersistenceParticipant playerCombatExecutionParticipant;
         private PlayerActorLifecyclePersistenceParticipant playerActorLifecycleParticipant;
@@ -306,9 +310,10 @@ namespace UnityIsekaiGame.Gameplay
         private PlayerItemIdentitySynchronizer playerItemIdentitySynchronizer;
         private bool dirtyEventsSubscribed;
 
-        public PersistenceService Service => service;
-        public PrototypePersistenceState PrototypeState => prototypeState;
-        public string PrototypeSlotId => string.IsNullOrWhiteSpace(prototypeSlotId) ? PersistenceService.PrototypeSlotId : prototypeSlotId;
+        public PersistenceService PlayerService => playerService;
+        public PersistenceService WorldService => worldService;
+        public PersistenceReadinessReport PlayerReadiness { get; private set; }
+        public PersistenceReadinessReport WorldReadiness { get; private set; }
         public int ManualSlotCount => Mathf.Max(1, manualSlotCount);
         public int AutosaveSlotCount => Mathf.Max(1, autosaveSlotCount);
         public PlayTimeTracker PlayTime => playTimeTracker;
@@ -328,7 +333,7 @@ namespace UnityIsekaiGame.Gameplay
                 {
                     string personId = playerIdentityProgression == null ? PersistenceService.LocalPlayerId : playerIdentityProgression.PersonId;
                     playerRelationships = new RelationshipRuntime();
-                    playerRelationships.Configure(GetDefinitionRegistry(), new[] { personId, service == null ? PersistenceService.LocalPlayerId : service.PlayerId });
+                    playerRelationships.Configure(GetDefinitionRegistry(), new[] { personId, playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId });
                 }
 
                 return playerRelationships;
@@ -471,7 +476,7 @@ namespace UnityIsekaiGame.Gameplay
                     string personId = playerIdentityProgression == null ? PersistenceService.LocalPlayerId : playerIdentityProgression.PersonId;
                     string[] knownPersons = GetPrototypeSocialPersonIds(personId);
                     worldFamilyRelationships = new FamilyRelationshipRuntime();
-                    worldFamilyRelationships.Configure(GetDefinitionRegistry(), knownPersons, Relationships, InterpersonalAttitudes, SocialInteractions, service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeAdultPersonIds(personId));
+                    worldFamilyRelationships.Configure(GetDefinitionRegistry(), knownPersons, Relationships, InterpersonalAttitudes, SocialInteractions, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeAdultPersonIds(personId));
                 }
 
                 return worldFamilyRelationships;
@@ -484,7 +489,7 @@ namespace UnityIsekaiGame.Gameplay
                 if (playerProfessions == null)
                 {
                     playerProfessions = new PersonProfessionRuntime();
-                    playerProfessions.Configure(GetDefinitionRegistry(), new[] { service == null ? PersistenceService.LocalPlayerId : service.PlayerId });
+                    playerProfessions.Configure(GetDefinitionRegistry(), new[] { playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId });
                 }
 
                 return playerProfessions;
@@ -497,7 +502,7 @@ namespace UnityIsekaiGame.Gameplay
                 if (playerProfessionEntries == null)
                 {
                     playerProfessionEntries = new ProfessionEntryRuntime();
-                    playerProfessionEntries.Configure(GetDefinitionRegistry(), Professions, new[] { service == null ? PersistenceService.LocalPlayerId : service.PlayerId });
+                    playerProfessionEntries.Configure(GetDefinitionRegistry(), Professions, new[] { playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId });
                 }
 
                 return playerProfessionEntries;
@@ -510,7 +515,7 @@ namespace UnityIsekaiGame.Gameplay
                 if (playerTraining == null)
                 {
                     playerTraining = new TrainingRuntime();
-                    string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+                    string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
                     playerTraining.Configure(GetDefinitionRegistry(), Professions, InformationTransfers, new[] { personId });
                 }
 
@@ -524,7 +529,7 @@ namespace UnityIsekaiGame.Gameplay
                 if (playerProfessionalActivities == null)
                 {
                     playerProfessionalActivities = new ProfessionalActivityRuntime();
-                    string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+                    string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
                     playerProfessionalActivities.Configure(GetDefinitionRegistry(), Professions, new[] { personId });
                 }
 
@@ -538,7 +543,7 @@ namespace UnityIsekaiGame.Gameplay
                 if (playerCredentials == null)
                 {
                     playerCredentials = new CredentialRuntime();
-                    string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+                    string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
                     playerCredentials.Configure(GetDefinitionRegistry(), Professions, Training, ProfessionalActivities, new[] { personId }, GetPrototypeCredentialAuthorities());
                 }
 
@@ -552,7 +557,7 @@ namespace UnityIsekaiGame.Gameplay
                 if (playerProfessionalRanks == null)
                 {
                     playerProfessionalRanks = new ProfessionalRankRuntime();
-                    string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+                    string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
                     playerProfessionalRanks.Configure(GetDefinitionRegistry(), Professions, Training, ProfessionalActivities, Credentials, new[] { personId }, GetPrototypeCredentialAuthorities());
                 }
 
@@ -566,7 +571,7 @@ namespace UnityIsekaiGame.Gameplay
                 if (playerPositionEmployment == null)
                 {
                     playerPositionEmployment = new PositionEmploymentRuntime();
-                    string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+                    string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
                     playerPositionEmployment.Configure(GetDefinitionRegistry(), Professions, Training, ProfessionalActivities, Credentials, ProfessionalRanks, new[] { personId }, GetPrototypeOrganizations(), GetPrototypeCredentialAuthorities());
                 }
 
@@ -580,7 +585,7 @@ namespace UnityIsekaiGame.Gameplay
                 if (playerCareerHistory == null)
                 {
                     playerCareerHistory = new CareerHistoryRuntime();
-                    string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+                    string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
                     playerCareerHistory.Configure(GetDefinitionRegistry(), Professions, Training, ProfessionalActivities, Credentials, ProfessionalRanks, PositionEmployment, new[] { personId }, GetPrototypeOrganizations(), GetPrototypeCredentialAuthorities());
                 }
 
@@ -594,7 +599,7 @@ namespace UnityIsekaiGame.Gameplay
                 if (playerLifePaths == null)
                 {
                     playerLifePaths = new LifePathRuntime();
-                    string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+                    string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
                     playerLifePaths.Configure(GetDefinitionRegistry(), Professions, Training, ProfessionalActivities, Credentials, ProfessionalRanks, PositionEmployment, CareerHistory, new[] { personId }, GetPrototypeOrganizations());
                 }
 
@@ -611,7 +616,7 @@ namespace UnityIsekaiGame.Gameplay
                     worldEconomy = new EconomyRuntime();
                 }
 
-                worldEconomy.Configure(GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId);
+                worldEconomy.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
                 return worldEconomy;
             }
         }
@@ -624,7 +629,7 @@ namespace UnityIsekaiGame.Gameplay
                     worldMarkets = new MarketRuntime();
                 }
 
-                worldMarkets.Configure(GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId);
+                worldMarkets.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
                 return worldMarkets;
             }
         }
@@ -637,7 +642,7 @@ namespace UnityIsekaiGame.Gameplay
                     worldTrades = new TradeRuntime();
                 }
 
-                worldTrades.Configure(GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId);
+                worldTrades.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
                 return worldTrades;
             }
         }
@@ -650,7 +655,7 @@ namespace UnityIsekaiGame.Gameplay
                     worldPayroll = new PayrollRuntime();
                 }
 
-                worldPayroll.Configure(GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId);
+                worldPayroll.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
                 return worldPayroll;
             }
         }
@@ -663,7 +668,7 @@ namespace UnityIsekaiGame.Gameplay
                     worldBusinesses = new BusinessRuntime();
                 }
 
-                worldBusinesses.Configure(GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId);
+                worldBusinesses.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
                 return worldBusinesses;
             }
         }
@@ -676,7 +681,7 @@ namespace UnityIsekaiGame.Gameplay
                     worldProperties = new PropertyRuntime();
                 }
 
-                worldProperties.Configure(GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId);
+                worldProperties.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
                 return worldProperties;
             }
         }
@@ -689,7 +694,7 @@ namespace UnityIsekaiGame.Gameplay
                     worldContracts = new ContractEconomyRuntime();
                 }
 
-                worldContracts.Configure(GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId);
+                worldContracts.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
                 return worldContracts;
             }
         }
@@ -702,7 +707,7 @@ namespace UnityIsekaiGame.Gameplay
                     worldInstitutionalRevenue = new InstitutionalRevenueRuntime();
                 }
 
-                worldInstitutionalRevenue.Configure(GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId);
+                worldInstitutionalRevenue.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
                 return worldInstitutionalRevenue;
             }
         }
@@ -715,7 +720,7 @@ namespace UnityIsekaiGame.Gameplay
                     worldRegionalFlow = new RegionalFlowRuntime();
                 }
 
-                worldRegionalFlow.Configure(GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId);
+                worldRegionalFlow.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
                 return worldRegionalFlow;
             }
         }
@@ -726,11 +731,11 @@ namespace UnityIsekaiGame.Gameplay
                 if (worldOrganizations == null)
                 {
                     worldOrganizations = new OrganizationRuntime();
-                    PrototypeOrganizationDefinitionFactory.SeedPrototypeOrganizations(worldOrganizations, GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId);
+                    PrototypeOrganizationDefinitionFactory.SeedPrototypeOrganizations(worldOrganizations, GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
                 }
 
-                string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
-                worldOrganizations.Configure(GetDefinitionRegistry(), service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeSocialPersonIds(personId), Array.Empty<string>());
+                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
+                worldOrganizations.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), Array.Empty<string>());
                 return worldOrganizations;
             }
         }
@@ -743,8 +748,8 @@ namespace UnityIsekaiGame.Gameplay
                     worldOrganizationMemberships = new OrganizationMembershipRuntime();
                 }
 
-                string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
-                worldOrganizationMemberships.Configure(GetDefinitionRegistry(), Organizations, service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeSocialPersonIds(personId), GetPrototypeOrganizations());
+                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
+                worldOrganizationMemberships.Configure(GetDefinitionRegistry(), Organizations, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetPrototypeOrganizations());
                 return worldOrganizationMemberships;
             }
         }
@@ -757,8 +762,8 @@ namespace UnityIsekaiGame.Gameplay
                     worldOrganizationAuthority = new OrganizationAuthorityRuntime();
                 }
 
-                string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
-                worldOrganizationAuthority.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeSocialPersonIds(personId), GetPrototypeOrganizations());
+                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
+                worldOrganizationAuthority.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetPrototypeOrganizations());
                 return worldOrganizationAuthority;
             }
         }
@@ -771,7 +776,7 @@ namespace UnityIsekaiGame.Gameplay
                     worldOrganizationResources = new OrganizationResourceRuntime();
                 }
 
-                worldOrganizationResources.Configure(GetDefinitionRegistry(), Organizations, OrganizationAuthority, Economy, service == null ? PersistenceService.LocalWorldId : service.WorldId, Properties, Businesses, ItemIdentities, ContractEconomy, Payroll);
+                worldOrganizationResources.Configure(GetDefinitionRegistry(), Organizations, OrganizationAuthority, Economy, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, Properties, Businesses, ItemIdentities, ContractEconomy, Payroll);
                 return worldOrganizationResources;
             }
         }
@@ -784,8 +789,8 @@ namespace UnityIsekaiGame.Gameplay
                     worldOrganizationDecisions = new OrganizationDecisionRuntime();
                 }
 
-                string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
-                worldOrganizationDecisions.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, OrganizationAuthority, OrganizationResources, service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeSocialPersonIds(personId), Economy);
+                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
+                worldOrganizationDecisions.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, OrganizationAuthority, OrganizationResources, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), Economy);
                 return worldOrganizationDecisions;
             }
         }
@@ -798,8 +803,8 @@ namespace UnityIsekaiGame.Gameplay
                     worldFactions = new FactionRuntime();
                 }
 
-                string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
-                worldFactions.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, OrganizationAuthority, OrganizationResources, OrganizationDecisions, service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeSocialPersonIds(personId));
+                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
+                worldFactions.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, OrganizationAuthority, OrganizationResources, OrganizationDecisions, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId));
                 return worldFactions;
             }
         }
@@ -812,8 +817,8 @@ namespace UnityIsekaiGame.Gameplay
                     worldDiplomacy = new DiplomacyRuntime();
                 }
 
-                string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
-                worldDiplomacy.Configure(GetDefinitionRegistry(), Organizations, Factions, OrganizationAuthority, OrganizationDecisions, OrganizationResources, service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeSocialPersonIds(personId));
+                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
+                worldDiplomacy.Configure(GetDefinitionRegistry(), Organizations, Factions, OrganizationAuthority, OrganizationDecisions, OrganizationResources, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId));
                 return worldDiplomacy;
             }
         }
@@ -826,8 +831,8 @@ namespace UnityIsekaiGame.Gameplay
                     worldGovernments = new GovernmentRuntime();
                 }
 
-                string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
-                worldGovernments.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, OrganizationAuthority, OrganizationDecisions, OrganizationResources, Factions, Diplomacy, Properties, service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
+                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
+                worldGovernments.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, OrganizationAuthority, OrganizationDecisions, OrganizationResources, Factions, Diplomacy, Properties, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
                 return worldGovernments;
             }
         }
@@ -840,8 +845,8 @@ namespace UnityIsekaiGame.Gameplay
                     worldLaws = new LegalRuntime();
                 }
 
-                string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
-                worldLaws.Configure(GetDefinitionRegistry(), Governments, Organizations, OrganizationAuthority, OrganizationDecisions, Diplomacy, Properties, service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
+                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
+                worldLaws.Configure(GetDefinitionRegistry(), Governments, Organizations, OrganizationAuthority, OrganizationDecisions, Diplomacy, Properties, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
                 return worldLaws;
             }
         }
@@ -854,8 +859,8 @@ namespace UnityIsekaiGame.Gameplay
                     worldCrimes = new CrimeRuntime();
                 }
 
-                string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
-                worldCrimes.Configure(GetDefinitionRegistry(), Governments, Laws, OrganizationAuthority, Diplomacy, service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
+                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
+                worldCrimes.Configure(GetDefinitionRegistry(), Governments, Laws, OrganizationAuthority, Diplomacy, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
                 return worldCrimes;
             }
         }
@@ -868,8 +873,8 @@ namespace UnityIsekaiGame.Gameplay
                     worldJustice = new JusticeRuntime();
                 }
 
-                string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
-                worldJustice.Configure(GetDefinitionRegistry(), Governments, Laws, Organizations, OrganizationAuthority, Crimes, service == null ? PersistenceService.LocalWorldId : service.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
+                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
+                worldJustice.Configure(GetDefinitionRegistry(), Governments, Laws, Organizations, OrganizationAuthority, Crimes, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
                 return worldJustice;
             }
         }
@@ -891,397 +896,392 @@ namespace UnityIsekaiGame.Gameplay
 
         private void OnDisable()
         {
-            if (service != null && participant != null)
+            if (playerService != null && inventoryEquipmentParticipant != null)
             {
-                service.UnregisterParticipant(participant);
-                participant = null;
-            }
-
-            if (service != null && inventoryEquipmentParticipant != null)
-            {
-                service.UnregisterParticipant(inventoryEquipmentParticipant);
+                UnregisterParticipant(inventoryEquipmentParticipant);
                 inventoryEquipmentParticipant = null;
             }
 
-            if (service != null && itemIdentityParticipant != null)
+            if (playerService != null && itemIdentityParticipant != null)
             {
-                service.UnregisterParticipant(itemIdentityParticipant);
+                UnregisterParticipant(itemIdentityParticipant);
                 itemIdentityParticipant = null;
             }
 
-            if (service != null && economyParticipant != null)
+            if (playerService != null && economyParticipant != null)
             {
-                service.UnregisterParticipant(economyParticipant);
+                UnregisterParticipant(economyParticipant);
                 economyParticipant = null;
             }
 
-            if (service != null && marketParticipant != null)
+            if (playerService != null && marketParticipant != null)
             {
-                service.UnregisterParticipant(marketParticipant);
+                UnregisterParticipant(marketParticipant);
                 marketParticipant = null;
             }
 
-            if (service != null && tradeParticipant != null)
+            if (playerService != null && tradeParticipant != null)
             {
-                service.UnregisterParticipant(tradeParticipant);
+                UnregisterParticipant(tradeParticipant);
                 tradeParticipant = null;
             }
 
-            if (service != null && payrollParticipant != null)
+            if (playerService != null && payrollParticipant != null)
             {
-                service.UnregisterParticipant(payrollParticipant);
+                UnregisterParticipant(payrollParticipant);
                 payrollParticipant = null;
             }
 
-            if (service != null && businessParticipant != null)
+            if (playerService != null && businessParticipant != null)
             {
-                service.UnregisterParticipant(businessParticipant);
+                UnregisterParticipant(businessParticipant);
                 businessParticipant = null;
             }
 
-            if (service != null && propertyParticipant != null)
+            if (playerService != null && propertyParticipant != null)
             {
-                service.UnregisterParticipant(propertyParticipant);
+                UnregisterParticipant(propertyParticipant);
                 propertyParticipant = null;
             }
 
-            if (service != null && contractEconomyParticipant != null)
+            if (playerService != null && contractEconomyParticipant != null)
             {
-                service.UnregisterParticipant(contractEconomyParticipant);
+                UnregisterParticipant(contractEconomyParticipant);
                 contractEconomyParticipant = null;
             }
 
-            if (service != null && institutionalRevenueParticipant != null)
+            if (playerService != null && institutionalRevenueParticipant != null)
             {
-                service.UnregisterParticipant(institutionalRevenueParticipant);
+                UnregisterParticipant(institutionalRevenueParticipant);
                 institutionalRevenueParticipant = null;
             }
 
-            if (service != null && regionalFlowParticipant != null)
+            if (playerService != null && regionalFlowParticipant != null)
             {
-                service.UnregisterParticipant(regionalFlowParticipant);
+                UnregisterParticipant(regionalFlowParticipant);
                 regionalFlowParticipant = null;
             }
 
-            if (service != null && organizationParticipant != null)
+            if (playerService != null && organizationParticipant != null)
             {
-                service.UnregisterParticipant(organizationParticipant);
+                UnregisterParticipant(organizationParticipant);
                 organizationParticipant = null;
             }
 
-            if (service != null && organizationMembershipParticipant != null)
+            if (playerService != null && organizationMembershipParticipant != null)
             {
-                service.UnregisterParticipant(organizationMembershipParticipant);
+                UnregisterParticipant(organizationMembershipParticipant);
                 organizationMembershipParticipant = null;
             }
 
-            if (service != null && organizationAuthorityParticipant != null)
+            if (playerService != null && organizationAuthorityParticipant != null)
             {
-                service.UnregisterParticipant(organizationAuthorityParticipant);
+                UnregisterParticipant(organizationAuthorityParticipant);
                 organizationAuthorityParticipant = null;
             }
 
-            if (service != null && organizationResourceParticipant != null)
+            if (playerService != null && organizationResourceParticipant != null)
             {
-                service.UnregisterParticipant(organizationResourceParticipant);
+                UnregisterParticipant(organizationResourceParticipant);
                 organizationResourceParticipant = null;
             }
 
-            if (service != null && organizationDecisionParticipant != null)
+            if (playerService != null && organizationDecisionParticipant != null)
             {
-                service.UnregisterParticipant(organizationDecisionParticipant);
+                UnregisterParticipant(organizationDecisionParticipant);
                 organizationDecisionParticipant = null;
             }
 
-            if (service != null && factionParticipant != null)
+            if (playerService != null && factionParticipant != null)
             {
-                service.UnregisterParticipant(factionParticipant);
+                UnregisterParticipant(factionParticipant);
                 factionParticipant = null;
             }
 
-            if (service != null && diplomacyParticipant != null)
+            if (playerService != null && diplomacyParticipant != null)
             {
-                service.UnregisterParticipant(diplomacyParticipant);
+                UnregisterParticipant(diplomacyParticipant);
                 diplomacyParticipant = null;
             }
 
-            if (service != null && governmentParticipant != null)
+            if (playerService != null && governmentParticipant != null)
             {
-                service.UnregisterParticipant(governmentParticipant);
+                UnregisterParticipant(governmentParticipant);
                 governmentParticipant = null;
             }
 
-            if (service != null && legalParticipant != null)
+            if (playerService != null && legalParticipant != null)
             {
-                service.UnregisterParticipant(legalParticipant);
+                UnregisterParticipant(legalParticipant);
                 legalParticipant = null;
             }
 
-            if (service != null && crimeParticipant != null)
+            if (playerService != null && crimeParticipant != null)
             {
-                service.UnregisterParticipant(crimeParticipant);
+                UnregisterParticipant(crimeParticipant);
                 crimeParticipant = null;
             }
 
-            if (service != null && justiceParticipant != null)
+            if (playerService != null && justiceParticipant != null)
             {
-                service.UnregisterParticipant(justiceParticipant);
+                UnregisterParticipant(justiceParticipant);
                 justiceParticipant = null;
             }
 
-            if (service != null && itemCompositionParticipant != null)
+            if (playerService != null && itemCompositionParticipant != null)
             {
-                service.UnregisterParticipant(itemCompositionParticipant);
+                UnregisterParticipant(itemCompositionParticipant);
                 itemCompositionParticipant = null;
             }
 
-            if (service != null && itemQualityAffixParticipant != null)
+            if (playerService != null && itemQualityAffixParticipant != null)
             {
-                service.UnregisterParticipant(itemQualityAffixParticipant);
+                UnregisterParticipant(itemQualityAffixParticipant);
                 itemQualityAffixParticipant = null;
             }
 
-            if (service != null && itemDurabilityParticipant != null)
+            if (playerService != null && itemDurabilityParticipant != null)
             {
-                service.UnregisterParticipant(itemDurabilityParticipant);
+                UnregisterParticipant(itemDurabilityParticipant);
                 itemDurabilityParticipant = null;
             }
 
-            if (service != null && productionRequirementParticipant != null)
+            if (playerService != null && productionRequirementParticipant != null)
             {
-                service.UnregisterParticipant(productionRequirementParticipant);
+                UnregisterParticipant(productionRequirementParticipant);
                 productionRequirementParticipant = null;
             }
 
-            if (service != null && recipeKnowledgeParticipant != null)
+            if (playerService != null && recipeKnowledgeParticipant != null)
             {
-                service.UnregisterParticipant(recipeKnowledgeParticipant);
+                UnregisterParticipant(recipeKnowledgeParticipant);
                 recipeKnowledgeParticipant = null;
             }
 
-            if (service != null && craftingExecutionParticipant != null)
+            if (playerService != null && craftingExecutionParticipant != null)
             {
-                service.UnregisterParticipant(craftingExecutionParticipant);
+                UnregisterParticipant(craftingExecutionParticipant);
                 craftingExecutionParticipant = null;
             }
 
-            if (service != null && productionWorkflowParticipant != null)
+            if (playerService != null && productionWorkflowParticipant != null)
             {
-                service.UnregisterParticipant(productionWorkflowParticipant);
+                UnregisterParticipant(productionWorkflowParticipant);
                 productionWorkflowParticipant = null;
             }
 
-            if (service != null && experimentationParticipant != null)
+            if (playerService != null && experimentationParticipant != null)
             {
-                service.UnregisterParticipant(experimentationParticipant);
+                UnregisterParticipant(experimentationParticipant);
                 experimentationParticipant = null;
             }
 
-            if (service != null && identityProgressionParticipant != null)
+            if (playerService != null && identityProgressionParticipant != null)
             {
-                service.UnregisterParticipant(identityProgressionParticipant);
+                UnregisterParticipant(identityProgressionParticipant);
                 identityProgressionParticipant = null;
             }
 
-            if (service != null && playerAttributesParticipant != null)
+            if (playerService != null && playerAttributesParticipant != null)
             {
-                service.UnregisterParticipant(playerAttributesParticipant);
+                UnregisterParticipant(playerAttributesParticipant);
                 playerAttributesParticipant = null;
             }
 
-            if (service != null && playerSkillsParticipant != null)
+            if (playerService != null && playerSkillsParticipant != null)
             {
-                service.UnregisterParticipant(playerSkillsParticipant);
+                UnregisterParticipant(playerSkillsParticipant);
                 playerSkillsParticipant = null;
             }
 
-            if (service != null && playerTraitsParticipant != null)
+            if (playerService != null && playerTraitsParticipant != null)
             {
-                service.UnregisterParticipant(playerTraitsParticipant);
+                UnregisterParticipant(playerTraitsParticipant);
                 playerTraitsParticipant = null;
             }
 
-            if (service != null && playerBodyParticipant != null)
+            if (playerService != null && playerBodyParticipant != null)
             {
-                service.UnregisterParticipant(playerBodyParticipant);
+                UnregisterParticipant(playerBodyParticipant);
                 playerBodyParticipant = null;
             }
 
-            if (service != null && playerKnowledgeParticipant != null)
+            if (playerService != null && playerKnowledgeParticipant != null)
             {
-                service.UnregisterParticipant(playerKnowledgeParticipant);
+                UnregisterParticipant(playerKnowledgeParticipant);
                 playerKnowledgeParticipant = null;
             }
 
-            if (service != null && playerProfessionParticipant != null)
+            if (playerService != null && playerProfessionParticipant != null)
             {
-                service.UnregisterParticipant(playerProfessionParticipant);
+                UnregisterParticipant(playerProfessionParticipant);
                 playerProfessionParticipant = null;
             }
 
-            if (service != null && playerProfessionEntryParticipant != null)
+            if (playerService != null && playerProfessionEntryParticipant != null)
             {
-                service.UnregisterParticipant(playerProfessionEntryParticipant);
+                UnregisterParticipant(playerProfessionEntryParticipant);
                 playerProfessionEntryParticipant = null;
             }
 
-            if (service != null && playerTrainingParticipant != null)
+            if (playerService != null && playerTrainingParticipant != null)
             {
-                service.UnregisterParticipant(playerTrainingParticipant);
+                UnregisterParticipant(playerTrainingParticipant);
                 playerTrainingParticipant = null;
             }
 
-            if (service != null && playerProfessionalActivityParticipant != null)
+            if (playerService != null && playerProfessionalActivityParticipant != null)
             {
-                service.UnregisterParticipant(playerProfessionalActivityParticipant);
+                UnregisterParticipant(playerProfessionalActivityParticipant);
                 playerProfessionalActivityParticipant = null;
             }
 
-            if (service != null && playerCredentialParticipant != null)
+            if (playerService != null && playerCredentialParticipant != null)
             {
-                service.UnregisterParticipant(playerCredentialParticipant);
+                UnregisterParticipant(playerCredentialParticipant);
                 playerCredentialParticipant = null;
             }
 
-            if (service != null && playerProfessionalRankParticipant != null)
+            if (playerService != null && playerProfessionalRankParticipant != null)
             {
-                service.UnregisterParticipant(playerProfessionalRankParticipant);
+                UnregisterParticipant(playerProfessionalRankParticipant);
                 playerProfessionalRankParticipant = null;
             }
 
-            if (service != null && playerPositionEmploymentParticipant != null)
+            if (playerService != null && playerPositionEmploymentParticipant != null)
             {
-                service.UnregisterParticipant(playerPositionEmploymentParticipant);
+                UnregisterParticipant(playerPositionEmploymentParticipant);
                 playerPositionEmploymentParticipant = null;
             }
 
-            if (service != null && playerCareerHistoryParticipant != null)
+            if (playerService != null && playerCareerHistoryParticipant != null)
             {
-                service.UnregisterParticipant(playerCareerHistoryParticipant);
+                UnregisterParticipant(playerCareerHistoryParticipant);
                 playerCareerHistoryParticipant = null;
             }
 
-            if (service != null && playerLifePathParticipant != null)
+            if (playerService != null && playerLifePathParticipant != null)
             {
-                service.UnregisterParticipant(playerLifePathParticipant);
+                UnregisterParticipant(playerLifePathParticipant);
                 playerLifePathParticipant = null;
             }
 
-            if (service != null && playerRelationshipParticipant != null)
+            if (playerService != null && playerRelationshipParticipant != null)
             {
-                service.UnregisterParticipant(playerRelationshipParticipant);
+                UnregisterParticipant(playerRelationshipParticipant);
                 playerRelationshipParticipant = null;
             }
 
-            if (service != null && playerInterpersonalAttitudeParticipant != null)
+            if (playerService != null && playerInterpersonalAttitudeParticipant != null)
             {
-                service.UnregisterParticipant(playerInterpersonalAttitudeParticipant);
+                UnregisterParticipant(playerInterpersonalAttitudeParticipant);
                 playerInterpersonalAttitudeParticipant = null;
             }
 
-            if (service != null && worldReputationParticipant != null)
+            if (playerService != null && worldReputationParticipant != null)
             {
-                service.UnregisterParticipant(worldReputationParticipant);
+                UnregisterParticipant(worldReputationParticipant);
                 worldReputationParticipant = null;
             }
 
-            if (service != null && worldRumorParticipant != null)
+            if (playerService != null && worldRumorParticipant != null)
             {
-                service.UnregisterParticipant(worldRumorParticipant);
+                UnregisterParticipant(worldRumorParticipant);
                 worldRumorParticipant = null;
             }
 
-            if (service != null && worldSocialInteractionParticipant != null)
+            if (playerService != null && worldSocialInteractionParticipant != null)
             {
-                service.UnregisterParticipant(worldSocialInteractionParticipant);
+                UnregisterParticipant(worldSocialInteractionParticipant);
                 worldSocialInteractionParticipant = null;
             }
 
-            if (service != null && worldSocialNormParticipant != null)
+            if (playerService != null && worldSocialNormParticipant != null)
             {
-                service.UnregisterParticipant(worldSocialNormParticipant);
+                UnregisterParticipant(worldSocialNormParticipant);
                 worldSocialNormParticipant = null;
             }
 
-            if (service != null && worldSocialNetworkParticipant != null)
+            if (playerService != null && worldSocialNetworkParticipant != null)
             {
-                service.UnregisterParticipant(worldSocialNetworkParticipant);
+                UnregisterParticipant(worldSocialNetworkParticipant);
                 worldSocialNetworkParticipant = null;
             }
 
-            if (service != null && worldSocialDecisionParticipant != null)
+            if (playerService != null && worldSocialDecisionParticipant != null)
             {
-                service.UnregisterParticipant(worldSocialDecisionParticipant);
+                UnregisterParticipant(worldSocialDecisionParticipant);
                 worldSocialDecisionParticipant = null;
             }
 
-            if (service != null && worldSocialInfluenceParticipant != null)
+            if (playerService != null && worldSocialInfluenceParticipant != null)
             {
-                service.UnregisterParticipant(worldSocialInfluenceParticipant);
+                UnregisterParticipant(worldSocialInfluenceParticipant);
                 worldSocialInfluenceParticipant = null;
             }
 
-            if (service != null && worldSocialEmotionParticipant != null)
+            if (playerService != null && worldSocialEmotionParticipant != null)
             {
-                service.UnregisterParticipant(worldSocialEmotionParticipant);
+                UnregisterParticipant(worldSocialEmotionParticipant);
                 worldSocialEmotionParticipant = null;
             }
 
-            if (service != null && worldFamilyRelationshipParticipant != null)
+            if (playerService != null && worldFamilyRelationshipParticipant != null)
             {
-                service.UnregisterParticipant(worldFamilyRelationshipParticipant);
+                UnregisterParticipant(worldFamilyRelationshipParticipant);
                 worldFamilyRelationshipParticipant = null;
             }
 
-            if (service != null && statsVitalsStatusParticipant != null)
+            if (playerService != null && statusEffectsParticipant != null)
             {
-                service.UnregisterParticipant(statsVitalsStatusParticipant);
-                statsVitalsStatusParticipant = null;
+                UnregisterParticipant(statusEffectsParticipant);
+                statusEffectsParticipant = null;
             }
 
-            if (service != null && playerResourcesParticipant != null)
+            if (playerService != null && playerResourcesParticipant != null)
             {
-                service.UnregisterParticipant(playerResourcesParticipant);
+                UnregisterParticipant(playerResourcesParticipant);
                 playerResourcesParticipant = null;
             }
 
-            if (service != null && playerActorLifecycleParticipant != null)
+            if (playerService != null && playerActorLifecycleParticipant != null)
             {
-                service.UnregisterParticipant(playerActorLifecycleParticipant);
+                UnregisterParticipant(playerActorLifecycleParticipant);
                 playerActorLifecycleParticipant = null;
             }
 
-            if (service != null && playerCombatExecutionParticipant != null)
+            if (playerService != null && playerCombatExecutionParticipant != null)
             {
-                service.UnregisterParticipant(playerCombatExecutionParticipant);
+                UnregisterParticipant(playerCombatExecutionParticipant);
                 playerCombatExecutionParticipant = null;
             }
 
-            if (service != null && playerOngoingEffectsParticipant != null)
+            if (playerService != null && playerOngoingEffectsParticipant != null)
             {
-                service.UnregisterParticipant(playerOngoingEffectsParticipant);
+                UnregisterParticipant(playerOngoingEffectsParticipant);
                 playerOngoingEffectsParticipant = null;
             }
 
-            if (service != null && questContractParticipant != null)
+            if (playerService != null && questContractParticipant != null)
             {
-                service.UnregisterParticipant(questContractParticipant);
+                UnregisterParticipant(questContractParticipant);
                 questContractParticipant = null;
             }
 
-            if (service != null && playerLocationParticipant != null)
+            if (playerService != null && playerLocationParticipant != null)
             {
-                service.UnregisterParticipant(playerLocationParticipant);
+                UnregisterParticipant(playerLocationParticipant);
                 playerLocationParticipant = null;
             }
 
-            if (service != null && playerKnowledgeRecordParticipant != null)
+            if (playerService != null && playerKnowledgeRecordParticipant != null)
             {
-                service.UnregisterParticipant(playerKnowledgeRecordParticipant);
+                UnregisterParticipant(playerKnowledgeRecordParticipant);
                 playerKnowledgeRecordParticipant = null;
             }
 
             UnsubscribeDirtyEvents();
+            UnregisterWorldLocationAndNarrativePersistence();
         }
 
         public void ConfigurePlayerPersistence(
@@ -1318,29 +1318,24 @@ namespace UnityIsekaiGame.Gameplay
 
         public void EnsureInitialized()
         {
-            if (prototypeState == null)
-            {
-                prototypeState = GetComponent<PrototypePersistenceState>();
-            }
-
-            if (prototypeState == null)
-            {
-                prototypeState = gameObject.AddComponent<PrototypePersistenceState>();
-            }
-
             EnsureRuntimeHelpers();
-            service ??= new PersistenceService();
-            service.PlaytimeSecondsProvider = () => playTimeTracker == null ? 0d : playTimeTracker.CumulativeSeconds;
-            if (participant == null)
-            {
-                participant = new PrototypePersistenceStateParticipant(prototypeState);
-                service.RegisterParticipant(participant, out string failureReason);
-                if (!string.IsNullOrWhiteSpace(failureReason))
-                {
-                    Debug.LogWarning(failureReason);
-                    participant = null;
-                }
-            }
+            playerService ??= new PersistenceService(
+                PersistencePathProvider.ForPlayer(PersistenceService.LocalPlayerId),
+                worldId: PersistenceService.LocalWorldId,
+                playerId: PersistenceService.LocalPlayerId,
+                accountId: PersistenceService.LocalAccountId,
+                contextKind: PersistenceContextKind.Player);
+            worldService ??= new PersistenceService(
+                PersistencePathProvider.ForWorld(PersistenceService.LocalWorldId),
+                worldId: PersistenceService.LocalWorldId,
+                playerId: string.Empty,
+                accountId: PersistenceService.LocalAccountId,
+                contextKind: PersistenceContextKind.World);
+            playerPersistenceContext ??= new PlayerPersistenceContext(playerService);
+            worldPersistenceContext ??= new WorldPersistenceContext(worldService);
+            playerService.PlaytimeSecondsProvider = () => playTimeTracker == null ? 0d : playTimeTracker.CumulativeSeconds;
+            playerService.MetadataProvider = new RuntimeSaveMetadataProvider(this, includePlayerSummary: true);
+            worldService.MetadataProvider = new RuntimeSaveMetadataProvider(this, includePlayerSummary: false);
 
             EnsurePlayerIdentityProgressionParticipant();
             EnsurePlayerAttributesParticipant();
@@ -1393,6 +1388,7 @@ namespace UnityIsekaiGame.Gameplay
             EnsureWorldLegalParticipant();
             EnsureWorldCrimeParticipant();
             EnsureWorldJusticeParticipant();
+            EnsureWorldLocationAndNarrativePersistence();
             EnsurePlayerItemCompositionParticipant();
             EnsurePlayerItemQualityAffixParticipant();
             EnsurePlayerItemDurabilityParticipant();
@@ -1402,74 +1398,82 @@ namespace UnityIsekaiGame.Gameplay
             EnsurePlayerProductionWorkflowParticipant();
             EnsurePlayerExperimentationParticipant();
             EnsurePlayerInventoryEquipmentParticipant();
-            EnsurePlayerStatsVitalsStatusParticipant();
+            EnsurePlayerStatusEffectsParticipant();
             EnsurePlayerResourcesParticipant();
             EnsurePlayerActorLifecycleParticipant();
             EnsurePlayerCombatExecutionParticipant();
             EnsurePlayerOngoingEffectsParticipant();
             EnsurePlayerQuestContractParticipant();
             EnsurePlayerLocationParticipant();
+            EnsurePersistenceConsistencyValidators();
+            PlayerReadiness = playerPersistenceContext.BuildReadiness(new[]
+            {
+                PlayerIdentityProgressionPersistenceParticipant.Key,
+                PlayerAttributesPersistenceParticipant.Key,
+                PlayerSkillsPersistenceParticipant.Key,
+                PlayerInventoryEquipmentPersistenceParticipant.Key,
+                PlayerStatusEffectsPersistenceParticipant.Key,
+                PlayerResourcesPersistenceParticipant.Key,
+                PlayerQuestContractPersistenceParticipant.Key
+            });
+            WorldReadiness = worldPersistenceContext.BuildReadiness(new[]
+            {
+                LocationPersistenceParticipant.Key,
+                EntityLocationPersistenceParticipant.Key,
+                InteractionPointPersistenceParticipant.Key,
+                LocationConnectionPersistenceParticipant.Key,
+                LocationRoutePersistenceParticipant.Key,
+                TravelJourneyPersistenceParticipant.Key,
+                TravelConditionPersistenceParticipant.Key,
+                PoliticalTravelPersistenceParticipant.Key,
+                QuestRuntimePersistenceParticipant.Key,
+                QuestParticipationRuntimePersistenceParticipant.Key,
+                QuestObjectiveProgressPersistenceParticipant.Key,
+                QuestOutcomePersistenceParticipant.Key,
+                QuestSourcePersistenceParticipant.Key,
+                ConversationPersistenceParticipant.Key,
+                DialogueFlowPersistenceParticipant.Key,
+                NarrativeEventPersistenceParticipant.Key,
+                NarrativeStatePersistenceParticipant.Key,
+                NarrativeArcPersistenceParticipant.Key
+            });
             SubscribeDirtyEvents();
-        }
-
-        public PersistenceSaveResult SavePrototypeSlot()
-        {
-            EnsureInitialized();
-            PersistenceSaveResult result = service.Save(PrototypeSlotId, "Prototype Slot");
-            Report(result.Succeeded, result.Message);
-            return result;
-        }
-
-        public PersistenceLoadResult LoadPrototypeSlot(bool expectedFailureAsInfo = false)
-        {
-            EnsureInitialized();
-            PersistenceLoadResult result = service.Load(PrototypeSlotId);
-            Report(result.Succeeded, result.Message, expectedFailureAsInfo);
-            return result;
-        }
-
-        public PersistenceLoadResult LoadPrototypeBackup()
-        {
-            EnsureInitialized();
-            PersistenceLoadResult result = service.Load(PrototypeSlotId, loadBackup: true);
-            Report(result.Succeeded, result.Message);
-            return result;
-        }
-
-        public PersistenceValidationResult ValidatePrototypeSlot()
-        {
-            EnsureInitialized();
-            PersistenceValidationResult result = service.ValidateSlot(PrototypeSlotId);
-            Report(result.Succeeded, result.Message);
-            return result;
-        }
-
-        public PersistenceDeleteResult DeletePrototypeSlot()
-        {
-            EnsureInitialized();
-            PersistenceDeleteResult result = service.DeleteSlot(PrototypeSlotId);
-            Report(result.Succeeded, result.Message);
-            return result;
         }
 
         public IReadOnlyList<SaveSlotMetadata> ListSaveSlots()
         {
             EnsureInitialized();
-            return service.ListSaveSlots();
+            return playerService.ListSaveSlots();
         }
 
         public IReadOnlyList<SaveSlotDescriptor> BuildSaveSlotDescriptors()
         {
             EnsureInitialized();
-            return PrototypeSaveSlotCatalog.BuildDescriptors(service, ManualSlotCount, AutosaveSlotCount);
+            return PrototypeSaveSlotCatalog.BuildDescriptors(playerService, ManualSlotCount, AutosaveSlotCount);
         }
 
-        public SaveEligibilityResult CheckSaveEligibility(bool showDetailedPlayerMessage)
+        public SaveEligibilityResult CheckSaveEligibility(bool showDetailedPlayerMessage, bool allowOpenMenu = true)
         {
             EnsureInitialized();
-            if (service.OperationInProgress)
+            if (playerService.OperationInProgress)
             {
                 return SaveEligibilityResult.Block(SaveEligibilityStatus.OperationInProgress, "A persistence operation is already running.");
+            }
+
+            if (PlayerReadiness == null || !PlayerReadiness.succeeded)
+            {
+                return SaveEligibilityResult.Block(SaveEligibilityStatus.ParticipantCaptureFailed, PlayerReadiness?.message ?? "Player persistence has not initialized successfully.");
+            }
+
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (!activeScene.IsValid() || !activeScene.isLoaded)
+            {
+                return SaveEligibilityResult.Block(SaveEligibilityStatus.SceneTransition, "Saving is unavailable while the active scene is changing.");
+            }
+
+            if (!allowOpenMenu && inventoryScreenController is IPlayerMenuController menuController && menuController.IsOpen)
+            {
+                return SaveEligibilityResult.Block(SaveEligibilityStatus.ModalBlocked, "Autosave is deferred while a modal player menu is open.");
             }
 
             ResolvePlayerPersistenceReferences();
@@ -1501,7 +1505,7 @@ namespace UnityIsekaiGame.Gameplay
                 return PersistenceSaveResult.Failure(PersistenceSaveStatus.ParticipantCaptureFailed, slotId, string.Empty, eligibility.Message);
             }
 
-            PersistenceSaveResult result = service.Save(slotId, displayName);
+            PersistenceSaveResult result = playerService.Save(slotId, displayName);
             Report(result.Succeeded, result.Message);
             if (result.Succeeded && markClean)
             {
@@ -1509,6 +1513,29 @@ namespace UnityIsekaiGame.Gameplay
                 autosaveCoordinator?.ResetTimer();
             }
 
+            return result;
+        }
+
+        public PersistenceSaveResult SaveWorldCheckpoint(string reason = "Scheduled")
+        {
+            EnsureInitialized();
+            if (WorldReadiness == null || !WorldReadiness.succeeded)
+            {
+                return PersistenceSaveResult.Failure(PersistenceSaveStatus.DependencyValidationFailed, PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId, string.Empty, WorldReadiness?.message ?? "World persistence has not initialized successfully.");
+            }
+
+            PersistenceSaveResult result = worldService.Save(
+                PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId,
+                $"World Checkpoint ({reason})");
+            Report(result.Succeeded, result.Message);
+            return result;
+        }
+
+        public PersistenceLoadResult LoadWorldCheckpoint(bool loadBackup = false)
+        {
+            EnsureInitialized();
+            PersistenceLoadResult result = worldService.Load(PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId, loadBackup);
+            Report(result.Succeeded, result.Message);
             return result;
         }
 
@@ -1522,7 +1549,7 @@ namespace UnityIsekaiGame.Gameplay
                 return saveResult;
             }
 
-            PersistenceSaveResult rotate = service.RotateAutosaveSlots(staging, PrototypeSaveSlotCatalog.BuildAutosaveSlotIds(AutosaveSlotCount));
+            PersistenceSaveResult rotate = playerService.RotateAutosaveSlots(staging, PrototypeSaveSlotCatalog.BuildAutosaveSlotIds(AutosaveSlotCount));
             Report(rotate.Succeeded, rotate.Message);
             if (rotate.Succeeded)
             {
@@ -1541,8 +1568,8 @@ namespace UnityIsekaiGame.Gameplay
         public PersistenceLoadResult LoadSaveSlot(string slotId, bool loadBackup = false)
         {
             EnsureInitialized();
-            PersistenceValidationResult preValidation = service.ValidateSlot(slotId, loadBackup);
-            PersistenceLoadResult result = service.Load(slotId, loadBackup);
+            PersistenceValidationResult preValidation = playerService.ValidateSlot(slotId, loadBackup);
+            PersistenceLoadResult result = playerService.Load(slotId, loadBackup);
             Report(result.Succeeded, result.Message);
             if (result.Succeeded)
             {
@@ -1557,7 +1584,7 @@ namespace UnityIsekaiGame.Gameplay
         public PersistenceValidationResult ValidateSaveSlot(string slotId, bool validateBackup = false)
         {
             EnsureInitialized();
-            PersistenceValidationResult result = service.ValidateSlot(slotId, validateBackup);
+            PersistenceValidationResult result = playerService.ValidateSlot(slotId, validateBackup);
             Report(result.Succeeded, result.Message);
             return result;
         }
@@ -1565,7 +1592,7 @@ namespace UnityIsekaiGame.Gameplay
         public PersistenceDeleteResult DeleteSaveSlot(string slotId)
         {
             EnsureInitialized();
-            PersistenceDeleteResult result = service.DeleteSlot(slotId);
+            PersistenceDeleteResult result = playerService.DeleteSlot(slotId);
             Report(result.Succeeded, result.Message);
             return result;
         }
@@ -1579,15 +1606,15 @@ namespace UnityIsekaiGame.Gameplay
         public string BuildSaveSlotDiagnosticSummary()
         {
             EnsureInitialized();
-            PersistenceTransactionDiagnostics diagnostics = service.BuildTransactionDiagnostics();
-            return $"Operation={service.OperationState} Phase={diagnostics.phase} Safety={diagnostics.runtimeSafety} Dirty={dirtyTracker != null && dirtyTracker.IsDirty} PlayTime={PrototypeSaveSlotCatalog.FormatPlayTime(playTimeTracker == null ? 0d : playTimeTracker.CumulativeSeconds)} Autosave={autosaveCoordinator?.LastResult ?? "None"}";
+            PersistenceTransactionDiagnostics diagnostics = playerService.BuildTransactionDiagnostics();
+            return $"Operation={playerService.OperationState} Phase={diagnostics.phase} Safety={diagnostics.runtimeSafety} Dirty={dirtyTracker != null && dirtyTracker.IsDirty} PlayTime={PrototypeSaveSlotCatalog.FormatPlayTime(playTimeTracker == null ? 0d : playTimeTracker.CumulativeSeconds)} Autosave={autosaveCoordinator?.LastResult ?? "None"}";
         }
 
         public string BuildPersistenceIntegrationDiagnosticSummary()
         {
             EnsureInitialized();
-            PersistenceDependencyReport dependencies = service.BuildParticipantDependencyReport();
-            PersistenceTransactionDiagnostics diagnostics = service.BuildTransactionDiagnostics();
+            PersistenceDependencyReport dependencies = playerService.BuildParticipantDependencyReport();
+            PersistenceTransactionDiagnostics diagnostics = playerService.BuildTransactionDiagnostics();
             string order = dependencies.orderedParticipantKeys == null || dependencies.orderedParticipantKeys.Length == 0
                 ? "None"
                 : string.Join(" -> ", dependencies.orderedParticipantKeys);
@@ -1611,13 +1638,13 @@ namespace UnityIsekaiGame.Gameplay
         public string BuildRuntimeStateFingerprint()
         {
             EnsureInitialized();
-            return service.BuildRuntimeStateFingerprint();
+            return playerService.BuildRuntimeStateFingerprint();
         }
 
         public SaveRecoveryScanReport RunRecoveryScan()
         {
             EnsureInitialized();
-            SaveRecoveryScanReport report = service.ScanRecoverySources();
+            SaveRecoveryScanReport report = playerService.ScanRecoverySources();
             Report(true, report.recommendation);
             return report;
         }
@@ -1625,7 +1652,7 @@ namespace UnityIsekaiGame.Gameplay
         public PersistenceSaveResult PromoteBackup(string slotId)
         {
             EnsureInitialized();
-            PersistenceSaveResult result = service.PromoteBackup(slotId);
+            PersistenceSaveResult result = playerService.PromoteBackup(slotId);
             Report(result.Succeeded, result.Message);
             return result;
         }
@@ -1633,7 +1660,7 @@ namespace UnityIsekaiGame.Gameplay
         public PersistenceSaveResult QuarantinePrimary(string slotId)
         {
             EnsureInitialized();
-            PersistenceSaveResult result = service.QuarantinePrimary(slotId);
+            PersistenceSaveResult result = playerService.QuarantinePrimary(slotId);
             Report(result.Succeeded, result.Message);
             return result;
         }
@@ -1641,7 +1668,7 @@ namespace UnityIsekaiGame.Gameplay
         public PersistenceDeleteResult CleanupStaleTemporaryFiles()
         {
             EnsureInitialized();
-            PersistenceDeleteResult result = service.CleanupStaleTemporaryFiles();
+            PersistenceDeleteResult result = playerService.CleanupStaleTemporaryFiles();
             Report(result.Succeeded, result.Message);
             return result;
         }
@@ -1649,8 +1676,8 @@ namespace UnityIsekaiGame.Gameplay
         public void InjectNextPersistenceFault(PersistenceFaultInjectionPoint point)
         {
             EnsureInitialized();
-            service.FaultInjection.nextFailurePoint = point;
-            service.FaultInjection.message = $"Injected {point} fault.";
+            playerService.FaultInjection.nextFailurePoint = point;
+            playerService.FaultInjection.message = $"Injected {point} fault.";
             Report(true, $"Next persistence fault: {point}");
         }
 
@@ -1666,6 +1693,72 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             PrototypeHudMessageBus.Show(message);
+        }
+
+        private bool RegisterParticipant(IPersistenceParticipant participant, out string failureReason)
+        {
+            failureReason = string.Empty;
+            if (participant == null)
+            {
+                failureReason = "Cannot register a null persistence participant.";
+                return false;
+            }
+
+            PersistenceRuntimeContext context = participant.Scope == PersistenceScope.Player
+                ? playerPersistenceContext
+                : participant.Scope == PersistenceScope.SharedWorld || participant.Scope == PersistenceScope.RegionOrScene
+                    ? worldPersistenceContext
+                    : null;
+            if (context == null)
+            {
+                failureReason = $"No runtime persistence context owns scope {participant.Scope} for '{participant.ParticipantKey}'.";
+                return false;
+            }
+
+            return context.Register(participant, out failureReason);
+        }
+
+        private void UnregisterParticipant(IPersistenceParticipant participant)
+        {
+            if (participant == null)
+            {
+                return;
+            }
+
+            if (participant.Scope == PersistenceScope.Player)
+            {
+                playerPersistenceContext?.Unregister(participant);
+            }
+            else
+            {
+                worldPersistenceContext?.Unregister(participant);
+            }
+        }
+
+        private sealed class RuntimeSaveMetadataProvider : ISaveMetadataProvider
+        {
+            private readonly PrototypePersistenceServiceBehaviour owner;
+            private readonly bool includePlayerSummary;
+
+            public RuntimeSaveMetadataProvider(PrototypePersistenceServiceBehaviour owner, bool includePlayerSummary)
+            {
+                this.owner = owner;
+                this.includePlayerSummary = includePlayerSummary;
+            }
+
+            public SaveMetadataSnapshot CaptureMetadata()
+            {
+                Transform root = owner.playerRoot;
+                Vector3 position = root == null ? Vector3.zero : root.position;
+                return new SaveMetadataSnapshot
+                {
+                    SceneId = owner.ResolveSceneKey(),
+                    PlaceId = owner.currentPlaceTracker == null ? string.Empty : owner.currentPlaceTracker.CurrentPlaceId,
+                    PlayerSummary = !includePlayerSummary || root == null
+                        ? string.Empty
+                        : $"Position {position.x:0.##}, {position.y:0.##}, {position.z:0.##}"
+                };
+            }
         }
 
         private void EnsurePlayerInventoryEquipmentParticipant()
@@ -1692,11 +1785,11 @@ namespace UnityIsekaiGame.Gameplay
                 playerInventory,
                 playerEquipment,
                 GetDefinitionRegistry,
-                service.PlayerId,
+                playerService.PlayerId,
                 registerPlayerItemIdentities ? ItemIdentities : null,
                 "prototype.player.inventory-equipment");
 
-            service.RegisterParticipant(inventoryEquipmentParticipant, out string failureReason);
+            RegisterParticipant(inventoryEquipmentParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1722,9 +1815,9 @@ namespace UnityIsekaiGame.Gameplay
             itemIdentityParticipant = new ItemInstanceIdentityPersistenceParticipant(
                 ItemIdentities,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(itemIdentityParticipant, out string failureReason);
+            RegisterParticipant(itemIdentityParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1749,9 +1842,9 @@ namespace UnityIsekaiGame.Gameplay
             economyParticipant = new EconomyPersistenceParticipant(
                 Economy,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(economyParticipant, out string failureReason);
+            RegisterParticipant(economyParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1776,9 +1869,9 @@ namespace UnityIsekaiGame.Gameplay
             marketParticipant = new MarketPersistenceParticipant(
                 Markets,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(marketParticipant, out string failureReason);
+            RegisterParticipant(marketParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1803,9 +1896,9 @@ namespace UnityIsekaiGame.Gameplay
             tradeParticipant = new TradePersistenceParticipant(
                 Trades,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(tradeParticipant, out string failureReason);
+            RegisterParticipant(tradeParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1830,9 +1923,9 @@ namespace UnityIsekaiGame.Gameplay
             payrollParticipant = new PayrollPersistenceParticipant(
                 Payroll,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(payrollParticipant, out string failureReason);
+            RegisterParticipant(payrollParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1857,9 +1950,9 @@ namespace UnityIsekaiGame.Gameplay
             businessParticipant = new BusinessPersistenceParticipant(
                 Businesses,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(businessParticipant, out string failureReason);
+            RegisterParticipant(businessParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1884,9 +1977,9 @@ namespace UnityIsekaiGame.Gameplay
             propertyParticipant = new PropertyPersistenceParticipant(
                 Properties,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(propertyParticipant, out string failureReason);
+            RegisterParticipant(propertyParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1911,9 +2004,9 @@ namespace UnityIsekaiGame.Gameplay
             contractEconomyParticipant = new ContractEconomyPersistenceParticipant(
                 ContractEconomy,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(contractEconomyParticipant, out string failureReason);
+            RegisterParticipant(contractEconomyParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1938,9 +2031,9 @@ namespace UnityIsekaiGame.Gameplay
             institutionalRevenueParticipant = new InstitutionalRevenuePersistenceParticipant(
                 InstitutionalRevenue,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(institutionalRevenueParticipant, out string failureReason);
+            RegisterParticipant(institutionalRevenueParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1965,9 +2058,9 @@ namespace UnityIsekaiGame.Gameplay
             regionalFlowParticipant = new RegionalFlowPersistenceParticipant(
                 RegionalFlow,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(regionalFlowParticipant, out string failureReason);
+            RegisterParticipant(regionalFlowParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -1992,11 +2085,11 @@ namespace UnityIsekaiGame.Gameplay
             organizationParticipant = new OrganizationPersistenceParticipant(
                 Organizations,
                 GetDefinitionRegistry,
-                service.WorldId,
-                () => GetPrototypeSocialPersonIds(service.PlayerId),
+                playerService.WorldId,
+                () => GetPrototypeSocialPersonIds(playerService.PlayerId),
                 () => Array.Empty<string>());
 
-            service.RegisterParticipant(organizationParticipant, out string failureReason);
+            RegisterParticipant(organizationParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2022,11 +2115,11 @@ namespace UnityIsekaiGame.Gameplay
                 OrganizationMemberships,
                 GetDefinitionRegistry,
                 () => Organizations,
-                service.WorldId,
-                () => GetPrototypeSocialPersonIds(service.PlayerId),
+                playerService.WorldId,
+                () => GetPrototypeSocialPersonIds(playerService.PlayerId),
                 GetPrototypeOrganizations);
 
-            service.RegisterParticipant(organizationMembershipParticipant, out string failureReason);
+            RegisterParticipant(organizationMembershipParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2053,11 +2146,11 @@ namespace UnityIsekaiGame.Gameplay
                 GetDefinitionRegistry,
                 () => Organizations,
                 () => OrganizationMemberships,
-                service.WorldId,
-                () => GetPrototypeSocialPersonIds(service.PlayerId),
+                playerService.WorldId,
+                () => GetPrototypeSocialPersonIds(playerService.PlayerId),
                 GetPrototypeOrganizations);
 
-            service.RegisterParticipant(organizationAuthorityParticipant, out string failureReason);
+            RegisterParticipant(organizationAuthorityParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2085,14 +2178,14 @@ namespace UnityIsekaiGame.Gameplay
                 () => Organizations,
                 () => OrganizationAuthority,
                 () => Economy,
-                service.WorldId,
+                playerService.WorldId,
                 () => Properties,
                 () => Businesses,
                 () => ItemIdentities,
                 () => ContractEconomy,
                 () => Payroll);
 
-            service.RegisterParticipant(organizationResourceParticipant, out string failureReason);
+            RegisterParticipant(organizationResourceParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2114,7 +2207,7 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             organizationDecisionParticipant = new OrganizationDecisionPersistenceParticipant(
                 OrganizationDecisions,
                 GetDefinitionRegistry,
@@ -2122,10 +2215,10 @@ namespace UnityIsekaiGame.Gameplay
                 () => OrganizationMemberships,
                 () => OrganizationAuthority,
                 () => OrganizationResources,
-                service.WorldId,
+                playerService.WorldId,
                 () => GetPrototypeSocialPersonIds(personId));
 
-            service.RegisterParticipant(organizationDecisionParticipant, out string failureReason);
+            RegisterParticipant(organizationDecisionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2147,7 +2240,7 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             factionParticipant = new FactionPersistenceParticipant(
                 Factions,
                 GetDefinitionRegistry,
@@ -2156,10 +2249,10 @@ namespace UnityIsekaiGame.Gameplay
                 () => OrganizationAuthority,
                 () => OrganizationResources,
                 () => OrganizationDecisions,
-                service.WorldId,
+                playerService.WorldId,
                 () => GetPrototypeSocialPersonIds(personId));
 
-            service.RegisterParticipant(factionParticipant, out string failureReason);
+            RegisterParticipant(factionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2181,7 +2274,7 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             diplomacyParticipant = new DiplomacyPersistenceParticipant(
                 Diplomacy,
                 GetDefinitionRegistry,
@@ -2190,10 +2283,10 @@ namespace UnityIsekaiGame.Gameplay
                 () => OrganizationAuthority,
                 () => OrganizationDecisions,
                 () => OrganizationResources,
-                service.WorldId,
+                playerService.WorldId,
                 () => GetPrototypeSocialPersonIds(personId));
 
-            service.RegisterParticipant(diplomacyParticipant, out string failureReason);
+            RegisterParticipant(diplomacyParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2215,7 +2308,7 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             governmentParticipant = new GovernmentPersistenceParticipant(
                 Governments,
                 GetDefinitionRegistry,
@@ -2227,11 +2320,11 @@ namespace UnityIsekaiGame.Gameplay
                 () => Factions,
                 () => Diplomacy,
                 () => Properties,
-                service.WorldId,
+                playerService.WorldId,
                 () => GetPrototypeSocialPersonIds(personId),
                 GetKnownPlaceIds);
 
-            service.RegisterParticipant(governmentParticipant, out string failureReason);
+            RegisterParticipant(governmentParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2253,7 +2346,7 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             legalParticipant = new LegalPersistenceParticipant(
                 Laws,
                 GetDefinitionRegistry,
@@ -2263,11 +2356,11 @@ namespace UnityIsekaiGame.Gameplay
                 () => OrganizationDecisions,
                 () => Diplomacy,
                 () => Properties,
-                service.WorldId,
+                playerService.WorldId,
                 () => GetPrototypeSocialPersonIds(personId),
                 GetKnownPlaceIds);
 
-            service.RegisterParticipant(legalParticipant, out string failureReason);
+            RegisterParticipant(legalParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2289,7 +2382,7 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             crimeParticipant = new CrimePersistenceParticipant(
                 Crimes,
                 GetDefinitionRegistry,
@@ -2297,11 +2390,11 @@ namespace UnityIsekaiGame.Gameplay
                 () => Laws,
                 () => OrganizationAuthority,
                 () => Diplomacy,
-                service.WorldId,
+                playerService.WorldId,
                 () => GetPrototypeSocialPersonIds(personId),
                 GetKnownPlaceIds);
 
-            service.RegisterParticipant(crimeParticipant, out string failureReason);
+            RegisterParticipant(crimeParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2323,7 +2416,7 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = service == null ? PersistenceService.LocalPlayerId : service.PlayerId;
+            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             justiceParticipant = new JusticePersistenceParticipant(
                 Justice,
                 GetDefinitionRegistry,
@@ -2332,11 +2425,11 @@ namespace UnityIsekaiGame.Gameplay
                 () => Organizations,
                 () => OrganizationAuthority,
                 () => Crimes,
-                service.WorldId,
+                playerService.WorldId,
                 () => GetPrototypeSocialPersonIds(personId),
                 GetKnownPlaceIds);
 
-            service.RegisterParticipant(justiceParticipant, out string failureReason);
+            RegisterParticipant(justiceParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2368,9 +2461,9 @@ namespace UnityIsekaiGame.Gameplay
                 ItemCompositions,
                 ItemIdentities,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(itemCompositionParticipant, out string failureReason);
+            RegisterParticipant(itemCompositionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2402,9 +2495,9 @@ namespace UnityIsekaiGame.Gameplay
                 ItemQualityAffixes,
                 ItemIdentities,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(itemQualityAffixParticipant, out string failureReason);
+            RegisterParticipant(itemQualityAffixParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2437,9 +2530,9 @@ namespace UnityIsekaiGame.Gameplay
                 ItemIdentities,
                 registerPlayerItemCompositions ? ItemCompositions : null,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(itemDurabilityParticipant, out string failureReason);
+            RegisterParticipant(itemDurabilityParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2464,9 +2557,9 @@ namespace UnityIsekaiGame.Gameplay
             recipeKnowledgeParticipant = new RecipeKnowledgePersistenceParticipant(
                 RecipeKnowledge,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(recipeKnowledgeParticipant, out string failureReason);
+            RegisterParticipant(recipeKnowledgeParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2490,9 +2583,9 @@ namespace UnityIsekaiGame.Gameplay
 
             productionRequirementParticipant = new ProductionRequirementPersistenceParticipant(
                 ProductionRequirements,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(productionRequirementParticipant, out string failureReason);
+            RegisterParticipant(productionRequirementParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2523,9 +2616,9 @@ namespace UnityIsekaiGame.Gameplay
             craftingExecutionParticipant = new CraftingExecutionPersistenceParticipant(
                 CraftingExecution,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(craftingExecutionParticipant, out string failureReason);
+            RegisterParticipant(craftingExecutionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2556,9 +2649,9 @@ namespace UnityIsekaiGame.Gameplay
             productionWorkflowParticipant = new ProductionWorkflowPersistenceParticipant(
                 ProductionWorkflow,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(productionWorkflowParticipant, out string failureReason);
+            RegisterParticipant(productionWorkflowParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2589,9 +2682,9 @@ namespace UnityIsekaiGame.Gameplay
             experimentationParticipant = new ExperimentationPersistenceParticipant(
                 Experimentation,
                 GetDefinitionRegistry,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(experimentationParticipant, out string failureReason);
+            RegisterParticipant(experimentationParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2610,7 +2703,8 @@ namespace UnityIsekaiGame.Gameplay
             playerItemIdentitySynchronizer = playerInventory.GetComponent<PlayerItemIdentitySynchronizer>();
             if (playerItemIdentitySynchronizer == null)
             {
-                playerItemIdentitySynchronizer = playerInventory.gameObject.AddComponent<PlayerItemIdentitySynchronizer>();
+                Debug.LogWarning("Player item identity synchronization is unavailable because PlayerItemIdentitySynchronizer is not authored on the player.");
+                return;
             }
 
             playerItemIdentitySynchronizer.Configure(
@@ -2618,7 +2712,7 @@ namespace UnityIsekaiGame.Gameplay
                 playerEquipment,
                 ItemIdentities,
                 GetDefinitionRegistry,
-                service.PlayerId,
+                playerService.PlayerId,
                 "prototype.player.inventory-equipment");
             ItemIdentityInventoryBridgeResult synchronization = playerItemIdentitySynchronizer.SynchronizeNow();
             if (!synchronization.Succeeded)
@@ -2648,16 +2742,16 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             DefinitionRegistry registry = GetDefinitionRegistry();
-            playerIdentityProgression.ConfigureIdentity(service.AccountId, service.PlayerId);
+            playerIdentityProgression.ConfigureIdentity(playerService.AccountId, playerService.PlayerId);
             playerIdentityProgression.RegisterDefinitionCache(registry);
 
             identityProgressionParticipant = new PlayerIdentityProgressionPersistenceParticipant(
                 playerIdentityProgression,
                 GetDefinitionRegistry,
-                service.PlayerId,
-                service.AccountId);
+                playerService.PlayerId,
+                playerService.AccountId);
 
-            service.RegisterParticipant(identityProgressionParticipant, out string failureReason);
+            RegisterParticipant(identityProgressionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2670,31 +2764,19 @@ namespace UnityIsekaiGame.Gameplay
             if (playTimeTracker == null)
             {
                 playTimeTracker = GetComponent<PlayTimeTracker>();
-                if (playTimeTracker == null)
-                {
-                    playTimeTracker = gameObject.AddComponent<PlayTimeTracker>();
-                }
             }
 
             if (dirtyTracker == null)
             {
                 dirtyTracker = GetComponent<GameSaveDirtyTracker>();
-                if (dirtyTracker == null)
-                {
-                    dirtyTracker = gameObject.AddComponent<GameSaveDirtyTracker>();
-                }
             }
 
             if (autosaveCoordinator == null)
             {
                 autosaveCoordinator = GetComponent<AutosaveCoordinator>();
-                if (autosaveCoordinator == null)
-                {
-                    autosaveCoordinator = gameObject.AddComponent<AutosaveCoordinator>();
-                }
             }
 
-            autosaveCoordinator.Configure(this, autosaveIntervalSeconds);
+            autosaveCoordinator?.Configure(this, autosaveIntervalSeconds);
         }
 
         private void EnsurePlayerAttributesParticipant()
@@ -2722,9 +2804,9 @@ namespace UnityIsekaiGame.Gameplay
                 playerAttributes,
                 playerIdentityProgression,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerAttributesParticipant, out string failureReason);
+            RegisterParticipant(playerAttributesParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2757,9 +2839,9 @@ namespace UnityIsekaiGame.Gameplay
                 playerSkills,
                 playerIdentityProgression,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerSkillsParticipant, out string failureReason);
+            RegisterParticipant(playerSkillsParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2787,16 +2869,16 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            playerTraits.Configure(GetDefinitionRegistry(), playerCalculatedStats, playerSkills, service.PlayerId);
+            playerTraits.Configure(GetDefinitionRegistry(), playerCalculatedStats, playerSkills, playerService.PlayerId);
             playerTraitsParticipant = new PlayerTraitsPersistenceParticipant(
                 playerTraits,
                 playerIdentityProgression,
                 playerCalculatedStats,
                 playerSkills,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerTraitsParticipant, out string failureReason);
+            RegisterParticipant(playerTraitsParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2838,9 +2920,9 @@ namespace UnityIsekaiGame.Gameplay
             playerBodyParticipant = new PlayerBodyPersistenceParticipant(
                 playerBody,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerBodyParticipant, out string failureReason);
+            RegisterParticipant(playerBodyParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2876,7 +2958,8 @@ namespace UnityIsekaiGame.Gameplay
 
             if (playerKnowledge == null)
             {
-                playerKnowledge = owner.AddComponent<PersonKnowledgeRuntime>();
+                Debug.LogWarning("Person Knowledge persistence participant was not registered because PersonKnowledgeRuntime is not authored on the player.");
+                return;
             }
 
             playerKnowledge.Configure(
@@ -2888,9 +2971,9 @@ namespace UnityIsekaiGame.Gameplay
             playerKnowledgeParticipant = new PersonKnowledgePersistenceParticipant(
                 playerKnowledge,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerKnowledgeParticipant, out string failureReason);
+            RegisterParticipant(playerKnowledgeParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2913,16 +2996,16 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
-            Professions.Configure(GetDefinitionRegistry(), new[] { personId, service.PlayerId });
+            Professions.Configure(GetDefinitionRegistry(), new[] { personId, playerService.PlayerId });
             playerProfessionParticipant = new PersonProfessionPersistenceParticipant(
                 Professions,
                 GetDefinitionRegistry,
-                () => new[] { personId, service.PlayerId },
-                service.PlayerId);
+                () => new[] { personId, playerService.PlayerId },
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerProfessionParticipant, out string failureReason);
+            RegisterParticipant(playerProfessionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2945,18 +3028,18 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
-            Professions.Configure(GetDefinitionRegistry(), new[] { personId, service.PlayerId });
-            ProfessionEntries.Configure(GetDefinitionRegistry(), Professions, new[] { personId, service.PlayerId });
+            Professions.Configure(GetDefinitionRegistry(), new[] { personId, playerService.PlayerId });
+            ProfessionEntries.Configure(GetDefinitionRegistry(), Professions, new[] { personId, playerService.PlayerId });
             playerProfessionEntryParticipant = new ProfessionEntryPersistenceParticipant(
                 ProfessionEntries,
                 GetDefinitionRegistry,
                 () => Professions,
-                () => new[] { personId, service.PlayerId },
-                service.PlayerId);
+                () => new[] { personId, playerService.PlayerId },
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerProfessionEntryParticipant, out string failureReason);
+            RegisterParticipant(playerProfessionEntryParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -2988,9 +3071,9 @@ namespace UnityIsekaiGame.Gameplay
             playerInformationSourceParticipant = new InformationSourcePersistenceParticipant(
                 InformationSources,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerInformationSourceParticipant, out string failureReason);
+            RegisterParticipant(playerInformationSourceParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3022,9 +3105,9 @@ namespace UnityIsekaiGame.Gameplay
             playerInformationTransferParticipant = new InformationTransferPersistenceParticipant(
                 InformationTransfers,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerInformationTransferParticipant, out string failureReason);
+            RegisterParticipant(playerInformationTransferParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3047,9 +3130,9 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
-            string[] knownPersons = new[] { personId, service.PlayerId };
+            string[] knownPersons = new[] { personId, playerService.PlayerId };
             Professions.Configure(GetDefinitionRegistry(), knownPersons);
             ProfessionEntries.Configure(GetDefinitionRegistry(), Professions, knownPersons);
             InformationTransfers.Configure(GetDefinitionRegistry(), personId);
@@ -3060,9 +3143,9 @@ namespace UnityIsekaiGame.Gameplay
                 () => Professions,
                 () => InformationTransfers,
                 () => knownPersons,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerTrainingParticipant, out string failureReason);
+            RegisterParticipant(playerTrainingParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3085,9 +3168,9 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
-            string[] knownPersons = new[] { personId, service.PlayerId };
+            string[] knownPersons = new[] { personId, playerService.PlayerId };
             Professions.Configure(GetDefinitionRegistry(), knownPersons);
             ProfessionalActivities.Configure(GetDefinitionRegistry(), Professions, knownPersons);
             playerProfessionalActivityParticipant = new ProfessionalActivityPersistenceParticipant(
@@ -3095,9 +3178,9 @@ namespace UnityIsekaiGame.Gameplay
                 GetDefinitionRegistry,
                 () => Professions,
                 () => knownPersons,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerProfessionalActivityParticipant, out string failureReason);
+            RegisterParticipant(playerProfessionalActivityParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3120,9 +3203,9 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
-            string[] knownPersons = new[] { personId, service.PlayerId };
+            string[] knownPersons = new[] { personId, playerService.PlayerId };
             string[] authorities = GetPrototypeCredentialAuthorities();
             Professions.Configure(GetDefinitionRegistry(), knownPersons);
             Training.Configure(GetDefinitionRegistry(), Professions, InformationTransfers, knownPersons);
@@ -3136,9 +3219,9 @@ namespace UnityIsekaiGame.Gameplay
                 () => ProfessionalActivities,
                 () => knownPersons,
                 () => authorities,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerCredentialParticipant, out string failureReason);
+            RegisterParticipant(playerCredentialParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3161,9 +3244,9 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
-            string[] knownPersons = new[] { personId, service.PlayerId };
+            string[] knownPersons = new[] { personId, playerService.PlayerId };
             string[] authorities = GetPrototypeCredentialAuthorities();
             Professions.Configure(GetDefinitionRegistry(), knownPersons);
             Training.Configure(GetDefinitionRegistry(), Professions, InformationTransfers, knownPersons);
@@ -3179,9 +3262,9 @@ namespace UnityIsekaiGame.Gameplay
                 () => Credentials,
                 () => knownPersons,
                 () => authorities,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerProfessionalRankParticipant, out string failureReason);
+            RegisterParticipant(playerProfessionalRankParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3204,9 +3287,9 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
-            string[] knownPersons = new[] { personId, service.PlayerId };
+            string[] knownPersons = new[] { personId, playerService.PlayerId };
             string[] authorities = GetPrototypeCredentialAuthorities();
             string[] organizations = GetPrototypeOrganizations();
             Professions.Configure(GetDefinitionRegistry(), knownPersons);
@@ -3226,9 +3309,9 @@ namespace UnityIsekaiGame.Gameplay
                 () => knownPersons,
                 () => organizations,
                 () => authorities,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerPositionEmploymentParticipant, out string failureReason);
+            RegisterParticipant(playerPositionEmploymentParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3251,9 +3334,9 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
-            string[] knownPersons = new[] { personId, service.PlayerId };
+            string[] knownPersons = new[] { personId, playerService.PlayerId };
             string[] authorities = GetPrototypeCredentialAuthorities();
             string[] organizations = GetPrototypeOrganizations();
             Professions.Configure(GetDefinitionRegistry(), knownPersons);
@@ -3275,9 +3358,9 @@ namespace UnityIsekaiGame.Gameplay
                 () => knownPersons,
                 () => organizations,
                 () => authorities,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerCareerHistoryParticipant, out string failureReason);
+            RegisterParticipant(playerCareerHistoryParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3300,9 +3383,9 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
-            string[] knownPersons = new[] { personId, service.PlayerId };
+            string[] knownPersons = new[] { personId, playerService.PlayerId };
             string[] authorities = GetPrototypeCredentialAuthorities();
             string[] organizations = GetPrototypeOrganizations();
             Professions.Configure(GetDefinitionRegistry(), knownPersons);
@@ -3325,9 +3408,9 @@ namespace UnityIsekaiGame.Gameplay
                 () => CareerHistory,
                 () => knownPersons,
                 () => organizations,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerLifePathParticipant, out string failureReason);
+            RegisterParticipant(playerLifePathParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3350,7 +3433,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             Relationships.Configure(GetDefinitionRegistry(), knownPersons);
@@ -3358,9 +3441,9 @@ namespace UnityIsekaiGame.Gameplay
                 Relationships,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerRelationshipParticipant, out string failureReason);
+            RegisterParticipant(playerRelationshipParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3383,7 +3466,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             InterpersonalAttitudes.Configure(GetDefinitionRegistry(), knownPersons);
@@ -3391,9 +3474,9 @@ namespace UnityIsekaiGame.Gameplay
                 InterpersonalAttitudes,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerInterpersonalAttitudeParticipant, out string failureReason);
+            RegisterParticipant(playerInterpersonalAttitudeParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3416,7 +3499,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             Reputation.Configure(GetDefinitionRegistry(), knownPersons);
@@ -3424,9 +3507,9 @@ namespace UnityIsekaiGame.Gameplay
                 Reputation,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(worldReputationParticipant, out string failureReason);
+            RegisterParticipant(worldReputationParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3449,7 +3532,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             Rumors.Configure(GetDefinitionRegistry(), knownPersons, ResolveKnowledgeRuntimeForPerson, ResolveMemoryRuntimeForPerson);
@@ -3457,9 +3540,9 @@ namespace UnityIsekaiGame.Gameplay
                 Rumors,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(worldRumorParticipant, out string failureReason);
+            RegisterParticipant(worldRumorParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3482,7 +3565,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             SocialInteractions.Configure(GetDefinitionRegistry(), knownPersons, Relationships, InterpersonalAttitudes, Reputation, Rumors);
@@ -3490,9 +3573,9 @@ namespace UnityIsekaiGame.Gameplay
                 SocialInteractions,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(worldSocialInteractionParticipant, out string failureReason);
+            RegisterParticipant(worldSocialInteractionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3515,7 +3598,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             SocialNorms.Configure(GetDefinitionRegistry(), knownPersons, Relationships, InterpersonalAttitudes, Reputation, Rumors, SocialInteractions);
@@ -3523,9 +3606,9 @@ namespace UnityIsekaiGame.Gameplay
                 SocialNorms,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(worldSocialNormParticipant, out string failureReason);
+            RegisterParticipant(worldSocialNormParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3548,7 +3631,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             SocialNetworks.Configure(GetDefinitionRegistry(), knownPersons, Relationships, InterpersonalAttitudes, Reputation, Rumors, SocialInteractions, SocialNorms);
@@ -3556,9 +3639,9 @@ namespace UnityIsekaiGame.Gameplay
                 SocialNetworks,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(worldSocialNetworkParticipant, out string failureReason);
+            RegisterParticipant(worldSocialNetworkParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3581,7 +3664,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             SocialDecisions.Configure(GetDefinitionRegistry(), knownPersons, SocialInteractions, Relationships, InterpersonalAttitudes, Reputation, Rumors, SocialNorms, SocialNetworks, SocialDecisionModifierSourceCollection.Compose(SocialInfluence, SocialEmotions));
@@ -3589,9 +3672,9 @@ namespace UnityIsekaiGame.Gameplay
                 SocialDecisions,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(worldSocialDecisionParticipant, out string failureReason);
+            RegisterParticipant(worldSocialDecisionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3614,7 +3697,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             SocialInfluence.Configure(GetDefinitionRegistry(), knownPersons, InterpersonalAttitudes, Reputation, SocialInteractions, new[] { playerKnowledge });
@@ -3623,9 +3706,9 @@ namespace UnityIsekaiGame.Gameplay
                 SocialInfluence,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(worldSocialInfluenceParticipant, out string failureReason);
+            RegisterParticipant(worldSocialInfluenceParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3648,7 +3731,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             SocialInfluence.Configure(GetDefinitionRegistry(), knownPersons, InterpersonalAttitudes, Reputation, SocialInteractions, new[] { playerKnowledge });
@@ -3658,9 +3741,9 @@ namespace UnityIsekaiGame.Gameplay
                 SocialEmotions,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(worldSocialEmotionParticipant, out string failureReason);
+            RegisterParticipant(worldSocialEmotionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3683,17 +3766,17 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             string personId = playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
-                ? service.PlayerId
+                ? playerService.PlayerId
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
-            FamilyRelationships.Configure(GetDefinitionRegistry(), knownPersons, Relationships, InterpersonalAttitudes, SocialInteractions, service.WorldId, GetPrototypeAdultPersonIds(personId));
+            FamilyRelationships.Configure(GetDefinitionRegistry(), knownPersons, Relationships, InterpersonalAttitudes, SocialInteractions, playerService.WorldId, GetPrototypeAdultPersonIds(personId));
             worldFamilyRelationshipParticipant = new FamilyRelationshipPersistenceParticipant(
                 FamilyRelationships,
                 GetDefinitionRegistry,
                 () => knownPersons,
-                service.WorldId);
+                playerService.WorldId);
 
-            service.RegisterParticipant(worldFamilyRelationshipParticipant, out string failureReason);
+            RegisterParticipant(worldFamilyRelationshipParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3725,9 +3808,9 @@ namespace UnityIsekaiGame.Gameplay
             playerInformationAccessParticipant = new InformationAccessPersistenceParticipant(
                 InformationAccess,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerInformationAccessParticipant, out string failureReason);
+            RegisterParticipant(playerInformationAccessParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3759,9 +3842,9 @@ namespace UnityIsekaiGame.Gameplay
             playerKnowledgeRecordParticipant = new KnowledgeRecordPersistenceParticipant(
                 KnowledgeRecords,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerKnowledgeRecordParticipant, out string failureReason);
+            RegisterParticipant(playerKnowledgeRecordParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -3773,7 +3856,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             if (playerInventory == null)
             {
-                playerInventory = Object.FindAnyObjectByType<PlayerInventory>();
+                playerInventory = playerRoot == null ? null : playerRoot.GetComponent<PlayerInventory>();
             }
 
             if (playerEquipment == null && playerInventory != null)
@@ -3783,7 +3866,7 @@ namespace UnityIsekaiGame.Gameplay
 
             if (playerEquipment == null)
             {
-                playerEquipment = Object.FindAnyObjectByType<PlayerEquipment>();
+                playerEquipment = playerRoot == null ? null : playerRoot.GetComponent<PlayerEquipment>();
             }
 
             if (playerInventory == null && playerEquipment != null)
@@ -3791,7 +3874,9 @@ namespace UnityIsekaiGame.Gameplay
                 playerInventory = playerEquipment.GetComponent<PlayerInventory>();
             }
 
-            GameObject playerObject = playerInventory == null ? playerEquipment == null ? null : playerEquipment.gameObject : playerInventory.gameObject;
+            GameObject playerObject = playerRoot == null
+                ? playerInventory == null ? playerEquipment == null ? null : playerEquipment.gameObject : playerInventory.gameObject
+                : playerRoot.gameObject;
             if (playerObject == null && playerStats != null)
             {
                 playerObject = playerStats.gameObject;
@@ -3799,7 +3884,7 @@ namespace UnityIsekaiGame.Gameplay
 
             if (playerStats == null)
             {
-                playerStats = playerObject == null ? Object.FindAnyObjectByType<PlayerStats>() : playerObject.GetComponent<PlayerStats>();
+                playerStats = playerObject == null ? null : playerObject.GetComponent<PlayerStats>();
             }
 
             if (playerObject == null && playerStats != null)
@@ -3809,87 +3894,47 @@ namespace UnityIsekaiGame.Gameplay
 
             if (playerAttributes == null)
             {
-                playerAttributes = playerObject == null ? Object.FindAnyObjectByType<CharacterAttributes>() : playerObject.GetComponent<CharacterAttributes>();
-            }
-
-            if (playerAttributes == null && playerObject != null)
-            {
-                playerAttributes = playerObject.AddComponent<CharacterAttributes>();
+                playerAttributes = playerObject == null ? null : playerObject.GetComponent<CharacterAttributes>();
             }
 
             if (playerCalculatedStats == null)
             {
-                playerCalculatedStats = playerObject == null ? Object.FindAnyObjectByType<CalculatedStatCollection>() : playerObject.GetComponent<CalculatedStatCollection>();
-            }
-
-            if (playerCalculatedStats == null && playerObject != null)
-            {
-                playerCalculatedStats = playerObject.AddComponent<CalculatedStatCollection>();
+                playerCalculatedStats = playerObject == null ? null : playerObject.GetComponent<CalculatedStatCollection>();
             }
 
             if (playerSkills == null)
             {
-                playerSkills = playerObject == null ? Object.FindAnyObjectByType<CharacterSkillCollection>() : playerObject.GetComponent<CharacterSkillCollection>();
-            }
-
-            if (playerSkills == null && playerObject != null)
-            {
-                playerSkills = playerObject.AddComponent<CharacterSkillCollection>();
+                playerSkills = playerObject == null ? null : playerObject.GetComponent<CharacterSkillCollection>();
             }
 
             if (playerTraits == null)
             {
-                playerTraits = playerObject == null ? Object.FindAnyObjectByType<CharacterTraitCollection>() : playerObject.GetComponent<CharacterTraitCollection>();
-            }
-
-            if (playerTraits == null && playerObject != null)
-            {
-                playerTraits = playerObject.AddComponent<CharacterTraitCollection>();
+                playerTraits = playerObject == null ? null : playerObject.GetComponent<CharacterTraitCollection>();
             }
 
             if (playerBody == null)
             {
-                playerBody = playerObject == null ? Object.FindAnyObjectByType<ActorBodyRuntime>() : playerObject.GetComponent<ActorBodyRuntime>();
-            }
-
-            if (playerBody == null && playerObject != null)
-            {
-                playerBody = playerObject.AddComponent<ActorBodyRuntime>();
+                playerBody = playerObject == null ? null : playerObject.GetComponent<ActorBodyRuntime>();
             }
 
             if (playerKnowledge == null)
             {
-                playerKnowledge = playerObject == null ? Object.FindAnyObjectByType<PersonKnowledgeRuntime>() : playerObject.GetComponent<PersonKnowledgeRuntime>();
+                playerKnowledge = playerObject == null ? null : playerObject.GetComponent<PersonKnowledgeRuntime>();
             }
 
             if (playerResources == null)
             {
-                playerResources = playerObject == null ? Object.FindAnyObjectByType<CharacterResourceCollection>() : playerObject.GetComponent<CharacterResourceCollection>();
-            }
-
-            if (playerResources == null && playerObject != null)
-            {
-                playerResources = playerObject.AddComponent<CharacterResourceCollection>();
+                playerResources = playerObject == null ? null : playerObject.GetComponent<CharacterResourceCollection>();
             }
 
             if (playerActorLifecycle == null)
             {
-                playerActorLifecycle = playerObject == null ? Object.FindAnyObjectByType<ActorLifecycleController>() : playerObject.GetComponent<ActorLifecycleController>();
-            }
-
-            if (playerActorLifecycle == null && playerObject != null)
-            {
-                playerActorLifecycle = playerObject.AddComponent<ActorLifecycleController>();
+                playerActorLifecycle = playerObject == null ? null : playerObject.GetComponent<ActorLifecycleController>();
             }
 
             if (playerOngoingEffects == null)
             {
-                playerOngoingEffects = playerObject == null ? Object.FindAnyObjectByType<OngoingEffectService>() : playerObject.GetComponent<OngoingEffectService>();
-            }
-
-            if (playerOngoingEffects == null && playerObject != null)
-            {
-                playerOngoingEffects = playerObject.AddComponent<OngoingEffectService>();
+                playerOngoingEffects = playerObject == null ? null : playerObject.GetComponent<OngoingEffectService>();
             }
 
             if (definitionCatalog != null)
@@ -3897,9 +3942,9 @@ namespace UnityIsekaiGame.Gameplay
                 DefinitionRegistry registry = GetDefinitionRegistry();
                 playerAttributes?.Configure(registry);
                 playerCalculatedStats?.Configure(registry, playerAttributes);
-                playerResources?.Configure(registry, playerCalculatedStats, service == null ? PersistenceService.LocalPlayerId : service.PlayerId);
+                playerResources?.Configure(registry, playerCalculatedStats, playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId);
                 playerSkills?.Configure(registry, playerCalculatedStats, playerObject == null ? null : playerObject.GetComponent<PlayerSpellLoadout>());
-                playerTraits?.Configure(registry, playerCalculatedStats, playerSkills, service == null ? PersistenceService.LocalPlayerId : service.PlayerId);
+                playerTraits?.Configure(registry, playerCalculatedStats, playerSkills, playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId);
                 playerActorLifecycle?.Configure(null, playerResources, playerObject == null ? null : playerObject.GetComponent<CharacterSystemCoordinator>(), playerTraits);
                 playerOngoingEffects?.Configure(playerObject == null ? null : playerObject.GetComponent<CharacterSystemCoordinator>());
                 playerStats?.ConfigureDerivedStats(registry);
@@ -3912,42 +3957,37 @@ namespace UnityIsekaiGame.Gameplay
 
             if (playerHealth == null)
             {
-                playerHealth = playerObject == null ? Object.FindAnyObjectByType<PlayerHealth>() : playerObject.GetComponent<PlayerHealth>();
+                playerHealth = playerObject == null ? null : playerObject.GetComponent<PlayerHealth>();
             }
 
             if (playerMana == null)
             {
-                playerMana = playerObject == null ? Object.FindAnyObjectByType<PlayerMana>() : playerObject.GetComponent<PlayerMana>();
+                playerMana = playerObject == null ? null : playerObject.GetComponent<PlayerMana>();
             }
 
             if (playerStamina == null)
             {
-                playerStamina = playerObject == null ? Object.FindAnyObjectByType<PlayerStamina>() : playerObject.GetComponent<PlayerStamina>();
+                playerStamina = playerObject == null ? null : playerObject.GetComponent<PlayerStamina>();
             }
 
             if (statusEffectController == null)
             {
-                statusEffectController = playerObject == null ? Object.FindAnyObjectByType<StatusEffectController>() : playerObject.GetComponent<StatusEffectController>();
+                statusEffectController = playerObject == null ? null : playerObject.GetComponent<StatusEffectController>();
             }
 
             if (playerQuestLog == null)
             {
-                playerQuestLog = playerObject == null ? Object.FindAnyObjectByType<PlayerQuestLog>() : playerObject.GetComponent<PlayerQuestLog>();
+                playerQuestLog = playerObject == null ? null : playerObject.GetComponent<PlayerQuestLog>();
             }
 
             if (playerContractJournal == null)
             {
-                playerContractJournal = playerObject == null ? Object.FindAnyObjectByType<PlayerContractJournal>() : playerObject.GetComponent<PlayerContractJournal>();
+                playerContractJournal = playerObject == null ? null : playerObject.GetComponent<PlayerContractJournal>();
             }
 
             if (playerIdentityProgression == null)
             {
-                playerIdentityProgression = playerObject == null ? Object.FindAnyObjectByType<PlayerIdentityProgression>() : playerObject.GetComponent<PlayerIdentityProgression>();
-            }
-
-            if (playerIdentityProgression == null && playerObject != null)
-            {
-                playerIdentityProgression = playerObject.AddComponent<PlayerIdentityProgression>();
+                playerIdentityProgression = playerObject == null ? null : playerObject.GetComponent<PlayerIdentityProgression>();
             }
 
             if (playerRoot == null)
@@ -3967,12 +4007,7 @@ namespace UnityIsekaiGame.Gameplay
 
             if (playerSkillActionEventSource == null)
             {
-                playerSkillActionEventSource = playerObject == null ? Object.FindAnyObjectByType<PlayerSkillActionEventSource>() : playerObject.GetComponent<PlayerSkillActionEventSource>();
-            }
-
-            if (playerSkillActionEventSource == null && playerObject != null)
-            {
-                playerSkillActionEventSource = playerObject.AddComponent<PlayerSkillActionEventSource>();
+                playerSkillActionEventSource = playerObject == null ? null : playerObject.GetComponent<PlayerSkillActionEventSource>();
             }
 
             if (playerSkillActionEventSource != null && playerObject != null)
@@ -3988,21 +4023,12 @@ namespace UnityIsekaiGame.Gameplay
 
             if (playerInput == null)
             {
-                playerInput = playerRoot == null ? Object.FindAnyObjectByType<PlayerInputReader>() : playerRoot.GetComponentInChildren<PlayerInputReader>();
-            }
-
-            if (inventoryScreenController == null)
-            {
-                inventoryScreenController = FindMenuController();
+                playerInput = playerRoot == null ? null : playerRoot.GetComponentInChildren<PlayerInputReader>();
             }
 
             if (currentPlaceTracker == null && playerRoot != null)
             {
                 currentPlaceTracker = playerRoot.GetComponent<CurrentPlaceTracker>();
-                if (currentPlaceTracker == null)
-                {
-                    currentPlaceTracker = playerRoot.gameObject.AddComponent<CurrentPlaceTracker>();
-                }
             }
         }
 
@@ -4026,15 +4052,15 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            playerResources.Configure(GetDefinitionRegistry(), playerCalculatedStats, service.PlayerId);
+            playerResources.Configure(GetDefinitionRegistry(), playerCalculatedStats, playerService.PlayerId);
             playerResourcesParticipant = new PlayerResourcesPersistenceParticipant(
                 playerResources,
                 playerIdentityProgression,
                 playerCalculatedStats,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerResourcesParticipant, out string failureReason);
+            RegisterParticipant(playerResourcesParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -4060,9 +4086,9 @@ namespace UnityIsekaiGame.Gameplay
             playerActorLifecycleParticipant = new PlayerActorLifecyclePersistenceParticipant(
                 playerActorLifecycle,
                 playerIdentityProgression,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerActorLifecycleParticipant, out string failureReason);
+            RegisterParticipant(playerActorLifecycleParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -4079,10 +4105,10 @@ namespace UnityIsekaiGame.Gameplay
 
             playerCombatExecutionParticipant = new PlayerCombatExecutionPersistenceParticipant(
                 CombatExecution,
-                service.PlayerId,
+                playerService.PlayerId,
                 () => playerIdentityProgression == null ? string.Empty : playerIdentityProgression.PersonId);
 
-            service.RegisterParticipant(playerCombatExecutionParticipant, out string failureReason);
+            RegisterParticipant(playerCombatExecutionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -4100,7 +4126,7 @@ namespace UnityIsekaiGame.Gameplay
             ResolvePlayerPersistenceReferences();
             if (playerOngoingEffects == null || playerRoot == null)
             {
-                Debug.LogWarning("Player ongoing effects persistence participant was not registered because the ongoing effects service or player root is missing.");
+                Debug.LogWarning("Player ongoing effects persistence participant was not registered because the ongoing effects playerService or player root is missing.");
                 return;
             }
 
@@ -4117,9 +4143,9 @@ namespace UnityIsekaiGame.Gameplay
                 playerRoot.gameObject,
                 GetDefinitionRegistry,
                 ResolvePlayerActorId,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(playerOngoingEffectsParticipant, out string failureReason);
+            RegisterParticipant(playerOngoingEffectsParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -4144,40 +4170,37 @@ namespace UnityIsekaiGame.Gameplay
             return identity == null ? string.Empty : identity.EntityId;
         }
 
-        private void EnsurePlayerStatsVitalsStatusParticipant()
+        private void EnsurePlayerStatusEffectsParticipant()
         {
-            if (!registerPlayerStatsVitalsStatus || statsVitalsStatusParticipant != null)
+            if (!registerPlayerStatusEffects || statusEffectsParticipant != null)
             {
                 return;
             }
 
             ResolvePlayerPersistenceReferences();
-            if (playerStats == null || playerHealth == null || playerMana == null || playerStamina == null || statusEffectController == null)
+            if (playerStats == null || statusEffectController == null)
             {
-                Debug.LogWarning("Player stats/vitals/status persistence participant was not registered because one or more prototype player runtime components are missing.");
+                Debug.LogWarning("Player status-effects persistence participant was not registered because player stats or the status controller is missing.");
                 return;
             }
 
             if (definitionCatalog == null)
             {
-                Debug.LogWarning("Player stats/vitals/status persistence participant was not registered because no definition catalog is assigned.");
+                Debug.LogWarning("Player status-effects persistence participant was not registered because no definition catalog is assigned.");
                 return;
             }
 
-            statsVitalsStatusParticipant = new PlayerStatsVitalsStatusPersistenceParticipant(
+            statusEffectsParticipant = new PlayerStatusEffectsPersistenceParticipant(
                 playerStats,
-                playerHealth,
-                playerMana,
-                playerStamina,
                 statusEffectController,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(statsVitalsStatusParticipant, out string failureReason);
+            RegisterParticipant(statusEffectsParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
-                statsVitalsStatusParticipant = null;
+                statusEffectsParticipant = null;
             }
         }
 
@@ -4206,9 +4229,9 @@ namespace UnityIsekaiGame.Gameplay
                 playerContractJournal,
                 playerInventory,
                 GetDefinitionRegistry,
-                service.PlayerId);
+                playerService.PlayerId);
 
-            service.RegisterParticipant(questContractParticipant, out string failureReason);
+            RegisterParticipant(questContractParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -4239,7 +4262,7 @@ namespace UnityIsekaiGame.Gameplay
             playerLocationParticipant = new PlayerLocationPersistenceParticipant(
                 playerRoot,
                 GetDefinitionRegistry,
-                service.PlayerId,
+                playerService.PlayerId,
                 ResolveSceneKey(),
                 defaultSpawnPointId,
                 playerInput,
@@ -4247,7 +4270,7 @@ namespace UnityIsekaiGame.Gameplay
                 currentPlaceTracker);
 
             playerLocationParticipant.LocationFallbackUsed += OnLocationFallbackUsed;
-            service.RegisterParticipant(playerLocationParticipant, out string failureReason);
+            RegisterParticipant(playerLocationParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
@@ -4269,20 +4292,6 @@ namespace UnityIsekaiGame.Gameplay
             string message = args == null ? "Player location fallback was used." : args.Message;
             Debug.LogWarning(message);
             PrototypeHudMessageBus.Show(message);
-        }
-
-        private static MonoBehaviour FindMenuController()
-        {
-            MonoBehaviour[] behaviours = Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include);
-            for (int i = 0; i < behaviours.Length; i++)
-            {
-                if (behaviours[i] is IPlayerMenuController)
-                {
-                    return behaviours[i];
-                }
-            }
-
-            return null;
         }
 
         private void SubscribeDirtyEvents()
@@ -4772,8 +4781,10 @@ namespace UnityIsekaiGame.Gameplay
                 return sceneKey;
             }
 
-            SceneKeyIdentity identity = Object.FindAnyObjectByType<SceneKeyIdentity>();
-            return identity == null || string.IsNullOrWhiteSpace(identity.SceneKey) ? "scene.prototype" : identity.SceneKey;
+            Scene activeScene = SceneManager.GetActiveScene();
+            return activeScene.IsValid() && !string.IsNullOrWhiteSpace(activeScene.name)
+                ? $"scene.{activeScene.name.ToLowerInvariant()}"
+                : "scene.unknown";
         }
 
         private DefinitionRegistry GetDefinitionRegistry()
@@ -4832,6 +4843,13 @@ namespace UnityIsekaiGame.Gameplay
             definitionRegistry = PrototypeLocationConnectionDefinitionFactory.AddMissingPrototypeConnectionDefinitions(definitionRegistry);
             definitionRegistry = PrototypeLocationRouteDefinitionFactory.AddMissingPrototypeRouteDefinitions(definitionRegistry);
             definitionRegistry = PrototypeTravelConditionDefinitionFactory.AddMissingPrototypeTravelConditionDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeQuestDefinitionFactory.AddMissingPrototypeQuestDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeQuestSourceDefinitionFactory.AddMissingPrototypeQuestSourceDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeConversationDefinitionFactory.AddMissingPrototypeConversationDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeDialogueGraphDefinitionFactory.AddMissingPrototypeDialogueGraphDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeNarrativeEventDefinitionFactory.AddMissingPrototypeNarrativeEventDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeNarrativeStateDefinitionFactory.AddMissingPrototypeNarrativeStateDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeNarrativeArcDefinitionFactory.AddMissingPrototypeNarrativeArcDefinitions(definitionRegistry);
             return definitionRegistry;
         }
 
@@ -4869,7 +4887,7 @@ namespace UnityIsekaiGame.Gameplay
             return new[]
             {
                 primaryPersonId,
-                service == null ? PersistenceService.LocalPlayerId : service.PlayerId,
+                playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId,
                 "person.prototype.npc",
                 "person.prototype.friend",
                 "person.prototype.rival",

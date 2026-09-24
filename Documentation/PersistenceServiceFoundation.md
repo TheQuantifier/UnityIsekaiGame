@@ -205,9 +205,9 @@ Ordering is deterministic:
 2. participant priority;
 3. participant key.
 
-The initial phases are placeholders for later Step 4 features: bootstrap, actor base, inventory, equipment, statuses, vitals, quests/contracts, position/place, notification, and prototype.
+Load phases cover bootstrap, actor base, identity/progression, attributes, skills, inventory, equipment, statuses, vitals, quests/contracts, position/place, and notification.
 
-Feature 4.8 adds optional `IPersistenceParticipantDependencies`. Participants can declare required and optional dependencies, and the service also supplies default ordering dependencies for the current player participants. Missing explicit required dependencies and circular dependencies fail before capture or load mutation; missing ordering-only dependencies are reported as diagnostics.
+`IPersistenceParticipantDependencies` lets each participant declare required and optional dependencies. There is no second hardcoded ordering table. Missing required dependencies and circular dependencies fail before capture or load mutation; missing optional dependencies are diagnostics.
 
 ## Required And Optional Participants
 
@@ -215,15 +215,11 @@ Required runtime participants must have payloads in the save. Required payloads 
 
 Optional unknown payloads can be ignored. Optional registered participants can be absent.
 
-Feature 4.1 uses one required participant: `prototype.state`.
-
-`prototype.state` is player-scoped and uses the local prototype owner ID. This proves owner metadata without introducing networking or account authentication.
-
 Feature 4.2 adds another required prototype participant: `player.inventory-equipment`. It is player-scoped, owned by `local-player`, and coordinates inventory/equipment restore as one aggregate payload.
 
-Feature 4.3 adds `player.stats-vitals-status`. It is player-scoped, owned by `local-player`, loads after inventory/equipment, restores save-eligible statuses, and then restores current Health, Mana, and Stamina.
+Phase 3 uses required `player.status-effects` and `player.resources` participants with non-overlapping ownership. Status effects load after inventory/equipment; resources load after attributes and statuses.
 
-Feature 4.4 adds `player.quests-contracts`. It is player-scoped, owned by `local-player`, loads after stats/vitals/statuses, and restores personal quest log and accepted contract journal state.
+Feature 4.4 adds `player.quests-contracts`. It is player-scoped, owned by `local-player`, loads after inventory/equipment, resources, and statuses, and restores personal quest log and accepted contract journal state.
 
 Feature 4.5 adds optional `player.location`. It is player-scoped, owned by `local-player`, loads after quests/contracts in `PositionAndPlace`, and restores same-scene player scene/place/position without mutating shared-world state.
 
@@ -235,7 +231,7 @@ Player-state saves and shared-world saves must remain separable.
 
 Loading one player's data may restore that player's inventory, equipment, vitals, personal progression, or last safe location in later features. It must not imply restoring shared markets, shared faction state, shared world entities, region state, or other players.
 
-Shared-world and region/scene state will need separate participants, separate authority rules, and likely separate storage. Client-controlled save/load commands must not become authoritative over shared-world state.
+Shared-world state now uses a separate service, context, directory, checkpoint slot, readiness report, and consistency audit. Client-controlled player save/load commands do not rewind it.
 
 For local testing, Feature 4.1 still uses manual save/load. That manual flow is a development proof only, not the intended multiplayer UX.
 
@@ -269,28 +265,16 @@ Statuses distinguish invalid slots, missing files, malformed JSON, wrong format,
 
 Callers do not need to parse exception strings.
 
-## Prototype Participant
-
-`PrototypePersistenceStateParticipant` saves and restores only:
-
-- integer test value;
-- string note;
-- boolean flag.
-
-The runtime component is `PrototypePersistenceState`. It is development-only proof infrastructure and can be removed when real participants replace it.
-
-The real prototype player inventory/equipment state is now handled by `PlayerInventoryEquipmentPersistenceParticipant`. `prototype.state` remains a development-only proof participant for validating multiple participants and menu commands.
-
 ## Development Tools
 
 Editor menu commands:
 
-- `Tools > Persistence > Save Prototype Slot`
-- `Tools > Persistence > Load Prototype Slot`
-- `Tools > Persistence > Load Prototype Backup`
-- `Tools > Persistence > Validate Prototype Slot`
+- `Tools > Persistence > Save Manual Slot 1`
+- `Tools > Persistence > Load Manual Slot 1`
+- `Tools > Persistence > Load Manual Slot 1 Backup`
+- `Tools > Persistence > Validate Manual Slot 1`
 - `Tools > Persistence > List Save Slots`
-- `Tools > Persistence > Delete Prototype Slot`
+- `Tools > Persistence > Delete Manual Slot 1`
 - `Tools > Persistence > Force Autosave`
 - `Tools > Persistence > List Save Slot Descriptors`
 - `Tools > Persistence > Increment Prototype Value`

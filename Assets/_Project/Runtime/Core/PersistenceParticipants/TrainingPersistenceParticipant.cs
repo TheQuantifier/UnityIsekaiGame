@@ -58,14 +58,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             TrainingRuntimeSaveData saveData = runtime.CreateSaveData();
-            PersistenceParticipantPrepareResult prepared = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult prepared = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Training snapshot failed validation.");
             }
 
             DiscardPreparedPayload(prepared.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -83,7 +83,7 @@ namespace UnityIsekaiGame.Persistence
             TrainingRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<TrainingRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<TrainingRuntimeSaveData>(payloadJson);
             }
             catch
             {

@@ -68,7 +68,7 @@ namespace UnityIsekaiGame.Persistence
         public PersistenceParticipantSaveResult CapturePayload()
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Justice runtime is missing.");
-            string payload = JsonUtility.ToJson(runtime.CreateSaveData());
+            string payload = PersistenceSerialization.Serialize(runtime.CreateSaveData());
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Justice snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -80,7 +80,7 @@ namespace UnityIsekaiGame.Persistence
             if (payloadSchemaVersion != CurrentParticipantSchemaVersion) return PersistenceParticipantPrepareResult.Failure($"Unsupported justice participant schema version {payloadSchemaVersion}.");
             if (string.IsNullOrWhiteSpace(payloadJson)) return PersistenceParticipantPrepareResult.Failure("Justice payload is empty.");
             JusticeRuntimeSaveData saveData;
-            try { saveData = JsonUtility.FromJson<JusticeRuntimeSaveData>(payloadJson); }
+            try { saveData = PersistenceSerialization.Deserialize<JusticeRuntimeSaveData>(payloadJson); }
             catch { return PersistenceParticipantPrepareResult.Failure("Justice payload is malformed JSON."); }
             JusticeValidationReport validation = validationService.Validate(saveData, registryProvider?.Invoke(), governmentProvider?.Invoke(), legalProvider?.Invoke(), organizationProvider?.Invoke(), authorityProvider?.Invoke(), crimeProvider?.Invoke(), ownerId, personProvider?.Invoke(), placeProvider?.Invoke());
             if (!validation.IsValid) return PersistenceParticipantPrepareResult.Failure(validation.Errors.FirstOrDefault() ?? "Justice payload failed validation.");

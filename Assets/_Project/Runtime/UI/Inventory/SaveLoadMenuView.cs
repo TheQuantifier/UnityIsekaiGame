@@ -38,16 +38,16 @@ namespace UnityIsekaiGame.UI.Inventory
 
         public void Initialize(PrototypePersistenceServiceBehaviour persistenceService)
         {
-            if (persistence != null && persistence.Service != null)
+            if (persistence != null && persistence.PlayerService != null)
             {
-                persistence.Service.SaveSlotsChanged -= Refresh;
+                persistence.PlayerService.SaveSlotsChanged -= Refresh;
             }
 
             persistence = persistenceService;
             BuildUi();
-            if (persistence != null && persistence.Service != null)
+            if (persistence != null && persistence.PlayerService != null)
             {
-                persistence.Service.SaveSlotsChanged += Refresh;
+                persistence.PlayerService.SaveSlotsChanged += Refresh;
             }
 
             Refresh();
@@ -55,9 +55,9 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void OnDestroy()
         {
-            if (persistence != null && persistence.Service != null)
+            if (persistence != null && persistence.PlayerService != null)
             {
-                persistence.Service.SaveSlotsChanged -= Refresh;
+                persistence.PlayerService.SaveSlotsChanged -= Refresh;
             }
         }
 
@@ -183,9 +183,9 @@ namespace UnityIsekaiGame.UI.Inventory
             builder.AppendLine($"Player: {EmptyFallback(descriptor.playerDisplayName)}");
             builder.AppendLine($"Primary: {(descriptor.primaryExists ? "Yes" : "No")}  Backup: {(descriptor.backupExists ? "Yes" : "No")}");
             builder.AppendLine($"Dirty: {(persistence != null && persistence.DirtyTracker != null && persistence.DirtyTracker.IsDirty ? "Yes" : "No")}");
-            builder.AppendLine($"Operation: {persistence?.Service?.OperationState.ToString() ?? "Missing"}");
-            builder.AppendLine($"Phase: {persistence?.Service?.CurrentPhase.ToString() ?? "Missing"}");
-            builder.AppendLine($"Safety: {persistence?.Service?.RuntimeSafety.ToString() ?? "Missing"}");
+            builder.AppendLine($"Operation: {persistence?.PlayerService?.OperationState.ToString() ?? "Missing"}");
+            builder.AppendLine($"Phase: {persistence?.PlayerService?.CurrentPhase.ToString() ?? "Missing"}");
+            builder.AppendLine($"Safety: {persistence?.PlayerService?.RuntimeSafety.ToString() ?? "Missing"}");
             builder.AppendLine($"Revision: {descriptor.saveRevision}  Transaction: {EmptyFallback(descriptor.transactionId)}");
             builder.AppendLine("World State: player state and location only; shared-world state is future server-owned persistence.");
             if (!string.IsNullOrWhiteSpace(descriptor.message))
@@ -431,7 +431,7 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private bool IsOperationActive()
         {
-            return persistence != null && persistence.Service != null && persistence.Service.OperationInProgress;
+            return persistence != null && persistence.PlayerService != null && persistence.PlayerService.OperationInProgress;
         }
 
         private void SetFeedback(string message)

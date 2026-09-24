@@ -62,14 +62,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             PlayerSkillsSaveData saveData = skills.CreateSaveData(identity.PlayerId, identity.PersonId);
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Player Skills snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -87,7 +87,7 @@ namespace UnityIsekaiGame.Persistence
             PlayerSkillsSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<PlayerSkillsSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<PlayerSkillsSaveData>(payloadJson);
             }
             catch
             {

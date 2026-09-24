@@ -30,9 +30,9 @@ namespace UnityIsekaiGame.Tests
         public void DependencyGraphOrdersCurrentPlayerParticipantsIndependentOfRegistrationOrder()
         {
             PersistenceService service = Service();
-            service.RegisterParticipant(new TestParticipant("player.location", 4), out _);
-            service.RegisterParticipant(new TestParticipant("player.quests-contracts", 3), out _);
-            service.RegisterParticipant(new TestParticipant("player.stats-vitals-status", 2), out _);
+            service.RegisterParticipant(new TestParticipant("player.location", 4, new[] { "player.quests-contracts" }), out _);
+            service.RegisterParticipant(new TestParticipant("player.quests-contracts", 3, new[] { "player.status-effects" }), out _);
+            service.RegisterParticipant(new TestParticipant("player.status-effects", 2, new[] { "player.inventory-equipment" }), out _);
             service.RegisterParticipant(new TestParticipant("player.inventory-equipment", 1), out _);
 
             PersistenceDependencyReport report = service.BuildParticipantDependencyReport();
@@ -41,7 +41,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(report.orderedParticipantKeys, Is.EqualTo(new[]
             {
                 "player.inventory-equipment",
-                "player.stats-vitals-status",
+                "player.status-effects",
                 "player.quests-contracts",
                 "player.location"
             }));
@@ -50,7 +50,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void MissingRequiredDependencyRejectsSaveBeforeCapture()
         {
-            TestParticipant stats = new TestParticipant("player.stats-vitals-status", 2, requiredDependencies: new[] { "player.inventory-equipment" });
+            TestParticipant stats = new TestParticipant("player.status-effects", 2, requiredDependencies: new[] { "player.inventory-equipment" });
             PersistenceService service = Service(stats);
 
             PersistenceSaveResult result = service.Save("manual-1");
@@ -76,7 +76,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void PrepareFailureLeavesLiveFingerprintUnchanged()
         {
-            TestParticipant participant = new TestParticipant("prototype.state", 1);
+            TestParticipant participant = new TestParticipant("player.test-state", 1);
             PersistenceService service = Service(participant);
             Assert.That(service.Save("manual-1").Succeeded, Is.True);
 
@@ -117,13 +117,18 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void CriticalAuditFailureRollsBackCommittedLoad()
         {
-            TestParticipant participant = new TestParticipant("prototype.state", 1);
+            TestParticipant participant = new TestParticipant("player.test-state", 1);
             PersistenceService service = Service(participant);
             Assert.That(service.Save("manual-1").Succeeded, Is.True);
 
             participant.Value = 42;
             string before = service.BuildRuntimeStateFingerprint();
-            service.ConsistencyAuditProvider = () => PersistenceConsistencyAuditReport.Critical("DuplicateItemInstance", "Injected duplicate item instance.");
+            service.RegisterConsistencyValidator(
+                new UnityIsekaiGame.Persistence.DelegatePersistenceConsistencyValidator(
+                    "test.failure",
+                    true,
+                    () => PersistenceConsistencyAuditReport.Critical("DuplicateItemInstance", "Injected duplicate item instance.")),
+                out _);
 
             PersistenceLoadResult result = service.Load("manual-1");
 
@@ -135,7 +140,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void RecoveryScanReportsValidBackupAndStaleTemporary()
         {
-            TestParticipant participant = new TestParticipant("prototype.state", 1);
+            TestParticipant participant = new TestParticipant("player.test-state", 1);
             PersistenceService service = Service(participant);
             Assert.That(service.Save("manual-1").Succeeded, Is.True);
             participant.Value = 2;
@@ -152,7 +157,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void PromoteBackupReplacesCorruptPrimaryWithValidBackup()
         {
-            TestParticipant participant = new TestParticipant("prototype.state", 1);
+            TestParticipant participant = new TestParticipant("player.test-state", 1);
             PersistenceService service = Service(participant);
             Assert.That(service.Save("manual-1").Succeeded, Is.True);
             participant.Value = 2;
@@ -230,7 +235,7 @@ namespace UnityIsekaiGame.Tests
             public bool IsRequired => true;
             public PersistenceScope Scope => PersistenceScope.Player;
             public string OwnerId => PersistenceService.LocalPlayerId;
-            public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Prototype;
+            public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Bootstrap;
             public int LoadPriority => 0;
             public IReadOnlyList<string> RequiredDependencies => requiredDependencies;
             public IReadOnlyList<string> OptionalDependencies => Array.Empty<string>();
@@ -242,12 +247,12 @@ namespace UnityIsekaiGame.Tests
             public PersistenceParticipantSaveResult CapturePayload()
             {
                 CaptureCount++;
-                return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(new TestPayload { value = Value }));
+                return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(new TestPayload { value = Value }));
             }
 
             public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
             {
-                TestPayload payload = JsonUtility.FromJson<TestPayload>(payloadJson);
+                TestPayload payload = PersistenceSerialization.Deserialize<TestPayload>(payloadJson);
                 return payload == null
                     ? PersistenceParticipantPrepareResult.Failure("Payload parse failed.")
                     : PersistenceParticipantPrepareResult.Success(payload);

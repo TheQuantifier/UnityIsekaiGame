@@ -48,7 +48,7 @@ namespace UnityIsekaiGame.Tests
             AssertSceneContains(scene, "Biology");
             AssertSceneContains(scene, "UI");
             AssertSceneContains(scene, "Test Infrastructure");
-            AssertSceneContains(scene, "Prototype Persistence Service");
+            AssertSceneContains(scene, "Game Persistence Coordinator");
 
             AssertSceneDoesNotContain(scene, "Prototype Ground");
             AssertSceneDoesNotContain(scene, "Ground - Main Prototype");

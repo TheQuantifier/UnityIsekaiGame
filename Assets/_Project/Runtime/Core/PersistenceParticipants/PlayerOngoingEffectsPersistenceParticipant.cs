@@ -54,14 +54,14 @@ namespace UnityIsekaiGame.Persistence
 
             string actorId = actorIdProvider?.Invoke() ?? string.Empty;
             OngoingEffectsSaveData saveData = ongoingEffects.CreateSaveData(ownerId, actorId);
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Ongoing effects snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -79,7 +79,7 @@ namespace UnityIsekaiGame.Persistence
             OngoingEffectsSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<OngoingEffectsSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<OngoingEffectsSaveData>(payloadJson);
             }
             catch
             {

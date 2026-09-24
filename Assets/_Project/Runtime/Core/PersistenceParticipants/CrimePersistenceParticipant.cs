@@ -73,7 +73,7 @@ namespace UnityIsekaiGame.Persistence
         public PersistenceParticipantSaveResult CapturePayload()
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Crime runtime is missing.");
-            string payload = JsonUtility.ToJson(runtime.CreateSaveData());
+            string payload = PersistenceSerialization.Serialize(runtime.CreateSaveData());
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Crime snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -85,7 +85,7 @@ namespace UnityIsekaiGame.Persistence
             if (payloadSchemaVersion != CurrentParticipantSchemaVersion) return PersistenceParticipantPrepareResult.Failure($"Unsupported crime participant schema version {payloadSchemaVersion}.");
             if (string.IsNullOrWhiteSpace(payloadJson)) return PersistenceParticipantPrepareResult.Failure("Crime payload is empty.");
             CrimeRuntimeSaveData saveData;
-            try { saveData = JsonUtility.FromJson<CrimeRuntimeSaveData>(payloadJson); }
+            try { saveData = PersistenceSerialization.Deserialize<CrimeRuntimeSaveData>(payloadJson); }
             catch { return PersistenceParticipantPrepareResult.Failure("Crime payload is malformed JSON."); }
             CrimeValidationReport validation = validationService.Validate(saveData, registryProvider?.Invoke(), governmentProvider?.Invoke(), legalProvider?.Invoke(), authorityProvider?.Invoke(), diplomacyProvider?.Invoke(), ownerId, personProvider?.Invoke(), placeProvider?.Invoke());
             if (!validation.IsValid) return PersistenceParticipantPrepareResult.Failure(validation.Errors.FirstOrDefault() ?? "Crime payload failed validation.");

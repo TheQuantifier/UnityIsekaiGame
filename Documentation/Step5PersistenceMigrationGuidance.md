@@ -31,7 +31,7 @@ Step 5 will expand core game models. Use this guidance before changing definitio
 | Economy and ownership | Treat as shared-world/server-owned unless explicitly player-owned inventory. Do not put market state in local player saves. |
 | Identity and progression | `player.identity-progression` is player-owned. Account/player/person/world-entity IDs must remain distinct. Missing Feature 5.1 payloads are rejected for current development saves. |
 | Base Attributes and Calculated Stats | `player.attributes` persists permanent Base Attribute source/growth records. Calculated Stats are derived caches and should not be saved as authoritative values. Resource maximum metadata is definition data. |
-| Current Resources | Feature 5.4b adds optional `player.resources` for current Health, Stamina, and Mana. Future resource changes should bump or migrate that participant rather than adding current values back into Calculated Stats. |
+| Current Resources | Required `player.resources` owns current Health, Stamina, and Mana. Future resource changes belong there rather than in Calculated Stats or status payloads. |
 | Traits, Capabilities, and Requirements | Feature 5.5 adds optional `player.traits` for acquired Trait runtime records. Capabilities are rebuilt aggregates and Requirements are pure checks, so neither owns persisted state by default. |
 | Character System coordinator | Feature 5.6 adds `CharacterSystemCoordinator`, snapshots, queries, readiness, and integrity diagnostics. It is not a new persistence participant. Existing subsystem participants remain authoritative and the coordinator becomes `Ready` only after restore/rebuild ordering completes. |
 
@@ -69,9 +69,9 @@ Feature 5.3 introduces required participant `player.skills` at schema version 1.
 
 Feature 5.4a does not bump `player.attributes` and does not add a new participant. It refines terminology to Base Attributes and adds Calculated Stat purpose/resource metadata in definitions. Feature 5.2/5.3 development saves should remain compatible when they use canonical IDs. Pre-5.2 saves remain rejected.
 
-## Feature 5.4b Compatibility
+## Phase 3 Clean Break
 
-Feature 5.4b introduces optional `player.resources` schema version 1. Saves without it can still load through legacy vitals fields in `player.stats-vitals-status`. New saves should include `player.resources`; recreate local development saves after testing this feature.
+Phase 3 requires `player.resources` and `player.status-effects`, uses envelope schema 3, and does not retain migration or fallback paths for development saves. Delete and recreate older local saves.
 
 ## Feature 5.5 Compatibility
 

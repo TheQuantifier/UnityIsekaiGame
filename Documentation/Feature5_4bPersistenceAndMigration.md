@@ -1,18 +1,16 @@
 # Feature 5.4b Persistence and Migration
 
-Feature 5.4b adds optional player participant `player.resources`.
+Feature 5.4b introduced player participant `player.resources`; Phase 3 now makes it required and authoritative.
 
 - Scope: `Player`
 - Owner: local prototype player ID
 - Schema: `1`
 - Load phase: `Vitals`
-- Required: `false`
+- Required: `true`
 
 The participant saves `PlayerResourcesSaveData`, including resource definition IDs, current values, last known maximums, lifetime totals, initialization data, and processed event IDs.
 
-`player.stats-vitals-status` remains required at schema version 1 for compatibility and continues to own statuses plus legacy vitals fields. New saves include both participants. During load, the legacy participant can restore old current Health/Mana/Stamina values, then `player.resources` restores the new resource records when present.
-
-Development saves without `player.resources` are still accepted through the legacy vitals path. For final Feature 5.4b testing, recreate local development saves after validating definitions so new saves contain `player.resources`.
+`player.status-effects` separately owns active statuses. No fallback vital fields or pre-Phase-3 save compatibility remain. Delete and recreate development saves after this clean break.
 
 Calculated Stats are still rebuilt and are not saved as authoritative values. Resource maximums are derived from rebuilt Calculated Stats during resource restore and reconciliation.
 

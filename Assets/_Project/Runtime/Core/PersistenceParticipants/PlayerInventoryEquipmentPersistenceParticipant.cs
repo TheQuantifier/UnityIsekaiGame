@@ -92,14 +92,14 @@ namespace UnityIsekaiGame.Persistence
                 }
             }
 
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Inventory/equipment snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -117,7 +117,7 @@ namespace UnityIsekaiGame.Persistence
             PlayerInventoryEquipmentSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<PlayerInventoryEquipmentSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<PlayerInventoryEquipmentSaveData>(payloadJson);
             }
             catch
             {
