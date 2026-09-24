@@ -45,16 +45,14 @@ MonoBehaviour:
       attackName: Attack
       baseDamage: 5
       attackRange: 2
-      attackCooldown: 0.5
-      staminaCost: 0
+      execution: {fileID: 0}
       hitRadius: 0.35
       damageType: {fileID: 0}
     rangedWeapon:
       weapon: 1
       attackName: Prototype Arrow Shot
       baseDamage: 8
-      attackCooldown: 0.9
-      staminaCost: 8
+      execution: {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663408, type: 2}
       projectileSpeed: 26
       projectileLifetime: 4
       projectileHitRadius: 0.09

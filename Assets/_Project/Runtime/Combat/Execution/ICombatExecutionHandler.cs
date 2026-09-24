@@ -104,7 +104,7 @@ namespace UnityIsekaiGame.Combat.Execution
         public CombatExecutionHandlerResult Preview(CombatExecutionDefinition definition, object payload, string transactionId)
         {
             AbilityExecutionContext context = (AbilityExecutionContext)payload;
-            AbilityExecutionResult result = ValidateWithoutLegacyCosts(context);
+            AbilityExecutionResult result = Validate(context, definition);
             return result.Succeeded
                 ? CombatExecutionHandlerResult.Success(result.Message, result)
                 : CombatExecutionHandlerResult.Failure(result.Status.ToString(), result.Message, result);
@@ -113,19 +113,30 @@ namespace UnityIsekaiGame.Combat.Execution
         public CombatExecutionHandlerResult Execute(CombatExecutionDefinition definition, object payload, string transactionId)
         {
             AbilityExecutionContext context = (AbilityExecutionContext)payload;
-            AbilityExecutionResult validation = ValidateWithoutLegacyCosts(context);
+            AbilityExecutionResult validation = Validate(context, definition);
             if (!validation.Succeeded)
             {
                 return CombatExecutionHandlerResult.Failure(validation.Status.ToString(), validation.Message, validation);
             }
 
-            AbilityExecutionResult result = AbilityExecutor.ExecuteEffects(context.ToEffectContext(), context.Ability.Effects);
+            if (context.Ability.DeliveryMode == AbilityDeliveryMode.Projectile)
+            {
+                AbilityProjectileDelivery delivery = context.Ability.ProjectileDelivery;
+                UnityEngine.Vector3 spawnPosition = context.DeliveryOrigin.TransformPoint(delivery.CastPointOffset);
+                UnityEngine.Quaternion spawnRotation = UnityEngine.Quaternion.LookRotation(context.Direction, UnityEngine.Vector3.up);
+                UnityIsekaiGame.Magic.SpellProjectile projectile = UnityEngine.Object.Instantiate(delivery.ProjectilePrefab, spawnPosition, spawnRotation);
+                projectile.Initialize(context.Source, context.Direction, delivery.ProjectileSpeed, context.Ability, delivery.MaximumLifetime);
+                context.ProjectileSpawned?.Invoke(projectile);
+                return CombatExecutionHandlerResult.Success($"Cast {context.Ability.DisplayName}.", AbilityExecutionResult.Success($"Cast {context.Ability.DisplayName}."));
+            }
+
+            AbilityExecutionResult result = AbilityEffectPipeline.Execute(context.ToEffectContext(), context.Ability.Effects);
             return result.Succeeded
                 ? CombatExecutionHandlerResult.Success(result.Message, result)
                 : CombatExecutionHandlerResult.Failure(result.Status.ToString(), result.Message, result);
         }
 
-        private static AbilityExecutionResult ValidateWithoutLegacyCosts(AbilityExecutionContext context)
+        private static AbilityExecutionResult Validate(AbilityExecutionContext context, CombatExecutionDefinition definition)
         {
             if (context.Ability == null)
             {
@@ -142,33 +153,35 @@ namespace UnityIsekaiGame.Combat.Execution
                 return AbilityExecutionResult.Failure(AbilityExecutionStatus.BlockedGameplayState, "Gameplay input is blocked.");
             }
 
+            if (context.Ability.Execution == null || !ReferenceEquals(context.Ability.Execution, definition))
+            {
+                return AbilityExecutionResult.Failure(AbilityExecutionStatus.InvalidDeliveryConfiguration, $"{context.Ability.DisplayName} is not linked to this combat execution.");
+            }
+
             if (context.Ability.Effects.Count == 0)
             {
                 return AbilityExecutionResult.Failure(AbilityExecutionStatus.NoEffects, $"{context.Ability.DisplayName} has no effects.");
             }
 
-            if (context.Ability.TargetingMode == AbilityTargetingMode.DirectTarget && context.Target == null)
+            AbilityExecutionResult target = CombatTargetingService.Validate(in context);
+            if (!target.Succeeded)
             {
-                return AbilityExecutionResult.Failure(AbilityExecutionStatus.InvalidTarget, $"{context.Ability.DisplayName} requires a target.");
+                return target;
+            }
+
+            if (context.Ability.DeliveryMode == AbilityDeliveryMode.Projectile &&
+                (context.Ability.ProjectileDelivery == null || context.Ability.ProjectileDelivery.ProjectilePrefab == null || context.DeliveryOrigin == null))
+            {
+                return AbilityExecutionResult.Failure(AbilityExecutionStatus.InvalidDeliveryConfiguration, "Invalid projectile configuration.");
+            }
+
+            if (context.Ability.DeliveryMode == AbilityDeliveryMode.Projectile)
+            {
+                return AbilityExecutionResult.Success("Projectile ability can execute.");
             }
 
             EffectExecutionContext effectContext = context.ToEffectContext();
-            for (int i = 0; i < context.Ability.Effects.Count; i++)
-            {
-                EffectDefinition effect = context.Ability.Effects[i];
-                if (effect == null)
-                {
-                    return AbilityExecutionResult.Failure(AbilityExecutionStatus.EffectValidationFailure, $"Missing effect at index {i}.", i);
-                }
-
-                EffectExecutionResult result = effect.CanExecute(effectContext);
-                if (!result.Succeeded)
-                {
-                    return AbilityExecutionResult.Failure(AbilityExecutionStatus.EffectValidationFailure, result.Message, i, result);
-                }
-            }
-
-            return AbilityExecutionResult.Success("Ability can execute through combat execution.");
+            return AbilityEffectPipeline.Validate(in effectContext, context.Ability.Effects);
         }
     }
 

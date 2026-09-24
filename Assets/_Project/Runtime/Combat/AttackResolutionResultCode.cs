@@ -6,6 +6,7 @@ namespace UnityIsekaiGame.Combat
         public const string Processed = "Processed";
         public const string DuplicateAttack = "DuplicateAttack";
         public const string InvalidRequest = "InvalidRequest";
+        public const string AuthorityRequired = "AuthorityRequired";
         public const string MissingAttacker = "MissingAttacker";
         public const string MissingTarget = "MissingTarget";
         public const string StaleAttacker = "StaleAttacker";

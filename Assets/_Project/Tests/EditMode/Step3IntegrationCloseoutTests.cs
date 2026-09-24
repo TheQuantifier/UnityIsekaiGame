@@ -7,8 +7,11 @@ using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Magic;
+using UnityIsekaiGame.ResourceSystem;
+using UnityIsekaiGame.Stats;
 using UnityIsekaiGame.WorldEntities;
 
 namespace UnityIsekaiGame.Tests
@@ -175,19 +178,31 @@ namespace UnityIsekaiGame.Tests
 
             GameObject player = new GameObject("Prototype Bow Test Player");
             GameObject origin = new GameObject("Prototype Bow Test Origin");
+            GameObject serviceHost = new GameObject("Prototype Bow Test Services");
             try
             {
+                serviceHost.SetActive(false);
                 origin.transform.SetParent(player.transform);
                 origin.transform.localPosition = Vector3.zero;
                 origin.transform.localRotation = Quaternion.identity;
 
                 PlayerInventory inventory = player.AddComponent<PlayerInventory>();
                 PlayerEquipment equipment = player.AddComponent<PlayerEquipment>();
+                CharacterAttributes attributes = player.AddComponent<CharacterAttributes>();
+                CalculatedStatCollection calculatedStats = player.AddComponent<CalculatedStatCollection>();
+                CharacterResourceCollection resources = player.AddComponent<CharacterResourceCollection>();
+                WorldEntityIdentity identity = player.AddComponent<WorldEntityIdentity>();
+                Assert.That(identity.TrySetAuthoredIdentity("prototype-bow-test-player", "scene.test", PersistenceScope.RegionOrScene, "test.bow", out string identityFailure), Is.True, identityFailure);
+                attributes.Configure(registry);
+                calculatedStats.Configure(registry, attributes);
+                resources.Configure(registry, calculatedStats, identity.EntityId);
+                PrototypePersistenceServiceBehaviour runtimeServices = serviceHost.AddComponent<PrototypePersistenceServiceBehaviour>();
                 PlayerMeleeCombat combat = player.AddComponent<PlayerMeleeCombat>();
                 SetPrivateField(equipment, "inventory", inventory);
                 SetPrivateField(combat, "equipment", equipment);
                 SetPrivateField(combat, "inventory", inventory);
                 SetPrivateField(combat, "attackOrigin", origin.transform);
+                SetPrivateField(combat, "runtimeServices", runtimeServices);
 
                 Assert.That(inventory.AddItemOrInstances(bow, 1).AddedAll, Is.True);
                 Assert.That(inventory.AddItem(arrow, 2).AddedAll, Is.True);
@@ -217,6 +232,7 @@ namespace UnityIsekaiGame.Tests
                 }
 
                 Object.DestroyImmediate(player);
+                Object.DestroyImmediate(serviceHost);
             }
         }
 

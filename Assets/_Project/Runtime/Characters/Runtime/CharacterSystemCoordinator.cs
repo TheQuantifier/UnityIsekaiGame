@@ -104,15 +104,14 @@ namespace UnityIsekaiGame.CharacterSystem
                     return false;
                 }
 
+                attributes?.Configure(registry);
+                calculatedStats?.Configure(registry, attributes);
                 if (actorStats != null)
                 {
                     actorStats.ConfigureDerivedStats(registry);
                     attributes = actorStats.CharacterAttributes ?? attributes;
                     calculatedStats = actorStats.CalculatedStats ?? calculatedStats;
                 }
-
-                attributes?.Configure(registry);
-                calculatedStats?.Configure(registry, attributes);
                 skills?.Configure(registry, calculatedStats, null);
                 traits?.Configure(registry, calculatedStats, skills, PlayerId);
                 body?.Configure(registry, ActorId, PersonId, traits, calculatedStats, restoring);

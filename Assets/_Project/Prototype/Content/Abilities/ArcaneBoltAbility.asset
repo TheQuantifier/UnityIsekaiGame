@@ -21,13 +21,15 @@ MonoBehaviour:
   - {fileID: 11400000, guid: eac27d0065b44f969205af5ca702cbe7, type: 2}
   - {fileID: 11400000, guid: 03ff46bc67384aa4abda15daaa390259, type: 2}
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
-  activationTime: 0
+  execution: {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663402, type: 2}
   range: 54
-  cooldownDuration: 0.65
-  resourceCosts:
-  - resourceType: 1
-    amount: 20
   targetingMode: 2
+  allowSelfTarget: 0
+  requiresLineOfSight: 1
+  targetingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  targetingTriggerInteraction: 1
   deliveryMode: 1
   projectileDelivery:
     projectilePrefab: {fileID: 3080823990934903977, guid: 714735eab9d39414d9540b08c734c826, type: 3}

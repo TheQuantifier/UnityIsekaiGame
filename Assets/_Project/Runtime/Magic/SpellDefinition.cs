@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityIsekaiGame.Abilities;
+using UnityIsekaiGame.Combat.Execution;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.ResourceSystem;
 
 namespace UnityIsekaiGame.Magic
 {
@@ -13,13 +15,6 @@ namespace UnityIsekaiGame.Magic
         [SerializeField] private CategoryDefinition primaryCategory;
         [SerializeField] private TagDefinition[] tags;
         [SerializeField] private AbilityDefinition ability;
-        [SerializeField, Min(0f)] private float manaCost = 10f;
-        [SerializeField, Min(0f)] private float cooldown = 0.5f;
-        [SerializeField, Min(0f)] private float baseDamage = 10f;
-        [SerializeField, Min(0.1f)] private float projectileSpeed = 16f;
-        [SerializeField, Min(0.1f)] private float maximumLifetime = 3f;
-        [SerializeField] private SpellProjectile projectilePrefab;
-        [SerializeField] private Vector3 castPointOffset = new Vector3(0.2f, -0.15f, 0.4f);
 
         public string SpellId => spellId;
         public string Id => spellId;
@@ -28,21 +23,27 @@ namespace UnityIsekaiGame.Magic
         public CategoryDomain ClassificationDomain => CategoryDomain.Ability;
         public IReadOnlyList<TagDefinition> Tags => tags ?? System.Array.Empty<TagDefinition>();
         public AbilityDefinition Ability => ability;
-        public float ManaCost => manaCost;
-        public float Cooldown => cooldown;
-        public float BaseDamage => baseDamage;
-        public float ProjectileSpeed => projectileSpeed;
-        public float MaximumLifetime => maximumLifetime;
-        public SpellProjectile ProjectilePrefab => projectilePrefab;
-        public Vector3 CastPointOffset => castPointOffset;
-
-        private void OnValidate()
+        public float ManaCost
         {
-            manaCost = Mathf.Max(0f, manaCost);
-            cooldown = Mathf.Max(0f, cooldown);
-            baseDamage = Mathf.Max(0f, baseDamage);
-            projectileSpeed = Mathf.Max(0.1f, projectileSpeed);
-            maximumLifetime = Mathf.Max(0.1f, maximumLifetime);
+            get
+            {
+                if (ability?.Execution == null)
+                {
+                    return 0f;
+                }
+
+                float total = 0f;
+                foreach (CombatExecutionCostDefinition cost in ability.Execution.Costs)
+                {
+                    if (cost.CostType == CombatExecutionCostType.Resource &&
+                        cost.Resource != null && cost.Resource.Id == ResourceIds.Mana)
+                    {
+                        total += cost.Amount;
+                    }
+                }
+
+                return total;
+            }
         }
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)

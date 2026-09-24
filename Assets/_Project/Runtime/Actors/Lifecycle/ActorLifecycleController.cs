@@ -7,6 +7,7 @@ using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.Requirements;
 using UnityIsekaiGame.ResourceSystem;
+using UnityIsekaiGame.StatusEffects;
 using UnityIsekaiGame.Traits;
 using UnityIsekaiGame.WorldEntities;
 
@@ -516,6 +517,7 @@ namespace UnityIsekaiGame.ActorLifecycle
             }
             else if (result.ResultingState == ActorLifecycleState.Dead)
             {
+                GetComponentInParent<StatusEffectController>()?.HandleDeath();
                 ActorDied?.Invoke(result);
             }
             else if (result.Transition == LifecycleTransitionKind.Revival)

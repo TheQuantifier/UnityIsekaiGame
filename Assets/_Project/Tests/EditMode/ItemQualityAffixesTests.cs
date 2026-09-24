@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
@@ -105,13 +106,14 @@ namespace UnityIsekaiGame.Tests
             Assert.That(conflict.Succeeded, Is.False);
             Assert.That(fixture.Quality.CanShareQualityAffixStack(first, second), Is.False);
 
-            RuntimeStatCollection stats = new RuntimeStatCollection();
-            stats.SetBaseValue(StatType.AttackPower, 10f);
-            Assert.That(fixture.Quality.ApplyActiveAffixModifiers(first, fixture.Registry, stats).Succeeded, Is.True);
-            Assert.That(fixture.Quality.ApplyActiveAffixModifiers(first, fixture.Registry, stats).Succeeded, Is.True);
-            Assert.That(stats.GetValue(StatType.AttackPower), Is.EqualTo(12f).Within(0.001f));
-            fixture.Quality.RemoveActiveAffixModifiers(first, stats);
-            Assert.That(stats.GetValue(StatType.AttackPower), Is.EqualTo(10f).Within(0.001f));
+            TestRuntimeStatReceiver stats = new TestRuntimeStatReceiver(10f);
+            Assert.That(fixture.Quality.ApplyActiveAffixModifiers(first, fixture.Registry, stats, out IReadOnlyList<StatModifierSource> sources).Succeeded, Is.True);
+            Assert.That(stats.GetStatValue(StatType.AttackPower), Is.EqualTo(12f).Within(0.001f));
+            foreach (StatModifierSource source in sources)
+            {
+                stats.RemoveModifiersFromSource(source);
+            }
+            Assert.That(stats.GetStatValue(StatType.AttackPower), Is.EqualTo(10f).Within(0.001f));
         }
 
         [Test]
@@ -302,6 +304,55 @@ namespace UnityIsekaiGame.Tests
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null, $"Missing field {fieldName} on {target.GetType().Name}.");
             field.SetValue(target, value);
+        }
+
+        private sealed class TestRuntimeStatReceiver : IRuntimeStatReceiver
+        {
+            private readonly float baseAttackPower;
+            private readonly Dictionary<StatModifierSource, List<RuntimeStatModifier>> modifiers = new Dictionary<StatModifierSource, List<RuntimeStatModifier>>();
+
+            public TestRuntimeStatReceiver(float baseAttackPower)
+            {
+                this.baseAttackPower = baseAttackPower;
+            }
+
+            public bool HasStat(StatType statType) => statType == StatType.AttackPower;
+
+            public float GetStatValue(StatType statType)
+            {
+                float value = statType == StatType.AttackPower ? baseAttackPower : 0f;
+                foreach (List<RuntimeStatModifier> source in modifiers.Values)
+                {
+                    foreach (RuntimeStatModifier modifier in source)
+                    {
+                        if (modifier.StatType == statType && modifier.Operation == StatModifierOperation.FlatAdd)
+                        {
+                            value += modifier.Value;
+                        }
+                    }
+                }
+
+                return value;
+            }
+
+            public bool AddModifier(RuntimeStatModifier modifier)
+            {
+                if (!modifier.IsValid || !HasStat(modifier.StatType))
+                {
+                    return false;
+                }
+
+                if (!modifiers.TryGetValue(modifier.Source, out List<RuntimeStatModifier> source))
+                {
+                    source = new List<RuntimeStatModifier>();
+                    modifiers.Add(modifier.Source, source);
+                }
+
+                source.Add(modifier);
+                return true;
+            }
+
+            public bool RemoveModifiersFromSource(StatModifierSource source) => modifiers.Remove(source);
         }
 
         private sealed class RuntimeFixture

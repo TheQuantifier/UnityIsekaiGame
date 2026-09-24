@@ -221,7 +221,8 @@ namespace UnityIsekaiGame.Tests
                     suppliedDistance: 1f,
                     hasMaximumRange: true,
                     maximumRange: 2f,
-                    originatingActionId: "test.integration.attack");
+                    originatingActionId: "test.integration.attack",
+                    authorityValidated: true);
             }
 
             public void Dispose()

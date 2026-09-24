@@ -158,7 +158,7 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void ResourceBackedPlayerStaminaProjectsContinuousSprintSpendsWithoutCommitting()
+        public void ResourceBackedPlayerStaminaCommitsSprintSpendsToCanonicalResource()
         {
             DefinitionRegistry registry = LoadCatalog().CreateRegistry();
             GameObject owner = CreateConfiguredOwner(registry, out _, out _, out Component resourcesComponent);
@@ -166,10 +166,11 @@ namespace UnityIsekaiGame.Tests
             {
                 CharacterResourceCollection resources = (CharacterResourceCollection)resourcesComponent;
                 PlayerStamina stamina = owner.AddComponent<PlayerStamina>();
-                int projectedStaminaEvents = 0;
+                stamina.RefreshResourceRuntime();
+                int staminaEvents = 0;
                 int staminaResourceEvents = 0;
                 int committedStaminaEvents = 0;
-                stamina.StaminaChanged += (_, _) => projectedStaminaEvents++;
+                stamina.StaminaChanged += (_, _) => staminaEvents++;
                 stamina.CommittedStaminaChanged += (_, _) => committedStaminaEvents++;
                 resources.ResourceChanged += (_, result) =>
                 {
@@ -185,16 +186,15 @@ namespace UnityIsekaiGame.Tests
                     Assert.That(stamina.EvaluateSprint(true, true, false, 0.016f), Is.True);
                 }
 
-                Assert.That(projectedStaminaEvents, Is.GreaterThan(0), "Continuous sprint should publish projected stamina changes for responsive HUD updates.");
-                Assert.That(projectedStaminaEvents, Is.LessThan(10), "Projected stamina notifications should be coalesced instead of emitted once per movement frame.");
-                Assert.That(staminaResourceEvents, Is.EqualTo(0), "Continuous sprint should reserve stamina locally instead of mutating the resource runtime while the key is held.");
-                Assert.That(committedStaminaEvents, Is.EqualTo(0), "Projected sprint stamina must not dirty persistence before the reserved spend commits.");
-                Assert.That(stamina.CurrentStamina, Is.EqualTo(maximum - 3.2f).Within(0.001f), "Pending sprint spend must still be visible to gameplay before the batch commits.");
+                Assert.That(staminaEvents, Is.EqualTo(10), "Every accepted sprint spend should publish the authoritative resource value.");
+                Assert.That(staminaResourceEvents, Is.EqualTo(10), "Sprint must mutate the one canonical stamina resource rather than a local projection.");
+                Assert.That(committedStaminaEvents, Is.EqualTo(10));
+                Assert.That(stamina.CurrentStamina, Is.EqualTo(maximum - 3.2f).Within(0.001f));
 
                 stamina.FlushPendingSprintResourceSpend();
 
-                Assert.That(staminaResourceEvents, Is.EqualTo(1));
-                Assert.That(committedStaminaEvents, Is.EqualTo(1));
+                Assert.That(staminaResourceEvents, Is.EqualTo(10), "The compatibility flush is intentionally a no-op because spends are already committed.");
+                Assert.That(committedStaminaEvents, Is.EqualTo(10));
                 Assert.That(GetCurrent(resources, ResourceStamina), Is.EqualTo(maximum - 3.2f).Within(0.001f));
             }
             finally
@@ -204,7 +204,7 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void PlayerStaminaOwnsStaminaProjectionWhenResourceRuntimeIsPresent()
+        public void CharacterResourceCollectionOwnsStaminaRegeneration()
         {
             DefinitionRegistry registry = LoadCatalog().CreateRegistry();
             GameObject owner = CreateConfiguredOwner(registry, out _, out _, out Component resourcesComponent);
@@ -217,12 +217,12 @@ namespace UnityIsekaiGame.Tests
 
                 PlayerStamina stamina = owner.AddComponent<PlayerStamina>();
                 Assert.That(stamina.CurrentStamina, Is.EqualTo(maximum - 20f).Within(0.001f));
-                Assert.That(resources.IsAutomaticResourceTickSuppressed(ResourceStamina), Is.True);
+                Assert.That(resources.IsAutomaticResourceTickSuppressed(ResourceStamina), Is.False);
 
                 Invoke(resources, "TickResources", 10f, 100f);
 
-                Assert.That(GetCurrent(resources, ResourceStamina), Is.EqualTo(maximum - 20f).Within(0.001f), "PlayerStamina projection owns stamina regeneration; the shared resource ticker must not mutate stamina underneath it.");
-                Assert.That(stamina.CurrentStamina, Is.EqualTo(maximum - 20f).Within(0.001f));
+                Assert.That(GetCurrent(resources, ResourceStamina), Is.GreaterThan(maximum - 20f), "The canonical resource collection owns stamina regeneration.");
+                Assert.That(stamina.CurrentStamina, Is.EqualTo(GetCurrent(resources, ResourceStamina)).Within(0.001f));
             }
             finally
             {
@@ -231,33 +231,30 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void LocalPlayerStaminaProjectsContinuousSprintSpendsWithoutCommitting()
+        public void PlayerStaminaRejectsSprintWhenCanonicalResourceIsUnconfigured()
         {
             GameObject owner = new GameObject("local-stamina-sprint-test");
             try
             {
                 PlayerStamina stamina = owner.AddComponent<PlayerStamina>();
-                stamina.RestoreToMaximum();
                 int staminaEvents = 0;
                 int committedStaminaEvents = 0;
                 stamina.StaminaChanged += (_, _) => staminaEvents++;
                 stamina.CommittedStaminaChanged += (_, _) => committedStaminaEvents++;
 
-                float maximum = stamina.MaximumStamina;
                 for (int i = 0; i < 10; i++)
                 {
-                    Assert.That(stamina.EvaluateSprint(true, true, false, 0.016f), Is.True);
+                    Assert.That(stamina.EvaluateSprint(true, true, false, 0.016f), Is.False);
                 }
 
-                Assert.That(staminaEvents, Is.GreaterThan(0), "Continuous sprint should publish projected stamina changes for responsive HUD updates.");
-                Assert.That(staminaEvents, Is.LessThan(10), "Projected stamina notifications should be coalesced instead of emitted once per movement frame.");
-                Assert.That(committedStaminaEvents, Is.EqualTo(0), "Projected sprint stamina must not dirty persistence before the reserved spend commits.");
-                Assert.That(stamina.CurrentStamina, Is.EqualTo(maximum - 3.2f).Within(0.001f), "Pending sprint spend must still be visible to gameplay before the batch commits.");
+                Assert.That(staminaEvents, Is.Zero);
+                Assert.That(committedStaminaEvents, Is.Zero);
+                Assert.That(stamina.CurrentStamina, Is.Zero);
+                Assert.That(stamina.MaximumStamina, Is.Zero);
 
                 stamina.FlushPendingSprintResourceSpend();
 
-                Assert.That(committedStaminaEvents, Is.EqualTo(1));
-                Assert.That(stamina.CurrentStamina, Is.EqualTo(maximum - 3.2f).Within(0.001f));
+                Assert.That(committedStaminaEvents, Is.Zero);
             }
             finally
             {

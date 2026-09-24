@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.CharacterSystem;
@@ -37,14 +38,23 @@ namespace UnityIsekaiGame.Combat
 
         private DamageApplicationResult EvaluateDamage(DamageApplicationRequest request, bool execute)
         {
-            if (!IsFinite(request.RequestedAmount) || request.RequestedAmount < 0f)
+            if (!request.DamagePacket.HasComponents || !IsFinite(request.RequestedAmount) || request.RequestedAmount < 0f)
             {
-                return DamageApplicationResult.Failure(request, ImmediateCombatResultCode.InvalidRequest, "Damage amount must be finite and non-negative.");
+                return DamageApplicationResult.Failure(request, ImmediateCombatResultCode.InvalidRequest, "Damage packet must contain finite, non-negative typed components.");
             }
 
-            if (request.DamageType == null)
+            for (int i = 0; i < request.DamagePacket.Components.Count; i++)
             {
-                return DamageApplicationResult.Failure(request, ImmediateCombatResultCode.InvalidRequest, "Damage type is missing.");
+                DamageComponent component = request.DamagePacket.Components[i];
+                if (!component.IsValid || component.DamageType == null || !IsFinite(component.Amount) || component.Amount < 0f)
+                {
+                    return DamageApplicationResult.Failure(request, ImmediateCombatResultCode.InvalidRequest, $"Damage component {i} is invalid or missing its canonical damage type.");
+                }
+            }
+
+            if (execute && !request.AuthorityValidated)
+            {
+                return DamageApplicationResult.Failure(request, ImmediateCombatResultCode.AuthorityRequired, "Applying damage requires validated game/server authority.");
             }
 
             if (!TryResolveTarget(request.TargetObject, request.TargetActorId, out TargetRuntime target, out string failureCode, out string failureMessage))
@@ -52,18 +62,18 @@ namespace UnityIsekaiGame.Combat
                 return DamageApplicationResult.Failure(request, failureCode, failureMessage);
             }
 
-            float requested = Mathf.Max(0f, request.RequestedAmount);
-            bool trueDamage = request.DamageType.IsTrueDamage;
-            bool immune = !trueDamage && IsImmune(target, request.DamageType);
-            float defense = !trueDamage
-                ? Mathf.Max(0f, ResolveDefense(target, request.DamageType))
-                : 0f;
-            float afterDefense = immune ? 0f : Mathf.Max(0f, requested - defense);
-            float defenseMitigation = immune ? 0f : Mathf.Max(0f, requested - afterDefense);
-            float resistance = !trueDamage && !immune ? ResolveResistance(target, request.DamageType) : 0f;
-            float afterResistance = afterDefense * (1f - resistance);
-            float resistanceMitigation = Mathf.Max(0f, afterDefense - afterResistance);
-            float finalDamage = immune ? 0f : Mathf.Max(0f, afterResistance);
+            float requested = request.RequestedAmount;
+            DamageCalculation calculation = DamageCalculator.CalculatePacket(
+                request.DamagePacket,
+                damageType => ResolveDefense(target, damageType),
+                damageType => ResolveResistance(target, damageType));
+            float defense = calculation.Defense;
+            float defenseMitigation = Mathf.Max(0f, calculation.MitigatedAmount - calculation.ResistanceMitigation);
+            float resistanceMitigation = calculation.ResistanceMitigation;
+            float resistance = ResolveWeightedResistance(calculation);
+            float finalDamage = calculation.FinalAmount;
+            bool immune = calculation.ComponentResults.Count > 0 && calculation.ComponentResults.All(component => component.Immune);
+            bool trueDamage = calculation.ComponentResults.Count > 0 && calculation.ComponentResults.All(component => component.DamageType != null && component.DamageType.IsTrueDamage);
             float oldHealth = target.Health.Current;
             float previewNewHealth = Mathf.Max(target.Health.Minimum, oldHealth - finalDamage);
             float overkill = Mathf.Max(0f, finalDamage - Mathf.Max(0f, oldHealth - target.Health.Minimum));
@@ -80,7 +90,7 @@ namespace UnityIsekaiGame.Combat
             bool healthChanged = false;
             bool becameZero = false;
             string code = immune || finalDamage <= CharacterResourceCollection.Epsilon ? ImmediateCombatResultCode.Prevented : ImmediateCombatResultCode.Applied;
-            string message = immune ? $"{request.DamageType.DisplayName} damage was prevented by immunity." : finalDamage <= CharacterResourceCollection.Epsilon ? $"{request.DamageType.DisplayName} damage was fully mitigated." : $"{request.DamageType.DisplayName} damage applied.";
+            string message = immune ? "Damage was prevented by immunity." : finalDamage <= CharacterResourceCollection.Epsilon ? "Damage was fully mitigated." : "Damage applied.";
 
             if (finalDamage > CharacterResourceCollection.Epsilon)
             {
@@ -92,7 +102,8 @@ namespace UnityIsekaiGame.Combat
                     request.SourceActorId,
                     request.Reason,
                     request.TransactionId,
-                    allowPartial: true));
+                    allowPartial: true,
+                    authorityValidated: request.AuthorityValidated));
                 if (!resourceResult.Succeeded)
                 {
                     return DamageApplicationResult.Failure(request, ImmediateCombatResultCode.ResourceRejected, resourceResult.Message, target.ActorId);
@@ -120,6 +131,11 @@ namespace UnityIsekaiGame.Combat
             if (!IsFinite(request.RequestedAmount) || request.RequestedAmount < 0f)
             {
                 return HealingApplicationResult.Failure(request, ImmediateCombatResultCode.InvalidRequest, "Healing amount must be finite and non-negative.");
+            }
+
+            if (execute && !request.AuthorityValidated)
+            {
+                return HealingApplicationResult.Failure(request, ImmediateCombatResultCode.AuthorityRequired, "Applying healing requires validated game/server authority.");
             }
 
             if (!TryResolveTarget(request.TargetObject, request.TargetActorId, out TargetRuntime target, out string failureCode, out string failureMessage))
@@ -150,7 +166,16 @@ namespace UnityIsekaiGame.Combat
 
             if (finalHealing > CharacterResourceCollection.Epsilon)
             {
-                resourceResult = target.Resources.ApplyHealing(ResourceIds.Health, finalHealing, request.SourceActorId, request.Reason, request.TransactionId);
+                resourceResult = target.Resources.ApplyChange(new ResourceChangeRequest(
+                    ResourceIds.Health,
+                    ResourceChangeOperation.Heal,
+                    finalHealing,
+                    ResourceChangeSourceCategory.Ability,
+                    request.SourceActorId,
+                    request.Reason,
+                    request.TransactionId,
+                    allowPartial: true,
+                    authorityValidated: request.AuthorityValidated));
                 if (!resourceResult.Succeeded)
                 {
                     return HealingApplicationResult.Failure(request, ImmediateCombatResultCode.ResourceRejected, resourceResult.Message, target.ActorId);
@@ -210,6 +235,7 @@ namespace UnityIsekaiGame.Combat
                 resources,
                 character == null ? targetObject.GetComponentInParent<CalculatedStatCollection>() : character.CalculatedStats,
                 character == null ? targetObject.GetComponentInParent<CharacterTraitCollection>() : character.Traits,
+                targetObject.GetComponentInParent<IDamageResistanceReceiver>(),
                 health);
             return true;
         }
@@ -227,7 +253,7 @@ namespace UnityIsekaiGame.Combat
 
         private static float ResolveDefense(TargetRuntime target, DamageTypeDefinition damageType)
         {
-            if (target.Stats == null)
+            if (target.Stats == null || damageType == null || damageType.IsTrueDamage || !damageType.GeneralDefenseApplies)
             {
                 return 0f;
             }
@@ -238,27 +264,57 @@ namespace UnityIsekaiGame.Combat
             return target.Stats.HasStat(statId) ? target.Stats.GetValue(statId) : 0f;
         }
 
-        private static bool IsImmune(TargetRuntime target, DamageTypeDefinition damageType)
-        {
-            if (target.Traits == null || damageType == null)
-            {
-                return false;
-            }
-
-            CapabilitySnapshot capability = target.Traits.Capabilities.Evaluate(damageType.ImmunityCapabilityId);
-            return capability.BooleanValue || target.Traits.IsImmuneTo(damageType.Id);
-        }
-
         private static float ResolveResistance(TargetRuntime target, DamageTypeDefinition damageType)
         {
-            if (target.Traits == null || damageType == null)
+            if (damageType == null || damageType.IsTrueDamage)
             {
                 return 0f;
             }
 
-            CapabilitySnapshot capability = target.Traits.Capabilities.Evaluate(damageType.ResistanceCapabilityId);
-            float traitResistance = target.Traits.GetResistance(damageType.Id);
-            return Mathf.Clamp01(capability.NumericValue + traitResistance);
+            float total = 0f;
+            foreach (DamageTypeDefinition candidate in damageType.EnumerateSelfAndAncestors())
+            {
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                if (target.ResistanceReceiver != null)
+                {
+                    total += target.ResistanceReceiver.GetDirectResistance(candidate);
+                }
+
+                if (target.Traits == null)
+                {
+                    continue;
+                }
+
+                CapabilitySnapshot immunity = target.Traits.Capabilities.Evaluate(candidate.ImmunityCapabilityId);
+                if (immunity.BooleanValue || target.Traits.IsImmuneTo(candidate.Id))
+                {
+                    return RuntimeResistanceCollection.MaximumResistance;
+                }
+
+                CapabilitySnapshot resistance = target.Traits.Capabilities.Evaluate(candidate.ResistanceCapabilityId);
+                total += resistance.NumericValue + target.Traits.GetResistance(candidate.Id);
+            }
+
+            return Mathf.Clamp(total, RuntimeResistanceCollection.MinimumResistance, RuntimeResistanceCollection.MaximumResistance);
+        }
+
+        private static float ResolveWeightedResistance(DamageCalculation calculation)
+        {
+            float weightedAmount = 0f;
+            float weightedResistance = 0f;
+            for (int i = 0; i < calculation.ComponentResults.Count; i++)
+            {
+                DamageComponentResult component = calculation.ComponentResults[i];
+                float afterDefense = Mathf.Max(0f, component.OriginalAmount - component.DefenseMitigation);
+                weightedAmount += afterDefense;
+                weightedResistance += component.EffectiveResistance * afterDefense;
+            }
+
+            return weightedAmount <= CharacterResourceCollection.Epsilon ? 0f : weightedResistance / weightedAmount;
         }
 
         private static bool IsFinite(float value)
@@ -268,13 +324,14 @@ namespace UnityIsekaiGame.Combat
 
         private readonly struct TargetRuntime
         {
-            public TargetRuntime(GameObject gameObject, string actorId, CharacterResourceCollection resources, CalculatedStatCollection stats, CharacterTraitCollection traits, ResourceSnapshot health)
+            public TargetRuntime(GameObject gameObject, string actorId, CharacterResourceCollection resources, CalculatedStatCollection stats, CharacterTraitCollection traits, IDamageResistanceReceiver resistanceReceiver, ResourceSnapshot health)
             {
                 GameObject = gameObject;
                 ActorId = actorId ?? string.Empty;
                 Resources = resources;
                 Stats = stats;
                 Traits = traits;
+                ResistanceReceiver = resistanceReceiver;
                 Health = health;
             }
 
@@ -283,6 +340,7 @@ namespace UnityIsekaiGame.Combat
             public CharacterResourceCollection Resources { get; }
             public CalculatedStatCollection Stats { get; }
             public CharacterTraitCollection Traits { get; }
+            public IDamageResistanceReceiver ResistanceReceiver { get; }
             public ResourceSnapshot Health { get; }
         }
     }

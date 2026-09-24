@@ -214,21 +214,20 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void ActorMovementSpeed_ComposesAuthoredBaseAndCalculatedMovement()
+        public void ActorMovementSpeed_ReadsCanonicalCalculatedMovement()
         {
             DefinitionRegistry registry = LoadRegistry();
             GameObject owner = new GameObject("Actor Movement Speed Composition Fixture");
             try
             {
-                owner.SetActive(false);
+                owner.AddComponent(RequiredType("UnityIsekaiGame.Stats.CharacterAttributes"));
+                owner.AddComponent(RequiredType("UnityIsekaiGame.Stats.CalculatedStatCollection"));
                 Component actorStats = owner.AddComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats"));
-                SetField(actorStats, "baseMovementSpeed", 10f);
-                owner.SetActive(true);
 
                 Invoke(actorStats, "ConfigureDerivedStats", registry);
 
                 float expectedCalculatedMovement = 4f + 1f;
-                Assert.That(GetProperty<float>(actorStats, "MovementSpeed"), Is.EqualTo(10f + expectedCalculatedMovement));
+                Assert.That(GetProperty<float>(actorStats, "MovementSpeed"), Is.EqualTo(expectedCalculatedMovement));
             }
             finally
             {
@@ -296,12 +295,14 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void LegacyStatModifier_FeedsCalculatedStatBridge()
+        public void RuntimeStatModifierAdapter_FeedsCanonicalCalculatedStats()
         {
             DefinitionRegistry registry = LoadRegistry();
             GameObject owner = new GameObject("Legacy Bridge Fixture");
             try
             {
+                owner.AddComponent(RequiredType("UnityIsekaiGame.Stats.CharacterAttributes"));
+                owner.AddComponent(RequiredType("UnityIsekaiGame.Stats.CalculatedStatCollection"));
                 Component actorStats = owner.AddComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats"));
                 Invoke(actorStats, "ConfigureDerivedStats", registry);
                 float initialPower = GetProperty<float>(actorStats, "AttackPower");

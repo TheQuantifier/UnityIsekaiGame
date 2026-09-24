@@ -9,28 +9,13 @@ namespace UnityIsekaiGame.Tests
 {
     public sealed class StatusEffectRuntimeModifierTests
     {
-        [Test]
-        public void RuntimeStatAggregation_AppliesFlatThenPercent()
-        {
-            object collection = Activator.CreateInstance(RequiredType("UnityIsekaiGame.Stats.RuntimeStatCollection"));
-            object attack = EnumValue("UnityIsekaiGame.Stats.StatType", "AttackPower");
-            object flat = EnumValue("UnityIsekaiGame.Stats.StatModifierOperation", "FlatAdd");
-            object percent = EnumValue("UnityIsekaiGame.Stats.StatModifierOperation", "PercentAdd");
-            object sourceA = CreateSource("Equipment", "equipment.slot.MainHand");
-            object sourceB = CreateSource("StatusEffect", "status-1");
-
-            Invoke(collection, "SetBaseValue", attack, 10f);
-            Invoke(collection, "AddModifier", CreateRuntimeModifier(attack, flat, 5f, sourceA));
-            Invoke(collection, "AddModifier", CreateRuntimeModifier(attack, percent, 0.2f, sourceB));
-
-            Assert.That((float)Invoke(collection, "GetValue", attack), Is.EqualTo(18f).Within(0.001f));
-        }
+        private const string CatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
 
         [Test]
-        public void PlayerStats_GettersInitializeBaseVitalsBeforeAwake()
+        public void PlayerStats_ReadsCanonicalCalculatedStatDefaults()
         {
-            GameObject target = new GameObject("Stats Target");
-            Component stats = target.AddComponent(RequiredType("UnityIsekaiGame.Equipment.PlayerStats"));
+            GameObject target = CreateStatTarget("Stats Target");
+            Component stats = target.GetComponent(RequiredType("UnityIsekaiGame.Equipment.PlayerStats"));
 
             Assert.That(Get<float>(stats, "MaximumHealth"), Is.EqualTo(100f));
             Assert.That(Get<float>(stats, "MaximumStamina"), Is.EqualTo(100f));
@@ -154,8 +139,16 @@ namespace UnityIsekaiGame.Tests
         private static GameObject CreateStatTarget(string name)
         {
             GameObject target = new GameObject(name);
+            Component attributes = target.AddComponent(RequiredType("UnityIsekaiGame.Stats.CharacterAttributes"));
+            Component calculatedStats = target.AddComponent(RequiredType("UnityIsekaiGame.Stats.CalculatedStatCollection"));
             Component stats = target.AddComponent(RequiredType("UnityIsekaiGame.Equipment.PlayerStats"));
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
+            Assert.That(catalog, Is.Not.Null);
+            DefinitionRegistry registry = catalog.CreateRegistry();
+            Invoke(attributes, "Configure", registry);
+            Invoke(calculatedStats, "Configure", registry, attributes);
             InvokeNonPublic(stats, "Awake");
+            InvokeNonPublic(stats, "OnEnable");
             Component controller = target.AddComponent(RequiredType("UnityIsekaiGame.StatusEffects.StatusEffectController"));
             InvokeNonPublic(controller, "Awake");
             return target;
@@ -249,7 +242,32 @@ namespace UnityIsekaiGame.Tests
 
         private static object Invoke(object target, string methodName, params object[] args)
         {
-            return target.GetType().GetMethod(methodName).Invoke(target, args);
+            foreach (MethodInfo method in target.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public))
+            {
+                ParameterInfo[] parameters = method.GetParameters();
+                if (method.Name != methodName || parameters.Length != args.Length)
+                {
+                    continue;
+                }
+
+                bool compatible = true;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    if (args[i] != null && !parameters[i].ParameterType.IsInstanceOfType(args[i]))
+                    {
+                        compatible = false;
+                        break;
+                    }
+                }
+
+                if (compatible)
+                {
+                    return method.Invoke(target, args);
+                }
+            }
+
+            Assert.Fail($"No compatible public method {target.GetType().FullName}.{methodName} with {args.Length} parameters found.");
+            return null;
         }
 
         private static object InvokeStatic(string typeName, string methodName, params object[] args)

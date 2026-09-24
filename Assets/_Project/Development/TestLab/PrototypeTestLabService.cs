@@ -10092,10 +10092,9 @@ namespace UnityIsekaiGame.Development
                 return RecordFailure("Apply Typed Damage", "No damage type selected.", "MissingDefinition");
             }
 
-            IDamageable damageable = targetEnemy ? context?.EnemyHealth : context?.PlayerHealth;
             Transform targetTransform = targetEnemy ? context?.EnemyTransform : context?.PlayerTransform;
             GameObject source = sourcePlayer ? context?.PlayerTransform?.gameObject : context?.EnemyTransform?.gameObject;
-            if (damageable == null || targetTransform == null)
+            if (targetTransform == null || targetTransform.GetComponentInParent<CharacterResourceCollection>() == null)
             {
                 return RecordFailure("Apply Typed Damage", "Damage target is missing.", "MissingTarget");
             }
@@ -10103,8 +10102,8 @@ namespace UnityIsekaiGame.Development
             float rawAmount = Mathf.Max(0f, amount);
             DamageComponent component = new DamageComponent(damageType, rawAmount);
             DamagePacket packet = DamagePacket.Single(source, component);
-            DamageInfo info = new DamageInfo(rawAmount, source, targetTransform.position, Vector3.forward, DamageType.Physical, packet);
-            DamageResult result = damageable.ApplyDamage(in info);
+            DamageInfo info = new DamageInfo(packet, targetTransform.position, Vector3.forward);
+            DamageResult result = SceneCombatDamageBridge.ApplyDamage(targetTransform.gameObject, in info, "test-lab.typed-damage", "Test Lab typed damage");
             return Record(result.Applied, "Apply Typed Damage", result.Applied ? "Applied" : "Failed", result.Message);
         }
 
@@ -10217,7 +10216,8 @@ namespace UnityIsekaiGame.Development
                 criticalMultiplier: AttackResolutionRequest.DefaultCriticalMultiplier,
                 hasSuppliedDistance: false,
                 hasMaximumRange: false,
-                originatingActionId: "development.environmental-test");
+                originatingActionId: "development.environmental-test",
+                authorityValidated: true);
             AttackResolutionResult result = attackResolutionService.ExecuteAttack(request);
             return Record(result.Succeeded, "Environmental 6.2 Attack", result.Code, FormatAttackResolution(result));
         }
@@ -10701,7 +10701,7 @@ namespace UnityIsekaiGame.Development
             string transactionId = ResolveLifecycleTransactionId(reuse: false);
             float amount = Mathf.Max(1f, health.Current - health.Minimum + 1000f);
             GameObject source = targetEnemy ? context?.PlayerTransform?.gameObject : context?.EnemyTransform?.gameObject;
-            DamageApplicationRequest request = new DamageApplicationRequest(transactionId, ResolveActorId(source), source, actorId, target, damageType, amount, "Prototype Test Lab zero-health lifecycle proof");
+            DamageApplicationRequest request = new DamageApplicationRequest(transactionId, ResolveActorId(source), source, actorId, target, damageType, amount, "Prototype Test Lab zero-health lifecycle proof", authorityValidated: true);
             DamageApplicationResult result = damageHealingService.ApplyDamage(request);
             return Record(result.Succeeded, targetEnemy ? "Zero Health Enemy" : "Zero Health Player", result.Code, $"Damage={result.FinalDamageAmount:0.###} Health={result.OldHealth:0.###}->{result.NewHealth:0.###} BecameZero={result.BecameZero} Lifecycle={ActorLifecycleUtility.GetState(target)} Duplicate={result.Duplicate}.");
         }
@@ -11507,7 +11507,8 @@ namespace UnityIsekaiGame.Development
                 target,
                 damageType,
                 Mathf.Max(0f, amount),
-                "Prototype Test Lab");
+                "Prototype Test Lab",
+                authorityValidated: true);
         }
 
         private bool TryPrepareContributionHealth(bool targetPlayer, float desiredCurrent, out string message)
@@ -11578,7 +11579,8 @@ namespace UnityIsekaiGame.Development
                 hasMaximumRange: maximumRange >= 0f,
                 maximumRange: Mathf.Max(0f, maximumRange),
                 originatingActionId: "development.attack-resolution-test",
-                metadata: metadata);
+                metadata: metadata,
+                authorityValidated: true);
         }
 
         private AttackResolutionRequest CreateCombatStateAttackResolutionRequest(DamageTypeDefinition damageType, float amount, float baseHitChance, float hitRoll, float criticalChance, float criticalRoll, float criticalMultiplier, float distance, float maximumRange, string transactionId)
@@ -11606,7 +11608,8 @@ namespace UnityIsekaiGame.Development
                 suppliedDistance: Mathf.Max(0f, distance),
                 hasMaximumRange: maximumRange >= 0f,
                 maximumRange: Mathf.Max(0f, maximumRange),
-                originatingActionId: "development.combat-state-attack-test");
+                originatingActionId: "development.combat-state-attack-test",
+                authorityValidated: true);
         }
 
         private bool TryBuildDefenseActivationRequest(DefensiveActionDefinition definition, bool targetPlayer, bool reuseTransaction, out DefenseActivationRequest request, out PrototypeTestLabOperation failure)
@@ -12836,7 +12839,8 @@ namespace UnityIsekaiGame.Development
                 ResolveActorId(target),
                 target,
                 Mathf.Max(0f, amount),
-                "Prototype Test Lab");
+                "Prototype Test Lab",
+                authorityValidated: true);
         }
 
         private static string ResolveActorId(GameObject actor)

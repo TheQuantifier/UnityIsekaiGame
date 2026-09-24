@@ -120,7 +120,8 @@ namespace UnityIsekaiGame.Inventory
                 ResolveActorId(target),
                 target,
                 restoreAmount,
-                reason);
+                reason,
+                authorityValidated: true);
         }
 
         private static string ResolveActorId(GameObject actor)

@@ -309,6 +309,11 @@ namespace UnityIsekaiGame.Combat.Execution
                 return CombatExecutionResult.Failure(!execute, shapeCode, shapeMessage, request.TransactionId, request.Definition);
             }
 
+            if (execute && !request.AuthorityValidated)
+            {
+                return CombatExecutionResult.Failure(false, CombatExecutionResultCode.AuthorityRequired, "Combat execution begin requires validated game/server authority.", request.TransactionId, request.Definition);
+            }
+
             if (!ResolveActor(request.ActorObject, request.ActorId, out ActorRuntime actor, out string actorCode, out string actorMessage))
             {
                 return CombatExecutionResult.Failure(!execute, actorCode, actorMessage, request.TransactionId, request.Definition);
@@ -391,6 +396,11 @@ namespace UnityIsekaiGame.Combat.Execution
             if (!ValidateRequestShape(request.TransactionId, request.Now, out string shapeCode, out string shapeMessage))
             {
                 return CombatExecutionResult.Failure(!execute, shapeCode, shapeMessage, request.TransactionId);
+            }
+
+            if (execute && !request.AuthorityValidated)
+            {
+                return CombatExecutionResult.Failure(false, CombatExecutionResultCode.AuthorityRequired, "Combat execution commit requires validated game/server authority.", request.TransactionId);
             }
 
             if (!ResolveActor(request.ActorObject, request.ActorId, out ActorRuntime actor, out string actorCode, out string actorMessage))

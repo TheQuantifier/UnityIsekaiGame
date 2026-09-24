@@ -94,11 +94,24 @@ namespace UnityIsekaiGame.Tests
             using CombatTargetFixture target = CombatTargetFixture.Create("stale", CreateDamageType("damage.physical", DamageFamily.Physical, trueDamage: false));
             DamageHealingService service = new DamageHealingService();
 
-            DamageApplicationRequest request = new DamageApplicationRequest("tx.stale", string.Empty, null, "entity.scene.test.old-target", target.Owner, target.DamageType, 10f, "stale target");
+            DamageApplicationRequest request = new DamageApplicationRequest("tx.stale", string.Empty, null, "entity.scene.test.old-target", target.Owner, target.DamageType, 10f, "stale target", authorityValidated: true);
             DamageApplicationResult result = service.ApplyDamage(request);
 
             Assert.That(result.Succeeded, Is.False);
             Assert.That(result.Code, Is.EqualTo(ImmediateCombatResultCode.StaleTarget));
+            Assert.That(target.Health, Is.EqualTo(target.MaximumHealth).Within(0.001f));
+        }
+
+        [Test]
+        public void DamageExecution_RejectsUnvalidatedAuthorityWithoutMutation()
+        {
+            using CombatTargetFixture target = CombatTargetFixture.Create("authority", CreateDamageType("damage.physical", DamageFamily.Physical, trueDamage: false));
+            DamageApplicationRequest request = new DamageApplicationRequest("tx.authority", "actor.test-source", null, target.ActorId, target.Owner, target.DamageType, 10f, "authority test");
+
+            DamageApplicationResult result = new DamageHealingService().ApplyDamage(request);
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Code, Is.EqualTo(ImmediateCombatResultCode.AuthorityRequired));
             Assert.That(target.Health, Is.EqualTo(target.MaximumHealth).Within(0.001f));
         }
 
@@ -108,8 +121,8 @@ namespace UnityIsekaiGame.Tests
             DamageHealingService service = new DamageHealingService();
             DamageTypeDefinition damageType = CreateDamageType("damage.physical", DamageFamily.Physical, trueDamage: false);
 
-            DamageApplicationResult missing = service.ApplyDamage(new DamageApplicationRequest("tx.missing", string.Empty, null, string.Empty, null, damageType, 10f));
-            DamageApplicationResult negative = service.ApplyDamage(new DamageApplicationRequest("tx.negative", string.Empty, null, string.Empty, new GameObject("unused"), damageType, -1f));
+            DamageApplicationResult missing = service.ApplyDamage(new DamageApplicationRequest("tx.missing", string.Empty, null, string.Empty, null, damageType, 10f, authorityValidated: true));
+            DamageApplicationResult negative = service.ApplyDamage(new DamageApplicationRequest("tx.negative", string.Empty, null, string.Empty, new GameObject("unused"), damageType, -1f, authorityValidated: true));
 
             Assert.That(missing.Code, Is.EqualTo(ImmediateCombatResultCode.MissingTarget));
             Assert.That(negative.Code, Is.EqualTo(ImmediateCombatResultCode.InvalidRequest));
@@ -336,12 +349,12 @@ namespace UnityIsekaiGame.Tests
 
             public DamageApplicationRequest CreateDamageRequest(float amount, string transactionId)
             {
-                return new DamageApplicationRequest(transactionId, "actor.test-source", null, ActorId, Owner, damageType, amount, "test");
+                return new DamageApplicationRequest(transactionId, "actor.test-source", null, ActorId, Owner, damageType, amount, "test", authorityValidated: true);
             }
 
             public HealingApplicationRequest CreateHealingRequest(float amount, string transactionId)
             {
-                return new HealingApplicationRequest(transactionId, "actor.test-source", null, ActorId, Owner, amount, "test");
+                return new HealingApplicationRequest(transactionId, "actor.test-source", null, ActorId, Owner, amount, "test", authorityValidated: true);
             }
 
             public void AddResistance(DamageTypeDefinition targetDamageType, float resistance)

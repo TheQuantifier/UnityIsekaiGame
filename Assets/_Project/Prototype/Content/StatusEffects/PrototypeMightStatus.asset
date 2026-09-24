@@ -35,5 +35,5 @@ MonoBehaviour:
     value: 5
     scaleWithStacks: 1
     priority: 0
-  periodicInterval: 0
-  periodicEffects: []
+  instantEffects: []
+  ongoingEffects: []

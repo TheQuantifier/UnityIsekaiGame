@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Stats;
 
 namespace UnityIsekaiGame.Beings
 {
@@ -15,12 +16,7 @@ namespace UnityIsekaiGame.Beings
         [SerializeField] private BeingDefinition beingDefinition;
         [SerializeField] private CategoryDefinition primaryCategory;
         [SerializeField] private TagDefinition[] tags;
-        [SerializeField, Min(1f)] private float baseMaximumHealth = 100f;
-        [SerializeField, Min(0f)] private float baseMaximumStamina = 100f;
-        [SerializeField, Min(0f)] private float baseMaximumMana = 100f;
-        [SerializeField, Min(0f)] private float baseAttackPower;
-        [SerializeField, Min(0f)] private float baseDefense;
-        [SerializeField, Min(0f)] private float baseMovementSpeed;
+        [SerializeField] private ActorProfileStatContribution[] statContributions;
         [SerializeField] private ResistanceModifierDefinition[] baseResistances;
         [SerializeField] private string futureSensesPlaceholder;
         [SerializeField] private string futureMovementProfilePlaceholder;
@@ -33,27 +29,10 @@ namespace UnityIsekaiGame.Beings
         public CategoryDefinition PrimaryCategory => primaryCategory;
         public CategoryDomain ClassificationDomain => CategoryDomain.Being;
         public IReadOnlyList<TagDefinition> Tags => tags ?? Array.Empty<TagDefinition>();
-        public float BaseMaximumHealth => baseMaximumHealth;
-        public float BaseMaximumStamina => baseMaximumStamina;
-        public float BaseMaximumMana => baseMaximumMana;
-        public float BaseAttackPower => baseAttackPower;
-        public float BaseDefense => baseDefense;
-        public float BaseMovementSpeed => baseMovementSpeed;
+        public IReadOnlyList<ActorProfileStatContribution> StatContributions => statContributions ?? Array.Empty<ActorProfileStatContribution>();
         public IReadOnlyList<ResistanceModifierDefinition> BaseResistances => baseResistances ?? System.Array.Empty<ResistanceModifierDefinition>();
         public string FutureSensesPlaceholder => futureSensesPlaceholder;
         public string FutureMovementProfilePlaceholder => futureMovementProfilePlaceholder;
-        public bool HasValidBaseStats => IsFinite(baseMaximumHealth)
-            && IsFinite(baseMaximumStamina)
-            && IsFinite(baseMaximumMana)
-            && IsFinite(baseAttackPower)
-            && IsFinite(baseDefense)
-            && IsFinite(baseMovementSpeed)
-            && baseMaximumHealth >= 1f
-            && baseMaximumStamina >= 0f
-            && baseMaximumMana >= 0f
-            && baseAttackPower >= 0f
-            && baseDefense >= 0f
-            && baseMovementSpeed >= 0f;
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
@@ -76,12 +55,7 @@ namespace UnityIsekaiGame.Beings
                 report.AddError($"ActorProfileDefinition '{DisplayName}' references being '{beingDefinition.Id}', which is not in the configured catalog.");
             }
 
-            ValidateBaseStat(baseMaximumHealth, 1f, "base maximum health", report);
-            ValidateBaseStat(baseMaximumStamina, 0f, "base maximum stamina", report);
-            ValidateBaseStat(baseMaximumMana, 0f, "base maximum mana", report);
-            ValidateBaseStat(baseAttackPower, 0f, "base attack power", report);
-            ValidateBaseStat(baseDefense, 0f, "base defense", report);
-            ValidateBaseStat(baseMovementSpeed, 0f, "base movement speed", report);
+            ValidateStatContributions(definitionsById, report);
             ValidateBaseResistances(definitionsById, report);
 
             if (primaryCategory == null && beingDefinition != null && beingDefinition.PrimaryCategory == null)
@@ -90,25 +64,27 @@ namespace UnityIsekaiGame.Beings
             }
         }
 
-        private void OnValidate()
+        private void ValidateStatContributions(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
-            baseMaximumHealth = Mathf.Max(1f, baseMaximumHealth);
-            baseMaximumStamina = Mathf.Max(0f, baseMaximumStamina);
-            baseMaximumMana = Mathf.Max(0f, baseMaximumMana);
-            baseAttackPower = Mathf.Max(0f, baseAttackPower);
-            baseDefense = Mathf.Max(0f, baseDefense);
-            baseMovementSpeed = Mathf.Max(0f, baseMovementSpeed);
-        }
+            HashSet<string> ids = new HashSet<string>();
+            for (int i = 0; i < StatContributions.Count; i++)
+            {
+                ActorProfileStatContribution contribution = StatContributions[i];
+                if (contribution == null || !contribution.IsValid)
+                {
+                    report.AddError($"ActorProfileDefinition '{DisplayName}' has an invalid stat contribution at index {i}.");
+                    continue;
+                }
 
-        private void ValidateBaseStat(float value, float minimum, string label, DefinitionValidationReport report)
-        {
-            if (!IsFinite(value))
-            {
-                report.AddError($"ActorProfileDefinition '{DisplayName}' has non-finite {label}.");
-            }
-            else if (value < minimum)
-            {
-                report.AddError($"ActorProfileDefinition '{DisplayName}' has {label} below {minimum:0.#}.");
+                if (!ids.Add(contribution.Stat.Id))
+                {
+                    report.AddError($"ActorProfileDefinition '{DisplayName}' contributes to '{contribution.Stat.Id}' more than once.");
+                }
+
+                if (definitionsById == null || !definitionsById.TryGetValue(contribution.Stat.Id, out IGameDefinition found) || found is not CalculatedStatDefinition)
+                {
+                    report.AddError($"ActorProfileDefinition '{DisplayName}' references calculated stat '{contribution.Stat.Id}' outside the configured catalog.");
+                }
             }
         }
 
@@ -158,5 +134,24 @@ namespace UnityIsekaiGame.Beings
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
+    }
+
+    [Serializable]
+    public sealed class ActorProfileStatContribution
+    {
+        [SerializeField] private CalculatedStatDefinition stat;
+        [SerializeField] private CalculatedStatContributionKind kind = CalculatedStatContributionKind.Flat;
+        [SerializeField] private CalculatedStatContributionDirection direction = CalculatedStatContributionDirection.Improve;
+        [SerializeField, Min(0f)] private float magnitude;
+        [SerializeField] private int priority;
+
+        public CalculatedStatDefinition Stat => stat;
+        public CalculatedStatContributionKind Kind => kind;
+        public CalculatedStatContributionDirection Direction => direction;
+        public float Magnitude => Mathf.Max(0f, magnitude);
+        public int Priority => priority;
+        public bool IsValid => stat != null && IsFinite(magnitude) && magnitude >= 0f;
+
+        private static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
     }
 }

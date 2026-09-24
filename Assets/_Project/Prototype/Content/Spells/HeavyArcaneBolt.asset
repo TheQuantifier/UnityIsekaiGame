@@ -20,10 +20,3 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 03ff46bc67384aa4abda15daaa390259, type: 2}
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
   ability: {fileID: 11400000, guid: 0cd85663eeb0438f80077353d3735bc2, type: 2}
-  manaCost: 35
-  cooldown: 1.25
-  baseDamage: 34
-  projectileSpeed: 11
-  maximumLifetime: 3.5
-  projectilePrefab: {fileID: 3080823990934903977, guid: 714735eab9d39414d9540b08c734c826, type: 3}
-  castPointOffset: {x: 0.25, y: -0.2, z: 0.5}

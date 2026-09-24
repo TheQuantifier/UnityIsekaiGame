@@ -10,19 +10,12 @@ namespace UnityIsekaiGame.Equipment
 {
     public sealed class PlayerStats : ActorStats
     {
-        private const float DefaultPlayerAttackPower = 5f;
-
         [SerializeField] private PlayerEquipment equipment;
         [SerializeField] private MonoBehaviour itemQualityAffixRuntimeProvider;
 
         private readonly HashSet<StatModifierSource> appliedAffixModifierSources = new HashSet<StatModifierSource>();
         private IItemQualityAffixRuntimeProvider qualityAffixProvider;
         private IItemDurabilityRuntimeProvider durabilityProvider;
-
-        private void Reset()
-        {
-            baseAttackPower = DefaultPlayerAttackPower;
-        }
 
         protected override void Awake()
         {
@@ -33,12 +26,12 @@ namespace UnityIsekaiGame.Equipment
 
             ResolveQualityAffixProvider();
 
-            if (Mathf.Approximately(baseAttackPower, 0f))
-            {
-                baseAttackPower = DefaultPlayerAttackPower;
-            }
-
             base.Awake();
+            RecalculateEquipmentModifiers();
+        }
+
+        protected override void OnDerivedStatsConfigured()
+        {
             RecalculateEquipmentModifiers();
         }
 

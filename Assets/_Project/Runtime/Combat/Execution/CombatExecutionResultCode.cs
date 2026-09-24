@@ -25,6 +25,7 @@ namespace UnityIsekaiGame.Combat.Execution
         public const string FailedCostRefund = "FailedCostRefund";
         public const string FailedUnderlyingAction = "FailedUnderlyingAction";
         public const string InvalidClock = "InvalidClock";
+        public const string AuthorityRequired = "AuthorityRequired";
         public const string Interrupted = "Interrupted";
         public const string Cancelled = "Cancelled";
         public const string AlreadyComplete = "AlreadyComplete";

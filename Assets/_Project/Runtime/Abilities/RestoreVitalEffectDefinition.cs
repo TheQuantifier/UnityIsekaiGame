@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.Combat;
-using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.ResourceSystem;
 using UnityIsekaiGame.WorldEntities;
 
@@ -33,13 +32,7 @@ namespace UnityIsekaiGame.Abilities
                 return EffectExecutionResult.Failure(EffectExecutionStatus.InvalidTarget, $"{DisplayName} has no target.");
             }
 
-            return vitalType switch
-            {
-                VitalType.Health => CanRestoreHealth(context.Target),
-                VitalType.Mana => CanRestoreMana(context.Target),
-                VitalType.Stamina => CanRestoreStamina(context.Target),
-                _ => EffectExecutionResult.Failure(EffectExecutionStatus.InvalidConfiguration, $"{DisplayName} has an invalid vital type.")
-            };
+            return CanRestoreResource(context.Target, ResolveResourceId());
         }
 
         public override EffectExecutionResult Execute(in EffectExecutionContext context)
@@ -53,8 +46,8 @@ namespace UnityIsekaiGame.Abilities
             return vitalType switch
             {
                 VitalType.Health => RestoreHealth(context.Target, context.MagnitudeMultiplier),
-                VitalType.Mana => RestoreMana(context.Target, context.MagnitudeMultiplier),
-                VitalType.Stamina => RestoreStamina(context.Target, context.MagnitudeMultiplier),
+                VitalType.Mana => RestoreResource(context.Target, ResourceIds.Mana, context.MagnitudeMultiplier),
+                VitalType.Stamina => RestoreResource(context.Target, ResourceIds.Stamina, context.MagnitudeMultiplier),
                 _ => EffectExecutionResult.Failure(EffectExecutionStatus.InvalidConfiguration, $"{DisplayName} has an invalid vital type.")
             };
         }
@@ -68,54 +61,17 @@ namespace UnityIsekaiGame.Abilities
             }
         }
 
-        private EffectExecutionResult CanRestoreHealth(GameObject target)
+        private EffectExecutionResult CanRestoreResource(GameObject target, string resourceId)
         {
-            if (CanUseHealingPipeline(target))
+            CharacterResourceCollection resources = target.GetComponentInParent<CharacterResourceCollection>();
+            if (resources == null || string.IsNullOrWhiteSpace(resourceId) || !resources.TryGetResource(resourceId, out ResourceSnapshot snapshot))
             {
-                HealingApplicationResult preview = new DamageHealingService().PreviewHealing(CreateHealingRequest(target, amount, string.Empty));
-                if (preview.Succeeded)
-                {
-                    return preview.FinalHealingAmount > CharacterResourceCollection.Epsilon
-                        ? EffectExecutionResult.Success("Health can be restored.")
-                        : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, "Health is already full.");
-                }
+                return EffectExecutionResult.Failure(EffectExecutionStatus.UnsupportedTarget, $"{target.name} does not expose resource '{resourceId}'.");
             }
 
-            PlayerHealth health = target.GetComponentInParent<PlayerHealth>();
-            if (health == null)
-            {
-                return EffectExecutionResult.Failure(EffectExecutionStatus.UnsupportedTarget, $"{target.name} has no health component.");
-            }
-
-            return health.IsAtMaximum
-                ? EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, "Health is already full.")
-                : EffectExecutionResult.Success("Health can be restored.");
-        }
-
-        private EffectExecutionResult CanRestoreMana(GameObject target)
-        {
-            PlayerMana mana = target.GetComponentInParent<PlayerMana>();
-            if (mana == null)
-            {
-                return EffectExecutionResult.Failure(EffectExecutionStatus.UnsupportedTarget, $"{target.name} has no mana component.");
-            }
-
-            return mana.CurrentMana >= mana.MaximumMana
-                ? EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, "Mana is already full.")
-                : EffectExecutionResult.Success("Mana can be restored.");
-        }
-
-        private EffectExecutionResult CanRestoreStamina(GameObject target)
-        {
-            PlayerStamina stamina = target.GetComponentInParent<PlayerStamina>();
-            if (stamina == null)
-            {
-                return EffectExecutionResult.Failure(EffectExecutionStatus.UnsupportedTarget, $"{target.name} has no stamina component.");
-            }
-
-            return stamina.CurrentStamina >= stamina.MaximumStamina
-                ? EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, "Stamina is already full.")
-                : EffectExecutionResult.Success("Stamina can be restored.");
+            return snapshot.Current >= snapshot.Maximum - CharacterResourceCollection.Epsilon
+                ? EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, $"{resourceId} is already full.")
+                : EffectExecutionResult.Success($"{resourceId} can be restored.");
         }
 
         private EffectExecutionResult RestoreHealth(GameObject target, float multiplier)
@@ -129,34 +85,42 @@ namespace UnityIsekaiGame.Abilities
                     : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, healingResult.Message);
             }
 
-            PlayerHealth health = target.GetComponentInParent<PlayerHealth>();
-            int healed = health.Heal(Mathf.RoundToInt(amount * Mathf.Max(0f, multiplier)));
-            return healed > 0
-                ? EffectExecutionResult.Success($"Restored {healed} health.", healed)
-                : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, "Health is already full.");
+            return EffectExecutionResult.Failure(EffectExecutionStatus.UnsupportedTarget, $"{target.name} does not expose canonical Health and identity.");
         }
 
-        private EffectExecutionResult RestoreMana(GameObject target, float multiplier)
+        private EffectExecutionResult RestoreResource(GameObject target, string resourceId, float multiplier)
         {
-            VitalChangeResult result = target.GetComponentInParent<PlayerMana>().Restore(amount * Mathf.Max(0f, multiplier));
-            return result.Succeeded
-                ? EffectExecutionResult.Success(result.Message, result.ChangedAmount)
-                : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, result.Message);
-        }
-
-        private EffectExecutionResult RestoreStamina(GameObject target, float multiplier)
-        {
-            VitalChangeResult result = target.GetComponentInParent<PlayerStamina>().Restore(amount * Mathf.Max(0f, multiplier));
-            return result.Succeeded
-                ? EffectExecutionResult.Success(result.Message, result.ChangedAmount)
-                : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, result.Message);
+            CharacterResourceCollection resources = target.GetComponentInParent<CharacterResourceCollection>();
+            ResourceChangeResult result = resources?.ApplyChange(new ResourceChangeRequest(
+                resourceId,
+                ResourceChangeOperation.Gain,
+                amount * Mathf.Max(0f, multiplier),
+                ResourceChangeSourceCategory.Ability,
+                ResolveActorId(target),
+                DisplayName,
+                allowPartial: true,
+                authorityValidated: true));
+            return result != null && result.Succeeded && result.AppliedAmount > CharacterResourceCollection.Epsilon
+                ? EffectExecutionResult.Success(result.Message, result.AppliedAmount)
+                : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, result?.Message ?? $"Resource '{resourceId}' is unavailable.");
         }
 
         private static bool CanUseHealingPipeline(GameObject target)
         {
             return target != null
-                && target.GetComponentInParent<CharacterResourceCollection>() != null
+                && target.GetComponentInParent<CharacterResourceCollection>()?.HasResource(ResourceIds.Health) == true
                 && !string.IsNullOrWhiteSpace(ResolveActorId(target));
+        }
+
+        private string ResolveResourceId()
+        {
+            return vitalType switch
+            {
+                VitalType.Health => ResourceIds.Health,
+                VitalType.Mana => ResourceIds.Mana,
+                VitalType.Stamina => ResourceIds.Stamina,
+                _ => string.Empty
+            };
         }
 
         private static HealingApplicationRequest CreateHealingRequest(GameObject target, float restoreAmount, string reason)
@@ -168,7 +132,8 @@ namespace UnityIsekaiGame.Abilities
                 ResolveActorId(target),
                 target,
                 restoreAmount,
-                reason);
+                reason,
+                authorityValidated: true);
         }
 
         private static string ResolveActorId(GameObject actor)

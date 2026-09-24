@@ -21,12 +21,37 @@ MonoBehaviour:
   tags:
   - {fileID: 11400000, guid: 42afd05984f545cab3198148adf73183, type: 2}
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
-  baseMaximumHealth: 65
-  baseMaximumStamina: 0
-  baseMaximumMana: 0
-  baseAttackPower: 0
-  baseDefense: 1
-  baseMovementSpeed: 1.8
+  statContributions:
+  - stat: {fileID: 11400000, guid: c7000000000000000000000000000052, type: 2}
+    kind: 0
+    direction: 100
+    magnitude: 35
+    priority: 0
+  - stat: {fileID: 11400000, guid: c8000000000000000000000000000052, type: 2}
+    kind: 0
+    direction: 100
+    magnitude: 100
+    priority: 0
+  - stat: {fileID: 11400000, guid: c9000000000000000000000000000052, type: 2}
+    kind: 0
+    direction: 100
+    magnitude: 100
+    priority: 0
+  - stat: {fileID: 11400000, guid: c1000000000000000000000000000052, type: 2}
+    kind: 0
+    direction: 100
+    magnitude: 5
+    priority: 0
+  - stat: {fileID: 11400000, guid: c5000000000000000000000000000052, type: 2}
+    kind: 0
+    direction: 0
+    magnitude: 1
+    priority: 0
+  - stat: {fileID: 11400000, guid: ca000000000000000000000000000052, type: 2}
+    kind: 0
+    direction: 100
+    magnitude: 3.2
+    priority: 0
   baseResistances: []
   futureSensesPlaceholder: 
   futureMovementProfilePlaceholder: 

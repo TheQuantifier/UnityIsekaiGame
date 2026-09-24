@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.ResourceSystem;
@@ -39,23 +37,14 @@ namespace UnityIsekaiGame.Combat
             GameObject target,
             in DamageInfo damageInfo,
             string transactionPrefix,
-            string reason,
-            bool allowLegacyFallback = true)
+            string reason)
         {
             if (TryApplyCurrentResourceDamage(target, in damageInfo, transactionPrefix, reason, out DamageResult pipelineResult))
             {
                 return pipelineResult;
             }
 
-            if (!allowLegacyFallback)
-            {
-                return pipelineResult;
-            }
-
-            IDamageable damageable = target == null ? null : target.GetComponentInParent<IDamageable>();
-            return damageable == null
-                ? DamageResult.Failure(damageInfo.RawAmount, "Target does not expose current Health resources or a legacy damage endpoint.")
-                : damageable.ApplyDamage(in damageInfo);
+            return pipelineResult;
         }
 
         private static bool TryResolvePipelineRequest(
@@ -84,8 +73,9 @@ namespace UnityIsekaiGame.Combat
                 return false;
             }
 
-            if (!TryResolveSingleTypedDamage(in damageInfo, out DamageTypeDefinition damageType, out float amount, out failure))
+            if (!damageInfo.DamagePacket.HasComponents)
             {
+                failure = "Damage packet has no canonical typed components.";
                 return false;
             }
 
@@ -104,39 +94,9 @@ namespace UnityIsekaiGame.Combat
                 damageInfo.Source,
                 targetActorId,
                 target,
-                damageType,
-                amount,
+                damageInfo.DamagePacket,
                 string.IsNullOrWhiteSpace(reason) ? "Scene combat damage" : reason,
                 authorityValidated: true);
-            return true;
-        }
-
-        private static bool TryResolveSingleTypedDamage(in DamageInfo damageInfo, out DamageTypeDefinition damageType, out float amount, out string failure)
-        {
-            IReadOnlyList<DamageComponent> components = damageInfo.DamagePacket.Components;
-            DamageComponent[] typedComponents = components
-                .Where(component => component.IsValid && component.DamageType != null && component.Amount > 0f)
-                .ToArray();
-
-            if (typedComponents.Length == 0)
-            {
-                damageType = null;
-                amount = 0f;
-                failure = "Damage packet has no typed DamageTypeDefinition component.";
-                return false;
-            }
-
-            if (typedComponents.Length > 1)
-            {
-                damageType = null;
-                amount = 0f;
-                failure = "Scene damage bridge requires a single typed damage component.";
-                return false;
-            }
-
-            damageType = typedComponents[0].DamageType;
-            amount = typedComponents[0].Amount;
-            failure = string.Empty;
             return true;
         }
 
@@ -156,7 +116,7 @@ namespace UnityIsekaiGame.Combat
                 ? $"Damage applied through current Health resources. Health: {result.NewHealth:0.#} / {result.HealthMaximum:0.#}."
                 : result.Message;
             return new DamageResult(
-                true,
+                result.HealthChanged,
                 result.RequestedAmount,
                 result.RequestedAmount,
                 result.DefenseApplied,

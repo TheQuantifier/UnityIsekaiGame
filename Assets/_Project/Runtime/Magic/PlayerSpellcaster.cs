@@ -1,9 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System;
 using UnityEngine;
 using UnityIsekaiGame.Abilities;
-using UnityIsekaiGame.ActorLifecycle;
+using UnityIsekaiGame.Combat.Execution;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Input;
 
@@ -12,42 +12,27 @@ namespace UnityIsekaiGame.Magic
     public sealed class PlayerSpellcaster : MonoBehaviour
     {
         [SerializeField] private PlayerInputReader input;
-        [SerializeField] private PlayerMana mana;
-        [SerializeField] private PlayerHealth health;
         [SerializeField] private Transform castOrigin;
         [SerializeField] private PlayerSpellLoadout loadout;
         [SerializeField] private SpellDefinition primarySpell;
+        [SerializeField] private PrototypePersistenceServiceBehaviour runtimeServices;
         [SerializeField] private LayerMask aimMask = ~0;
         [SerializeField] private QueryTriggerInteraction aimTriggerInteraction = QueryTriggerInteraction.Ignore;
 
         private readonly List<SpellProjectile> activeProjectiles = new List<SpellProjectile>();
-        private readonly Dictionary<SpellDefinition, float> cooldowns = new Dictionary<SpellDefinition, float>();
-        private readonly AbilityCooldownTracker abilityCooldowns = new AbilityCooldownTracker();
+        private string pendingExecutionId;
+        private string pendingActorId;
+        private SpellDefinition pendingSpell;
 
         public event Action<SpellDefinition, SpellCastResult> SpellCastResolved;
 
+        private CombatExecutionService Execution => runtimeServices == null ? null : runtimeServices.CombatExecution;
+
         private void Awake()
         {
-            if (input == null)
-            {
-                input = GetComponent<PlayerInputReader>();
-            }
-
-            if (mana == null)
-            {
-                mana = GetComponent<PlayerMana>();
-            }
-
-            if (health == null)
-            {
-                health = GetComponent<PlayerHealth>();
-            }
-
-            if (loadout == null)
-            {
-                loadout = GetComponent<PlayerSpellLoadout>();
-            }
-
+            input = input == null ? GetComponent<PlayerInputReader>() : input;
+            loadout = loadout == null ? GetComponent<PlayerSpellLoadout>() : loadout;
+            runtimeServices = runtimeServices == null ? FindAnyObjectByType<PrototypePersistenceServiceBehaviour>() : runtimeServices;
             if (castOrigin == null && Camera.main != null)
             {
                 castOrigin = Camera.main.transform;
@@ -56,6 +41,8 @@ namespace UnityIsekaiGame.Magic
 
         private void Update()
         {
+            Execution?.ProcessExecutionTime(Time.time);
+            CommitPendingExecutionWhenReady();
             if (input != null && input.ConsumeCastPrimarySpell())
             {
                 TryCastPrimarySpell();
@@ -65,44 +52,56 @@ namespace UnityIsekaiGame.Magic
         public SpellCastResult TryCastPrimarySpell()
         {
             SpellDefinition spell = GetCurrentSpell();
-            if (spell != null && spell.Ability != null)
+            if (spell == null || spell.Ability == null)
             {
-                return TryCastAbilitySpell(spell);
+                return Resolve(spell, SpellCastResult.Failure("No spell ability is assigned."));
             }
 
-            SpellCastResult validation = ValidateCast(spell);
-            if (!validation.Succeeded)
+            if (spell.Ability.Execution == null)
             {
-                ReportFailure(validation.Message);
-                return validation;
+                return Resolve(spell, SpellCastResult.Failure($"{spell.DisplayName} has no combat execution definition."));
             }
 
-            VitalChangeResult manaSpend = mana.Spend(spell.ManaCost);
-            if (!manaSpend.Succeeded)
+            if (Execution == null)
             {
-                ReportFailure(manaSpend.Message);
-                return SpellCastResult.Failure(manaSpend.Message);
+                return Resolve(spell, SpellCastResult.Failure("Combat execution services are unavailable."));
             }
 
-            SpellProjectile projectile = SpawnProjectile(spell);
-            if (projectile == null)
+            if (!string.IsNullOrWhiteSpace(pendingExecutionId))
             {
-                mana.Restore(spell.ManaCost);
-                return SpellCastResult.Failure("Invalid projectile configuration.");
+                return Resolve(spell, SpellCastResult.Failure("A spell is already being cast."));
             }
 
-            cooldowns[spell] = Time.time + spell.Cooldown;
-            string message = $"Cast {spell.DisplayName}.";
-            Debug.Log(message);
-            SpellCastResult result = SpellCastResult.Success(message);
-            SpellCastResolved?.Invoke(spell, result);
-            return result;
+            AbilityExecutionContext context = CreateContext(spell);
+            CombatExecutionResult begin = Execution.BeginExecution(new CombatExecutionBeginRequest(
+                $"spell.begin.{spell.Id}.{Guid.NewGuid():N}",
+                spell.Ability.Execution,
+                gameObject,
+                now: Time.time,
+                authorityValidated: true,
+                payload: context));
+            if (!begin.Succeeded || begin.State == null)
+            {
+                return Resolve(spell, SpellCastResult.Failure(begin.Message));
+            }
+
+            pendingExecutionId = begin.State.ExecutionInstanceId;
+            pendingActorId = begin.ActorId;
+            pendingSpell = spell;
+            return begin.State.ReadyAt <= Time.time
+                ? CommitPendingExecution()
+                : Resolve(spell, SpellCastResult.Success($"Began casting {spell.DisplayName}."));
         }
 
         public void ResetSpellcasting()
         {
-            cooldowns.Clear();
-            abilityCooldowns.Reset();
+            if (!string.IsNullOrWhiteSpace(pendingExecutionId) && Execution != null)
+            {
+                Execution.CancelExecution(new CombatExecutionCancelRequest(
+                    $"spell.cancel.{Guid.NewGuid():N}", pendingExecutionId, gameObject, pendingActorId, now: Time.time));
+            }
+
+            ClearPending();
             for (int i = activeProjectiles.Count - 1; i >= 0; i--)
             {
                 SpellProjectile projectile = activeProjectiles[i];
@@ -116,143 +115,70 @@ namespace UnityIsekaiGame.Magic
             activeProjectiles.Clear();
         }
 
-        private SpellCastResult ValidateCast(SpellDefinition spell)
+        private void CommitPendingExecutionWhenReady()
         {
-            if (spell == null)
-            {
-                return SpellCastResult.Failure("No spell assigned.");
-            }
-
-            if (input != null && input.GameplayInputBlocked)
-            {
-                return SpellCastResult.Failure("Gameplay input is blocked.");
-            }
-
-            if (health != null && health.IsDefeated)
-            {
-                return SpellCastResult.Failure("Cannot cast while defeated.");
-            }
-
-            if (!ActorLifecycleUtility.CanAct(gameObject))
-            {
-                return SpellCastResult.Failure("Cannot cast while defeated, unconscious, or dead.");
-            }
-
-            if (cooldowns.TryGetValue(spell, out float nextCastTime) && Time.time < nextCastTime)
-            {
-                return SpellCastResult.Failure($"{spell.DisplayName} is on cooldown.");
-            }
-
-            if (mana == null)
-            {
-                return SpellCastResult.Failure("No mana source assigned.");
-            }
-
-            if (!mana.CanSpend(spell.ManaCost))
-            {
-                return SpellCastResult.Failure("Not enough mana.");
-            }
-
-            if (castOrigin == null || spell.ProjectilePrefab == null)
-            {
-                return SpellCastResult.Failure("Invalid projectile configuration.");
-            }
-
-            return SpellCastResult.Success("Spell can be cast.");
-        }
-
-        private SpellProjectile SpawnProjectile(SpellDefinition spell)
-        {
-            Vector3 spawnPosition = castOrigin.TransformPoint(spell.CastPointOffset);
-            Vector3 castDirection = GetCastDirection(spawnPosition, spell);
-            Quaternion spawnRotation = Quaternion.LookRotation(castDirection, Vector3.up);
-            SpellProjectile projectile = Instantiate(spell.ProjectilePrefab, spawnPosition, spawnRotation);
-            projectile.Completed += HandleProjectileCompleted;
-            projectile.Initialize(gameObject, castDirection, spell.ProjectileSpeed, spell.BaseDamage, spell.MaximumLifetime);
-            activeProjectiles.Add(projectile);
-            return projectile;
-        }
-
-        private SpellCastResult TryCastAbilitySpell(SpellDefinition spell)
-        {
-            Vector3 sourcePosition = castOrigin == null ? transform.position : castOrigin.position;
-            Vector3 directionOrigin = GetAbilityDirectionOrigin(spell, sourcePosition);
-            float aimDistance = GetAbilityAimDistance(spell);
-            Vector3 direction = castOrigin == null ? transform.forward : GetCastDirection(directionOrigin, aimDistance);
-            AbilityExecutionContext context = new AbilityExecutionContext(
-                spell.Ability,
-                gameObject,
-                null,
-                castOrigin,
-                sourcePosition,
-                sourcePosition + direction * Mathf.Max(1f, spell.Ability.Range),
-                direction,
-                gameplayBlocked: input != null && input.GameplayInputBlocked,
-                projectileSpawned: RegisterProjectile);
-
-            AbilityExecutionResult result = AbilityExecutor.Execute(in context, abilityCooldowns);
-            if (!result.Succeeded)
-            {
-                ReportFailure(result.Message);
-                return SpellCastResult.Failure(result.Message);
-            }
-
-            string message = $"Cast {spell.DisplayName}.";
-            Debug.Log(message);
-            SpellCastResult castResult = SpellCastResult.Success(message);
-            SpellCastResolved?.Invoke(spell, castResult);
-            return castResult;
-        }
-
-        private Vector3 GetAbilityDirectionOrigin(SpellDefinition spell, Vector3 fallbackPosition)
-        {
-            if (castOrigin == null ||
-                spell == null ||
-                spell.Ability == null ||
-                spell.Ability.DeliveryMode != AbilityDeliveryMode.Projectile ||
-                spell.Ability.ProjectileDelivery == null)
-            {
-                return fallbackPosition;
-            }
-
-            return castOrigin.TransformPoint(spell.Ability.ProjectileDelivery.CastPointOffset);
-        }
-
-        private static float GetAbilityAimDistance(SpellDefinition spell)
-        {
-            if (spell == null ||
-                spell.Ability == null ||
-                spell.Ability.DeliveryMode != AbilityDeliveryMode.Projectile ||
-                spell.Ability.ProjectileDelivery == null)
-            {
-                return 1f;
-            }
-
-            AbilityProjectileDelivery delivery = spell.Ability.ProjectileDelivery;
-            return Mathf.Max(1f, delivery.ProjectileSpeed * delivery.MaximumLifetime);
-        }
-
-        private void RegisterProjectile(SpellProjectile projectile)
-        {
-            if (projectile == null)
+            if (string.IsNullOrWhiteSpace(pendingExecutionId) || Execution == null)
             {
                 return;
             }
 
-            projectile.Completed += HandleProjectileCompleted;
-            activeProjectiles.Add(projectile);
+            CombatExecutionStateSnapshot state = Execution.GetExecutionState(pendingActorId, pendingExecutionId);
+            if (state == null)
+            {
+                ClearPending();
+            }
+            else if (Time.time >= state.ReadyAt)
+            {
+                CommitPendingExecution();
+            }
         }
 
-        private Vector3 GetCastDirection(Vector3 spawnPosition, SpellDefinition spell)
+        private SpellCastResult CommitPendingExecution()
         {
-            return GetCastDirection(spawnPosition, spell.ProjectileSpeed * spell.MaximumLifetime);
+            SpellDefinition spell = pendingSpell;
+            CombatExecutionResult commit = Execution.CommitExecution(new CombatExecutionCommitRequest(
+                $"spell.commit.{Guid.NewGuid():N}", pendingExecutionId, gameObject, pendingActorId, Time.time, authorityValidated: true));
+            ClearPending();
+            return Resolve(spell, commit.Succeeded
+                ? SpellCastResult.Success($"Cast {spell.DisplayName}.")
+                : SpellCastResult.Failure(commit.Message));
+        }
+
+        private AbilityExecutionContext CreateContext(SpellDefinition spell)
+        {
+            Vector3 sourcePosition = castOrigin == null ? transform.position : castOrigin.position;
+            Vector3 directionOrigin = GetDirectionOrigin(spell, sourcePosition);
+            Vector3 direction = castOrigin == null ? transform.forward : GetCastDirection(directionOrigin, GetAimDistance(spell));
+            return new AbilityExecutionContext(
+                spell.Ability, gameObject, null, castOrigin, sourcePosition,
+                sourcePosition + direction * Mathf.Max(1f, spell.Ability.Range), direction,
+                gameplayBlocked: input != null && input.GameplayInputBlocked,
+                projectileSpawned: RegisterProjectile);
+        }
+
+        private Vector3 GetDirectionOrigin(SpellDefinition spell, Vector3 fallbackPosition)
+        {
+            AbilityProjectileDelivery delivery = spell?.Ability?.ProjectileDelivery;
+            return castOrigin == null || spell.Ability.DeliveryMode != AbilityDeliveryMode.Projectile || delivery == null
+                ? fallbackPosition
+                : castOrigin.TransformPoint(delivery.CastPointOffset);
+        }
+
+        private static float GetAimDistance(SpellDefinition spell)
+        {
+            AbilityProjectileDelivery delivery = spell?.Ability?.ProjectileDelivery;
+            return delivery == null ? 1f : Mathf.Max(1f, delivery.ProjectileSpeed * delivery.MaximumLifetime);
         }
 
         private Vector3 GetCastDirection(Vector3 spawnPosition, float maxDistance)
         {
+            if (castOrigin == null)
+            {
+                return transform.forward;
+            }
+
             Vector3 aimPoint = castOrigin.position + castOrigin.forward * Mathf.Max(1f, maxDistance);
-            RaycastHit[] hits = Physics.RaycastAll(castOrigin.position, castOrigin.forward, Vector3.Distance(castOrigin.position, aimPoint), aimMask, aimTriggerInteraction);
-            foreach (RaycastHit hit in hits.OrderBy(candidate => candidate.distance))
+            foreach (RaycastHit hit in Physics.RaycastAll(castOrigin.position, castOrigin.forward, maxDistance, aimMask, aimTriggerInteraction).OrderBy(candidate => candidate.distance))
             {
                 if (hit.collider == null || hit.collider.transform.IsChildOf(transform))
                 {
@@ -267,10 +193,18 @@ namespace UnityIsekaiGame.Magic
             return direction.sqrMagnitude > 0.0001f ? direction.normalized : castOrigin.forward;
         }
 
-        private SpellDefinition GetCurrentSpell()
+        private void RegisterProjectile(SpellProjectile projectile)
         {
-            return loadout == null ? primarySpell : loadout.SelectedSpell;
+            if (projectile == null)
+            {
+                return;
+            }
+
+            projectile.Completed += HandleProjectileCompleted;
+            activeProjectiles.Add(projectile);
         }
+
+        private SpellDefinition GetCurrentSpell() => loadout == null ? primarySpell : loadout.SelectedSpell;
 
         private void HandleProjectileCompleted(SpellProjectile projectile)
         {
@@ -281,16 +215,23 @@ namespace UnityIsekaiGame.Magic
             }
         }
 
-        private static void ReportFailure(string message)
+        private SpellCastResult Resolve(SpellDefinition spell, SpellCastResult result)
         {
-            Debug.Log(message);
-
-            if (message == "Not enough mana." ||
-                message == "No spell assigned." ||
-                message.Contains("cooldown"))
+            if (!result.Succeeded)
             {
-                PrototypeHudMessageBus.Show(message);
+                Debug.Log(result.Message);
+                PrototypeHudMessageBus.Show(result.Message);
             }
+
+            SpellCastResolved?.Invoke(spell, result);
+            return result;
+        }
+
+        private void ClearPending()
+        {
+            pendingExecutionId = string.Empty;
+            pendingActorId = string.Empty;
+            pendingSpell = null;
         }
     }
 }

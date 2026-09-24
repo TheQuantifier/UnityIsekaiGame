@@ -48,7 +48,7 @@ namespace UnityIsekaiGame.StatusEffects
                     {
                         if (results[j].StatusEffect != null)
                         {
-                            controller.RemoveStatus(results[j].StatusEffect.ApplicationId);
+                            controller.ForceRemoveStatus(results[j].StatusEffect.ApplicationId);
                         }
                     }
 

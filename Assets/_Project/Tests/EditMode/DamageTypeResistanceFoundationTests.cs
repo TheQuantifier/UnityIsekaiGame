@@ -3,12 +3,19 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.ResourceSystem;
+using UnityIsekaiGame.Stats;
+using UnityIsekaiGame.WorldEntities;
 
 namespace UnityIsekaiGame.Tests
 {
     public sealed class DamageTypeResistanceFoundationTests
     {
+        private const string CatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
+
         [Test]
         public void DamageTypeDefinition_RegistersAndRejectsSelfParent()
         {
@@ -37,7 +44,7 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void RuntimeResistanceCollection_UsesExactThenNearestAncestor()
+        public void RuntimeResistanceCollection_ComposesExactAndAncestorResistance()
         {
             ScriptableObject physical = CreateDamageType("damage.physical", "Physical", null, true);
             ScriptableObject slashing = CreateDamageType("damage.physical.slashing", "Slashing", physical, true);
@@ -47,7 +54,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That((float)Invoke(resistances, "GetEffectiveResistance", slashing), Is.EqualTo(0.2f).Within(0.001f));
 
             Invoke(resistances, "SetBaseResistance", slashing, -0.25f);
-            Assert.That((float)Invoke(resistances, "GetEffectiveResistance", slashing), Is.EqualTo(-0.25f).Within(0.001f));
+            Assert.That((float)Invoke(resistances, "GetEffectiveResistance", slashing), Is.EqualTo(-0.05f).Within(0.001f));
             Assert.That((float)Invoke(resistances, "GetEffectiveResistance", physical), Is.EqualTo(0.2f).Within(0.001f));
         }
 
@@ -143,9 +150,6 @@ namespace UnityIsekaiGame.Tests
             GameObject source = CreateActor("Source", 50f, 0f);
             GameObject target = CreateActor("Target", 50f, 5f);
             Component health = target.AddComponent(RequiredType("UnityIsekaiGame.Combat.EnemyHealth"));
-            SetObject(health, "stats", target.GetComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats")));
-            InvokeNonPublic(health, "Awake");
-            InvokeNonPublic(health, "OnEnable");
 
             ScriptableObject effect = CreateDamageEffect("effect.arcane", 10f, arcane);
             object context = CreateEffectContext(null, source, target);
@@ -163,14 +167,44 @@ namespace UnityIsekaiGame.Tests
         private static GameObject CreateActor(string name, float maximumHealth, float defense)
         {
             GameObject actor = new GameObject(name);
-            Component stats = actor.AddComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats"));
-            SerializedObject serialized = new SerializedObject(stats);
-            serialized.FindProperty("baseMaximumHealth").floatValue = maximumHealth;
-            serialized.FindProperty("baseDefense").floatValue = defense;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-            InvokeNonPublic(stats, "Awake");
-            InvokeNonPublic(stats, "OnEnable");
+            DefinitionRegistry registry = LoadCatalog().CreateRegistry();
+            CharacterAttributes attributes = actor.AddComponent<CharacterAttributes>();
+            CalculatedStatCollection calculatedStats = actor.AddComponent<CalculatedStatCollection>();
+            CharacterResourceCollection resources = actor.AddComponent<CharacterResourceCollection>();
+            WorldEntityIdentity identity = actor.AddComponent<WorldEntityIdentity>();
+            Assert.That(identity.TrySetAuthoredIdentity($"damage-type-{Guid.NewGuid():N}", "scene.test", PersistenceScope.RegionOrScene, "test.damage-type", out string identityFailure), Is.True, identityFailure);
+            actor.AddComponent<ActorStats>();
+            attributes.Configure(registry);
+            calculatedStats.Configure(registry, attributes);
+            SetCalculatedStat(calculatedStats, CalculatedStatIds.MaximumHealth, maximumHealth, $"{name}.health");
+            SetCalculatedStat(calculatedStats, CalculatedStatIds.PhysicalDefense, defense, $"{name}.defense");
+            SetCalculatedStat(calculatedStats, CalculatedStatIds.MagicalDefense, defense, $"{name}.magical-defense");
+            resources.Configure(registry, calculatedStats, identity.EntityId);
             return actor;
+        }
+
+        private static DefinitionCatalog LoadCatalog()
+        {
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
+            Assert.That(catalog, Is.Not.Null, $"Prototype catalog is missing at {CatalogPath}.");
+            return catalog;
+        }
+
+        private static void SetCalculatedStat(CalculatedStatCollection stats, string statId, float desiredValue, string sourceId)
+        {
+            float delta = desiredValue - stats.GetValue(statId);
+            if (Mathf.Approximately(delta, 0f)) return;
+            RuntimeCalculatedStatContribution contribution = new RuntimeCalculatedStatContribution
+            {
+                contributionId = sourceId,
+                statId = statId,
+                sourceId = sourceId,
+                sourceCategory = (int)CalculatedStatContributionSourceCategory.Development,
+                kind = (int)CalculatedStatContributionKind.Flat,
+                direction = (int)(delta >= 0f ? CalculatedStatContributionDirection.Improve : CalculatedStatContributionDirection.Reduce),
+                magnitude = Mathf.Abs(delta)
+            };
+            Assert.That(stats.AddContribution(contribution, out string failure), Is.True, failure);
         }
 
         private static ScriptableObject CreateDamageType(string id, string displayName, UnityEngine.Object parent, bool defenseApplies)

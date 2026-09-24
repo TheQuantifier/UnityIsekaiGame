@@ -4,7 +4,6 @@ namespace UnityIsekaiGame.Combat
     {
         public DamageComponentResult(
             DamageTypeDefinition damageType,
-            DamageType legacyDamageType,
             float originalAmount,
             float defenseMitigation,
             float effectiveResistance,
@@ -13,7 +12,6 @@ namespace UnityIsekaiGame.Combat
             bool immune)
         {
             DamageType = damageType;
-            LegacyDamageType = legacyDamageType;
             OriginalAmount = originalAmount;
             DefenseMitigation = defenseMitigation;
             EffectiveResistance = effectiveResistance;
@@ -23,8 +21,7 @@ namespace UnityIsekaiGame.Combat
         }
 
         public DamageTypeDefinition DamageType { get; }
-        public DamageType LegacyDamageType { get; }
-        public string DamageTypeId => DamageType == null ? LegacyDamageType.ToString() : DamageType.Id;
+        public string DamageTypeId => DamageType == null ? string.Empty : DamageType.Id;
         public float OriginalAmount { get; }
         public float DefenseMitigation { get; }
         public float EffectiveResistance { get; }

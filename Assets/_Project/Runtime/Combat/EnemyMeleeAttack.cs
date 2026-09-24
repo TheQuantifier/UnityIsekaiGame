@@ -1,131 +1,153 @@
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.ActorLifecycle;
+using UnityIsekaiGame.CharacterSystem;
+using UnityIsekaiGame.Combat.Execution;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.WorldEntities;
 
 namespace UnityIsekaiGame.Combat
 {
     public sealed class EnemyMeleeAttack : MonoBehaviour
     {
         [SerializeField] private EnemyHealth health;
+        [SerializeField] private CombatExecutionDefinition execution;
+        [SerializeField] private PrototypePersistenceServiceBehaviour runtimeServices;
         [SerializeField, Min(0f)] private float damage = 12f;
         [SerializeField] private AttackPowerScalingPolicy attackPowerScaling = AttackPowerScalingPolicy.AddSourceAttackPower;
         [SerializeField] private DamageTypeDefinition damageType;
         [SerializeField, Min(0.1f)] private float attackRange = 1.6f;
-        [SerializeField, Min(0f)] private float attackCooldown = 1.25f;
-
-        private float nextAttackTime;
+        [SerializeField] private LayerMask lineOfSightMask = ~0;
 
         public float AttackRange => attackRange;
         public event Action<DamageResult> AttackResolved;
 
+        private CombatExecutionService Execution => runtimeServices == null ? null : runtimeServices.CombatExecution;
+
         private void Awake()
         {
-            if (health == null)
-            {
-                health = GetComponent<EnemyHealth>();
-            }
+            health = health == null ? GetComponent<EnemyHealth>() : health;
+            runtimeServices = runtimeServices == null ? FindAnyObjectByType<PrototypePersistenceServiceBehaviour>() : runtimeServices;
         }
 
         private void OnValidate()
         {
             damage = Mathf.Max(0f, damage);
             attackRange = Mathf.Max(0.1f, attackRange);
-            attackCooldown = Mathf.Max(0f, attackCooldown);
         }
 
         public bool CanAttack(Transform target)
         {
-            return target != null
-                && !PrototypeGameplayModalState.IsModalActive
-                && (health == null || !health.IsDefeated)
-                && ActorLifecycleUtility.CanAct(gameObject)
-                && Time.time >= nextAttackTime
-                && GetPlanarDistanceTo(target) <= attackRange;
+            if (!CanAttempt(target, out _))
+            {
+                return false;
+            }
+
+            AttackResolutionRequest payload = CreateAttackRequest(target, $"enemy-melee.preview.{Guid.NewGuid():N}");
+            CombatExecutionResult preview = Execution.PreviewBeginExecution(new CombatExecutionBeginRequest(
+                $"enemy-execution.preview.{Guid.NewGuid():N}", execution, gameObject, now: Time.time, authorityValidated: true, payload: payload));
+            return preview.Succeeded;
         }
 
         public DamageResult TryAttack(Transform target)
         {
-            if (target == null)
+            if (!CanAttempt(target, out string failure))
             {
-                return Resolve(DamageResult.Failure(damage, "Enemy attack has no target."));
+                return Resolve(DamageResult.Failure(damage, failure));
             }
 
-            if (PrototypeGameplayModalState.IsModalActive)
+            AttackResolutionRequest payload = CreateAttackRequest(target, $"enemy-melee.{Guid.NewGuid():N}");
+            CombatExecutionResult begin = Execution.BeginExecution(new CombatExecutionBeginRequest(
+                $"enemy-execution.begin.{Guid.NewGuid():N}", execution, gameObject, now: Time.time, authorityValidated: true, payload: payload));
+            if (!begin.Succeeded || begin.State == null)
             {
-                return Resolve(DamageResult.Failure(damage, "Enemy attack is paused by a modal screen."));
+                return Resolve(DamageResult.Failure(damage, begin.Message));
             }
 
-            if (health != null && health.IsDefeated)
+            CombatExecutionResult commit = Execution.CommitExecution(new CombatExecutionCommitRequest(
+                $"enemy-execution.commit.{Guid.NewGuid():N}", begin.State.ExecutionInstanceId, gameObject, begin.ActorId,
+                Mathf.Max(Time.time, begin.State.ReadyAt), authorityValidated: true));
+            if (!commit.Succeeded || commit.UnderlyingResult is not AttackResolutionResult attack)
             {
-                return Resolve(DamageResult.Failure(damage, $"{name} is defeated and cannot attack."));
+                return Resolve(DamageResult.Failure(damage, commit.Message));
             }
 
-            if (!ActorLifecycleUtility.CanAct(gameObject))
-            {
-                return Resolve(DamageResult.Failure(damage, $"{name} cannot attack while defeated, unconscious, or dead."));
-            }
-
-            if (Time.time < nextAttackTime)
-            {
-                return Resolve(DamageResult.Failure(damage, "Enemy attack is on cooldown."));
-            }
-
-            float distance = GetPlanarDistanceTo(target);
-            if (distance > attackRange)
-            {
-                return Resolve(DamageResult.Failure(damage, "Enemy target is outside attack range."));
-            }
-
-            IDamageable damageable = target.GetComponentInParent<IDamageable>();
-            if (damageable == null)
-            {
-                damageable = target.GetComponentInChildren<IDamageable>();
-            }
-
-            if (damageable == null && target.GetComponentInParent<UnityIsekaiGame.ResourceSystem.CharacterResourceCollection>() == null)
-            {
-                return Resolve(DamageResult.Failure(damage, "Enemy target is not damageable."));
-            }
-
-            nextAttackTime = Time.time + attackCooldown;
-            float preMitigationDamage = CombatStatUtility.CalculatePreMitigationDamage(damage, gameObject, attackPowerScaling);
-            Vector3 direction = GetPlanarDirectionTo(target);
-            DamageComponent component = damageType == null
-                ? DamageComponent.Legacy(DamageType.Physical, preMitigationDamage, attackPowerScaling)
-                : new DamageComponent(damageType, preMitigationDamage, attackPowerScaling);
-            DamagePacket packet = DamagePacket.Single(gameObject, component);
-            DamageInfo damageInfo = new DamageInfo(preMitigationDamage, gameObject, target.position, direction, DamageType.Physical, packet);
-            DamageResult result = SceneCombatDamageBridge.ApplyDamage(
-                target.gameObject,
-                in damageInfo,
-                $"enemy-melee.{name}",
-                $"{name} melee attack");
+            DamageResult result = ToDamageResult(attack);
             Debug.Log(result.Applied ? $"{name} attacked {target.name} for {result.AppliedAmount:0.#} damage." : result.Message);
             return Resolve(result);
         }
 
         public void ResetCooldown()
         {
-            nextAttackTime = 0f;
+            if (Execution != null && execution != null)
+            {
+                Execution.ClearTransientStateForRestore(ResolveActorId(gameObject));
+            }
+        }
+
+        private bool CanAttempt(Transform target, out string failure)
+        {
+            failure = string.Empty;
+            if (target == null) failure = "Enemy attack has no target.";
+            else if (PrototypeGameplayModalState.IsModalActive) failure = "Enemy attack is paused by a modal screen.";
+            else if (health != null && health.IsDefeated) failure = $"{name} is defeated and cannot attack.";
+            else if (!ActorLifecycleUtility.CanAct(gameObject)) failure = $"{name} cannot act.";
+            else if (execution == null) failure = "Enemy attack has no combat execution definition.";
+            else if (damageType == null) failure = "Enemy attack has no canonical damage type.";
+            else if (Execution == null) failure = "Combat execution services are unavailable.";
+            else if (GetPlanarDistanceTo(target) > attackRange) failure = "Enemy target is outside attack range.";
+            else if (!HasLineOfSight(target)) failure = "Enemy target is blocked by line of sight.";
+            return string.IsNullOrWhiteSpace(failure);
+        }
+
+        private AttackResolutionRequest CreateAttackRequest(Transform target, string transactionId)
+        {
+            float amount = CombatStatUtility.CalculatePreMitigationDamage(damage, gameObject, attackPowerScaling);
+            return new AttackResolutionRequest(
+                transactionId, AttackSourceType.Unarmed, gameObject, ResolveActorId(gameObject), target.gameObject, ResolveActorId(target.gameObject),
+                damageType, amount, UnityEngine.Random.value, UnityEngine.Random.value,
+                baseHitChance: 1f, hasSuppliedDistance: true, suppliedDistance: GetPlanarDistanceTo(target),
+                hasMaximumRange: true, maximumRange: attackRange,
+                suppliedLineOfSight: true, hasSuppliedLineOfSight: true,
+                originatingActionId: execution.Id, authorityValidated: true);
+        }
+
+        private bool HasLineOfSight(Transform target)
+        {
+            Vector3 origin = transform.position + Vector3.up;
+            Vector3 destination = target.position + Vector3.up;
+            Vector3 offset = destination - origin;
+            RaycastHit hit = Physics.RaycastAll(origin, offset.normalized, offset.magnitude, lineOfSightMask, QueryTriggerInteraction.Ignore)
+                .OrderBy(candidate => candidate.distance)
+                .FirstOrDefault(candidate => candidate.collider != null && !candidate.collider.transform.IsChildOf(transform));
+            return hit.collider == null || hit.collider.transform.IsChildOf(target) || target.IsChildOf(hit.collider.transform);
         }
 
         private float GetPlanarDistanceTo(Transform target)
         {
-            return GetPlanarDirectionOffset(target).magnitude;
-        }
-
-        private Vector3 GetPlanarDirectionTo(Transform target)
-        {
-            Vector3 offset = GetPlanarDirectionOffset(target);
-            return offset.sqrMagnitude <= 0.0001f ? transform.forward : offset.normalized;
-        }
-
-        private Vector3 GetPlanarDirectionOffset(Transform target)
-        {
             Vector3 offset = target.position - transform.position;
             offset.y = 0f;
-            return offset;
+            return offset.magnitude;
+        }
+
+        private static string ResolveActorId(GameObject actor)
+        {
+            CharacterSystemCoordinator character = actor == null ? null : actor.GetComponentInParent<CharacterSystemCoordinator>();
+            if (character != null && !string.IsNullOrWhiteSpace(character.ActorId)) return character.ActorId;
+            WorldEntityIdentity identity = actor == null ? null : actor.GetComponentInParent<WorldEntityIdentity>();
+            return identity == null ? string.Empty : identity.EntityId;
+        }
+
+        private static DamageResult ToDamageResult(AttackResolutionResult attack)
+        {
+            DamageApplicationResult damageResult = attack.DamageResult;
+            if (!attack.Succeeded || damageResult == null)
+            {
+                return DamageResult.Failure(attack.RequestedBaseDamage, attack.Message);
+            }
+
+            return DamageResult.FromApplication(damageResult, attack.Message);
         }
 
         private DamageResult Resolve(DamageResult result)

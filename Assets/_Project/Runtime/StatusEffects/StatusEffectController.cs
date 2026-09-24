@@ -1,16 +1,25 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityIsekaiGame.Abilities;
+using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.Combat;
+using UnityIsekaiGame.Combat.OngoingEffects;
 using UnityIsekaiGame.Stats;
+using UnityIsekaiGame.WorldEntities;
 
 namespace UnityIsekaiGame.StatusEffects
 {
     public sealed class StatusEffectController : MonoBehaviour, IStatusEffectReceiver
     {
         private readonly List<RuntimeStatusEffect> activeStatuses = new List<RuntimeStatusEffect>();
+        private readonly Dictionary<string, List<string>> ongoingInstanceIdsByStatus = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         private IRuntimeStatReceiver statReceiver;
         private IDamageResistanceReceiver resistanceReceiver;
+        [SerializeField] private OngoingEffectService ongoingEffects;
+        [SerializeField] private bool useLocalTime = true;
+        private float lastAuthoritativeTime;
+        private bool hasAuthoritativeTime;
 
         public IReadOnlyList<RuntimeStatusEffect> ActiveStatuses => activeStatuses;
         public StatusEffectController StatusController => this;
@@ -23,11 +32,40 @@ namespace UnityIsekaiGame.StatusEffects
         {
             statReceiver = GetComponentInParent<IRuntimeStatReceiver>();
             resistanceReceiver = GetComponentInParent<IDamageResistanceReceiver>();
+            ongoingEffects ??= GetComponentInParent<OngoingEffectService>();
         }
 
         private void Update()
         {
-            UpdateStatuses(Time.deltaTime);
+            if (useLocalTime)
+            {
+                AdvanceTo(Time.time);
+            }
+        }
+
+        public void AdvanceTo(float authoritativeTime)
+        {
+            if (float.IsNaN(authoritativeTime) || float.IsInfinity(authoritativeTime) || authoritativeTime < 0f)
+            {
+                return;
+            }
+
+            if (!hasAuthoritativeTime)
+            {
+                lastAuthoritativeTime = authoritativeTime;
+                hasAuthoritativeTime = true;
+                return;
+            }
+
+            float delta = Mathf.Max(0f, authoritativeTime - lastAuthoritativeTime);
+            lastAuthoritativeTime = Mathf.Max(lastAuthoritativeTime, authoritativeTime);
+            UpdateStatuses(delta);
+        }
+
+        public void ResetAuthoritativeClock(float authoritativeTime = 0f)
+        {
+            lastAuthoritativeTime = Mathf.Max(0f, authoritativeTime);
+            hasAuthoritativeTime = true;
         }
 
         public StatusApplicationResult CanApplyStatus(StatusEffectApplicationRequest request)
@@ -40,7 +78,7 @@ namespace UnityIsekaiGame.StatusEffects
 
             if (request.Definition.DurationModel == StatusDurationModel.Instant)
             {
-                return StatusApplicationResult.Success(null, $"Can apply instant status {request.Definition.DisplayName}.");
+                return ValidateInstantEffects(request);
             }
 
             RuntimeStatusEffect existing = FindFirstActive(request.Definition.Id);
@@ -62,7 +100,7 @@ namespace UnityIsekaiGame.StatusEffects
 
             if (request.Definition.DurationModel == StatusDurationModel.Instant)
             {
-                return StatusApplicationResult.Success(null, $"Applied instant status {request.Definition.DisplayName}.");
+                return ExecuteInstantEffects(request);
             }
 
             RuntimeStatusEffect existing = FindFirstActive(request.Definition.Id);
@@ -77,6 +115,12 @@ namespace UnityIsekaiGame.StatusEffects
                 return StatusApplicationResult.Failure(StatusApplicationStatus.InvalidModifier, $"Could not register modifiers for {request.Definition.DisplayName}.");
             }
 
+            if (!RegisterOngoingEffects(created))
+            {
+                UnregisterModifiers(created);
+                return StatusApplicationResult.Failure(StatusApplicationStatus.InvalidModifier, $"Could not register ongoing effects for {request.Definition.DisplayName}.");
+            }
+
             activeStatuses.Add(created);
             StatusAdded?.Invoke(created);
             return StatusApplicationResult.Success(created, $"Applied {request.Definition.DisplayName}.");
@@ -85,15 +129,13 @@ namespace UnityIsekaiGame.StatusEffects
         public bool RemoveStatus(string applicationId)
         {
             RuntimeStatusEffect status = FindByApplicationId(applicationId);
-            if (status == null || !status.Remove())
-            {
-                return false;
-            }
+            return status != null && status.Definition.CanBeRemoved && RemoveStatusInternal(status);
+        }
 
-            UnregisterModifiers(status);
-            activeStatuses.Remove(status);
-            StatusRemoved?.Invoke(status);
-            return true;
+        public bool ForceRemoveStatus(string applicationId)
+        {
+            RuntimeStatusEffect status = FindByApplicationId(applicationId);
+            return RemoveStatusInternal(status);
         }
 
         public bool RemoveStatusesByDefinition(string definitionId)
@@ -131,7 +173,7 @@ namespace UnityIsekaiGame.StatusEffects
                 RuntimeStatusEffect status = activeStatuses[i];
                 if (status.Definition.DurationModel == StatusDurationModel.Timed || status.Definition.DurationModel == StatusDurationModel.Instant)
                 {
-                    RemoveStatus(status.ApplicationId);
+                    ForceRemoveStatus(status.ApplicationId);
                 }
             }
         }
@@ -140,7 +182,7 @@ namespace UnityIsekaiGame.StatusEffects
         {
             for (int i = activeStatuses.Count - 1; i >= 0; i--)
             {
-                RemoveStatus(activeStatuses[i].ApplicationId);
+                ForceRemoveStatus(activeStatuses[i].ApplicationId);
             }
         }
 
@@ -155,8 +197,42 @@ namespace UnityIsekaiGame.StatusEffects
                 }
 
                 UnregisterModifiers(status);
+                UnregisterOngoingEffects(status);
                 activeStatuses.RemoveAt(i);
                 StatusExpired?.Invoke(status);
+            }
+        }
+
+        public void HandleRest()
+        {
+            RemoveByDurationModel(StatusDurationModel.UntilRest);
+        }
+
+        public void HandleDeath()
+        {
+            RemoveByDurationModel(StatusDurationModel.UntilDeath);
+        }
+
+        public void HandleAreaExit(string sourceId)
+        {
+            RemoveByDurationModelAndSource(StatusDurationModel.WhileInArea, sourceId);
+        }
+
+        public void HandleUnequipped(string sourceId)
+        {
+            RemoveByDurationModelAndSource(StatusDurationModel.WhileEquipped, sourceId);
+        }
+
+        public void EvaluateConditionalStatuses(Func<RuntimeStatusEffect, bool> shouldRemainActive)
+        {
+            if (shouldRemainActive == null) return;
+            for (int i = activeStatuses.Count - 1; i >= 0; i--)
+            {
+                RuntimeStatusEffect status = activeStatuses[i];
+                if (status.Definition.DurationModel == StatusDurationModel.Conditional && !shouldRemainActive(status))
+                {
+                    ForceRemoveStatus(status.ApplicationId);
+                }
             }
         }
 
@@ -255,7 +331,7 @@ namespace UnityIsekaiGame.StatusEffects
                     Refresh(existing, request);
                     return StatusApplicationResult.Success(existing, $"Refreshed {request.Definition.DisplayName}.");
                 case StatusStackingPolicy.ReplaceExisting:
-                    RemoveStatus(existing.ApplicationId);
+                    ForceRemoveStatus(existing.ApplicationId);
                     return ApplyStatus(CreateReplacementRequest(request));
                 case StatusStackingPolicy.AddStack:
                     if (!existing.AddStack())
@@ -264,6 +340,7 @@ namespace UnityIsekaiGame.StatusEffects
                     }
 
                     RebuildModifiers(existing);
+                    RebuildOngoingEffects(existing);
                     Refresh(existing, request);
                     StatusChanged?.Invoke(existing);
                     return StatusApplicationResult.Success(existing, $"Added a stack of {request.Definition.DisplayName}.");
@@ -469,6 +546,175 @@ namespace UnityIsekaiGame.StatusEffects
         {
             UnregisterModifiers(status);
             RegisterModifiers(status);
+        }
+
+        private StatusApplicationResult ValidateInstantEffects(StatusEffectApplicationRequest request)
+        {
+            if (request.Definition.InstantEffects.Count == 0)
+            {
+                return StatusApplicationResult.Failure(StatusApplicationStatus.InvalidModifier, $"Instant status {request.Definition.DisplayName} has no effects.");
+            }
+
+            EffectExecutionContext context = CreateEffectContext(request);
+            for (int i = 0; i < request.Definition.InstantEffects.Count; i++)
+            {
+                EffectDefinition effect = request.Definition.InstantEffects[i];
+                if (effect == null)
+                {
+                    return StatusApplicationResult.Failure(StatusApplicationStatus.InvalidModifier, $"Instant status {request.Definition.DisplayName} has a missing effect at index {i}.");
+                }
+
+                EffectExecutionResult validation = effect.CanExecute(in context);
+                if (!validation.Succeeded)
+                {
+                    return StatusApplicationResult.Failure(StatusApplicationStatus.InvalidModifier, validation.Message);
+                }
+            }
+
+            return StatusApplicationResult.Success(null, $"Can apply instant status {request.Definition.DisplayName}.");
+        }
+
+        private StatusApplicationResult ExecuteInstantEffects(StatusEffectApplicationRequest request)
+        {
+            EffectExecutionContext context = CreateEffectContext(request);
+            for (int i = 0; i < request.Definition.InstantEffects.Count; i++)
+            {
+                EffectExecutionResult result = request.Definition.InstantEffects[i].Execute(in context);
+                if (!result.Succeeded)
+                {
+                    return StatusApplicationResult.Failure(StatusApplicationStatus.InvalidModifier, result.Message);
+                }
+            }
+
+            return StatusApplicationResult.Success(null, $"Applied instant status {request.Definition.DisplayName}.");
+        }
+
+        private EffectExecutionContext CreateEffectContext(StatusEffectApplicationRequest request)
+        {
+            Vector3 sourcePosition = request.Source == null ? transform.position : request.Source.transform.position;
+            Vector3 direction = transform.position - sourcePosition;
+            if (direction.sqrMagnitude > 0.0001f) direction.Normalize();
+            return new EffectExecutionContext(null, request.Source, gameObject, sourcePosition, transform.position, direction);
+        }
+
+        private bool RegisterOngoingEffects(RuntimeStatusEffect status)
+        {
+            if (status.Definition.OngoingEffects.Count == 0)
+            {
+                return true;
+            }
+
+            ongoingEffects ??= GetComponentInParent<OngoingEffectService>();
+            if (ongoingEffects == null)
+            {
+                return false;
+            }
+
+            string sourceActorId = ResolveActorId(status.Source);
+            string targetActorId = ResolveActorId(gameObject);
+            if (string.IsNullOrWhiteSpace(targetActorId))
+            {
+                return false;
+            }
+
+            List<string> instanceIds = new List<string>();
+            for (int i = 0; i < status.Definition.OngoingEffects.Count; i++)
+            {
+                OngoingEffectDefinition definition = status.Definition.OngoingEffects[i];
+                OngoingEffectApplicationResult result = ongoingEffects.ApplyOngoingEffect(new OngoingEffectApplicationRequest(
+                    $"status.{status.ApplicationId}.ongoing.{i}",
+                    definition,
+                    sourceActorId,
+                    status.Source,
+                    targetActorId,
+                    gameObject,
+                    status.ApplicationId,
+                    durationOverride: status.Definition.DurationModel == StatusDurationModel.Timed ? status.RemainingDuration : 0f,
+                    stackCount: status.StackCount,
+                    authorityValidated: true));
+                if (!result.Succeeded)
+                {
+                    for (int applied = 0; applied < instanceIds.Count; applied++)
+                    {
+                        ongoingEffects.CancelOngoingEffect(new OngoingEffectCancellationRequest($"status.{status.ApplicationId}.rollback.{applied}", instanceIds[applied], targetActorId, gameObject, "Status application rolled back.", true));
+                    }
+
+                    return false;
+                }
+
+                if (!string.IsNullOrWhiteSpace(result.InstanceId)) instanceIds.Add(result.InstanceId);
+            }
+
+            ongoingInstanceIdsByStatus[status.ApplicationId] = instanceIds;
+            return true;
+        }
+
+        private void UnregisterOngoingEffects(RuntimeStatusEffect status)
+        {
+            if (status == null || ongoingEffects == null || !ongoingInstanceIdsByStatus.TryGetValue(status.ApplicationId, out List<string> instanceIds))
+            {
+                return;
+            }
+
+            string targetActorId = ResolveActorId(gameObject);
+            for (int i = 0; i < instanceIds.Count; i++)
+            {
+                ongoingEffects.CancelOngoingEffect(new OngoingEffectCancellationRequest($"status.{status.ApplicationId}.cancel.{i}.{Guid.NewGuid():N}", instanceIds[i], targetActorId, gameObject, "Owning status ended.", true));
+            }
+
+            ongoingInstanceIdsByStatus.Remove(status.ApplicationId);
+        }
+
+        private void RebuildOngoingEffects(RuntimeStatusEffect status)
+        {
+            UnregisterOngoingEffects(status);
+            RegisterOngoingEffects(status);
+        }
+
+        private bool RemoveStatusInternal(RuntimeStatusEffect status)
+        {
+            if (status == null || !status.Remove())
+            {
+                return false;
+            }
+
+            UnregisterModifiers(status);
+            UnregisterOngoingEffects(status);
+            activeStatuses.Remove(status);
+            StatusRemoved?.Invoke(status);
+            return true;
+        }
+
+        private void RemoveByDurationModel(StatusDurationModel durationModel)
+        {
+            for (int i = activeStatuses.Count - 1; i >= 0; i--)
+            {
+                if (activeStatuses[i].Definition.DurationModel == durationModel)
+                {
+                    ForceRemoveStatus(activeStatuses[i].ApplicationId);
+                }
+            }
+        }
+
+        private void RemoveByDurationModelAndSource(StatusDurationModel durationModel, string sourceId)
+        {
+            for (int i = activeStatuses.Count - 1; i >= 0; i--)
+            {
+                RuntimeStatusEffect status = activeStatuses[i];
+                if (status.Definition.DurationModel == durationModel && string.Equals(status.SourceId, sourceId, StringComparison.Ordinal))
+                {
+                    ForceRemoveStatus(status.ApplicationId);
+                }
+            }
+        }
+
+        private static string ResolveActorId(GameObject actor)
+        {
+            if (actor == null) return string.Empty;
+            CharacterSystemCoordinator character = actor.GetComponentInParent<CharacterSystemCoordinator>();
+            if (character != null && !string.IsNullOrWhiteSpace(character.ActorId)) return character.ActorId;
+            WorldEntityIdentity identity = actor.GetComponentInParent<WorldEntityIdentity>();
+            return identity == null ? string.Empty : identity.EntityId;
         }
     }
 }

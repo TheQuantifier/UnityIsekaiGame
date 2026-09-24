@@ -608,39 +608,6 @@ namespace UnityIsekaiGame.Inventory.Quality
             return $"{qualityPart}|affixes:{affixPart}";
         }
 
-        public ItemQualityAffixOperationResult ApplyActiveAffixModifiers(string itemInstanceId, DefinitionRegistry registry, RuntimeStatCollection stats)
-        {
-            if (stats == null)
-            {
-                return ItemQualityAffixOperationResult.Failure(ItemQualityAffixOperationStatus.MissingRuntime, "Runtime stats are missing.");
-            }
-
-            foreach (ItemAffixSnapshot affix in GetAffixesForItem(itemInstanceId, activeOnly: true))
-            {
-                if (registry == null || !registry.TryGet(affix.AffixDefinitionId, out ItemAffixDefinition definition))
-                {
-                    return ItemQualityAffixOperationResult.Failure(ItemQualityAffixOperationStatus.MissingDefinition, $"Affix definition '{affix.AffixDefinitionId}' is missing.");
-                }
-
-                ItemAffixTierData tier = definition.Tiers.FirstOrDefault(candidate => string.Equals(candidate.tierId, affix.AffixTierId, StringComparison.Ordinal));
-                if (tier == null)
-                {
-                    return ItemQualityAffixOperationResult.Failure(ItemQualityAffixOperationStatus.MissingDefinition, $"Affix tier '{affix.AffixTierId}' is missing.");
-                }
-
-                StatModifierSource source = new StatModifierSource(StatModifierSourceType.Equipment, affix.Data.modifierSourceId);
-                foreach (StatModifierDefinition modifier in tier.modifierTemplates ?? Array.Empty<StatModifierDefinition>())
-                {
-                    if (modifier != null)
-                    {
-                        stats.AddModifier(modifier.CreateRuntimeModifier(source, 1));
-                    }
-                }
-            }
-
-            return ItemQualityAffixOperationResult.Success(TryGetQualityForItem(itemInstanceId, out ItemQualitySnapshot quality) ? quality : null, "Affix modifiers applied.");
-        }
-
         public ItemQualityAffixOperationResult ApplyActiveAffixModifiers(
             string itemInstanceId,
             DefinitionRegistry registry,
@@ -706,19 +673,6 @@ namespace UnityIsekaiGame.Inventory.Quality
 
             appliedSources = addedSources.ToArray();
             return ItemQualityAffixOperationResult.Success(TryGetQualityForItem(itemInstanceId, out ItemQualitySnapshot quality) ? quality : null, "Affix modifiers applied.");
-        }
-
-        public void RemoveActiveAffixModifiers(string itemInstanceId, RuntimeStatCollection stats)
-        {
-            if (stats == null)
-            {
-                return;
-            }
-
-            foreach (ItemAffixSnapshot affix in GetAffixesForItem(itemInstanceId, activeOnly: true))
-            {
-                stats.RemoveModifiersFromSource(new StatModifierSource(StatModifierSourceType.Equipment, affix.Data.modifierSourceId));
-            }
         }
 
         public ItemQualityAffixRuntimeSaveData CreateSaveData()

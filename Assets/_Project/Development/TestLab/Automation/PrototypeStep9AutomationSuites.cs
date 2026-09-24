@@ -1237,18 +1237,16 @@ namespace UnityIsekaiGame.Development.Automation
             string item = CreateComposedItem(context, itemRuntime, compositions, registry, sword, "modifier");
             quality.SetQualityRecord(itemRuntime, compositions, registry, QualityRecord(item, 0.8f));
             ItemQualityAffixOperationResult applied = quality.ApplyAffix(itemRuntime, compositions, registry, item, keen, seed: "modifier");
-            RuntimeStatCollection stats = new RuntimeStatCollection();
-            stats.SetBaseValue(StatType.AttackPower, 10f);
-            ItemQualityAffixOperationResult first = quality.ApplyActiveAffixModifiers(item, registry, stats);
-            ItemQualityAffixOperationResult second = quality.ApplyActiveAffixModifiers(item, registry, stats);
-            float afterApply = stats.GetValue(StatType.AttackPower);
-            quality.RemoveActiveAffixModifiers(item, stats);
-            float afterRemove = stats.GetValue(StatType.AttackPower);
+            AutomationStatReceiver stats = new AutomationStatReceiver(10f);
+            ItemQualityAffixOperationResult first = quality.ApplyActiveAffixModifiers(item, registry, stats, out IReadOnlyList<StatModifierSource> sources);
+            float afterApply = stats.GetStatValue(StatType.AttackPower);
+            foreach (StatModifierSource source in sources) stats.RemoveModifiersFromSource(source);
+            float afterRemove = stats.GetStatValue(StatType.AttackPower);
 
-            bool valid = applied.Succeeded && first.Succeeded && second.Succeeded && Math.Abs(afterApply - 12f) < 0.001f && Math.Abs(afterRemove - 10f) < 0.001f;
+            bool valid = applied.Succeeded && first.Succeeded && Math.Abs(afterApply - 12f) < 0.001f && Math.Abs(afterRemove - 10f) < 0.001f;
             return valid
                 ? Pass(context, "step9-quality-modifiers", $"Apply={afterApply} Remove={afterRemove}")
-                : Fail(context, "step9-quality-modifiers", $"Applied={applied.Status} First={first.Status} Second={second.Status} Apply={afterApply} Remove={afterRemove}");
+                : Fail(context, "step9-quality-modifiers", $"Applied={applied.Status} First={first.Status} Apply={afterApply} Remove={afterRemove}");
         }
 
         private static TestLabAutomationStepResult QualityPersistenceAndMigration(TestLabAutomationContext context)
@@ -2840,6 +2838,30 @@ namespace UnityIsekaiGame.Development.Automation
         private static void TryRegister(TestLabAutomationRegistry registry, ITestLabAutomationSuite suite)
         {
             registry.TryRegister(suite, out _);
+        }
+
+        private sealed class AutomationStatReceiver : IRuntimeStatReceiver
+        {
+            private readonly float baseAttackPower;
+            private readonly Dictionary<StatModifierSource, List<RuntimeStatModifier>> modifiers = new Dictionary<StatModifierSource, List<RuntimeStatModifier>>();
+
+            public AutomationStatReceiver(float baseAttackPower) => this.baseAttackPower = baseAttackPower;
+            public bool HasStat(StatType statType) => statType == StatType.AttackPower;
+            public float GetStatValue(StatType statType) => statType == StatType.AttackPower
+                ? baseAttackPower + modifiers.Values.SelectMany(value => value).Where(modifier => modifier.StatType == statType && modifier.Operation == StatModifierOperation.FlatAdd).Sum(modifier => modifier.Value)
+                : 0f;
+            public bool AddModifier(RuntimeStatModifier modifier)
+            {
+                if (!modifier.IsValid || !HasStat(modifier.StatType)) return false;
+                if (!modifiers.TryGetValue(modifier.Source, out List<RuntimeStatModifier> values))
+                {
+                    values = new List<RuntimeStatModifier>();
+                    modifiers.Add(modifier.Source, values);
+                }
+                values.Add(modifier);
+                return true;
+            }
+            public bool RemoveModifiersFromSource(StatModifierSource source) => modifiers.Remove(source);
         }
     }
 }
