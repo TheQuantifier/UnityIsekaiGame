@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Abilities;
-using UnityIsekaiGame.Combat;
+using UnityIsekaiGame.ResourceSystem;
 
 namespace UnityIsekaiGame.Magic
 {
@@ -15,22 +15,19 @@ namespace UnityIsekaiGame.Magic
         [SerializeField] private LayerMask hitMask = ~0;
         [SerializeField] private QueryTriggerInteraction triggerInteraction = QueryTriggerInteraction.Ignore;
 
-        private readonly HashSet<IDamageable> damagedTargets = new HashSet<IDamageable>();
         private readonly List<Collider> ignoredCasterColliders = new List<Collider>();
         private Collider projectileCollider;
         private Rigidbody projectileRigidbody;
         private GameObject caster;
         private Vector3 direction;
         private float speed;
-        private float baseDamage;
-        private DamageTypeDefinition directDamageType;
         private AbilityDefinition ability;
-        private string impactTransactionPrefix = "spell-projectile.direct";
-        private string impactActionName = "Spell projectile impact";
+        private Action<GameObject, Vector3> impactCallback;
         private float expireAtTime;
         private bool initialized;
         private bool completed;
         private bool payloadExecuted;
+        private string executionId;
 
         public event Action<SpellProjectile> Completed;
 
@@ -68,50 +65,33 @@ namespace UnityIsekaiGame.Magic
             projectileRigidbody.MovePosition(origin + direction * distance);
         }
 
-        public void Initialize(GameObject spellCaster, Vector3 travelDirection, float projectileSpeed, float damage, float lifetime)
-        {
-            Initialize(spellCaster, travelDirection, projectileSpeed, damage, null, lifetime, "spell-projectile.direct", "Spell projectile impact");
-        }
-
-        public void Initialize(
-            GameObject spellCaster,
-            Vector3 travelDirection,
-            float projectileSpeed,
-            float damage,
-            DamageTypeDefinition damageType,
-            float lifetime,
-            string transactionPrefix,
-            string actionName)
-        {
-            caster = spellCaster;
-            ability = null;
-            direction = travelDirection.sqrMagnitude > 0f ? travelDirection.normalized : transform.forward;
-            speed = Mathf.Max(0.1f, projectileSpeed);
-            baseDamage = Mathf.Max(0f, damage);
-            directDamageType = damageType;
-            impactTransactionPrefix = string.IsNullOrWhiteSpace(transactionPrefix) ? "spell-projectile.direct" : transactionPrefix;
-            impactActionName = string.IsNullOrWhiteSpace(actionName) ? "Spell projectile impact" : actionName;
-            expireAtTime = Time.time + Mathf.Max(0.1f, lifetime);
-            initialized = true;
-            completed = false;
-            payloadExecuted = false;
-            damagedTargets.Clear();
-            IgnoreCasterColliders();
-        }
-
-        public void Initialize(GameObject spellCaster, Vector3 travelDirection, float projectileSpeed, AbilityDefinition payloadAbility, float lifetime)
+        public void Initialize(GameObject spellCaster, Vector3 travelDirection, float projectileSpeed, AbilityDefinition payloadAbility, float lifetime, string payloadExecutionId = "")
         {
             caster = spellCaster;
             ability = payloadAbility;
+            impactCallback = null;
             direction = travelDirection.sqrMagnitude > 0f ? travelDirection.normalized : transform.forward;
             speed = Mathf.Max(0.1f, projectileSpeed);
-            baseDamage = 0f;
-            directDamageType = null;
             expireAtTime = Time.time + Mathf.Max(0.1f, lifetime);
             initialized = true;
             completed = false;
             payloadExecuted = false;
-            damagedTargets.Clear();
+            executionId = string.IsNullOrWhiteSpace(payloadExecutionId) ? $"projectile.{Guid.NewGuid():N}" : payloadExecutionId;
+            IgnoreCasterColliders();
+        }
+
+        public void Initialize(GameObject projectileOwner, Vector3 travelDirection, float projectileSpeed, float lifetime, Action<GameObject, Vector3> onImpact)
+        {
+            caster = projectileOwner;
+            ability = null;
+            impactCallback = onImpact;
+            direction = travelDirection.sqrMagnitude > 0f ? travelDirection.normalized : transform.forward;
+            speed = Mathf.Max(0.1f, projectileSpeed);
+            expireAtTime = Time.time + Mathf.Max(0.1f, lifetime);
+            initialized = true;
+            completed = false;
+            payloadExecuted = false;
+            executionId = $"projectile.{Guid.NewGuid():N}";
             IgnoreCasterColliders();
         }
 
@@ -125,29 +105,11 @@ namespace UnityIsekaiGame.Magic
             if (ability != null)
             {
                 ExecuteAbilityPayload(hit);
-                Complete();
-                return;
             }
-
-            IDamageable damageable = hit.collider.GetComponentInParent<IDamageable>();
-            if (damageable != null && !damagedTargets.Contains(damageable))
+            else
             {
-                damagedTargets.Add(damageable);
-                Vector3 hitDirection = direction;
-                DamageComponent component = directDamageType == null
-                    ? DamageComponent.Legacy(DamageType.Magic, baseDamage)
-                    : new DamageComponent(directDamageType, baseDamage);
-                DamagePacket packet = DamagePacket.Single(caster, component);
-                DamageType legacyDamageType = directDamageType == null ? DamageType.Magic : DamageType.Physical;
-                DamageInfo damageInfo = new DamageInfo(baseDamage, caster, hit.point, hitDirection, legacyDamageType, packet);
-                DamageResult damageResult = SceneCombatDamageBridge.ApplyDamage(
-                    hit.collider.gameObject,
-                    in damageInfo,
-                    impactTransactionPrefix,
-                    impactActionName);
-                Debug.Log(damageResult.Applied ? $"{impactActionName} hit for {damageResult.AppliedAmount:0.#} damage." : damageResult.Message);
+                impactCallback?.Invoke(ResolveAbilityTarget(hit.collider), hit.point);
             }
-
             Complete();
         }
 
@@ -166,8 +128,9 @@ namespace UnityIsekaiGame.Magic
                 target,
                 caster == null ? transform.position : caster.transform.position,
                 hit.point,
-                direction);
-            AbilityExecutionResult result = AbilityExecutor.ExecuteEffects(in context, ability.Effects);
+                direction,
+                executionId: $"{executionId}.impact");
+            AbilityExecutionResult result = AbilityEffectPipeline.Execute(in context, ability.Effects);
             Debug.Log(result.Succeeded ? result.Message : result.Message);
         }
 
@@ -178,8 +141,8 @@ namespace UnityIsekaiGame.Magic
                 return null;
             }
 
-            IDamageable damageable = hitCollider.GetComponentInParent<IDamageable>();
-            return damageable is Component damageableComponent ? damageableComponent.gameObject : hitCollider.gameObject;
+            CharacterResourceCollection resources = hitCollider.GetComponentInParent<CharacterResourceCollection>();
+            return resources == null ? hitCollider.gameObject : resources.gameObject;
         }
 
         private void IgnoreCasterColliders()

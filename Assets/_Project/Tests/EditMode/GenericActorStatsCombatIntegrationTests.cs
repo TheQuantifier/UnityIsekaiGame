@@ -3,11 +3,19 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityIsekaiGame.Combat;
+using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.ResourceSystem;
+using UnityIsekaiGame.Stats;
+using UnityIsekaiGame.WorldEntities;
 
 namespace UnityIsekaiGame.Tests
 {
     public sealed class GenericActorStatsCombatIntegrationTests
     {
+        private const string CatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
+
         [Test]
         public void ActorStats_InitializesConfiguredBaseValues()
         {
@@ -42,8 +50,8 @@ namespace UnityIsekaiGame.Tests
             object first = CreateRuntimeModifier("AttackPower", "FlatAdd", 2f, source);
             object second = CreateRuntimeModifier("AttackPower", "FlatAdd", 3f, source);
 
-            Assert.That((bool)Invoke(stats, "AddModifier", first), Is.True);
-            Assert.That((bool)Invoke(stats, "AddModifier", second), Is.False);
+            Assert.That((bool)Invoke(stats, "AddCalculatedStatContribution", first), Is.True);
+            Assert.That((bool)Invoke(stats, "AddCalculatedStatContribution", second), Is.False);
             Assert.That(Get<float>(stats, "AttackPower"), Is.EqualTo(6f));
             Destroy(actor);
         }
@@ -64,7 +72,6 @@ namespace UnityIsekaiGame.Tests
         {
             GameObject enemy = CreateActor("Enemy", 20f, 0f, 0f, 0f, 2f);
             object health = enemy.AddComponent(RequiredType("UnityIsekaiGame.Combat.EnemyHealth"));
-            SetObjectReference(health, "stats", enemy.GetComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats")));
             InvokeNonPublic(health, "Awake");
             InvokeNonPublic(health, "OnEnable");
 
@@ -78,7 +85,7 @@ namespace UnityIsekaiGame.Tests
 
             object source = CreateSource("StatusEffect", "status.max-health-test");
             object modifier = CreateRuntimeModifier("MaximumHealth", "FlatAdd", -16f, source);
-            Invoke(enemy.GetComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats")), "AddModifier", modifier);
+            Invoke(enemy.GetComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats")), "AddCalculatedStatContribution", modifier);
 
             Assert.That(Get<float>(health, "MaximumHealth"), Is.EqualTo(4f));
             Assert.That(Get<float>(health, "CurrentHealth"), Is.EqualTo(4f));
@@ -90,7 +97,6 @@ namespace UnityIsekaiGame.Tests
         {
             GameObject enemy = CreateActor("Enemy", 5f, 0f, 0f, 0f, 0f);
             object health = enemy.AddComponent(RequiredType("UnityIsekaiGame.Combat.EnemyHealth"));
-            SetObjectReference(health, "stats", enemy.GetComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats")));
             InvokeNonPublic(health, "Awake");
             InvokeNonPublic(health, "OnEnable");
 
@@ -117,7 +123,6 @@ namespace UnityIsekaiGame.Tests
             GameObject source = CreateActor("Source", 10f, 0f, 0f, 5f, 0f);
             GameObject target = CreateActor("Target", 50f, 0f, 0f, 0f, 1f);
             object health = target.AddComponent(RequiredType("UnityIsekaiGame.Combat.EnemyHealth"));
-            SetObjectReference(health, "stats", target.GetComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats")));
             InvokeNonPublic(health, "Awake");
             InvokeNonPublic(health, "OnEnable");
 
@@ -142,7 +147,6 @@ namespace UnityIsekaiGame.Tests
             GameObject source = new GameObject("Source Without Stats");
             GameObject target = CreateActor("Target", 50f, 0f, 0f, 0f, 0f);
             object health = target.AddComponent(RequiredType("UnityIsekaiGame.Combat.EnemyHealth"));
-            SetObjectReference(health, "stats", target.GetComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats")));
             InvokeNonPublic(health, "Awake");
             InvokeNonPublic(health, "OnEnable");
 
@@ -160,7 +164,6 @@ namespace UnityIsekaiGame.Tests
         {
             GameObject enemy = CreateActor("Enemy", 50f, 0f, 0f, 0f, 5f);
             object health = enemy.AddComponent(RequiredType("UnityIsekaiGame.Combat.EnemyHealth"));
-            SetObjectReference(health, "stats", enemy.GetComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats")));
             InvokeNonPublic(health, "Awake");
             InvokeNonPublic(health, "OnEnable");
             object controller = enemy.AddComponent(RequiredType("UnityIsekaiGame.StatusEffects.StatusEffectController"));
@@ -186,16 +189,24 @@ namespace UnityIsekaiGame.Tests
         private static GameObject CreateActor(string name, float maxHealth, float maxStamina, float maxMana, float attackPower, float defense)
         {
             GameObject actor = new GameObject(name);
-            object stats = actor.AddComponent(RequiredType("UnityIsekaiGame.Stats.ActorStats"));
-            SerializedObject serialized = new SerializedObject((UnityEngine.Object)stats);
-            serialized.FindProperty("baseMaximumHealth").floatValue = maxHealth;
-            serialized.FindProperty("baseMaximumStamina").floatValue = maxStamina;
-            serialized.FindProperty("baseMaximumMana").floatValue = maxMana;
-            serialized.FindProperty("baseAttackPower").floatValue = attackPower;
-            serialized.FindProperty("baseDefense").floatValue = defense;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-            InvokeNonPublic(stats, "Awake");
-            InvokeNonPublic(stats, "OnEnable");
+            DefinitionRegistry registry = LoadCatalog().CreateRegistry();
+            CharacterAttributes attributes = actor.AddComponent<CharacterAttributes>();
+            CalculatedStatCollection calculatedStats = actor.AddComponent<CalculatedStatCollection>();
+            CharacterResourceCollection resources = actor.AddComponent<CharacterResourceCollection>();
+            WorldEntityIdentity identity = actor.AddComponent<WorldEntityIdentity>();
+            Assert.That(identity.TrySetAuthoredIdentity($"generic-actor-{Guid.NewGuid():N}", "scene.test", PersistenceScope.RegionOrScene, "test.generic-actor", out string failure), Is.True, failure);
+            ActorStats actorStats = actor.AddComponent<ActorStats>();
+
+            attributes.Configure(registry);
+            calculatedStats.Configure(registry, attributes);
+            SetCalculatedStat(calculatedStats, CalculatedStatIds.MaximumHealth, maxHealth, $"{name}.health");
+            SetCalculatedStat(calculatedStats, CalculatedStatIds.MaximumStamina, maxStamina, $"{name}.stamina");
+            SetCalculatedStat(calculatedStats, CalculatedStatIds.MaximumMana, maxMana, $"{name}.mana");
+            SetCalculatedStat(calculatedStats, CalculatedStatIds.PhysicalPower, attackPower, $"{name}.power");
+            SetCalculatedStat(calculatedStats, CalculatedStatIds.PhysicalDefense, defense, $"{name}.defense");
+            resources.Configure(registry, calculatedStats, identity.EntityId);
+            InvokeNonPublic(actorStats, "Awake");
+            InvokeNonPublic(actorStats, "OnEnable");
             return actor;
         }
 
@@ -206,6 +217,7 @@ namespace UnityIsekaiGame.Tests
             serialized.FindProperty("effectId").stringValue = "effect.test-damage";
             serialized.FindProperty("displayName").stringValue = "Test Damage";
             serialized.FindProperty("baseAmount").floatValue = baseAmount;
+            serialized.FindProperty("typedDamageType").objectReferenceValue = GetDamageType();
             serialized.FindProperty("attackPowerScaling").enumValueIndex = EnumIndex("UnityIsekaiGame.Combat.AttackPowerScalingPolicy", attackPowerScaling);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return effect;
@@ -222,10 +234,10 @@ namespace UnityIsekaiGame.Tests
             serialized.FindProperty("stackingPolicy").enumValueIndex = EnumIndex("UnityIsekaiGame.StatusEffects.StatusStackingPolicy", "RefreshDuration");
             serialized.FindProperty("refreshPolicy").enumValueIndex = EnumIndex("UnityIsekaiGame.StatusEffects.StatusRefreshPolicy", "ResetToFullDuration");
             serialized.FindProperty("maximumStacks").intValue = 1;
-            SerializedProperty modifiers = serialized.FindProperty("statModifiers");
+            SerializedProperty modifiers = serialized.FindProperty("calculatedStatModifiers");
             modifiers.arraySize = 1;
             SerializedProperty modifier = modifiers.GetArrayElementAtIndex(0);
-            modifier.FindPropertyRelative("statType").enumValueIndex = EnumIndex("UnityIsekaiGame.Stats.StatType", stat);
+            modifier.FindPropertyRelative("stat").objectReferenceValue = GetCalculatedStat(stat);
             modifier.FindPropertyRelative("operation").enumValueIndex = EnumIndex("UnityIsekaiGame.Stats.StatModifierOperation", operation);
             modifier.FindPropertyRelative("value").floatValue = value;
             modifier.FindPropertyRelative("scaleWithStacks").boolValue = true;
@@ -249,13 +261,56 @@ namespace UnityIsekaiGame.Tests
 
         private static object CreateDamageInfo(float amount, GameObject source, GameObject target)
         {
-            return Activator.CreateInstance(
-                RequiredType("UnityIsekaiGame.Combat.DamageInfo"),
-                amount,
-                source,
-                target == null ? Vector3.zero : target.transform.position,
-                Vector3.forward,
-                EnumValue("UnityIsekaiGame.Combat.DamageType", "Physical"));
+            DamagePacket packet = DamagePacket.Single(source, new DamageComponent(GetDamageType(), amount));
+            return new DamageInfo(packet, target == null ? Vector3.zero : target.transform.position, Vector3.forward);
+        }
+
+        private static DefinitionCatalog LoadCatalog()
+        {
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
+            Assert.That(catalog, Is.Not.Null, $"Prototype catalog is missing at {CatalogPath}.");
+            return catalog;
+        }
+
+        private static DamageTypeDefinition GetDamageType()
+        {
+            DefinitionRegistry registry = LoadCatalog().CreateRegistry();
+            Assert.That(registry.TryGet("damage.physical", out DamageTypeDefinition damageType), Is.True);
+            return damageType;
+        }
+
+        private static CalculatedStatDefinition GetCalculatedStat(string legacyName)
+        {
+            string statId = legacyName switch
+            {
+                "MaximumHealth" => CalculatedStatIds.MaximumHealth,
+                "Defense" => CalculatedStatIds.PhysicalDefense,
+                _ => CalculatedStatIds.PhysicalPower
+            };
+            DefinitionRegistry registry = LoadCatalog().CreateRegistry();
+            Assert.That(registry.TryGet(statId, out CalculatedStatDefinition stat), Is.True, statId);
+            return stat;
+        }
+
+        private static void SetCalculatedStat(CalculatedStatCollection stats, string statId, float desiredValue, string sourceId)
+        {
+            float delta = desiredValue - stats.GetValue(statId);
+            if (Mathf.Approximately(delta, 0f))
+            {
+                return;
+            }
+
+            RuntimeCalculatedStatContribution contribution = new RuntimeCalculatedStatContribution
+            {
+                contributionId = sourceId,
+                statId = statId,
+                sourceId = sourceId,
+                sourceCategory = (int)CalculatedStatContributionSourceCategory.Development,
+                kind = (int)CalculatedStatContributionKind.Flat,
+                direction = (int)(delta >= 0f ? CalculatedStatContributionDirection.Improve : CalculatedStatContributionDirection.Reduce),
+                magnitude = Mathf.Abs(delta)
+            };
+            Assert.That(stats.AddContribution(contribution, out string failure), Is.True, failure);
         }
 
         private static object CreateSource(string sourceType, string sourceId)
@@ -268,13 +323,17 @@ namespace UnityIsekaiGame.Tests
 
         private static object CreateRuntimeModifier(string stat, string operation, float value, object source)
         {
-            return Activator.CreateInstance(
-                RequiredType("UnityIsekaiGame.Stats.RuntimeStatModifier"),
-                EnumValue("UnityIsekaiGame.Stats.StatType", stat),
-                EnumValue("UnityIsekaiGame.Stats.StatModifierOperation", operation),
-                value,
-                source,
-                0);
+            StatModifierSource typedSource = (StatModifierSource)source;
+            return new RuntimeCalculatedStatContribution
+            {
+                contributionId = $"{typedSource.SourceId}.{stat}.{value}",
+                statId = stat == "MaximumHealth" ? CalculatedStatIds.MaximumHealth : CalculatedStatIds.PhysicalPower,
+                sourceId = typedSource.SourceId,
+                sourceCategory = (int)CalculatedStatContributionSourceUtility.Map(typedSource.SourceType),
+                kind = (int)CalculatedStatContributionKind.Flat,
+                direction = (int)(value >= 0f ? CalculatedStatContributionDirection.Improve : CalculatedStatContributionDirection.Reduce),
+                magnitude = Mathf.Abs(value)
+            };
         }
 
         private static object EnumValue(string fullName, string name)

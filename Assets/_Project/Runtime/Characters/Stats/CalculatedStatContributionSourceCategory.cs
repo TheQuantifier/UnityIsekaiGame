@@ -9,6 +9,7 @@ namespace UnityIsekaiGame.Stats
         SocialStatus = 400,
         Condition = 500,
         CombatStatus = 600,
+        Ability = 650,
         BirthGift = 700,
         Origin = 800,
         Species = 825,

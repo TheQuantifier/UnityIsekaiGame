@@ -424,7 +424,7 @@ namespace UnityIsekaiGame.Tests
 
             public AttackResolutionRequest CreateAttackRequest(string transactionId, float hitRoll, float distance = 1f, float range = 2f)
             {
-                return new AttackResolutionRequest(transactionId, AttackSourceType.Weapon, A.Owner, A.ActorId, B.Owner, B.ActorId, Get<DamageTypeDefinition>("damage.physical"), 10f, hitRoll, 0.5f, hasSuppliedDistance: true, suppliedDistance: distance, hasMaximumRange: true, maximumRange: range, originatingActionId: "test.attack");
+                return new AttackResolutionRequest(transactionId, AttackSourceType.Weapon, A.Owner, A.ActorId, B.Owner, B.ActorId, Get<DamageTypeDefinition>("damage.physical"), 10f, hitRoll, 0.5f, hasSuppliedDistance: true, suppliedDistance: distance, hasMaximumRange: true, maximumRange: range, originatingActionId: "test.attack", authorityValidated: true);
             }
 
             public DamageApplicationResult CreateDamageResult(string transactionId, ActorRuntime source, ActorRuntime target, float finalDamage, bool changed, bool immune)

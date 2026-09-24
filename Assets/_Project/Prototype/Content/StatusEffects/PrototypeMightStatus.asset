@@ -29,11 +29,11 @@ MonoBehaviour:
   maximumStacks: 1
   canBeRemoved: 1
   visibleInHud: 1
-  statModifiers:
-  - statType: 3
+  calculatedStatModifiers:
+  - stat: {fileID: 11400000, guid: c1000000000000000000000000000052, type: 2}
     operation: 0
     value: 5
     scaleWithStacks: 1
     priority: 0
-  periodicInterval: 0
-  periodicEffects: []
+  instantEffects: []
+  ongoingEffects: []

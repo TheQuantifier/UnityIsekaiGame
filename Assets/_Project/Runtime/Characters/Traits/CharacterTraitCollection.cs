@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Capabilities;
+using UnityIsekaiGame.Abilities;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.ResourceSystem;
@@ -15,6 +16,7 @@ namespace UnityIsekaiGame.Traits
     {
         [SerializeField] private CalculatedStatCollection calculatedStats;
         [SerializeField] private CharacterSkillCollection skills;
+        [SerializeField] private CharacterAbilityCollection abilities;
         [SerializeField] private List<TraitDefinition> fallbackDefinitions = new List<TraitDefinition>();
         [SerializeField] private string ownerId = PersistenceService.LocalPlayerId;
 
@@ -43,6 +45,8 @@ namespace UnityIsekaiGame.Traits
                 skills = GetComponent<CharacterSkillCollection>();
             }
 
+            abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
+
             if (!IsConfigured && fallbackDefinitions.Count > 0)
             {
                 Configure(fallbackDefinitions, Enumerable.Empty<CapabilityDefinition>(), calculatedStats, skills, ownerId);
@@ -64,6 +68,7 @@ namespace UnityIsekaiGame.Traits
         {
             calculatedStats = statCollection == null ? calculatedStats == null ? GetComponent<CalculatedStatCollection>() : calculatedStats : statCollection;
             skills = skillCollection == null ? skills == null ? GetComponent<CharacterSkillCollection>() : skills : skillCollection;
+            abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
             if (!string.IsNullOrWhiteSpace(owner))
             {
                 ownerId = owner;
@@ -457,6 +462,7 @@ namespace UnityIsekaiGame.Traits
             {
                 calculatedStats?.RemoveContributionsFromSource(CalculatedStatContributionSourceCategory.Trait, TraitSourceId(definition.Id), restoring);
                 capabilitySet.ClearSource(CapabilitySourceCategory.Trait, TraitSourceId(definition.Id));
+                abilities?.RemoveSource(AbilityGrantSourceCategory.Trait, TraitSourceId(definition.Id), restoring);
             }
 
             foreach (RuntimeTraitRecord record in recordsByTraitId.Values.ToList())
@@ -541,6 +547,16 @@ namespace UnityIsekaiGame.Traits
                 {
                     result?.SkillGrantIds.Add(grant.Skill.Id);
                 }
+            }
+
+            foreach (TraitAbilityGrantDefinition grant in definition.AbilityGrants)
+            {
+                if (grant?.Ability == null || !grant.AlphaEnabled || grant.RequiredLifecycle != (TraitLifecycleState)record.lifecycleState || (grant.RequireDiscovered && (TraitDiscoveryState)record.discoveryState == TraitDiscoveryState.Undiscovered))
+                {
+                    continue;
+                }
+
+                abilities?.Grant(grant.Ability, AbilityGrantSourceCategory.Trait, sourceId, restoring);
             }
         }
 

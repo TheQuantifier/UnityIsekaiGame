@@ -8,6 +8,7 @@ using UnityIsekaiGame.ActorLifecycle;
 using UnityIsekaiGame.Beings.Biology;
 using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.Combat;
+using UnityIsekaiGame.Combat.Defense;
 using UnityIsekaiGame.Combat.Execution;
 using UnityIsekaiGame.Combat.OngoingEffects;
 using UnityIsekaiGame.Crimes;
@@ -253,7 +254,9 @@ namespace UnityIsekaiGame.Gameplay
         private PlayerQuestContractPersistenceParticipant questContractParticipant;
         private PlayerLocationPersistenceParticipant playerLocationParticipant;
         private DefinitionRegistry definitionRegistry;
+        private bool sceneCharactersInitialized;
         private CombatExecutionService combatExecutionService;
+        private AttackResolutionService attackResolutionService;
         private InformationSourceRuntime playerInformationSources;
         private InformationTransferRuntime playerInformationTransfers;
         private InformationAccessRuntime playerInformationAccess;
@@ -320,7 +323,27 @@ namespace UnityIsekaiGame.Gameplay
         public GameSaveDirtyTracker DirtyTracker => dirtyTracker;
         public AutosaveCoordinator Autosave => autosaveCoordinator;
         public DefinitionCatalog DefinitionCatalog => definitionCatalog;
-        public CombatExecutionService CombatExecution => combatExecutionService ??= new CombatExecutionService();
+        public CombatExecutionService CombatExecution => combatExecutionService ??= CreateCombatExecutionService();
+        public AttackResolutionService AttackResolution
+        {
+            get
+            {
+                _ = CombatExecution;
+                return attackResolutionService;
+            }
+        }
+
+        private CombatExecutionService CreateCombatExecutionService()
+        {
+            DefensiveActionService defense = new DefensiveActionService();
+            attackResolutionService = new AttackResolutionService(new DamageHealingService(), defense);
+            return new CombatExecutionService(new ICombatExecutionHandler[]
+            {
+                new AbilityCombatExecutionHandler(),
+                new AttackCombatExecutionHandler(attackResolutionService),
+                new DefenseActivationCombatExecutionHandler(defense)
+            });
+        }
         public InformationSourceRuntime InformationSources => playerInformationSources ??= new InformationSourceRuntime();
         public InformationTransferRuntime InformationTransfers => playerInformationTransfers ??= new InformationTransferRuntime();
         public InformationAccessRuntime InformationAccess => playerInformationAccess ??= new InformationAccessRuntime();
@@ -1301,6 +1324,7 @@ namespace UnityIsekaiGame.Gameplay
             {
                 definitionCatalog = catalog;
                 definitionRegistry = null;
+                sceneCharactersInitialized = false;
             }
 
             playerInventory = inventory;
@@ -1406,6 +1430,7 @@ namespace UnityIsekaiGame.Gameplay
             EnsurePlayerQuestContractParticipant();
             EnsurePlayerLocationParticipant();
             EnsurePersistenceConsistencyValidators();
+            InitializeSceneCharacters();
             PlayerReadiness = playerPersistenceContext.BuildReadiness(new[]
             {
                 PlayerIdentityProgressionPersistenceParticipant.Key,
@@ -1438,6 +1463,30 @@ namespace UnityIsekaiGame.Gameplay
                 NarrativeArcPersistenceParticipant.Key
             });
             SubscribeDirtyEvents();
+        }
+
+        private void InitializeSceneCharacters()
+        {
+            if (sceneCharactersInitialized)
+            {
+                return;
+            }
+
+            DefinitionRegistry registry = GetDefinitionRegistry();
+            if (registry == null)
+            {
+                return;
+            }
+
+            foreach (CharacterSystemCoordinator character in FindObjectsByType<CharacterSystemCoordinator>(FindObjectsInactive.Include))
+            {
+                if (character != null && !character.IsReady)
+                {
+                    character.InitializeFromRegistry(registry, restoring: false, addMissingCore: false);
+                }
+            }
+
+            sceneCharactersInitialized = true;
         }
 
         public IReadOnlyList<SaveSlotMetadata> ListSaveSlots()

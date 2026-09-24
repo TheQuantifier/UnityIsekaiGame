@@ -26,7 +26,7 @@ MonoBehaviour:
   conflictGroupIds: []
   incompatibleTraits: []
   calculatedStatContributions: []
-  abilityActionGrants: []
+  abilityGrants: []
   booleanCapabilityGrants:
   - entryId: otherworld-knowledge
     capability: {fileID: 11400000, guid: 55d40000000000000000000000000055, type: 2}

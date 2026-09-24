@@ -20,11 +20,19 @@ MonoBehaviour:
   tags:
   - {fileID: 11400000, guid: bbafd9a5c2184102ba5682e7ed93829e, type: 2}
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
-  activationTime: 0
+  execution: {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663405, type: 2}
   range: 0
-  cooldownDuration: 0
-  resourceCosts: []
   targetingMode: 0
+  allowSelfTarget: 1
+  allowInactiveTargets: 0
+  requiresLineOfSight: 0
+  targetingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  obstructionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  targetingTriggerInteraction: 1
   deliveryMode: 0
   projectileDelivery:
     projectilePrefab: {fileID: 0}

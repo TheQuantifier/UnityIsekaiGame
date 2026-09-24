@@ -23,15 +23,7 @@ namespace UnityIsekaiGame.Progression
         [SerializeField, Min(1)] private int participationTargetCount = 20;
         [SerializeField, Min(1f)] private float persistentStatTargetTotal = 100f;
         [SerializeField, Min(1f)] private float attributeNormalizationConstant = 20f;
-        [SerializeField]
-        private StatType[] eligiblePersistentStats =
-        {
-            StatType.MaximumHealth,
-            StatType.MaximumStamina,
-            StatType.MaximumMana,
-            StatType.AttackPower,
-            StatType.Defense
-        };
+        [SerializeField] private AttributeDefinition[] eligiblePersistentAttributes;
 
         public string Id => configurationId;
         public string DisplayName => displayName;
@@ -49,6 +41,6 @@ namespace UnityIsekaiGame.Progression
         public int ParticipationTargetCount => Mathf.Max(1, participationTargetCount);
         public float PersistentStatTargetTotal => Mathf.Max(1f, persistentStatTargetTotal);
         public float AttributeNormalizationConstant => Mathf.Max(1f, attributeNormalizationConstant);
-        public StatType[] EligiblePersistentStats => eligiblePersistentStats ?? System.Array.Empty<StatType>();
+        public AttributeDefinition[] EligiblePersistentAttributes => eligiblePersistentAttributes ?? System.Array.Empty<AttributeDefinition>();
     }
 }

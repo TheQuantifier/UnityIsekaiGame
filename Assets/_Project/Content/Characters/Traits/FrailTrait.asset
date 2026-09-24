@@ -44,7 +44,7 @@ MonoBehaviour:
     direction: 100
     magnitude: 1
     priority: 0
-  abilityActionGrants: []
+  abilityGrants: []
   booleanCapabilityGrants: []
   numericCapabilityGrants: []
   resistanceGrants: []

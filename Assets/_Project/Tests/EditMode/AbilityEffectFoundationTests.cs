@@ -1,181 +1,201 @@
-using System;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityIsekaiGame.Abilities;
+using UnityIsekaiGame.Combat.Execution;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Magic;
 
 namespace UnityIsekaiGame.Tests
 {
     public sealed class AbilityEffectFoundationTests
     {
         [Test]
-        public void CooldownTracker_StartRejectsAndResetClearsCooldown()
+        public void EffectPipeline_PreflightsWholeBatchBeforeMutation()
         {
-            ScriptableObject ability = CreateAbility("ability.test-cooldown", 2f);
-            object tracker = Activator.CreateInstance(RequiredType("UnityIsekaiGame.Abilities.AbilityCooldownTracker"));
+            TestEffectDefinition valid = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            TestEffectDefinition invalid = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            invalid.CanExecuteSuccessfully = false;
+            EffectExecutionContext context = new EffectExecutionContext(null, null, null, Vector3.zero, Vector3.zero, Vector3.forward);
 
-            Invoke(tracker, "StartCooldown", ability, 10f);
-            object[] args = { ability, 11f, 0f };
-            bool onCooldown = (bool)tracker.GetType().GetMethod("IsOnCooldown").Invoke(tracker, args);
+            AbilityExecutionResult result = AbilityEffectPipeline.Execute(in context, new EffectDefinition[] { valid, invalid });
 
-            Assert.That(onCooldown, Is.True);
-            Assert.That((float)args[2], Is.EqualTo(1f));
-
-            Invoke(tracker, "Reset");
-            args = new object[] { ability, 11f, 0f };
-            Assert.That((bool)tracker.GetType().GetMethod("IsOnCooldown").Invoke(tracker, args), Is.False);
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Status, Is.EqualTo(AbilityExecutionStatus.EffectValidationFailure));
+            Assert.That(result.FailedEffectIndex, Is.EqualTo(1));
+            Assert.That(valid.ExecuteCount, Is.Zero, "No effect may mutate state when any effect in the batch fails preflight.");
+            Assert.That(invalid.ExecuteCount, Is.Zero);
+            Object.DestroyImmediate(valid);
+            Object.DestroyImmediate(invalid);
         }
 
         [Test]
-        public void ResourceValidation_DoesNotSpendManaWhenTargetValidationFails()
+        public void EffectPipeline_RollsBackEarlierEffectsWhenExecutionUnexpectedlyFails()
         {
-            ScriptableObject effect = CreateDamageEffect("effect.test-damage", 5f);
-            ScriptableObject ability = CreateAbility("ability.test-invalid-target", 0f, 20f, effect);
-            GameObject source = new GameObject("Source");
-            Component mana = source.AddComponent(RequiredType("UnityIsekaiGame.Gameplay.PlayerMana"));
-            Invoke(mana, "RestoreToMaximum");
-            GameObject target = new GameObject("Invalid Target");
-            object context = CreateAbilityContext(ability, source, target);
-            object tracker = Activator.CreateInstance(RequiredType("UnityIsekaiGame.Abilities.AbilityCooldownTracker"));
+            TestEffectDefinition first = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            TestEffectDefinition second = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            second.ExecuteSuccessfully = false;
+            EffectExecutionContext context = new EffectExecutionContext(null, null, null, Vector3.zero, Vector3.zero, Vector3.forward, executionId: "execution.test.rollback");
 
-            Assert.That(Get<float>(mana, "CurrentMana"), Is.EqualTo(100f));
+            AbilityExecutionResult result = AbilityEffectPipeline.Execute(in context, new EffectDefinition[] { first, second });
 
-            object result = InvokeStatic("UnityIsekaiGame.Abilities.AbilityExecutor", "Execute", context, tracker, 0f);
-
-            Assert.That(Get<bool>(result, "Succeeded"), Is.False);
-            Assert.That(Get<float>(mana, "CurrentMana"), Is.EqualTo(100f));
-
-            UnityEngine.Object.DestroyImmediate(source);
-            UnityEngine.Object.DestroyImmediate(target);
+            Assert.That(result.Status, Is.EqualTo(AbilityExecutionStatus.EffectExecutionFailure));
+            Assert.That(first.RollbackCount, Is.EqualTo(1));
+            Assert.That(second.RollbackCount, Is.Zero);
+            Object.DestroyImmediate(first);
+            Object.DestroyImmediate(second);
         }
 
         [Test]
-        public void RestoreVitalEffect_FailsWhenHealthIsFull()
+        public void AbilityOwnership_RemainsWhileAnyIndependentSourceStillGrantsIt()
         {
-            ScriptableObject restore = CreateRestoreEffect("effect.test-restore", 25f);
-            GameObject target = new GameObject("Target");
-            target.AddComponent(RequiredType("UnityIsekaiGame.Gameplay.PlayerHealth"));
-            object context = CreateEffectContext(null, target, target);
+            GameObject owner = new GameObject("Ability Owner");
+            CharacterAbilityCollection abilities = owner.AddComponent<CharacterAbilityCollection>();
+            AbilityDefinition ability = ScriptableObject.CreateInstance<AbilityDefinition>();
+            SerializedObject serialized = new SerializedObject(ability);
+            serialized.FindProperty("abilityId").stringValue = "ability.test-owned";
+            serialized.FindProperty("displayName").stringValue = "Owned Ability";
+            serialized.ApplyModifiedPropertiesWithoutUndo();
 
-            object result = Invoke(restore, "CanExecute", context);
+            Assert.That(abilities.Grant(ability, AbilityGrantSourceCategory.Skill, "skill.magic.f").Succeeded, Is.True);
+            Assert.That(abilities.Grant(ability, AbilityGrantSourceCategory.BirthGift, "birth-gift.arcane").Succeeded, Is.True);
+            Assert.That(abilities.GetGrantRecords(ability.Id).Count, Is.EqualTo(2));
+            Assert.That(abilities.RemoveSource(AbilityGrantSourceCategory.Skill, "skill.magic.f"), Is.True);
+            Assert.That(abilities.HasAbility(ability.Id), Is.True);
+            Assert.That(abilities.RemoveSource(AbilityGrantSourceCategory.BirthGift, "birth-gift.arcane"), Is.True);
+            Assert.That(abilities.HasAbility(ability.Id), Is.False);
 
-            Assert.That(Get<bool>(result, "Succeeded"), Is.False);
-            Assert.That(Get<object>(result, "Status").ToString(), Is.EqualTo("NoStateChange"));
+            Object.DestroyImmediate(ability);
+            Object.DestroyImmediate(owner);
+        }
 
-            UnityEngine.Object.DestroyImmediate(target);
+        [Test]
+        public void AbilityDefinition_UsesSharedCombatExecutionForTimingCostsAndCooldown()
+        {
+            AbilityDefinition ability = ScriptableObject.CreateInstance<AbilityDefinition>();
+            CombatExecutionDefinition execution = ScriptableObject.CreateInstance<CombatExecutionDefinition>();
+            SerializedObject serializedExecution = new SerializedObject(execution);
+            serializedExecution.FindProperty("executionId").stringValue = "combat-execution.test-ability";
+            serializedExecution.FindProperty("displayName").stringValue = "Test Ability Execution";
+            serializedExecution.FindProperty("actionType").enumValueIndex = (int)CombatExecutionActionType.Ability;
+            serializedExecution.FindProperty("cooldownDuration").floatValue = 2f;
+            serializedExecution.ApplyModifiedPropertiesWithoutUndo();
+
+            SerializedObject serializedAbility = new SerializedObject(ability);
+            serializedAbility.FindProperty("abilityId").stringValue = "ability.test-shared-execution";
+            serializedAbility.FindProperty("displayName").stringValue = "Shared Execution";
+            serializedAbility.FindProperty("execution").objectReferenceValue = execution;
+            serializedAbility.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.That(ability.Execution, Is.SameAs(execution));
+            Assert.That(ability.Execution.CooldownDuration, Is.EqualTo(2f));
+            Assert.That(typeof(AbilityDefinition).GetField("cooldownDuration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic), Is.Null);
+            Assert.That(typeof(AbilityDefinition).GetField("resourceCosts", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic), Is.Null);
+            Object.DestroyImmediate(ability);
+            Object.DestroyImmediate(execution);
         }
 
         [Test]
         public void DefinitionValidation_FlagsAbilityWithNoEffects()
         {
-            ScriptableObject ability = CreateAbility("ability.no-effects", 0f);
+            AbilityDefinition ability = ScriptableObject.CreateInstance<AbilityDefinition>();
+            SerializedObject serialized = new SerializedObject(ability);
+            serialized.FindProperty("abilityId").stringValue = "ability.no-effects";
+            serialized.FindProperty("displayName").stringValue = "No Effects";
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
             DefinitionValidationReport report = DefinitionCatalogValidator.Validate(ClassificationTestFactory.CreateCatalog(ability));
 
             Assert.That(report.HasErrors, Is.True);
             Assert.That(report.GetSummary(), Does.Contain("has no effects"));
+            Object.DestroyImmediate(ability);
         }
 
         [Test]
-        public void SpellDefinition_CanReferenceAbilityAdapter()
+        public void SpellDefinition_ReferencesAbilityWithoutDuplicatingCombatValues()
         {
-            ScriptableObject effect = CreateDamageEffect("effect.spell-adapter", 5f);
-            ScriptableObject ability = CreateAbility("ability.spell-adapter", 0.5f, 10f, effect);
-            ScriptableObject spell = ScriptableObject.CreateInstance(RequiredType("UnityIsekaiGame.Magic.SpellDefinition"));
+            AbilityDefinition ability = ScriptableObject.CreateInstance<AbilityDefinition>();
+            SpellDefinition spell = ScriptableObject.CreateInstance<SpellDefinition>();
             SerializedObject serializedSpell = new SerializedObject(spell);
             serializedSpell.FindProperty("spellId").stringValue = "spell.adapter";
             serializedSpell.FindProperty("displayName").stringValue = "Adapter";
             serializedSpell.FindProperty("ability").objectReferenceValue = ability;
             serializedSpell.ApplyModifiedPropertiesWithoutUndo();
 
-            Assert.That(Get<object>(spell, "Ability"), Is.SameAs(ability));
+            Assert.That(spell.Ability, Is.SameAs(ability));
+            Assert.That(typeof(SpellDefinition).GetField("manaCost", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic), Is.Null);
+            Assert.That(typeof(SpellDefinition).GetField("cooldown", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic), Is.Null);
+            Object.DestroyImmediate(spell);
+            Object.DestroyImmediate(ability);
         }
 
-        private static ScriptableObject CreateAbility(string id, float cooldown, float manaCost = 0f, ScriptableObject effect = null)
+        [Test]
+        public void CombatTargeting_RejectsOutOfRangeAndBlockedTargets()
         {
-            ScriptableObject ability = ScriptableObject.CreateInstance(RequiredType("UnityIsekaiGame.Abilities.AbilityDefinition"));
-            SerializedObject serializedAbility = new SerializedObject(ability);
-            serializedAbility.FindProperty("abilityId").stringValue = id;
-            serializedAbility.FindProperty("displayName").stringValue = id;
-            serializedAbility.FindProperty("cooldownDuration").floatValue = cooldown;
-            serializedAbility.FindProperty("targetingMode").enumValueIndex = 1;
-            serializedAbility.FindProperty("deliveryMode").enumValueIndex = 0;
+            AbilityDefinition ability = CreateTargetedAbility(5f);
+            GameObject source = new GameObject("Targeting Source");
+            GameObject target = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            target.name = "Targeting Target";
+            target.transform.position = new Vector3(0f, 0f, 6f);
+            Physics.SyncTransforms();
 
-            SerializedProperty costs = serializedAbility.FindProperty("resourceCosts");
-            costs.arraySize = manaCost > 0f ? 1 : 0;
-            if (manaCost > 0f)
-            {
-                costs.GetArrayElementAtIndex(0).FindPropertyRelative("resourceType").enumValueIndex = 1;
-                costs.GetArrayElementAtIndex(0).FindPropertyRelative("amount").floatValue = manaCost;
-            }
+            AbilityExecutionContext outOfRange = new AbilityExecutionContext(
+                ability, source, target, source.transform, source.transform.position, target.transform.position, Vector3.forward, false);
+            Assert.That(CombatTargetingService.Validate(in outOfRange).Status, Is.EqualTo(AbilityExecutionStatus.OutOfRange));
 
-            SerializedProperty effects = serializedAbility.FindProperty("effects");
-            effects.arraySize = effect == null ? 0 : 1;
-            if (effect != null)
-            {
-                effects.GetArrayElementAtIndex(0).objectReferenceValue = effect;
-            }
+            target.transform.position = new Vector3(0f, 0f, 4f);
+            GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wall.name = "Targeting Wall";
+            wall.transform.position = new Vector3(0f, 0f, 2f);
+            Physics.SyncTransforms();
+            AbilityExecutionContext blocked = new AbilityExecutionContext(
+                ability, source, target, source.transform, source.transform.position, target.transform.position, Vector3.forward, false);
 
-            serializedAbility.ApplyModifiedPropertiesWithoutUndo();
+            AbilityExecutionResult result = CombatTargetingService.Validate(in blocked);
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Message, Does.Contain("line of sight"));
+
+            Object.DestroyImmediate(wall);
+            Object.DestroyImmediate(target);
+            Object.DestroyImmediate(source);
+            Object.DestroyImmediate(ability);
+        }
+
+        private static AbilityDefinition CreateTargetedAbility(float range)
+        {
+            AbilityDefinition ability = ScriptableObject.CreateInstance<AbilityDefinition>();
+            SerializedObject serialized = new SerializedObject(ability);
+            serialized.FindProperty("abilityId").stringValue = "ability.test-targeting";
+            serialized.FindProperty("displayName").stringValue = "Targeting Test";
+            serialized.FindProperty("range").floatValue = range;
+            serialized.FindProperty("targetingMode").enumValueIndex = (int)AbilityTargetingMode.DirectTarget;
+            serialized.FindProperty("requiresLineOfSight").boolValue = true;
+            serialized.FindProperty("targetingMask").intValue = ~0;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
             return ability;
         }
 
-        private static ScriptableObject CreateDamageEffect(string id, float amount)
+        private sealed class TestEffectDefinition : EffectDefinition
         {
-            ScriptableObject effect = ScriptableObject.CreateInstance(RequiredType("UnityIsekaiGame.Abilities.DamageEffectDefinition"));
-            SerializedObject serializedEffect = new SerializedObject(effect);
-            serializedEffect.FindProperty("effectId").stringValue = id;
-            serializedEffect.FindProperty("displayName").stringValue = id;
-            serializedEffect.FindProperty("baseAmount").floatValue = amount;
-            serializedEffect.ApplyModifiedPropertiesWithoutUndo();
-            return effect;
-        }
+            public bool CanExecuteSuccessfully { get; set; } = true;
+            public bool ExecuteSuccessfully { get; set; } = true;
+            public int ExecuteCount { get; private set; }
+            public int RollbackCount { get; private set; }
 
-        private static ScriptableObject CreateRestoreEffect(string id, float amount)
-        {
-            ScriptableObject effect = ScriptableObject.CreateInstance(RequiredType("UnityIsekaiGame.Abilities.RestoreVitalEffectDefinition"));
-            SerializedObject serializedEffect = new SerializedObject(effect);
-            serializedEffect.FindProperty("effectId").stringValue = id;
-            serializedEffect.FindProperty("displayName").stringValue = id;
-            serializedEffect.FindProperty("vitalType").enumValueIndex = 0;
-            serializedEffect.FindProperty("amount").floatValue = amount;
-            serializedEffect.ApplyModifiedPropertiesWithoutUndo();
-            return effect;
-        }
+            public override EffectExecutionResult CanExecute(in EffectExecutionContext context)
+            {
+                return CanExecuteSuccessfully
+                    ? EffectExecutionResult.Success("Valid test effect.")
+                    : EffectExecutionResult.Failure(EffectExecutionStatus.InvalidTarget, "Invalid test target.");
+            }
 
-        private static object CreateAbilityContext(ScriptableObject ability, GameObject source, GameObject target)
-        {
-            return Activator.CreateInstance(
-                RequiredType("UnityIsekaiGame.Abilities.AbilityExecutionContext"),
-                ability, source, target, source.transform, source.transform.position, target.transform.position, source.transform.forward, false, null, null, 1f, null);
-        }
-
-        private static object CreateEffectContext(ScriptableObject ability, GameObject source, GameObject target)
-        {
-            return Activator.CreateInstance(
-                RequiredType("UnityIsekaiGame.Abilities.EffectExecutionContext"),
-                ability, source, target, source.transform.position, target.transform.position, source.transform.forward, null, null, 1f);
-        }
-
-        private static Type RequiredType(string fullName)
-        {
-            Type type = TestTypeResolver.RequiredType(fullName);
-            Assert.That(type, Is.Not.Null, $"Expected runtime type {fullName} to exist in loaded project assemblies.");
-            return type;
-        }
-
-        private static object Invoke(object target, string methodName, params object[] args)
-        {
-            return target.GetType().GetMethod(methodName).Invoke(target, args);
-        }
-
-        private static object InvokeStatic(string typeName, string methodName, params object[] args)
-        {
-            return RequiredType(typeName).GetMethod(methodName).Invoke(null, args);
-        }
-
-        private static T Get<T>(object target, string propertyName)
-        {
-            return (T)target.GetType().GetProperty(propertyName).GetValue(target);
+            public override EffectExecutionResult Execute(in EffectExecutionContext context)
+            {
+                ExecuteCount++;
+                return ExecuteSuccessfully
+                    ? EffectExecutionResult.Success("Executed test effect.", rollback: () => RollbackCount++)
+                    : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, "Execution failed.");
+            }
         }
     }
 }

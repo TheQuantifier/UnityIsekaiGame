@@ -20,11 +20,21 @@ MonoBehaviour:
   tags:
   - {fileID: 11400000, guid: ae91f7acd1794650bcc7d65b47d79796, type: 2}
   - {fileID: 11400000, guid: acb0be3d97e64471aa1fb2f07b488819, type: 2}
-  baseMaximumHealth: 100
-  baseMaximumStamina: 100
-  baseMaximumMana: 0
-  baseAttackPower: 0
-  baseDefense: 0
-  baseMovementSpeed: 1.5
+  statContributions:
+  - stat: {fileID: 11400000, guid: c9000000000000000000000000000052, type: 2}
+    kind: 0
+    direction: 100
+    magnitude: 100
+    priority: 0
+  - stat: {fileID: 11400000, guid: c1000000000000000000000000000052, type: 2}
+    kind: 0
+    direction: 100
+    magnitude: 5
+    priority: 0
+  - stat: {fileID: 11400000, guid: ca000000000000000000000000000052, type: 2}
+    kind: 0
+    direction: 100
+    magnitude: 3.5
+    priority: 0
   futureSensesPlaceholder: 
   futureMovementProfilePlaceholder: 

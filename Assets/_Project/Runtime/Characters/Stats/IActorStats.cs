@@ -2,7 +2,7 @@ using System;
 
 namespace UnityIsekaiGame.Stats
 {
-    public interface IActorStats : IRuntimeStatReceiver
+    public interface IActorStats : IRuntimeCalculatedStatReceiver
     {
         float MaximumHealth { get; }
         float MaximumStamina { get; }

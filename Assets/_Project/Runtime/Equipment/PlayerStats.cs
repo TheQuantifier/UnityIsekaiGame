@@ -10,19 +10,12 @@ namespace UnityIsekaiGame.Equipment
 {
     public sealed class PlayerStats : ActorStats
     {
-        private const float DefaultPlayerAttackPower = 5f;
-
         [SerializeField] private PlayerEquipment equipment;
         [SerializeField] private MonoBehaviour itemQualityAffixRuntimeProvider;
 
         private readonly HashSet<StatModifierSource> appliedAffixModifierSources = new HashSet<StatModifierSource>();
         private IItemQualityAffixRuntimeProvider qualityAffixProvider;
         private IItemDurabilityRuntimeProvider durabilityProvider;
-
-        private void Reset()
-        {
-            baseAttackPower = DefaultPlayerAttackPower;
-        }
 
         protected override void Awake()
         {
@@ -33,12 +26,12 @@ namespace UnityIsekaiGame.Equipment
 
             ResolveQualityAffixProvider();
 
-            if (Mathf.Approximately(baseAttackPower, 0f))
-            {
-                baseAttackPower = DefaultPlayerAttackPower;
-            }
-
             base.Awake();
+            RecalculateEquipmentModifiers();
+        }
+
+        protected override void OnDerivedStatsConfigured()
+        {
             RecalculateEquipmentModifiers();
         }
 
@@ -137,13 +130,13 @@ namespace UnityIsekaiGame.Equipment
             {
                 EquipmentSlotType slotType = (EquipmentSlotType)values.GetValue(i);
                 StatModifierSource source = CreateEquipmentSource(slotType);
-                RemoveModifiersFromSource(source);
+                RemoveCalculatedStatContributions(source);
                 RemoveResistanceModifiersFromSource(source);
             }
 
             foreach (StatModifierSource source in appliedAffixModifierSources)
             {
-                RemoveModifiersFromSource(source);
+                RemoveCalculatedStatContributions(source);
             }
 
             appliedAffixModifierSources.Clear();
@@ -159,11 +152,11 @@ namespace UnityIsekaiGame.Equipment
 
             StatModifierSource source = CreateEquipmentSource(slot.SlotType);
             StatModifiers modifiers = slot.Item.Equipment.StatModifiers;
-            AddFlatEquipmentModifier(source, StatType.MaximumHealth, modifiers.MaximumHealth * durabilityFactor);
-            AddFlatEquipmentModifier(source, StatType.MaximumStamina, modifiers.MaximumStamina * durabilityFactor);
-            AddFlatEquipmentModifier(source, StatType.MaximumMana, modifiers.MaximumMana * durabilityFactor);
-            AddFlatEquipmentModifier(source, StatType.AttackPower, modifiers.AttackPower * durabilityFactor);
-            AddFlatEquipmentModifier(source, StatType.Defense, modifiers.Defense * durabilityFactor);
+            AddFlatEquipmentModifier(source, CalculatedStatIds.MaximumHealth, modifiers.MaximumHealth * durabilityFactor);
+            AddFlatEquipmentModifier(source, CalculatedStatIds.MaximumStamina, modifiers.MaximumStamina * durabilityFactor);
+            AddFlatEquipmentModifier(source, CalculatedStatIds.MaximumMana, modifiers.MaximumMana * durabilityFactor);
+            AddFlatEquipmentModifier(source, CalculatedStatIds.PhysicalPower, modifiers.AttackPower * durabilityFactor);
+            AddFlatEquipmentModifier(source, CalculatedStatIds.PhysicalDefense, modifiers.Defense * durabilityFactor);
             if (durabilityFactor >= 0.999f)
             {
                 RegisterEquipmentResistanceModifiers(source, slot.Item.Equipment.ResistanceModifiers);
@@ -172,14 +165,23 @@ namespace UnityIsekaiGame.Equipment
             RegisterAffixModifiers(slot);
         }
 
-        private void AddFlatEquipmentModifier(StatModifierSource source, StatType statType, float value)
+        private void AddFlatEquipmentModifier(StatModifierSource source, string calculatedStatId, float value)
         {
             if (Mathf.Approximately(value, 0f))
             {
                 return;
             }
 
-            AddModifier(new RuntimeStatModifier(statType, StatModifierOperation.FlatAdd, value, source));
+            AddCalculatedStatContribution(new RuntimeCalculatedStatContribution
+            {
+                contributionId = $"{source.SourceId}.{calculatedStatId}",
+                statId = calculatedStatId,
+                sourceCategory = (int)CalculatedStatContributionSourceCategory.Equipment,
+                sourceId = source.SourceId,
+                kind = (int)CalculatedStatContributionKind.Flat,
+                direction = (int)(value >= 0f ? CalculatedStatContributionDirection.Improve : CalculatedStatContributionDirection.Reduce),
+                magnitude = Mathf.Abs(value)
+            });
         }
 
         private static StatModifierSource CreateEquipmentSource(EquipmentSlotType slotType)

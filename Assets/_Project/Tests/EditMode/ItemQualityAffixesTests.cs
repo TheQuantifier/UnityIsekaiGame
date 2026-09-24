@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
@@ -105,13 +106,14 @@ namespace UnityIsekaiGame.Tests
             Assert.That(conflict.Succeeded, Is.False);
             Assert.That(fixture.Quality.CanShareQualityAffixStack(first, second), Is.False);
 
-            RuntimeStatCollection stats = new RuntimeStatCollection();
-            stats.SetBaseValue(StatType.AttackPower, 10f);
-            Assert.That(fixture.Quality.ApplyActiveAffixModifiers(first, fixture.Registry, stats).Succeeded, Is.True);
-            Assert.That(fixture.Quality.ApplyActiveAffixModifiers(first, fixture.Registry, stats).Succeeded, Is.True);
-            Assert.That(stats.GetValue(StatType.AttackPower), Is.EqualTo(12f).Within(0.001f));
-            fixture.Quality.RemoveActiveAffixModifiers(first, stats);
-            Assert.That(stats.GetValue(StatType.AttackPower), Is.EqualTo(10f).Within(0.001f));
+            TestRuntimeStatReceiver stats = new TestRuntimeStatReceiver(10f);
+            Assert.That(fixture.Quality.ApplyActiveAffixModifiers(first, fixture.Registry, stats, out IReadOnlyList<StatModifierSource> sources).Succeeded, Is.True);
+            Assert.That(stats.GetCalculatedStatValue(CalculatedStatIds.PhysicalPower), Is.EqualTo(12f).Within(0.001f));
+            foreach (StatModifierSource source in sources)
+            {
+                stats.RemoveCalculatedStatContributions(source);
+            }
+            Assert.That(stats.GetCalculatedStatValue(CalculatedStatIds.PhysicalPower), Is.EqualTo(10f).Within(0.001f));
         }
 
         [Test]
@@ -219,9 +221,10 @@ namespace UnityIsekaiGame.Tests
             QualityTierDefinition common = Tier("quality.common", "Common", 0.35f, 0.65f, 30);
             QualityTierDefinition fine = Tier("quality.fine", "Fine", 0.65f, 0.85f, 60);
             QualityTierDefinition masterwork = Tier("quality.masterwork", "Masterwork", 0.85f, 1f, 90);
-            ItemAffixDefinition keen = Affix("affix.prototype.keen-edge", ItemAffixClassification.Prefix, hidden: false);
-            ItemAffixDefinition hidden = Affix("affix.prototype.hidden-edge", ItemAffixClassification.Hidden, hidden: true);
-            DefinitionRegistry registry = new DefinitionRegistry(new IGameDefinition[] { sword, iron, common, fine, masterwork, keen, hidden });
+            CalculatedStatDefinition physicalPower = CalculatedStat(CalculatedStatIds.PhysicalPower);
+            ItemAffixDefinition keen = Affix("affix.prototype.keen-edge", ItemAffixClassification.Prefix, hidden: false, calculatedStat: physicalPower);
+            ItemAffixDefinition hidden = Affix("affix.prototype.hidden-edge", ItemAffixClassification.Hidden, hidden: true, calculatedStat: physicalPower);
+            DefinitionRegistry registry = new DefinitionRegistry(new IGameDefinition[] { sword, iron, common, fine, masterwork, physicalPower, keen, hidden });
             return new RuntimeFixture(sword, registry, new ItemInstanceIdentityRuntime(), new ItemCompositionRuntime(), new ItemQualityAffixRuntime(), keen, hidden);
         }
 
@@ -256,7 +259,15 @@ namespace UnityIsekaiGame.Tests
             return tier;
         }
 
-        private static ItemAffixDefinition Affix(string id, ItemAffixClassification classification, bool hidden)
+        private static CalculatedStatDefinition CalculatedStat(string id)
+        {
+            CalculatedStatDefinition stat = ScriptableObject.CreateInstance<CalculatedStatDefinition>();
+            SetField(stat, "statId", id);
+            SetField(stat, "displayName", id);
+            return stat;
+        }
+
+        private static ItemAffixDefinition Affix(string id, ItemAffixClassification classification, bool hidden, CalculatedStatDefinition calculatedStat)
         {
             ItemAffixDefinition definition = ScriptableObject.CreateInstance<ItemAffixDefinition>();
             SetField(definition, "affixId", id);
@@ -276,16 +287,16 @@ namespace UnityIsekaiGame.Tests
                     valueMinimum = 1f,
                     valueMaximum = 1f,
                     rarityContribution = 0.05f,
-                    modifierTemplates = new[] { StatModifier(StatType.AttackPower, StatModifierOperation.FlatAdd, 2f) }
+                    modifierTemplates = new[] { StatModifier(calculatedStat, StatModifierOperation.FlatAdd, 2f) }
                 }
             });
             return definition;
         }
 
-        private static StatModifierDefinition StatModifier(StatType statType, StatModifierOperation operation, float value)
+        private static CalculatedStatModifierDefinition StatModifier(CalculatedStatDefinition stat, StatModifierOperation operation, float value)
         {
-            StatModifierDefinition modifier = new StatModifierDefinition();
-            SetField(modifier, "statType", statType);
+            CalculatedStatModifierDefinition modifier = new CalculatedStatModifierDefinition();
+            SetField(modifier, "stat", stat);
             SetField(modifier, "operation", operation);
             SetField(modifier, "value", value);
             SetField(modifier, "scaleWithStacks", false);
@@ -302,6 +313,55 @@ namespace UnityIsekaiGame.Tests
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null, $"Missing field {fieldName} on {target.GetType().Name}.");
             field.SetValue(target, value);
+        }
+
+        private sealed class TestRuntimeStatReceiver : IRuntimeCalculatedStatReceiver
+        {
+            private readonly float baseAttackPower;
+            private readonly Dictionary<string, List<RuntimeCalculatedStatContribution>> modifiers = new Dictionary<string, List<RuntimeCalculatedStatContribution>>(StringComparer.Ordinal);
+
+            public TestRuntimeStatReceiver(float baseAttackPower)
+            {
+                this.baseAttackPower = baseAttackPower;
+            }
+
+            public bool HasCalculatedStat(string statId) => statId == CalculatedStatIds.PhysicalPower;
+
+            public float GetCalculatedStatValue(string statId)
+            {
+                float value = statId == CalculatedStatIds.PhysicalPower ? baseAttackPower : 0f;
+                foreach (List<RuntimeCalculatedStatContribution> source in modifiers.Values)
+                {
+                    foreach (RuntimeCalculatedStatContribution modifier in source)
+                    {
+                        if (modifier.statId == statId && modifier.kind == (int)CalculatedStatContributionKind.Flat)
+                        {
+                            value += modifier.direction == (int)CalculatedStatContributionDirection.Reduce ? -modifier.magnitude : modifier.magnitude;
+                        }
+                    }
+                }
+
+                return value;
+            }
+
+            public bool AddCalculatedStatContribution(RuntimeCalculatedStatContribution modifier)
+            {
+                if (modifier == null || !HasCalculatedStat(modifier.statId) || string.IsNullOrWhiteSpace(modifier.sourceId))
+                {
+                    return false;
+                }
+
+                if (!modifiers.TryGetValue(modifier.sourceId, out List<RuntimeCalculatedStatContribution> source))
+                {
+                    source = new List<RuntimeCalculatedStatContribution>();
+                    modifiers.Add(modifier.sourceId, source);
+                }
+
+                source.Add(modifier);
+                return true;
+            }
+
+            public bool RemoveCalculatedStatContributions(StatModifierSource source) => modifiers.Remove(source.SourceId);
         }
 
         private sealed class RuntimeFixture

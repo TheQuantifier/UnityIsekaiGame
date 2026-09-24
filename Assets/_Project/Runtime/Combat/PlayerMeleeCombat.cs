@@ -1,11 +1,15 @@
 using System;
 using UnityEngine;
 using UnityIsekaiGame.ActorLifecycle;
+using UnityIsekaiGame.CharacterSystem;
+using UnityIsekaiGame.Combat.Execution;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Magic;
+using UnityIsekaiGame.ResourceSystem;
+using UnityIsekaiGame.WorldEntities;
 
 namespace UnityIsekaiGame.Combat
 {
@@ -13,311 +17,217 @@ namespace UnityIsekaiGame.Combat
     {
         [SerializeField] private PlayerInputReader input;
         [SerializeField] private PlayerEquipment equipment;
-        [SerializeField] private PlayerStats stats;
-        [SerializeField] private PlayerStamina stamina;
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private Transform attackOrigin;
+        [SerializeField] private PrototypePersistenceServiceBehaviour runtimeServices;
         [SerializeField] private LayerMask damageMask = ~0;
         [SerializeField] private QueryTriggerInteraction triggerInteraction = QueryTriggerInteraction.Ignore;
         [SerializeField] private MeleeWeaponData unarmedAttack = new MeleeWeaponData();
 
-        private float nextAttackTime;
-
         public event Action<MeleeAttackResult> AttackResolved;
+
+        private CombatExecutionService Execution => runtimeServices == null ? null : runtimeServices.CombatExecution;
 
         private void Awake()
         {
-            if (input == null)
-            {
-                input = GetComponent<PlayerInputReader>();
-            }
-
-            if (equipment == null)
-            {
-                equipment = GetComponent<PlayerEquipment>();
-            }
-
-            if (stats == null)
-            {
-                stats = GetComponent<PlayerStats>();
-            }
-
-            if (stamina == null)
-            {
-                stamina = GetComponent<PlayerStamina>();
-            }
-
-            if (inventory == null)
-            {
-                inventory = GetComponent<PlayerInventory>();
-            }
-
-            if (attackOrigin == null && Camera.main != null)
-            {
-                attackOrigin = Camera.main.transform;
-            }
+            input = input == null ? GetComponent<PlayerInputReader>() : input;
+            equipment = equipment == null ? GetComponent<PlayerEquipment>() : equipment;
+            inventory = inventory == null ? GetComponent<PlayerInventory>() : inventory;
+            runtimeServices = runtimeServices == null ? FindAnyObjectByType<PrototypePersistenceServiceBehaviour>() : runtimeServices;
+            if (attackOrigin == null && Camera.main != null) attackOrigin = Camera.main.transform;
         }
 
-        private void OnValidate()
-        {
-            unarmedAttack?.Validate();
-        }
+        private void OnValidate() => unarmedAttack?.Validate();
 
         private void Update()
         {
-            if (input == null || !input.ConsumeAttack())
-            {
-                return;
-            }
-
-            TryAttack();
+            if (input != null && input.ConsumeAttack()) TryAttack();
         }
 
         public MeleeAttackResult TryAttack()
         {
-            if (!ActorLifecycleUtility.CanAct(gameObject))
-            {
-                return Resolve(MeleeAttackResult.Failure("Cannot attack while defeated, unconscious, or dead."));
-            }
-
-            if (Time.time < nextAttackTime)
-            {
-                return Resolve(MeleeAttackResult.Failure("Attack is on cooldown."));
-            }
-
-            if (attackOrigin == null)
-            {
-                return Resolve(MeleeAttackResult.Failure("No melee attack origin is assigned."));
-            }
+            if (!ActorLifecycleUtility.CanAct(gameObject)) return Resolve(MeleeAttackResult.Failure("Cannot attack while defeated, unconscious, or dead."));
+            if (attackOrigin == null) return Resolve(MeleeAttackResult.Failure("No attack origin is assigned."));
+            if (Execution == null) return Resolve(MeleeAttackResult.Failure("Combat execution services are unavailable."));
 
             CombatWeaponSelection selection = GetCurrentWeaponData();
-            if (!selection.HasWeapon)
+            if (!selection.HasWeapon || selection.Execution == null || selection.DamageType == null)
             {
-                string message = selection.HasEquippedMainHandItem && selection.EquippedItem != null
-                    ? $"{selection.EquippedItem.DisplayName} is not a weapon."
-                    : "No melee weapon or unarmed attack is configured.";
-                return Resolve(MeleeAttackResult.Failure(message));
+                return Resolve(MeleeAttackResult.Failure("The selected attack is missing its weapon, execution, or canonical damage type."));
             }
 
-            float staminaCost = selection.StaminaCost;
-            if (staminaCost > 0f && stamina != null && !stamina.CanSpend(staminaCost))
+            if (selection.IsRanged && selection.RangedWeapon.AmmoItem != null &&
+                (inventory == null || inventory.CountItem(selection.RangedWeapon.AmmoItem) <= 0))
             {
-                return Resolve(MeleeAttackResult.Failure("Not enough stamina to attack."));
+                return Resolve(MeleeAttackResult.Failure($"No {selection.RangedWeapon.AmmoItem.DisplayName} available."));
             }
 
+            float damageAmount = CombatStatUtility.CalculatePreMitigationDamage(selection.BaseDamage, gameObject, AttackPowerScalingPolicy.AddSourceAttackPower);
+            HitCandidate hit = selection.IsRanged ? default : FindMeleeHit(selection.MeleeWeapon);
+            AttackResolutionRequest? attack = hit.IsDamageable
+                ? CreateAttackRequest(selection, hit.Target, damageAmount, hit.Distance, $"player-attack.{Guid.NewGuid():N}")
+                : null;
+            object payload = attack.HasValue ? attack.Value : null;
+            CombatExecutionResult begin = Execution.BeginExecution(new CombatExecutionBeginRequest(
+                $"player-execution.begin.{Guid.NewGuid():N}", selection.Execution, gameObject, now: Time.time, authorityValidated: true, payload: payload));
+            if (!begin.Succeeded || begin.State == null) return Resolve(MeleeAttackResult.Failure(begin.Message));
+
+            bool ammoConsumed = false;
             if (selection.IsRanged && selection.RangedWeapon.AmmoItem != null)
             {
-                if (inventory == null)
+                ammoConsumed = inventory.RemoveItem(selection.RangedWeapon.AmmoItem, 1);
+                if (!ammoConsumed)
                 {
-                    return Resolve(MeleeAttackResult.Failure("No inventory is assigned for ranged ammunition."));
-                }
-
-                if (inventory.CountItem(selection.RangedWeapon.AmmoItem) <= 0)
-                {
-                    return Resolve(MeleeAttackResult.Failure($"No {selection.RangedWeapon.AmmoItem.DisplayName} available."));
-                }
-            }
-
-            if (staminaCost > 0f && stamina != null)
-            {
-                VitalChangeResult spendResult = stamina.Spend(staminaCost, "Attack");
-                if (!spendResult.Succeeded)
-                {
-                    return Resolve(MeleeAttackResult.Failure(spendResult.Message));
-                }
-            }
-
-            if (selection.IsRanged && selection.RangedWeapon.AmmoItem != null && inventory != null)
-            {
-                if (!inventory.RemoveItem(selection.RangedWeapon.AmmoItem, 1))
-                {
+                    Execution.CancelExecution(new CombatExecutionCancelRequest($"player-execution.cancel.{Guid.NewGuid():N}", begin.State.ExecutionInstanceId, gameObject, begin.ActorId, now: Time.time));
                     return Resolve(MeleeAttackResult.Failure($"Could not consume {selection.RangedWeapon.AmmoItem.DisplayName}."));
                 }
             }
 
-            nextAttackTime = Time.time + selection.AttackCooldown;
-            float damageAmount = CombatStatUtility.CalculatePreMitigationDamage(
-                selection.BaseDamage,
-                gameObject,
-                AttackPowerScalingPolicy.AddSourceAttackPower);
-            MeleeAttackResult result = selection.IsRanged
-                ? FireProjectile(selection.RangedWeapon, damageAmount)
-                : PerformHitTest(selection.MeleeWeapon, damageAmount);
-            return Resolve(result);
+            CombatExecutionResult commit = Execution.CommitExecution(new CombatExecutionCommitRequest(
+                $"player-execution.commit.{Guid.NewGuid():N}", begin.State.ExecutionInstanceId, gameObject, begin.ActorId,
+                Mathf.Max(Time.time, begin.State.ReadyAt), authorityValidated: true));
+            if (!commit.Succeeded)
+            {
+                if (ammoConsumed) inventory.AddItem(selection.RangedWeapon.AmmoItem, 1);
+                return Resolve(MeleeAttackResult.Failure(commit.Message));
+            }
+
+            if (selection.IsRanged) return Resolve(FireProjectile(selection.RangedWeapon, selection.Execution, damageAmount));
+            if (!hit.IsDamageable) return Resolve(MeleeAttackResult.Miss(selection.AttackName, damageAmount, hit.Collider == null ? $"{selection.AttackName} missed." : $"{selection.AttackName} was blocked."));
+            if (commit.UnderlyingResult is not AttackResolutionResult attackResult) return Resolve(MeleeAttackResult.Failure("Attack execution returned no attack result."));
+
+            DamageResult damageResult = DamageResult.FromApplication(attackResult.DamageResult, attackResult.Message);
+            return Resolve(attackResult.DamageApplied
+                ? MeleeAttackResult.Hit(selection.AttackName, damageAmount, hit.Target, damageResult, attackResult.Message)
+                : MeleeAttackResult.Miss(selection.AttackName, damageAmount, attackResult.Message));
         }
 
         public void ResetCooldown()
         {
-            nextAttackTime = 0f;
+            if (Execution != null) Execution.ClearTransientStateForRestore(ResolveActorId(gameObject));
         }
 
-        private MeleeAttackResult PerformHitTest(MeleeWeaponData weapon, float damageAmount)
+        private HitCandidate FindMeleeHit(MeleeWeaponData weapon)
         {
-            Vector3 origin = attackOrigin.position;
-            Vector3 direction = attackOrigin.forward;
-            RaycastHit[] hits = Physics.SphereCastAll(origin, weapon.HitRadius, direction, weapon.AttackRange, damageMask, triggerInteraction);
+            RaycastHit[] hits = Physics.SphereCastAll(attackOrigin.position, weapon.HitRadius, attackOrigin.forward, weapon.AttackRange, damageMask, triggerInteraction);
             Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
-
             foreach (RaycastHit hit in hits)
             {
-                if (hit.collider == null || hit.collider.transform.IsChildOf(transform))
-                {
-                    continue;
-                }
-
-                IDamageable damageable = hit.collider.GetComponentInParent<IDamageable>();
-                if (damageable == null && hit.collider.GetComponentInParent<UnityIsekaiGame.ResourceSystem.CharacterResourceCollection>() == null)
-                {
-                    continue;
-                }
-
-                Vector3 hitDirection = hit.point == Vector3.zero ? direction : (hit.point - origin).normalized;
-                DamageComponent component = weapon.DamageType == null
-                    ? DamageComponent.Legacy(DamageType.Physical, damageAmount, AttackPowerScalingPolicy.AddSourceAttackPower)
-                    : new DamageComponent(weapon.DamageType, damageAmount, AttackPowerScalingPolicy.AddSourceAttackPower);
-                DamagePacket packet = DamagePacket.Single(gameObject, component);
-                DamageInfo damageInfo = new DamageInfo(damageAmount, gameObject, hit.point, hitDirection, DamageType.Physical, packet);
-                DamageResult damageResult = SceneCombatDamageBridge.ApplyDamage(
-                    hit.collider.gameObject,
-                    in damageInfo,
-                    $"player-melee.{weapon.AttackName}",
-                    weapon.AttackName);
-                string message = damageResult.Applied
-                    ? $"{weapon.AttackName} hit {hit.collider.name} for {damageResult.AppliedAmount:0.#} damage."
-                    : damageResult.Message;
-                return MeleeAttackResult.Hit(weapon.AttackName, damageAmount, hit.collider.gameObject, damageResult, message);
+                if (hit.collider == null || hit.collider.transform.IsChildOf(transform)) continue;
+                CharacterResourceCollection resources = hit.collider.GetComponentInParent<CharacterResourceCollection>();
+                return new HitCandidate(hit.collider, resources == null ? null : resources.gameObject, hit.distance);
             }
-
-            return MeleeAttackResult.Miss(weapon.AttackName, damageAmount, $"{weapon.AttackName} missed.");
+            return default;
         }
 
-        private MeleeAttackResult FireProjectile(RangedWeaponData weapon, float damageAmount)
+        private AttackResolutionRequest CreateAttackRequest(CombatWeaponSelection selection, GameObject target, float amount, float distance, string transactionId)
+        {
+            return new AttackResolutionRequest(
+                transactionId, selection.IsUnarmed ? AttackSourceType.Unarmed : AttackSourceType.Weapon,
+                gameObject, ResolveActorId(gameObject), target, ResolveActorId(target), selection.DamageType, amount,
+                UnityEngine.Random.value, UnityEngine.Random.value, baseHitChance: 1f,
+                hasSuppliedDistance: true, suppliedDistance: distance, hasMaximumRange: true, maximumRange: selection.AttackRange,
+                suppliedLineOfSight: true, hasSuppliedLineOfSight: true,
+                originatingActionId: selection.Execution.Id,
+                originatingItemOrWeaponId: selection.EquippedItem == null ? "unarmed" : selection.EquippedItem.Id,
+                authorityValidated: true);
+        }
+
+        private MeleeAttackResult FireProjectile(RangedWeaponData weapon, CombatExecutionDefinition execution, float damageAmount)
         {
             Vector3 origin = attackOrigin.TransformPoint(weapon.LaunchOffset);
             Vector3 direction = attackOrigin.forward.sqrMagnitude > 0f ? attackOrigin.forward.normalized : transform.forward;
-            Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);
-            SpellProjectile projectile = weapon.ProjectilePrefab == null
-                ? CreateRuntimeProjectile(origin, rotation, weapon)
-                : Instantiate(weapon.ProjectilePrefab, origin, rotation);
-
-            if (projectile == null)
-            {
-                return MeleeAttackResult.Failure("Invalid ranged projectile configuration.");
-            }
-
+            SpellProjectile projectile = weapon.ProjectilePrefab == null ? CreateRuntimeProjectile(origin, Quaternion.LookRotation(direction), weapon) : Instantiate(weapon.ProjectilePrefab, origin, Quaternion.LookRotation(direction));
+            if (projectile == null) return MeleeAttackResult.Failure("Invalid ranged projectile configuration.");
             if (weapon.ProjectileVisualPrefab != null)
             {
                 GameObject visual = Instantiate(weapon.ProjectileVisualPrefab, projectile.transform);
-                visual.transform.localPosition = Vector3.zero;
-                visual.transform.localRotation = Quaternion.identity;
+                visual.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             }
-
-            projectile.Initialize(
-                gameObject,
-                direction,
-                weapon.ProjectileSpeed,
-                damageAmount,
-                weapon.DamageType,
-                weapon.ProjectileLifetime,
-                $"player-ranged.{weapon.AttackName}",
-                weapon.AttackName);
+            projectile.Initialize(gameObject, direction, weapon.ProjectileSpeed, weapon.ProjectileLifetime,
+                (target, hitPoint) => ApplyRangedImpact(target, hitPoint, direction, weapon, execution, damageAmount));
             return MeleeAttackResult.Miss(weapon.AttackName, damageAmount, $"{weapon.AttackName} fired.");
+        }
+
+        private void ApplyRangedImpact(GameObject target, Vector3 hitPoint, Vector3 direction, RangedWeaponData weapon, CombatExecutionDefinition execution, float damageAmount)
+        {
+            if (target == null || runtimeServices?.AttackResolution == null) return;
+            AttackResolutionRequest request = CreateAttackRequest(CombatWeaponSelection.Ranged(null, true, weapon), target, damageAmount,
+                Vector3.Distance(transform.position, hitPoint), $"player-ranged-impact.{Guid.NewGuid():N}");
+            AttackResolutionResult attack = runtimeServices.AttackResolution.ExecuteAttack(request);
+            DamageResult damageResult = DamageResult.FromApplication(attack.DamageResult, attack.Message);
+            Resolve(attack.DamageApplied
+                ? MeleeAttackResult.Hit(weapon.AttackName, damageAmount, target, damageResult, attack.Message)
+                : MeleeAttackResult.Miss(weapon.AttackName, damageAmount, attack.Message));
         }
 
         private static SpellProjectile CreateRuntimeProjectile(Vector3 origin, Quaternion rotation, RangedWeaponData weapon)
         {
             GameObject projectileObject = new GameObject($"{weapon.AttackName} Projectile");
             projectileObject.transform.SetPositionAndRotation(origin, rotation);
-            SphereCollider collider = projectileObject.AddComponent<SphereCollider>();
-            collider.radius = weapon.ProjectileHitRadius;
+            projectileObject.AddComponent<SphereCollider>().radius = weapon.ProjectileHitRadius;
             Rigidbody body = projectileObject.AddComponent<Rigidbody>();
             body.isKinematic = true;
             body.useGravity = false;
-            SpellProjectile projectile = projectileObject.AddComponent<SpellProjectile>();
-            return projectile;
+            return projectileObject.AddComponent<SpellProjectile>();
         }
 
         private CombatWeaponSelection GetCurrentWeaponData()
         {
-            ItemDefinition equippedItem = null;
-            bool hasEquippedMainHandItem = false;
-
             EquipmentSlotState mainHand = equipment == null ? null : equipment.GetSlot(EquipmentSlotType.MainHand);
             if (mainHand != null && !mainHand.IsEmpty)
             {
-                equippedItem = mainHand.Item;
-                hasEquippedMainHandItem = true;
-                if (equippedItem == null || !equippedItem.IsEquippable)
-                {
-                    return CombatWeaponSelection.Invalid(equippedItem, hasEquippedMainHandItem);
-                }
-
-                RangedWeaponData ranged = equippedItem.Equipment.RangedWeapon;
-                if (ranged != null && ranged.IsWeapon)
-                {
-                    return CombatWeaponSelection.Ranged(equippedItem, hasEquippedMainHandItem, ranged);
-                }
-
-                MeleeWeaponData melee = equippedItem.Equipment.MeleeWeapon;
-                return melee != null && melee.IsWeapon
-                    ? CombatWeaponSelection.Melee(equippedItem, hasEquippedMainHandItem, melee)
-                    : CombatWeaponSelection.Invalid(equippedItem, hasEquippedMainHandItem);
+                ItemDefinition item = mainHand.Item;
+                if (item == null || !item.IsEquippable) return CombatWeaponSelection.Invalid(item, true);
+                if (item.Equipment.RangedWeapon?.IsWeapon == true) return CombatWeaponSelection.Ranged(item, true, item.Equipment.RangedWeapon);
+                if (item.Equipment.MeleeWeapon?.IsWeapon == true) return CombatWeaponSelection.Melee(item, true, item.Equipment.MeleeWeapon);
+                return CombatWeaponSelection.Invalid(item, true);
             }
+            return unarmedAttack?.IsWeapon == true ? CombatWeaponSelection.Melee(null, false, unarmedAttack) : CombatWeaponSelection.Invalid(null, false);
+        }
 
-            return unarmedAttack != null && unarmedAttack.IsWeapon
-                ? CombatWeaponSelection.Melee(null, false, unarmedAttack)
-                : CombatWeaponSelection.Invalid(null, false);
+        private static string ResolveActorId(GameObject actor)
+        {
+            CharacterSystemCoordinator character = actor == null ? null : actor.GetComponentInParent<CharacterSystemCoordinator>();
+            if (character != null && !string.IsNullOrWhiteSpace(character.ActorId)) return character.ActorId;
+            WorldEntityIdentity identity = actor == null ? null : actor.GetComponentInParent<WorldEntityIdentity>();
+            return identity == null ? string.Empty : identity.EntityId;
         }
 
         private MeleeAttackResult Resolve(MeleeAttackResult result)
         {
-            if (!string.IsNullOrWhiteSpace(result.Message))
-            {
-                Debug.Log(result.Message);
-            }
-
+            if (!string.IsNullOrWhiteSpace(result.Message)) Debug.Log(result.Message);
             AttackResolved?.Invoke(result);
             return result;
         }
 
+        private readonly struct HitCandidate
+        {
+            public HitCandidate(Collider collider, GameObject target, float distance) { Collider = collider; Target = target; Distance = distance; }
+            public Collider Collider { get; }
+            public GameObject Target { get; }
+            public float Distance { get; }
+            public bool IsDamageable => Target != null;
+        }
+
         private readonly struct CombatWeaponSelection
         {
-            private CombatWeaponSelection(
-                ItemDefinition equippedItem,
-                bool hasEquippedMainHandItem,
-                MeleeWeaponData meleeWeapon,
-                RangedWeaponData rangedWeapon)
-            {
-                EquippedItem = equippedItem;
-                HasEquippedMainHandItem = hasEquippedMainHandItem;
-                MeleeWeapon = meleeWeapon;
-                RangedWeapon = rangedWeapon;
-            }
-
+            private CombatWeaponSelection(ItemDefinition item, bool equipped, MeleeWeaponData melee, RangedWeaponData ranged) { EquippedItem = item; HasEquippedMainHandItem = equipped; MeleeWeapon = melee; RangedWeapon = ranged; }
             public ItemDefinition EquippedItem { get; }
             public bool HasEquippedMainHandItem { get; }
             public MeleeWeaponData MeleeWeapon { get; }
             public RangedWeaponData RangedWeapon { get; }
-            public bool IsRanged => RangedWeapon != null && RangedWeapon.IsWeapon;
-            public bool HasWeapon => IsRanged || (MeleeWeapon != null && MeleeWeapon.IsWeapon);
-            public float StaminaCost => IsRanged ? RangedWeapon.StaminaCost : MeleeWeapon.StaminaCost;
-            public float AttackCooldown => IsRanged ? RangedWeapon.AttackCooldown : MeleeWeapon.AttackCooldown;
+            public bool IsRanged => RangedWeapon?.IsWeapon == true;
+            public bool IsUnarmed => !IsRanged && EquippedItem == null;
+            public bool HasWeapon => IsRanged || MeleeWeapon?.IsWeapon == true;
+            public string AttackName => IsRanged ? RangedWeapon.AttackName : MeleeWeapon.AttackName;
             public float BaseDamage => IsRanged ? RangedWeapon.BaseDamage : MeleeWeapon.BaseDamage;
-
-            public static CombatWeaponSelection Invalid(ItemDefinition equippedItem, bool hasEquippedMainHandItem)
-            {
-                return new CombatWeaponSelection(equippedItem, hasEquippedMainHandItem, null, null);
-            }
-
-            public static CombatWeaponSelection Melee(ItemDefinition equippedItem, bool hasEquippedMainHandItem, MeleeWeaponData weapon)
-            {
-                return new CombatWeaponSelection(equippedItem, hasEquippedMainHandItem, weapon, null);
-            }
-
-            public static CombatWeaponSelection Ranged(ItemDefinition equippedItem, bool hasEquippedMainHandItem, RangedWeaponData weapon)
-            {
-                return new CombatWeaponSelection(equippedItem, hasEquippedMainHandItem, null, weapon);
-            }
+            public float AttackRange => IsRanged ? RangedWeapon.ProjectileSpeed * RangedWeapon.ProjectileLifetime : MeleeWeapon.AttackRange;
+            public DamageTypeDefinition DamageType => IsRanged ? RangedWeapon.DamageType : MeleeWeapon.DamageType;
+            public CombatExecutionDefinition Execution => IsRanged ? RangedWeapon.Execution : MeleeWeapon.Execution;
+            public static CombatWeaponSelection Invalid(ItemDefinition item, bool equipped) => new CombatWeaponSelection(item, equipped, null, null);
+            public static CombatWeaponSelection Melee(ItemDefinition item, bool equipped, MeleeWeaponData weapon) => new CombatWeaponSelection(item, equipped, weapon, null);
+            public static CombatWeaponSelection Ranged(ItemDefinition item, bool equipped, RangedWeaponData weapon) => new CombatWeaponSelection(item, equipped, null, weapon);
         }
     }
 }

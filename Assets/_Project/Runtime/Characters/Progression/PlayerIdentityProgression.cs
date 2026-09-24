@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityIsekaiGame.Abilities;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Persistence;
@@ -24,13 +25,14 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private CharacterAttributes characterAttributes;
         [SerializeField] private CalculatedStatCollection calculatedStats;
         [SerializeField] private CharacterSkillCollection skillCollection;
+        [SerializeField] private CharacterAbilityCollection abilityCollection;
         [SerializeField] private WorldEntityIdentity worldEntityIdentity;
         [SerializeField] private PlayTimeTracker playTimeTracker;
         [SerializeField] private OverallLevelConfiguration overallLevelConfiguration;
         [SerializeField, Range(0f, 1f)] private float originInfluenceChance = DefaultOriginInfluenceChance;
         [SerializeField] private RuntimeOriginAssignmentRecord origin = new RuntimeOriginAssignmentRecord();
         [SerializeField] private RuntimeBirthGiftRecord birthGift = new RuntimeBirthGiftRecord();
-        [SerializeField] private List<RuntimePermanentStatGrantRecord> permanentStatGrants = new List<RuntimePermanentStatGrantRecord>();
+        [SerializeField] private List<RuntimePermanentAttributeGrantRecord> permanentAttributeGrants = new List<RuntimePermanentAttributeGrantRecord>();
         [SerializeField] private List<RuntimeRoleRecord> roles = new List<RuntimeRoleRecord>();
         [SerializeField] private List<RuntimeSocialStatusRecord> socialStatuses = new List<RuntimeSocialStatusRecord>();
         [SerializeField] private List<RuntimeTitleRecord> titles = new List<RuntimeTitleRecord>();
@@ -108,6 +110,7 @@ namespace UnityIsekaiGame.Progression
             characterAttributes = actorStats == null ? characterAttributes : actorStats.CharacterAttributes ?? actorStats.GetComponent<CharacterAttributes>();
             calculatedStats = actorStats == null ? calculatedStats : actorStats.CalculatedStats ?? actorStats.GetComponent<CalculatedStatCollection>();
             skillCollection = actorStats == null ? skillCollection : actorStats.GetComponent<CharacterSkillCollection>();
+            abilityCollection = actorStats == null ? abilityCollection : actorStats.GetComponent<CharacterAbilityCollection>();
             worldEntityIdentity = identity == null ? worldEntityIdentity : identity;
             playTimeTracker = tracker == null ? playTimeTracker : tracker;
             overallLevelConfiguration = levelConfiguration == null ? overallLevelConfiguration : levelConfiguration;
@@ -215,7 +218,7 @@ namespace UnityIsekaiGame.Progression
             AccountCreatedAtUtc = DateTime.UtcNow.ToString("O");
             origin = new RuntimeOriginAssignmentRecord();
             birthGift = new RuntimeBirthGiftRecord();
-            permanentStatGrants.Clear();
+            permanentAttributeGrants.Clear();
             roles.Clear();
             socialStatuses.Clear();
             titles.Clear();
@@ -580,7 +583,7 @@ namespace UnityIsekaiGame.Progression
                 cumulativeActivePlaytimeSeconds = CumulativeActivePlaytimeSeconds,
                 origin = CloneOrigin(origin),
                 birthGift = CloneBirthGift(birthGift),
-                permanentStatGrants = permanentStatGrants.Select(ClonePermanentGrant).ToList(),
+                permanentAttributeGrants = permanentAttributeGrants.Select(ClonePermanentGrant).ToList(),
                 roles = roles.Select(CloneRole).ToList(),
                 socialStatuses = socialStatuses.Select(CloneSocialStatus).ToList(),
                 titles = titles.Select(CloneTitle).ToList(),
@@ -610,7 +613,7 @@ namespace UnityIsekaiGame.Progression
                 playTimeTracker?.Restore(saveData.cumulativeActivePlaytimeSeconds);
                 origin = CloneOrigin(saveData.origin);
                 birthGift = CloneBirthGift(saveData.birthGift);
-                permanentStatGrants = saveData.permanentStatGrants == null ? new List<RuntimePermanentStatGrantRecord>() : saveData.permanentStatGrants.Select(ClonePermanentGrant).ToList();
+                permanentAttributeGrants = saveData.permanentAttributeGrants == null ? new List<RuntimePermanentAttributeGrantRecord>() : saveData.permanentAttributeGrants.Select(ClonePermanentGrant).ToList();
                 roles = saveData.roles == null ? new List<RuntimeRoleRecord>() : saveData.roles.Select(CloneRole).ToList();
                 socialStatuses = saveData.socialStatuses == null ? new List<RuntimeSocialStatusRecord>() : saveData.socialStatuses.Select(CloneSocialStatus).ToList();
                 titles = saveData.titles == null ? new List<RuntimeTitleRecord>() : saveData.titles.Select(CloneTitle).ToList();
@@ -649,7 +652,7 @@ namespace UnityIsekaiGame.Progression
                 $"Origin: {(origin != null && origin.assigned ? $"{origin.originFamilyId} / {origin.originId}" : "Unassigned")}",
                 $"Birth Gift: {(string.IsNullOrWhiteSpace(birthGift?.giftDefinitionId) ? "None" : $"{birthGift.giftDefinitionId} {birthGift.state} Progress={birthGift.currentProgressSeconds:0.#}/{birthGift.requiredActivePlaytimeSeconds:0.#}")}",
                 $"Origin Influenced Gift: {(birthGift != null && birthGift.originInfluencedRoll)}",
-                $"Permanent Grants: {permanentStatGrants.Count}",
+                $"Permanent Attribute Grants: {permanentAttributeGrants.Count}",
                 $"Roles: {rolesLine}",
                 $"Social Statuses: {statusesLine}",
                 $"Titles: {titlesLine}",
@@ -681,6 +684,11 @@ namespace UnityIsekaiGame.Progression
             if (skillCollection == null)
             {
                 skillCollection = GetComponent<CharacterSkillCollection>();
+            }
+
+            if (abilityCollection == null)
+            {
+                abilityCollection = GetComponent<CharacterAbilityCollection>();
             }
 
             if (worldEntityIdentity == null)
@@ -716,9 +724,9 @@ namespace UnityIsekaiGame.Progression
                 return;
             }
 
-            foreach (PermanentStatGrantDefinition grant in originDefinition.StartingStatGrants)
+            foreach (PermanentAttributeGrantDefinition grant in originDefinition.StartingAttributeGrants)
             {
-                AddPermanentStatGrant($"origin.{originDefinition.Id}.{grant.StatType}", originDefinition.Id, grant.StatType, grant.Value);
+                AddPermanentAttributeGrant($"origin.{originDefinition.Id}.{grant.Attribute.Id}", originDefinition.Id, grant.Attribute.Id, grant.Amount);
             }
 
             origin.originStatGrantsApplied = true;
@@ -898,11 +906,11 @@ namespace UnityIsekaiGame.Progression
                 return;
             }
 
-            if (gift.GiftType == BirthGiftType.PermanentStatGrant)
+            if (gift.GiftType == BirthGiftType.PermanentAttributeGrant)
             {
-                foreach (PermanentStatGrantDefinition grant in gift.PermanentStatGrants)
+                foreach (PermanentAttributeGrantDefinition grant in gift.PermanentAttributeGrants)
                 {
-                    AddPermanentStatGrant($"birth-gift.{gift.Id}.{grant.StatType}", gift.Id, grant.StatType, grant.Value);
+                    AddPermanentAttributeGrant($"birth-gift.{gift.Id}.{grant.Attribute.Id}", gift.Id, grant.Attribute.Id, grant.Amount);
                 }
             }
             else if (gift.SkillGrants.Count > 0)
@@ -911,10 +919,7 @@ namespace UnityIsekaiGame.Progression
             }
             else if (gift.GiftType == BirthGiftType.LatentSkill && gift.GrantedAbility != null && !string.IsNullOrWhiteSpace(gift.GrantedAbility.AbilityId))
             {
-                if (!learnedCapabilityIds.Contains(gift.GrantedAbility.AbilityId))
-                {
-                    learnedCapabilityIds.Add(gift.GrantedAbility.AbilityId);
-                }
+                abilityCollection?.Grant(gift.GrantedAbility.Ability, AbilityGrantSourceCategory.BirthGift, $"birth-gift.{gift.Id}", restoring);
             }
 
             birthGift.rewardApplied = true;
@@ -953,19 +958,19 @@ namespace UnityIsekaiGame.Progression
             }
         }
 
-        private void AddPermanentStatGrant(string sourceId, string definitionId, StatType statType, float value)
+        private void AddPermanentAttributeGrant(string sourceId, string definitionId, string attributeId, float amount)
         {
-            if (permanentStatGrants.Any(grant => string.Equals(grant.sourceId, sourceId, StringComparison.Ordinal)))
+            if (permanentAttributeGrants.Any(grant => string.Equals(grant.sourceId, sourceId, StringComparison.Ordinal)))
             {
                 return;
             }
 
-            permanentStatGrants.Add(new RuntimePermanentStatGrantRecord
+            permanentAttributeGrants.Add(new RuntimePermanentAttributeGrantRecord
             {
                 sourceId = sourceId,
                 definitionId = definitionId,
-                statType = statType,
-                value = Mathf.Max(0f, value),
+                attributeId = attributeId,
+                amount = Mathf.Max(0f, amount),
                 applied = false
             });
         }
@@ -973,29 +978,20 @@ namespace UnityIsekaiGame.Progression
         private void RebuildActiveEffects(bool restoring)
         {
             ClearActiveEffectSources();
-            if (actorStats == null)
-            {
-                return;
-            }
 
-            for (int i = 0; i < permanentStatGrants.Count; i++)
+            for (int i = 0; i < permanentAttributeGrants.Count; i++)
             {
-                RuntimePermanentStatGrantRecord grant = permanentStatGrants[i];
-                if (characterAttributes != null
-                    && StatTypeCalculatedStatBridge.TryMapPermanentGrantToAttribute(grant.statType, out string attributeId)
-                    && characterAttributes.TryAddPermanentSource(grant.sourceId, MapAttributeSourceCategory(grant.sourceId), attributeId, grant.value, removable: true, out _))
+                RuntimePermanentAttributeGrantRecord grant = permanentAttributeGrants[i];
+                if (characterAttributes != null && characterAttributes.TryAddPermanentSource(grant.sourceId, MapAttributeSourceCategory(grant.sourceId), grant.attributeId, grant.amount, removable: true, out _))
                 {
                     grant.applied = true;
                 }
-                else
-                {
-                    StatModifierSource source = new StatModifierSource(StatModifierSourceType.Progression, grant.sourceId);
-                    if (actorStats.AddModifier(new RuntimeStatModifier(grant.statType, StatModifierOperation.FlatAdd, grant.value, source)))
-                    {
-                        activeStatSources.Add(source);
-                        grant.applied = true;
-                    }
-                }
+            }
+
+            BirthGiftDefinition activeGift = ResolveBirthGiftDefinition(definitionRegistry);
+            if (birthGift != null && birthGift.rewardApplied && activeGift?.GiftType == BirthGiftType.LatentSkill && activeGift.GrantedAbility?.Ability != null)
+            {
+                abilityCollection?.Grant(activeGift.GrantedAbility.Ability, AbilityGrantSourceCategory.BirthGift, $"birth-gift.{activeGift.Id}", restoring);
             }
 
             foreach (RuntimeRoleRecord role in roles)
@@ -1012,7 +1008,22 @@ namespace UnityIsekaiGame.Progression
                     continue;
                 }
 
-                ApplyDefinitionModifiers(definition.StatModifiers, StatModifierSourceType.Role, $"role.{role.recordId}");
+                string roleSourceId = $"role.{role.recordId}";
+                ApplyDefinitionModifiers(definition.CalculatedStatModifiers, StatModifierSourceType.Role, roleSourceId);
+                foreach (ProgressionAbilityReference abilityReference in definition.GrantedAbilities)
+                {
+                    if (abilityReference?.Ability != null)
+                    {
+                        abilityCollection?.Grant(abilityReference.Ability, AbilityGrantSourceCategory.Role, roleSourceId, restoring);
+                    }
+                }
+                foreach (ProgressionAbilityReference abilityReference in definition.BlockedAbilities)
+                {
+                    if (abilityReference?.Ability != null)
+                    {
+                        abilityCollection?.Block(abilityReference.Ability, AbilityGrantSourceCategory.Role, roleSourceId, restoring);
+                    }
+                }
                 role.activeEffectsApplied = true;
             }
 
@@ -1030,14 +1041,29 @@ namespace UnityIsekaiGame.Progression
                     continue;
                 }
 
-                ApplyDefinitionModifiers(definition.StatModifiers, StatModifierSourceType.SocialStatus, $"social-status.{status.recordId}");
+                string statusSourceId = $"social-status.{status.recordId}";
+                ApplyDefinitionModifiers(definition.CalculatedStatModifiers, StatModifierSourceType.SocialStatus, statusSourceId);
+                foreach (ProgressionAbilityReference abilityReference in definition.GrantedAbilities)
+                {
+                    if (abilityReference?.Ability != null)
+                    {
+                        abilityCollection?.Grant(abilityReference.Ability, AbilityGrantSourceCategory.SocialStatus, statusSourceId, restoring);
+                    }
+                }
+                foreach (ProgressionAbilityReference abilityReference in definition.BlockedAbilities)
+                {
+                    if (abilityReference?.Ability != null)
+                    {
+                        abilityCollection?.Block(abilityReference.Ability, AbilityGrantSourceCategory.SocialStatus, statusSourceId, restoring);
+                    }
+                }
                 status.activeEffectsApplied = true;
             }
 
             RaiseOverallLevelChanged(restoring);
         }
 
-        private void ApplyDefinitionModifiers(IReadOnlyList<StatModifierDefinition> modifiers, StatModifierSourceType sourceType, string sourceId)
+        private void ApplyDefinitionModifiers(IReadOnlyList<CalculatedStatModifierDefinition> modifiers, StatModifierSourceType sourceType, string sourceId)
         {
             if (actorStats == null || modifiers == null)
             {
@@ -1047,8 +1073,8 @@ namespace UnityIsekaiGame.Progression
             StatModifierSource source = new StatModifierSource(sourceType, sourceId);
             for (int i = 0; i < modifiers.Count; i++)
             {
-                RuntimeStatModifier modifier = modifiers[i].CreateRuntimeModifier(source, 1);
-                if (actorStats.AddModifier(modifier))
+                CalculatedStatModifierDefinition modifier = modifiers[i];
+                if (modifier != null && actorStats.AddCalculatedStatContribution(modifier.CreateRuntimeContribution(source, 1, $"{sourceId}.{i}.{modifier.Stat.Id}")))
                 {
                     activeStatSources.Add(source);
                 }
@@ -1057,23 +1083,37 @@ namespace UnityIsekaiGame.Progression
 
         private void ClearActiveEffectSources()
         {
-            if (actorStats == null)
+            if (actorStats != null)
             {
-                activeStatSources.Clear();
-                return;
+                foreach (StatModifierSource source in activeStatSources)
+                {
+                    actorStats.RemoveCalculatedStatContributions(source);
+                }
             }
 
-            foreach (StatModifierSource source in activeStatSources)
+            foreach (RuntimeRoleRecord role in roles)
             {
-                actorStats.RemoveModifiersFromSource(source);
+                abilityCollection?.RemoveSource(AbilityGrantSourceCategory.Role, $"role.{role.recordId}");
+                abilityCollection?.RemoveBlockSource(AbilityGrantSourceCategory.Role, $"role.{role.recordId}");
+            }
+
+            foreach (RuntimeSocialStatusRecord status in socialStatuses)
+            {
+                abilityCollection?.RemoveSource(AbilityGrantSourceCategory.SocialStatus, $"social-status.{status.recordId}");
+                abilityCollection?.RemoveBlockSource(AbilityGrantSourceCategory.SocialStatus, $"social-status.{status.recordId}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(birthGift?.giftDefinitionId))
+            {
+                abilityCollection?.RemoveSource(AbilityGrantSourceCategory.BirthGift, $"birth-gift.{birthGift.giftDefinitionId}");
             }
 
             if (characterAttributes != null)
             {
-                for (int i = 0; i < permanentStatGrants.Count; i++)
+                for (int i = 0; i < permanentAttributeGrants.Count; i++)
                 {
-                    characterAttributes.RemovePermanentSource(permanentStatGrants[i].sourceId, out _);
-                    permanentStatGrants[i].applied = false;
+                    characterAttributes.RemovePermanentSource(permanentAttributeGrants[i].sourceId, out _);
+                    permanentAttributeGrants[i].applied = false;
                 }
             }
 
@@ -1232,21 +1272,21 @@ namespace UnityIsekaiGame.Progression
                 return count == 0 ? 0f : Mathf.Clamp01(attributeTotal / count);
             }
 
-            if (permanentStatGrants.Count == 0)
+            if (permanentAttributeGrants.Count == 0)
             {
                 return 0f;
             }
 
-            HashSet<StatType> eligible = config == null || config.EligiblePersistentStats == null || config.EligiblePersistentStats.Length == 0
-                ? new HashSet<StatType>(Enum.GetValues(typeof(StatType)).Cast<StatType>())
-                : new HashSet<StatType>(config.EligiblePersistentStats);
+            HashSet<string> eligible = config == null || config.EligiblePersistentAttributes == null || config.EligiblePersistentAttributes.Length == 0
+                ? new HashSet<string>(AttributeIds.AlphaAttributeIds, StringComparer.Ordinal)
+                : new HashSet<string>(config.EligiblePersistentAttributes.Where(attribute => attribute != null).Select(attribute => attribute.Id), StringComparer.Ordinal);
 
             float total = 0f;
-            foreach (RuntimePermanentStatGrantRecord grant in permanentStatGrants)
+            foreach (RuntimePermanentAttributeGrantRecord grant in permanentAttributeGrants)
             {
-                if (eligible.Contains(grant.statType))
+                if (eligible.Contains(grant.attributeId))
                 {
-                    total += Mathf.Max(0f, grant.value);
+                    total += Mathf.Max(0f, grant.amount);
                 }
             }
 
@@ -1417,12 +1457,12 @@ namespace UnityIsekaiGame.Progression
             };
         }
 
-        private static RuntimePermanentStatGrantRecord ClonePermanentGrant(RuntimePermanentStatGrantRecord value) => new RuntimePermanentStatGrantRecord
+        private static RuntimePermanentAttributeGrantRecord ClonePermanentGrant(RuntimePermanentAttributeGrantRecord value) => new RuntimePermanentAttributeGrantRecord
         {
             sourceId = value.sourceId,
             definitionId = value.definitionId,
-            statType = value.statType,
-            value = value.value,
+            attributeId = value.attributeId,
+            amount = value.amount,
             applied = value.applied
         };
 

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace UnityIsekaiGame.Combat
@@ -28,13 +29,24 @@ namespace UnityIsekaiGame.Combat
 
         public static DamageCalculation CalculatePacket(in DamagePacket packet, float defense, IDamageResistanceReceiver resistanceReceiver)
         {
+            return CalculatePacket(
+                in packet,
+                _ => Mathf.Max(0f, defense),
+                damageType => resistanceReceiver == null ? 0f : resistanceReceiver.GetEffectiveResistance(damageType));
+        }
+
+        public static DamageCalculation CalculatePacket(
+            in DamagePacket packet,
+            Func<DamageTypeDefinition, float> defenseResolver,
+            Func<DamageTypeDefinition, float> resistanceResolver)
+        {
             if (!packet.HasComponents)
             {
-                return new DamageCalculation(0f, Mathf.Max(0f, defense), 0f, 0f);
+                return new DamageCalculation(0f, 0f, 0f, 0f);
             }
 
-            float clampedDefense = Mathf.Max(0f, defense);
             float totalOriginal = 0f;
+            float totalDefenseApplied = 0f;
             float totalDefenseMitigation = 0f;
             float totalResistanceMitigation = 0f;
             float totalWeaknessAmplification = 0f;
@@ -49,9 +61,16 @@ namespace UnityIsekaiGame.Combat
                     continue;
                 }
 
-                DamageComponentResult result = CalculateComponent(component, clampedDefense, resistanceReceiver);
+                float componentDefense = component.DamageType != null && component.DamageType.IsTrueDamage
+                    ? 0f
+                    : Mathf.Max(0f, defenseResolver?.Invoke(component.DamageType) ?? 0f);
+                float componentResistance = component.DamageType != null && component.DamageType.IsTrueDamage
+                    ? 0f
+                    : Mathf.Clamp(resistanceResolver?.Invoke(component.DamageType) ?? 0f, RuntimeResistanceCollection.MinimumResistance, RuntimeResistanceCollection.MaximumResistance);
+                DamageComponentResult result = CalculateComponent(component, componentDefense, componentResistance);
                 results.Add(result);
                 totalOriginal += result.OriginalAmount;
+                totalDefenseApplied += componentDefense;
                 totalDefenseMitigation += result.DefenseMitigation;
                 totalResistanceMitigation += result.ResistanceMitigation;
                 totalWeaknessAmplification += result.WeaknessAmplification;
@@ -60,7 +79,7 @@ namespace UnityIsekaiGame.Combat
 
             return new DamageCalculation(
                 totalOriginal,
-                clampedDefense,
+                totalDefenseApplied,
                 Mathf.Max(0f, totalDefenseMitigation + totalResistanceMitigation),
                 totalResistanceMitigation,
                 totalWeaknessAmplification,
@@ -71,15 +90,12 @@ namespace UnityIsekaiGame.Combat
         private static DamageComponentResult CalculateComponent(
             DamageComponent component,
             float defense,
-            IDamageResistanceReceiver resistanceReceiver)
+            float resistance)
         {
             float originalAmount = Mathf.Max(0f, component.Amount);
-            bool defenseApplies = component.DamageType == null || component.DamageType.GeneralDefenseApplies;
+            bool defenseApplies = component.DamageType != null && component.DamageType.GeneralDefenseApplies;
             float defenseMitigation = defenseApplies ? Mathf.Min(originalAmount, defense) : 0f;
             float afterDefense = Mathf.Max(0f, originalAmount - defenseMitigation);
-            float resistance = component.DamageType == null || resistanceReceiver == null
-                ? 0f
-                : Mathf.Clamp(resistanceReceiver.GetEffectiveResistance(component.DamageType), RuntimeResistanceCollection.MinimumResistance, RuntimeResistanceCollection.MaximumResistance);
             float afterResistance = afterDefense * (1f - resistance);
             float resistanceDelta = afterDefense - afterResistance;
             bool immune = component.DamageType != null && resistance >= RuntimeResistanceCollection.MaximumResistance;
@@ -93,7 +109,6 @@ namespace UnityIsekaiGame.Combat
 
             return new DamageComponentResult(
                 component.DamageType,
-                component.LegacyDamageType,
                 originalAmount,
                 defenseMitigation,
                 resistance,
@@ -104,11 +119,6 @@ namespace UnityIsekaiGame.Combat
 
         private static float ResolveMinimumDamage(DamageComponent component)
         {
-            if (component.DamageType == null)
-            {
-                return DefaultMinimumDamage;
-            }
-
             return component.DamageType.EnforceMinimumDamage ? component.DamageType.MinimumDamage : 0f;
         }
     }

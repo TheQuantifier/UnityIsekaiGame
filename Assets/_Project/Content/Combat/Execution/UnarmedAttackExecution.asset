@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66c3a1f27a6b4a1c9be0262fd8663003, type: 3}
+  m_Name: UnarmedAttackExecution
+  m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Combat.Execution.CombatExecutionDefinition
+  executionId: combat-execution.unarmed-attack
+  displayName: Unarmed Attack
+  description: Player unarmed attack stamina cost and cooldown authority.
+  primaryCategory: {fileID: 0}
+  tags: []
+  actionType: 1
+  windUpDuration: 0
+  recoveryDuration: 0
+  cooldownDuration: 0.65
+  cooldownStartPoint: 1
+  cooldownScope: 1
+  cooldownGroupKey: cooldown.combat.attack
+  globalCooldownGroupKey: combat.global
+  maximumCharges: 1
+  chargeRecoveryDuration: 0
+  sequentialChargeRecovery: 1
+  defaultCostCommitPoint: 1
+  beginCostRefundPolicy: 1
+  interruptionPolicy: 2
+  commitmentCategory: 1
+  allowedOverlaps: []
+  movementAllowed: 0
+  defensiveActionsAllowed: 1
+  anotherAttackAllowed: 0
+  itemUseAllowed: 0
+  ordinaryAbilitiesAllowed: 0
+  requirements: {fileID: 0}
+  costs:
+  - costType: 0
+    resource: {fileID: 11400000, guid: 33ab61af4db4471fa5c1792434f3ab27, type: 2}
+    item: {fileID: 0}
+    currency: {fileID: 0}
+    amount: 5
+    required: 1
+    consumed: 1
+    commitPoint: 1
+    refundPolicy: 2
+    minimumRemaining: 0

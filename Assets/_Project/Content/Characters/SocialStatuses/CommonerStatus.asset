@@ -25,7 +25,7 @@ MonoBehaviour:
   serviceEligibility: []
   priceModifier: 0
   taxModifier: 0
-  statModifiers: []
+  calculatedStatModifiers: []
   resistanceModifiers: []
   grantedAbilities: []
   blockedAbilities: []

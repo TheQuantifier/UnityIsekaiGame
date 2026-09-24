@@ -20,7 +20,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: eac27d0065b44f969205af5ca702cbe7, type: 2}
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
   baseAmount: 18
-  damageType: 1
   typedDamageType: {fileID: 11400000, guid: a0ff6caaaf2449c1aacdc72eda1c3f59, type: 2}
   typedComponents: []
   attackPowerScaling: 0

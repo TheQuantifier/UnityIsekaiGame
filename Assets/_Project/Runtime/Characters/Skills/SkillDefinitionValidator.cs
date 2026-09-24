@@ -178,13 +178,13 @@ namespace UnityIsekaiGame.Skills
                     continue;
                 }
 
-                if (string.IsNullOrWhiteSpace(unlock.AbilityOrActionId))
+                if (string.IsNullOrWhiteSpace(unlock.AbilityId))
                 {
                     report.AddError($"Skill '{skill.DisplayName}' has a {label} ability unlock with no ability/action ID.");
                     continue;
                 }
 
-                string key = $"{unlock.AbilityOrActionId}|{unlock.RequiredGrade}";
+                string key = $"{unlock.AbilityId}|{unlock.RequiredGrade}";
                 if (!seen.Add(key))
                 {
                     report.AddError($"Skill '{skill.DisplayName}' has duplicate {label} ability unlock '{key}'.");

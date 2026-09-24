@@ -281,7 +281,7 @@ namespace UnityIsekaiGame.Inventory.Quality
         public float valueMaximum;
         public float rarityContribution;
         public int identificationDifficulty;
-        public StatModifierDefinition[] modifierTemplates = Array.Empty<StatModifierDefinition>();
+        public CalculatedStatModifierDefinition[] modifierTemplates = Array.Empty<CalculatedStatModifierDefinition>();
         public string[] requiredMaterialTags = Array.Empty<string>();
         public string[] requiredComponentRoles = Array.Empty<string>();
         public string[] tags = Array.Empty<string>();
@@ -298,7 +298,7 @@ namespace UnityIsekaiGame.Inventory.Quality
                 valueMaximum = valueMaximum,
                 rarityContribution = rarityContribution,
                 identificationDifficulty = identificationDifficulty,
-                modifierTemplates = modifierTemplates == null ? Array.Empty<StatModifierDefinition>() : modifierTemplates.Where(entry => entry != null).ToArray(),
+                modifierTemplates = modifierTemplates == null ? Array.Empty<CalculatedStatModifierDefinition>() : modifierTemplates.Where(entry => entry != null).ToArray(),
                 requiredMaterialTags = CloneIds(requiredMaterialTags),
                 requiredComponentRoles = CloneIds(requiredComponentRoles),
                 tags = CloneIds(tags)

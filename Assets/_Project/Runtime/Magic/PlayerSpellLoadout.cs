@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityIsekaiGame.Abilities;
 
 namespace UnityIsekaiGame.Magic
 {
@@ -10,6 +11,7 @@ namespace UnityIsekaiGame.Magic
         [SerializeField] private SpellDefinition[] knownSpells;
         [SerializeField] private SpellDefinition[] quickSlots;
         [SerializeField, Min(0)] private int selectedSlotIndex;
+        [SerializeField] private CharacterAbilityCollection abilities;
 
         public IReadOnlyList<SpellDefinition> KnownSpells => knownSpells ?? Array.Empty<SpellDefinition>();
         public IReadOnlyList<SpellDefinition> QuickSlots => quickSlots ?? Array.Empty<SpellDefinition>();
@@ -23,6 +25,7 @@ namespace UnityIsekaiGame.Magic
         private void Awake()
         {
             EnsureSlotCapacity();
+            abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
         }
 
         private void OnValidate()
@@ -69,6 +72,25 @@ namespace UnityIsekaiGame.Magic
             return SpellLoadoutOperationResult.Success($"Learned spell {spell.DisplayName}.");
         }
 
+        public void SynchronizeAuthoredAbilityGrants(bool restoring = false)
+        {
+            abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
+            if (abilities == null)
+            {
+                return;
+            }
+
+            const string sourceId = "spell-loadout.authored";
+            abilities.RemoveSource(AbilityGrantSourceCategory.AuthoredLoadout, sourceId, restoring);
+            foreach (SpellDefinition spell in knownSpells ?? Array.Empty<SpellDefinition>())
+            {
+                if (spell?.Ability != null)
+                {
+                    abilities.Grant(spell.Ability, AbilityGrantSourceCategory.AuthoredLoadout, sourceId, restoring);
+                }
+            }
+        }
+
         public SpellDefinition GetSlotSpell(int slotIndex)
         {
             EnsureSlotCapacity();
@@ -83,9 +105,9 @@ namespace UnityIsekaiGame.Magic
                 return SpellLoadoutOperationResult.Failure("Invalid spell slot.");
             }
 
-            if (!KnowsSpell(spell))
+            if (!KnowsSpell(spell) || (abilities != null && spell?.Ability != null && !abilities.HasAbility(spell.Ability.Id)))
             {
-                return SpellLoadoutOperationResult.Failure("Spell is not known.");
+                return SpellLoadoutOperationResult.Failure("Spell is not owned by this character.");
             }
 
             quickSlots[slotIndex] = spell;

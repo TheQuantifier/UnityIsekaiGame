@@ -23,9 +23,8 @@ MonoBehaviour:
   selectionWeight: 0.5
   giftType: 1
   grantedAbility:
-    ability: {fileID: 0}
-    futureAbilityId: ability.arcane-bolt
-  permanentStatGrants: []
+    ability: {fileID: 11400000, guid: 639aa4a2f0594102aab8d3119e667cb9, type: 2}
+  permanentAttributeGrants: []
   futureGrowthAffinityEntries: []
   awakeningMode: 1
   requiredActivePlaytimeSeconds: 300

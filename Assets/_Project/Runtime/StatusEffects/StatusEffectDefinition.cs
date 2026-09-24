@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityIsekaiGame.Abilities;
 using UnityIsekaiGame.Combat;
+using UnityIsekaiGame.Combat.OngoingEffects;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Stats;
 
@@ -25,10 +26,10 @@ namespace UnityIsekaiGame.StatusEffects
         [SerializeField, Min(1)] private int maximumStacks = 1;
         [SerializeField] private bool canBeRemoved = true;
         [SerializeField] private bool visibleInHud = true;
-        [SerializeField] private StatModifierDefinition[] statModifiers;
+        [SerializeField] private CalculatedStatModifierDefinition[] calculatedStatModifiers;
         [SerializeField] private ResistanceModifierDefinition[] resistanceModifiers;
-        [SerializeField, Min(0f)] private float periodicInterval;
-        [SerializeField] private EffectDefinition[] periodicEffects;
+        [SerializeField] private EffectDefinition[] instantEffects;
+        [SerializeField] private OngoingEffectDefinition[] ongoingEffects;
 
         public string StatusId => statusId;
         public string Id => statusId;
@@ -47,16 +48,15 @@ namespace UnityIsekaiGame.StatusEffects
         public int MaximumStacks => Mathf.Max(1, maximumStacks);
         public bool CanBeRemoved => canBeRemoved;
         public bool VisibleInHud => visibleInHud;
-        public IReadOnlyList<StatModifierDefinition> StatModifiers => statModifiers ?? System.Array.Empty<StatModifierDefinition>();
+        public IReadOnlyList<CalculatedStatModifierDefinition> CalculatedStatModifiers => calculatedStatModifiers ?? System.Array.Empty<CalculatedStatModifierDefinition>();
         public IReadOnlyList<ResistanceModifierDefinition> ResistanceModifiers => resistanceModifiers ?? System.Array.Empty<ResistanceModifierDefinition>();
-        public float PeriodicInterval => periodicInterval;
-        public IReadOnlyList<EffectDefinition> PeriodicEffects => periodicEffects ?? System.Array.Empty<EffectDefinition>();
+        public IReadOnlyList<EffectDefinition> InstantEffects => instantEffects ?? System.Array.Empty<EffectDefinition>();
+        public IReadOnlyList<OngoingEffectDefinition> OngoingEffects => ongoingEffects ?? System.Array.Empty<OngoingEffectDefinition>();
 
         private void OnValidate()
         {
             defaultDuration = Mathf.Max(0f, defaultDuration);
             maximumStacks = Mathf.Max(1, maximumStacks);
-            periodicInterval = Mathf.Max(0f, periodicInterval);
         }
 
         public float ResolveDuration(float overrideDuration)
@@ -86,7 +86,7 @@ namespace UnityIsekaiGame.StatusEffects
                 report.AddWarning($"Instant status effect '{DisplayName}' should normally use DoNotSave persistence.");
             }
 
-            if (durationModel == StatusDurationModel.Instant && (statModifiers?.Length ?? 0) > 0)
+            if (durationModel == StatusDurationModel.Instant && CalculatedStatModifiers.Count > 0)
             {
                 report.AddWarning($"Instant status effect '{DisplayName}' has stat modifiers that will not remain active.");
             }
@@ -111,22 +111,22 @@ namespace UnityIsekaiGame.StatusEffects
                 report.AddWarning($"Status effect '{DisplayName}' has maximum stacks above one but does not use AddStack.");
             }
 
-            ValidateModifierDefinitions(report);
+            ValidateModifierDefinitions(definitionsById, report);
             ValidateResistanceModifierDefinitions(definitionsById, report);
-            ValidatePeriodicConfiguration(report);
+            ValidateEffectConfiguration(definitionsById, report);
         }
 
-        private void ValidateModifierDefinitions(DefinitionValidationReport report)
+        private void ValidateModifierDefinitions(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
-            if (statModifiers == null)
+            if (calculatedStatModifiers == null)
             {
                 return;
             }
 
             HashSet<string> seenModifiers = new HashSet<string>();
-            for (int i = 0; i < statModifiers.Length; i++)
+            for (int i = 0; i < calculatedStatModifiers.Length; i++)
             {
-                StatModifierDefinition modifier = statModifiers[i];
+                CalculatedStatModifierDefinition modifier = calculatedStatModifiers[i];
                 if (modifier == null)
                 {
                     report.AddError($"Status effect '{DisplayName}' has a null stat modifier at index {i}.");
@@ -138,7 +138,12 @@ namespace UnityIsekaiGame.StatusEffects
                     report.AddError($"Status effect '{DisplayName}' has an invalid modifier value at index {i}.");
                 }
 
-                string key = $"{modifier.StatType}:{modifier.Operation}:{modifier.Value}:{modifier.Priority}";
+                if (modifier.Stat != null && (definitionsById == null || !definitionsById.TryGetValue(modifier.Stat.Id, out IGameDefinition registeredStat) || !ReferenceEquals(registeredStat, modifier.Stat)))
+                {
+                    report.AddError($"Status effect '{DisplayName}' references calculated stat '{modifier.Stat.Id}' outside the configured catalog.");
+                }
+
+                string key = $"{modifier.Stat?.Id}:{modifier.Operation}:{modifier.Value}:{modifier.Priority}";
                 if (!seenModifiers.Add(key))
                 {
                     report.AddWarning($"Status effect '{DisplayName}' has duplicate-looking stat modifier '{key}'.");
@@ -146,29 +151,44 @@ namespace UnityIsekaiGame.StatusEffects
             }
         }
 
-        private void ValidatePeriodicConfiguration(DefinitionValidationReport report)
+        private void ValidateEffectConfiguration(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
-            bool hasPeriodicEffects = periodicEffects != null && periodicEffects.Length > 0;
-            if (periodicInterval > 0f && !hasPeriodicEffects)
+            if (durationModel != StatusDurationModel.Instant && instantEffects != null && instantEffects.Length > 0)
             {
-                report.AddWarning($"Status effect '{DisplayName}' has a periodic interval but no periodic effects.");
+                report.AddError($"Non-instant status effect '{DisplayName}' cannot author instant effects.");
             }
 
-            if (hasPeriodicEffects && periodicInterval <= 0f)
+            if (durationModel == StatusDurationModel.Instant && ongoingEffects != null && ongoingEffects.Length > 0)
             {
-                report.AddError($"Status effect '{DisplayName}' has periodic effects but no positive interval.");
+                report.AddError($"Instant status effect '{DisplayName}' cannot own ongoing effects.");
             }
 
-            if (periodicEffects == null)
+            if (instantEffects != null)
+            {
+                for (int i = 0; i < instantEffects.Length; i++)
+                {
+                    if (instantEffects[i] == null)
+                    {
+                        report.AddError($"Status effect '{DisplayName}' has a null instant effect at index {i}.");
+                    }
+                }
+            }
+
+            if (ongoingEffects == null)
             {
                 return;
             }
 
-            for (int i = 0; i < periodicEffects.Length; i++)
+            for (int i = 0; i < ongoingEffects.Length; i++)
             {
-                if (periodicEffects[i] == null)
+                OngoingEffectDefinition ongoing = ongoingEffects[i];
+                if (ongoing == null)
                 {
-                    report.AddError($"Status effect '{DisplayName}' has a null periodic effect at index {i}.");
+                    report.AddError($"Status effect '{DisplayName}' has a null ongoing effect at index {i}.");
+                }
+                else if (definitionsById == null || !definitionsById.TryGetValue(ongoing.Id, out IGameDefinition found) || found is not OngoingEffectDefinition)
+                {
+                    report.AddError($"Status effect '{DisplayName}' references ongoing effect '{ongoing.Id}' outside the configured catalog.");
                 }
             }
         }

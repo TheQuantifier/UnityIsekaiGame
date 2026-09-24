@@ -24,11 +24,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a4ab8cdf610243969457336dc9af1145, type: 2}
   - {fileID: 11400000, guid: f85b347e325146efa0195c535be596dc, type: 2}
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
-  baseMaximumHealth: 100
-  baseMaximumStamina: 100
-  baseMaximumMana: 100
-  baseAttackPower: 5
-  baseDefense: 0
-  baseMovementSpeed: 3
+  statContributions:
+  - stat: {fileID: 11400000, guid: ca000000000000000000000000000052, type: 2}
+    kind: 0
+    direction: 100
+    magnitude: 2
+    priority: 0
   futureSensesPlaceholder: 
   futureMovementProfilePlaceholder: 

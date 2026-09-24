@@ -20,7 +20,7 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private ProgressionPolicyPayload[] serviceEligibility;
         [SerializeField] private float priceModifier;
         [SerializeField] private float taxModifier;
-        [SerializeField] private StatModifierDefinition[] statModifiers;
+        [SerializeField] private CalculatedStatModifierDefinition[] calculatedStatModifiers;
         [SerializeField] private ResistanceModifierDefinition[] resistanceModifiers;
         [SerializeField] private ProgressionAbilityReference[] grantedAbilities;
         [SerializeField] private ProgressionAbilityReference[] blockedAbilities;
@@ -42,7 +42,7 @@ namespace UnityIsekaiGame.Progression
         public IReadOnlyList<TagDefinition> Tags => tags ?? System.Array.Empty<TagDefinition>();
         public float PriceModifier => priceModifier;
         public float TaxModifier => taxModifier;
-        public IReadOnlyList<StatModifierDefinition> StatModifiers => statModifiers ?? System.Array.Empty<StatModifierDefinition>();
+        public IReadOnlyList<CalculatedStatModifierDefinition> CalculatedStatModifiers => calculatedStatModifiers ?? System.Array.Empty<CalculatedStatModifierDefinition>();
         public IReadOnlyList<ResistanceModifierDefinition> ResistanceModifiers => resistanceModifiers ?? System.Array.Empty<ResistanceModifierDefinition>();
         public IReadOnlyList<ProgressionAbilityReference> GrantedAbilities => grantedAbilities ?? System.Array.Empty<ProgressionAbilityReference>();
         public IReadOnlyList<ProgressionAbilityReference> BlockedAbilities => blockedAbilities ?? System.Array.Empty<ProgressionAbilityReference>();
@@ -83,8 +83,10 @@ namespace UnityIsekaiGame.Progression
                 report.AddError($"Social status '{DisplayName}' has an invalid tax modifier.");
             }
 
-            RoleDefinition.ValidateStatModifiers("Social status", DisplayName, StatModifiers, report);
+            RoleDefinition.ValidateStatModifiers("Social status", DisplayName, CalculatedStatModifiers, definitionsById, report);
             RoleDefinition.ValidateResistanceModifiers("Social status", DisplayName, ResistanceModifiers, definitionsById, report);
+            RoleDefinition.ValidateAbilityReferences("Social status", DisplayName, "grant", GrantedAbilities, definitionsById, report);
+            RoleDefinition.ValidateAbilityReferences("Social status", DisplayName, "block", BlockedAbilities, definitionsById, report);
         }
     }
 }

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityIsekaiGame.GameData;
 
 namespace UnityIsekaiGame.Abilities
@@ -18,19 +17,19 @@ namespace UnityIsekaiGame.Abilities
                 report.AddError($"Ability '{ability.DisplayName}' is missing a primary category.");
             }
 
-            if (ability.ActivationTime < 0f)
-            {
-                report.AddError($"Ability '{ability.DisplayName}' has negative activation time.");
-            }
-
             if (ability.Range < 0f)
             {
                 report.AddError($"Ability '{ability.DisplayName}' has negative range.");
             }
 
-            if (ability.CooldownDuration < 0f)
+            if (ability.Execution == null)
             {
-                report.AddError($"Ability '{ability.DisplayName}' has negative cooldown.");
+                report.AddError($"Ability '{ability.DisplayName}' is missing its combat execution definition.");
+            }
+            else if (definitionsById != null &&
+                (!definitionsById.TryGetValue(ability.Execution.Id, out IGameDefinition execution) || !ReferenceEquals(execution, ability.Execution)))
+            {
+                report.AddError($"Ability '{ability.DisplayName}' references execution '{ability.Execution.Id}', which is not in the configured catalog.");
             }
 
             if (!System.Enum.IsDefined(typeof(AbilityTargetingMode), ability.TargetingMode))
@@ -43,7 +42,16 @@ namespace UnityIsekaiGame.Abilities
                 report.AddError($"Ability '{ability.DisplayName}' has invalid delivery mode.");
             }
 
-            ValidateCosts(ability, report);
+            if (ability.TargetingMode == AbilityTargetingMode.DirectTarget && ability.TargetingMask.value == 0)
+            {
+                report.AddError($"Ability '{ability.DisplayName}' has an empty targeting mask.");
+            }
+
+            if (ability.RequiresLineOfSight && ability.ObstructionMask.value == 0)
+            {
+                report.AddError($"Ability '{ability.DisplayName}' requires line of sight but has an empty obstruction mask.");
+            }
+
             ValidateEffects(ability, definitionsById, report);
             ValidateDelivery(ability, report);
         }
@@ -51,23 +59,6 @@ namespace UnityIsekaiGame.Abilities
         public static void ValidateEffect(EffectDefinition effect, IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
             effect?.ValidateDefinition(report);
-        }
-
-        private static void ValidateCosts(AbilityDefinition ability, DefinitionValidationReport report)
-        {
-            HashSet<AbilityResourceType> resourceTypes = new HashSet<AbilityResourceType>();
-            foreach (AbilityResourceCost cost in ability.ResourceCosts)
-            {
-                if (cost.HasInvalidRawAmount)
-                {
-                    report.AddError($"Ability '{ability.DisplayName}' has invalid {cost.ResourceType} cost.");
-                }
-
-                if (!resourceTypes.Add(cost.ResourceType))
-                {
-                    report.AddError($"Ability '{ability.DisplayName}' has duplicate {cost.ResourceType} costs.");
-                }
-            }
         }
 
         private static void ValidateEffects(AbilityDefinition ability, IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
@@ -120,21 +111,13 @@ namespace UnityIsekaiGame.Abilities
 
         public static void ValidateSpellAdapter(UnityIsekaiGame.Magic.SpellDefinition spell, DefinitionValidationReport report)
         {
-            if (spell == null || spell.Ability == null || report == null)
+            if (spell == null || report == null)
             {
                 return;
             }
-
-            AbilityDefinition ability = spell.Ability;
-            AbilityResourceCost manaCost = ability.ResourceCosts.FirstOrDefault(cost => cost.ResourceType == AbilityResourceType.Mana);
-            if (!UnityEngine.Mathf.Approximately(manaCost.Amount, spell.ManaCost))
+            if (spell.Ability == null)
             {
-                report.AddWarning($"Spell '{spell.DisplayName}' has legacy mana cost {spell.ManaCost:0.###} but ability '{ability.Id}' has mana cost {manaCost.Amount:0.###}; ability data is authoritative.");
-            }
-
-            if (!UnityEngine.Mathf.Approximately(ability.CooldownDuration, spell.Cooldown))
-            {
-                report.AddWarning($"Spell '{spell.DisplayName}' has legacy cooldown {spell.Cooldown:0.###} but ability '{ability.Id}' has cooldown {ability.CooldownDuration:0.###}; ability data is authoritative.");
+                report.AddError($"Spell '{spell.DisplayName}' is missing its ability definition.");
             }
         }
     }

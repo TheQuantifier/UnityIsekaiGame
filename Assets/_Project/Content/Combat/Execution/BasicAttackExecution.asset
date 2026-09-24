@@ -18,8 +18,8 @@ MonoBehaviour:
   primaryCategory: {fileID: 0}
   tags: []
   actionType: 1
-  windUpDuration: 0.25
-  recoveryDuration: 0.35
+  windUpDuration: 0
+  recoveryDuration: 0
   cooldownDuration: 0.75
   cooldownStartPoint: 1
   cooldownScope: 1
@@ -44,7 +44,7 @@ MonoBehaviour:
     resource: {fileID: 11400000, guid: 33ab61af4db4471fa5c1792434f3ab27, type: 2}
     item: {fileID: 0}
     currency: {fileID: 0}
-    amount: 10
+    amount: 12
     required: 1
     consumed: 1
     commitPoint: 1

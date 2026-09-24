@@ -349,7 +349,15 @@ namespace UnityIsekaiGame.Stats
             float percentFactor = Mathf.Max(0f, 1f + positivePercent - negativePercent);
             float raw = baseAfterFlats * percentFactor * positiveMultiplier * reducingMultiplier;
             float clamped = formula == null || formula.ClampMinimumToZero ? Mathf.Max(0f, raw) : raw;
-            float final = Mathf.Round(clamped);
+            float final = formula == null
+                ? clamped
+                : formula.RoundingPolicy switch
+                {
+                    CalculatedStatRoundingPolicy.None => clamped,
+                    CalculatedStatRoundingPolicy.Floor => Mathf.Floor(clamped),
+                    CalculatedStatRoundingPolicy.Ceiling => Mathf.Ceil(clamped),
+                    _ => Mathf.Round(clamped)
+                };
 
             return new CalculatedStatEvaluationBreakdown
             {

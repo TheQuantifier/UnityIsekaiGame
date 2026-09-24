@@ -6,12 +6,12 @@ using UnityIsekaiGame.Stats;
 namespace UnityIsekaiGame.Progression
 {
     [Serializable]
-    public sealed class RuntimePermanentStatGrantRecord
+    public sealed class RuntimePermanentAttributeGrantRecord
     {
         public string sourceId;
         public string definitionId;
-        public StatType statType;
-        public float value;
+        public string attributeId;
+        public float amount;
         public bool applied;
     }
 

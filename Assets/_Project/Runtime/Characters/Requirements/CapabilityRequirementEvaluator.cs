@@ -136,7 +136,7 @@ namespace UnityIsekaiGame.Requirements
                     reason = equipped ? string.Empty : $"Equipped item '{node.TargetId}' is missing.";
                     return equipped == node.BooleanValue;
                 case RequirementNodeType.Ability:
-                    bool ability = context.OwnedAbilityOrActionIds.Contains(node.TargetId) || (context.Traits != null && context.Traits.GetActiveTraits().Any(snapshot => snapshot.Definition != null && snapshot.Definition.AbilityActionGrants.Any(grant => grant.AbilityOrActionId == node.TargetId)));
+                    bool ability = context.OwnedAbilityIds.Contains(node.TargetId);
                     reason = ability ? string.Empty : $"Ability/action '{node.TargetId}' is missing.";
                     return ability == node.BooleanValue;
                 case RequirementNodeType.ConditionPresent:

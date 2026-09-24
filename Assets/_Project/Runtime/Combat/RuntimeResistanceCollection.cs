@@ -59,6 +59,8 @@ namespace UnityIsekaiGame.Combat
                 return 0f;
             }
 
+            float total = 0f;
+            bool found = false;
             foreach (DamageTypeDefinition candidate in damageType.EnumerateSelfAndAncestors())
             {
                 if (candidate == null)
@@ -68,11 +70,12 @@ namespace UnityIsekaiGame.Combat
 
                 if (TryGetDirectResistanceById(candidate.Id, out float resistance))
                 {
-                    return Mathf.Clamp(resistance, MinimumResistance, MaximumResistance);
+                    total += resistance;
+                    found = true;
                 }
             }
 
-            return 0f;
+            return found ? Mathf.Clamp(total, MinimumResistance, MaximumResistance) : 0f;
         }
 
         public bool AddModifier(RuntimeResistanceModifier modifier)

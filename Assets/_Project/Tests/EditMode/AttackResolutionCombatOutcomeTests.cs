@@ -133,6 +133,20 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void ExecuteRejectsUnvalidatedAuthorityBeforeDamage()
+        {
+            using AttackFixture fixture = AttackFixture.Create();
+            FakeDamageHealingService damage = new FakeDamageHealingService();
+
+            AttackResolutionResult result = new AttackResolutionService(damage).ExecuteAttack(
+                fixture.CreateRequest("attack.authority", hitRoll: 0.1f, authorityValidated: false));
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Code, Is.EqualTo(AttackResolutionResultCode.AuthorityRequired));
+            Assert.That(damage.ApplyDamageCalls, Is.Zero);
+        }
+
+        [Test]
         public void HitCallsDamageHealingServiceExactlyOnce()
         {
             using AttackFixture fixture = AttackFixture.Create();
@@ -465,7 +479,8 @@ namespace UnityIsekaiGame.Tests
                 GameObject targetObject = null,
                 string targetActorId = null,
                 bool missingAttacker = false,
-                bool missingTarget = false)
+                bool missingTarget = false,
+                bool authorityValidated = true)
             {
                 return new AttackResolutionRequest(
                     transactionId,
@@ -484,7 +499,8 @@ namespace UnityIsekaiGame.Tests
                     hasSuppliedDistance: true,
                     suppliedDistance: distance,
                     hasMaximumRange: true,
-                    maximumRange: maximumRange);
+                    maximumRange: maximumRange,
+                    authorityValidated: authorityValidated);
             }
 
             public void AddTargetEvasion(float amount, string sourceId)

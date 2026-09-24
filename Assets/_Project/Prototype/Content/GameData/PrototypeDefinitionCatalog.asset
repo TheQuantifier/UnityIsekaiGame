@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.GameData.DefinitionCatalog
   catalogId: catalog.prototype
   contentVersion: phase-3.group-1.clean-break
-  contentHash: ac3e86080169de12cefbc11a8dcb62c326e4a2388aa7a9a4e15c357f85159d21
+  contentHash: 12fdb522c127fd4bb07fc403777cf4c208306aa55aab1b6e1e571bef88108ffe
   defaults: {fileID: 11400000, guid: 4853c1eba0d3bd44c949551fd9b873d7, type: 2}
   sections:
   - domainId: domain.ability
@@ -195,7 +195,12 @@ MonoBehaviour:
     definitions:
     - {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663402, type: 2}
     - {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663401, type: 2}
+    - {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663406, type: 2}
+    - {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663404, type: 2}
+    - {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663405, type: 2}
+    - {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663408, type: 2}
     - {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663403, type: 2}
+    - {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663407, type: 2}
   - domainId: domain.combat-reaction
     definitions:
     - {fileID: 11400000, guid: 68000000000000000000000000002002, type: 2}

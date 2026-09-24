@@ -27,7 +27,7 @@ MonoBehaviour:
   incompatibleTraits:
   - {fileID: 11400000, guid: 55f80000000000000000000000000055, type: 2}
   calculatedStatContributions: []
-  abilityActionGrants: []
+  abilityGrants: []
   booleanCapabilityGrants: []
   numericCapabilityGrants: []
   resistanceGrants: []

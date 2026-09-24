@@ -15,11 +15,11 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private TagDefinition[] tags;
         [SerializeField] private RarityDefinition rarity;
         [SerializeField, Min(0f)] private float selectionWeight = 1f;
-        [SerializeField] private BirthGiftType giftType = BirthGiftType.PermanentStatGrant;
+        [SerializeField] private BirthGiftType giftType = BirthGiftType.PermanentAttributeGrant;
         [SerializeField] private ProgressionAbilityReference grantedAbility;
         [SerializeField] private SkillGrantDefinition[] skillGrants;
-        [SerializeField] private PermanentStatGrantDefinition[] permanentStatGrants;
-        [SerializeField] private PermanentStatGrantDefinition[] futureGrowthAffinityEntries;
+        [SerializeField] private PermanentAttributeGrantDefinition[] permanentAttributeGrants;
+        [SerializeField] private PermanentAttributeGrantDefinition[] futureGrowthAffinityEntries;
         [SerializeField] private BirthGiftAwakeningMode awakeningMode = BirthGiftAwakeningMode.ImmediateAutomatic;
         [SerializeField, Min(0f)] private float requiredActivePlaytimeSeconds;
         [SerializeField] private bool enabledForAlpha = true;
@@ -37,8 +37,8 @@ namespace UnityIsekaiGame.Progression
         public BirthGiftType GiftType => giftType;
         public ProgressionAbilityReference GrantedAbility => grantedAbility;
         public IReadOnlyList<SkillGrantDefinition> SkillGrants => skillGrants ?? System.Array.Empty<SkillGrantDefinition>();
-        public IReadOnlyList<PermanentStatGrantDefinition> PermanentStatGrants => permanentStatGrants ?? System.Array.Empty<PermanentStatGrantDefinition>();
-        public IReadOnlyList<PermanentStatGrantDefinition> FutureGrowthAffinityEntries => futureGrowthAffinityEntries ?? System.Array.Empty<PermanentStatGrantDefinition>();
+        public IReadOnlyList<PermanentAttributeGrantDefinition> PermanentAttributeGrants => permanentAttributeGrants ?? System.Array.Empty<PermanentAttributeGrantDefinition>();
+        public IReadOnlyList<PermanentAttributeGrantDefinition> FutureGrowthAffinityEntries => futureGrowthAffinityEntries ?? System.Array.Empty<PermanentAttributeGrantDefinition>();
         public BirthGiftAwakeningMode AwakeningMode => awakeningMode;
         public float RequiredActivePlaytimeSeconds => Mathf.Max(0f, requiredActivePlaytimeSeconds);
         public bool EnabledForAlpha => enabledForAlpha;
@@ -87,25 +87,32 @@ namespace UnityIsekaiGame.Progression
                 report.AddError($"Birth gift '{DisplayName}' uses delayed active playtime without a delay.");
             }
 
-            if (giftType == BirthGiftType.PermanentStatGrant && PermanentStatGrants.Count == 0)
+            if (giftType == BirthGiftType.PermanentAttributeGrant && PermanentAttributeGrants.Count == 0)
             {
-                report.AddError($"Birth gift '{DisplayName}' is a permanent stat grant but has no grants.");
+                report.AddError($"Birth gift '{DisplayName}' is a permanent attribute grant but has no grants.");
             }
 
-            if (giftType == BirthGiftType.LatentSkill && grantedAbility != null && !string.IsNullOrWhiteSpace(grantedAbility.AbilityId))
+            if (giftType == BirthGiftType.LatentSkill)
             {
-                if (grantedAbility.Ability != null
-                    && (definitionsById == null || !definitionsById.TryGetValue(grantedAbility.Ability.Id, out IGameDefinition found) || found is not UnityIsekaiGame.Abilities.AbilityDefinition))
+                if (grantedAbility?.Ability == null)
+                {
+                    report.AddError($"Birth gift '{DisplayName}' is a latent ability gift but has no ability reference.");
+                }
+                else if (definitionsById == null || !definitionsById.TryGetValue(grantedAbility.Ability.Id, out IGameDefinition found) || !ReferenceEquals(found, grantedAbility.Ability))
                 {
                     report.AddError($"Birth gift '{DisplayName}' references ability '{grantedAbility.Ability.Id}', which is not in the configured catalog.");
                 }
             }
 
-            foreach (PermanentStatGrantDefinition grant in PermanentStatGrants)
+            foreach (PermanentAttributeGrantDefinition grant in PermanentAttributeGrants)
             {
                 if (grant == null || !grant.IsValid)
                 {
-                    report.AddError($"Birth gift '{DisplayName}' has an invalid permanent stat grant.");
+                    report.AddError($"Birth gift '{DisplayName}' has an invalid permanent attribute grant.");
+                }
+                else if (definitionsById == null || !definitionsById.TryGetValue(grant.Attribute.Id, out IGameDefinition registeredAttribute) || !ReferenceEquals(registeredAttribute, grant.Attribute))
+                {
+                    report.AddError($"Birth gift '{DisplayName}' references attribute '{grant.Attribute.Id}', which is not in the configured catalog.");
                 }
             }
 

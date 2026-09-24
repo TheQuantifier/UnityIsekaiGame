@@ -1,244 +1,94 @@
 using System;
 using UnityEngine;
-using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.ResourceSystem;
 
 namespace UnityIsekaiGame.Gameplay
 {
+    /// <summary>Player-facing Mana view. CharacterResourceCollection is the only mutable owner.</summary>
+    [RequireComponent(typeof(CharacterResourceCollection))]
     public sealed class PlayerMana : MonoBehaviour
     {
-        [SerializeField] private VitalResource mana = new VitalResource();
-        [SerializeField, Min(0f)] private float regenerationPerSecond = 8f;
-        [SerializeField, Min(0f)] private float regenerationDelay = 1.5f;
-        [SerializeField] private PlayerStats stats;
         [SerializeField] private CharacterResourceCollection resources;
+        private bool subscribed;
 
-        private float regenerationBlockedUntil;
-        private bool resourceEventsSubscribed;
-
-        public float CurrentMana => UseResourceRuntime ? resources.GetCurrent(ResourceIds.Mana) : mana.CurrentValue;
-        public float MaximumMana => UseResourceRuntime ? resources.GetMaximum(ResourceIds.Mana) : mana.MaximumValue;
-        private bool UseResourceRuntime => EnsureResourceRuntime() && resources.HasResource(ResourceIds.Mana);
+        public float CurrentMana => HasMana ? resources.GetCurrent(ResourceIds.Mana) : 0f;
+        public float MaximumMana => HasMana ? resources.GetMaximum(ResourceIds.Mana) : 0f;
         public event Action<float, float> ManaChanged;
+        private bool HasMana => ResolveResources() && resources.HasResource(ResourceIds.Mana);
 
-        private void Awake()
-        {
-            if (stats == null)
-            {
-                stats = GetComponent<PlayerStats>();
-            }
+        private void Awake() => ResolveResources();
+        private void OnEnable() { Subscribe(); Publish(); }
+        private void OnDisable() => Unsubscribe();
 
-            if (stats != null)
-            {
-                mana.SetMaximum(stats.MaximumMana);
-            }
-
-            if (resources == null)
-            {
-                resources = GetComponent<CharacterResourceCollection>();
-            }
-
-            mana.Initialize();
-        }
-
-        private void OnEnable()
-        {
-            mana.ValueChanged += OnManaChanged;
-
-            if (stats != null)
-            {
-                stats.StatsChanged += OnStatsChanged;
-            }
-
-            if (resources == null)
-            {
-                resources = GetComponent<CharacterResourceCollection>();
-            }
-
-            SubscribeResourceEvents();
-        }
-
-        private void OnDisable()
-        {
-            mana.ValueChanged -= OnManaChanged;
-
-            if (stats != null)
-            {
-                stats.StatsChanged -= OnStatsChanged;
-            }
-
-            if (resources != null)
-            {
-                resources.ResourceChanged -= OnResourceChanged;
-                resources.ResourceMaximumChanged -= OnResourceMaximumChanged;
-                resources.ResourcesRestored -= OnResourcesRestored;
-            }
-
-            resourceEventsSubscribed = false;
-        }
-
-        private void Update()
-        {
-            if (UseResourceRuntime)
-            {
-                return;
-            }
-
-            if (regenerationPerSecond <= 0f || Time.time < regenerationBlockedUntil || mana.IsAtMaximum)
-            {
-                return;
-            }
-
-            mana.Restore(regenerationPerSecond * Time.deltaTime, "Mana");
-        }
-
-        private void OnValidate()
-        {
-            mana.Validate();
-            regenerationPerSecond = Mathf.Max(0f, regenerationPerSecond);
-            regenerationDelay = Mathf.Max(0f, regenerationDelay);
-        }
-
-        public bool CanSpend(float amount)
-        {
-            if (UseResourceRuntime)
-            {
-                return amount <= 0f || resources.CanSpend(ResourceIds.Mana, amount);
-            }
-
-            return mana.CanSpend(amount);
-        }
+        public bool CanSpend(float amount) => amount <= 0f || HasMana && resources.CanSpend(ResourceIds.Mana, amount);
 
         public VitalChangeResult Spend(float amount)
         {
-            if (UseResourceRuntime)
-            {
-                ResourceChangeResult resourceResult = resources.TrySpend(ResourceIds.Mana, amount, "player.mana", "Mana spend", allowPartial: false);
-                return ToVitalChangeResult(resourceResult, "mana");
-            }
-
-            VitalChangeResult result = mana.Spend(amount, "Mana");
-            if (result.Succeeded)
-            {
-                regenerationBlockedUntil = Time.time + regenerationDelay;
-            }
-
-            return result;
+            return ToVitalChangeResult(HasMana ? resources.TrySpend(ResourceIds.Mana, amount, "player.mana", "Mana spend", allowPartial: false) : null, "mana");
         }
 
         public VitalChangeResult Restore(float amount)
         {
-            if (UseResourceRuntime)
-            {
-                return ToVitalChangeResult(resources.TryGain(ResourceIds.Mana, amount, "player.mana", "Mana restore"), "mana");
-            }
-
-            return mana.Restore(amount, "Mana");
+            return ToVitalChangeResult(HasMana ? resources.TryGain(ResourceIds.Mana, amount, "player.mana", "Mana restore") : null, "mana");
         }
 
         public void RestoreToMaximum()
         {
-            regenerationBlockedUntil = 0f;
-            if (UseResourceRuntime)
+            if (HasMana)
             {
                 resources.SetCurrent(ResourceIds.Mana, resources.GetMaximum(ResourceIds.Mana), "player.mana", "Restore to maximum", restoration: true);
-                return;
             }
-
-            mana.SetCurrent(mana.MaximumValue);
         }
 
         public bool TryRestoreForPersistence(float restoredMana, out string failureReason)
         {
             failureReason = string.Empty;
-            if (float.IsNaN(restoredMana) || float.IsInfinity(restoredMana) || restoredMana < 0f)
+            if (!HasMana)
+            {
+                failureReason = "Player Mana resource is not configured.";
+                return false;
+            }
+
+            if (float.IsNaN(restoredMana) || float.IsInfinity(restoredMana) || restoredMana < resources.GetMinimum(ResourceIds.Mana))
             {
                 failureReason = $"Mana value {restoredMana} is invalid for save restoration.";
                 return false;
             }
 
-            regenerationBlockedUntil = 0f;
-            if (UseResourceRuntime)
-            {
-                resources.SetCurrent(ResourceIds.Mana, Mathf.Clamp(restoredMana, 0f, MaximumMana), "player.mana", "Persistence restore", restoration: true);
-                return true;
-            }
-
-            mana.SetCurrent(Mathf.Clamp(restoredMana, 0f, mana.MaximumValue));
+            resources.SetCurrent(ResourceIds.Mana, Mathf.Clamp(restoredMana, resources.GetMinimum(ResourceIds.Mana), MaximumMana), "player.mana", "Persistence restore", restoration: true);
             return true;
         }
 
-        private void OnManaChanged(float current, float maximum)
+        public void RefreshResourceRuntime() { ResolveResources(); Subscribe(); Publish(); }
+        private bool ResolveResources() { resources ??= GetComponent<CharacterResourceCollection>(); return resources != null; }
+
+        private void Subscribe()
         {
-            ManaChanged?.Invoke(current, maximum);
+            if (subscribed || !ResolveResources() || !isActiveAndEnabled) return;
+            resources.ResourceChanged += OnChanged;
+            resources.ResourceMaximumChanged += OnMaximumChanged;
+            resources.ResourcesRestored += OnRestored;
+            subscribed = true;
         }
 
-        private void OnStatsChanged()
+        private void Unsubscribe()
         {
-            if (UseResourceRuntime)
-            {
-                resources.ReconcileResource(ResourceIds.Mana);
-                return;
-            }
-
-            mana.SetMaximum(stats.MaximumMana);
+            if (!subscribed || resources == null) return;
+            resources.ResourceChanged -= OnChanged;
+            resources.ResourceMaximumChanged -= OnMaximumChanged;
+            resources.ResourcesRestored -= OnRestored;
+            subscribed = false;
         }
 
-        private void OnResourceChanged(CharacterResourceCollection collection, ResourceChangeResult result)
-        {
-            if (string.Equals(result.Request.ResourceId, ResourceIds.Mana, StringComparison.Ordinal))
-            {
-                ManaChanged?.Invoke(CurrentMana, MaximumMana);
-            }
-        }
-
-        private void OnResourceMaximumChanged(CharacterResourceCollection collection, ResourceSnapshot snapshot, float oldMaximum, bool restoring)
-        {
-            if (string.Equals(snapshot.ResourceId, ResourceIds.Mana, StringComparison.Ordinal))
-            {
-                ManaChanged?.Invoke(CurrentMana, MaximumMana);
-            }
-        }
-
-        private void OnResourcesRestored(CharacterResourceCollection collection, bool restoring)
-        {
-            ManaChanged?.Invoke(CurrentMana, MaximumMana);
-        }
-
-        private bool EnsureResourceRuntime()
-        {
-            if (resources == null)
-            {
-                resources = GetComponent<CharacterResourceCollection>();
-            }
-
-            SubscribeResourceEvents();
-            return resources != null;
-        }
-
-        private void SubscribeResourceEvents()
-        {
-            if (resourceEventsSubscribed || resources == null || !isActiveAndEnabled)
-            {
-                return;
-            }
-
-            resources.ResourceChanged += OnResourceChanged;
-            resources.ResourceMaximumChanged += OnResourceMaximumChanged;
-            resources.ResourcesRestored += OnResourcesRestored;
-            resourceEventsSubscribed = true;
-        }
+        private void OnChanged(CharacterResourceCollection collection, ResourceChangeResult result) { if (result.Request.ResourceId == ResourceIds.Mana) Publish(); }
+        private void OnMaximumChanged(CharacterResourceCollection collection, ResourceSnapshot snapshot, float oldMaximum, bool restoring) { if (snapshot.ResourceId == ResourceIds.Mana) Publish(); }
+        private void OnRestored(CharacterResourceCollection collection, bool restoring) => Publish();
+        private void Publish() => ManaChanged?.Invoke(CurrentMana, MaximumMana);
 
         private static VitalChangeResult ToVitalChangeResult(ResourceChangeResult result, string resourceName)
         {
-            if (result == null)
-            {
-                return VitalChangeResult.Failure(0f, $"Unable to change {resourceName}.");
-            }
-
-            return result.Succeeded
-                ? VitalChangeResult.Success(result.RequestedAmount, result.AppliedAmount, result.Message)
-                : VitalChangeResult.Failure(result.RequestedAmount, result.Message);
+            if (result == null) return VitalChangeResult.Failure(0f, $"Unable to change {resourceName}; its resource is not configured.");
+            return result.Succeeded ? VitalChangeResult.Success(result.RequestedAmount, result.AppliedAmount, result.Message) : VitalChangeResult.Failure(result.RequestedAmount, result.Message);
         }
     }
 }

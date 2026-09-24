@@ -51,22 +51,24 @@ namespace UnityIsekaiGame.Abilities
 
             IStatusEffectReceiver receiver = context.Target.GetComponentInParent<IStatusEffectReceiver>();
             StatusEffectApplicationRequest request = CreateRequest(in context);
+            StatusEffectTransactionSnapshot rollbackSnapshot = receiver.StatusController?.CaptureTransactionSnapshot(statusEffect.Id);
 
             StatusApplicationResult result = receiver.ApplyStatus(request);
             return result.Succeeded
-                ? EffectExecutionResult.Success(result.Message, result.StatusEffect == null ? 0f : result.StatusEffect.StackCount)
+                ? EffectExecutionResult.Success(result.Message, result.StatusEffect == null ? 0f : result.StatusEffect.StackCount,
+                    rollbackSnapshot == null ? null : () => receiver.StatusController?.RestoreTransactionSnapshot(rollbackSnapshot))
                 : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, result.Message);
         }
 
         private StatusEffectApplicationRequest CreateRequest(in EffectExecutionContext context)
         {
-            string sourceId = context.Ability == null ? Id : context.Ability.Id;
+            string sourceId = string.IsNullOrWhiteSpace(context.SourceActorId) ? (context.Ability == null ? Id : context.Ability.Id) : context.SourceActorId;
             return new StatusEffectApplicationRequest(
                 statusEffect,
                 context.Source,
                 sourceId,
                 allowDurationOverride ? durationOverride : 0f,
-                string.Empty,
+                string.IsNullOrWhiteSpace(context.ExecutionId) ? string.Empty : $"{context.ExecutionId}.status.{statusEffect.Id}",
                 Time.time);
         }
 

@@ -36,7 +36,7 @@ namespace UnityIsekaiGame.Skills
         public double lastUseAtPlaytimeSeconds;
         public List<SkillPromotionRecord> promotionHistory = new List<SkillPromotionRecord>();
         public List<string> appliedGradeSourceIds = new List<string>();
-        public List<string> unlockedAbilityOrActionIds = new List<string>();
+        public List<string> unlockedAbilityIds = new List<string>();
         public List<string> unlockedCapabilityIds = new List<string>();
     }
 
@@ -54,7 +54,7 @@ namespace UnityIsekaiGame.Skills
     [Serializable]
     public sealed class PlayerSkillsSaveData
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
 
         public int schemaVersion = CurrentSchemaVersion;
         public string playerId;

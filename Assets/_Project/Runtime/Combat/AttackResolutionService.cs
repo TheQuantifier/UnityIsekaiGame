@@ -94,6 +94,11 @@ namespace UnityIsekaiGame.Combat
                 return CreateTerminalResult(request, execute, shapeOutcome, shapeCode, shapeMessage);
             }
 
+            if (execute && !request.AuthorityValidated)
+            {
+                return CreateTerminalResult(request, execute, AttackOutcome.Invalid, AttackResolutionResultCode.AuthorityRequired, "Executing an attack requires validated game/server authority.");
+            }
+
             if (!TryResolveActor(request.TargetObject, request.TargetActorId, resolvingAttacker: false, requireReady: true, out ActorRuntime target, out string targetCode, out string targetMessage))
             {
                 return CreateTerminalResult(request, execute, AttackOutcome.Invalid, targetCode, targetMessage);

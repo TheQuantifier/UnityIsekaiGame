@@ -14,19 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Combat.Execution.CombatExecutionDefinition
   executionId: combat-execution.arcane-spell
   displayName: Arcane Spell Execution
-  description: Prototype spell commitment with mana cost, cast wind-up, recovery, shared spell cooldown, and two charges.
+  description: Arcane Bolt timing, mana cost, and cooldown authority.
   primaryCategory: {fileID: 0}
   tags: []
   actionType: 2
-  windUpDuration: 0.5
-  recoveryDuration: 0.3
-  cooldownDuration: 1.5
+  windUpDuration: 0
+  recoveryDuration: 0
+  cooldownDuration: 0.65
   cooldownStartPoint: 1
-  cooldownScope: 1
-  cooldownGroupKey: cooldown.combat.spell
+  cooldownScope: 0
+  cooldownGroupKey:
   globalCooldownGroupKey: combat.global
-  maximumCharges: 2
-  chargeRecoveryDuration: 3
+  maximumCharges: 1
+  chargeRecoveryDuration: 0
   sequentialChargeRecovery: 1
   defaultCostCommitPoint: 1
   beginCostRefundPolicy: 1

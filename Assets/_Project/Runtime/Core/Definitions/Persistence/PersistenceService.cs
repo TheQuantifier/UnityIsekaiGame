@@ -5,6 +5,8 @@ using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 namespace UnityIsekaiGame.GameData.Persistence
@@ -1629,7 +1631,7 @@ namespace UnityIsekaiGame.GameData.Persistence
                 AppendCanonical(builder, record?.ownerId);
                 AppendCanonical(builder, (record?.loadPhase ?? 0).ToString(CultureInfo.InvariantCulture));
                 AppendCanonical(builder, (record?.loadPriority ?? 0).ToString(CultureInfo.InvariantCulture));
-                AppendCanonical(builder, record?.payloadJson);
+                AppendCanonical(builder, NormalizePayloadJson(record?.payloadJson));
             }
 
             using SHA256 sha = SHA256.Create();
@@ -1641,6 +1643,23 @@ namespace UnityIsekaiGame.GameData.Persistence
             }
 
             return hex.ToString();
+        }
+
+        private static string NormalizePayloadJson(string payloadJson)
+        {
+            if (string.IsNullOrWhiteSpace(payloadJson))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return JToken.Parse(payloadJson).ToString(Formatting.None);
+            }
+            catch (JsonException)
+            {
+                return payloadJson;
+            }
         }
 
         private static void AppendCanonical(StringBuilder builder, string value)

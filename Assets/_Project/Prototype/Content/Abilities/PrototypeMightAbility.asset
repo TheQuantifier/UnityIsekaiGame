@@ -19,11 +19,15 @@ MonoBehaviour:
   primaryCategory: {fileID: 11400000, guid: 2200a1dd799046e48d6c67cf908d5191, type: 2}
   tags:
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
-  activationTime: 0
+  execution: {fileID: 11400000, guid: 66c3a1f27a6b4a1c9be0262fd8663405, type: 2}
   range: 8
-  cooldownDuration: 0
-  resourceCosts: []
   targetingMode: 1
+  allowSelfTarget: 0
+  requiresLineOfSight: 1
+  targetingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  targetingTriggerInteraction: 1
   deliveryMode: 0
   projectileDelivery:
     projectilePrefab: {fileID: 0}

@@ -218,7 +218,7 @@ namespace UnityIsekaiGame.Tests
 
             public DamageApplicationRequest CreateDamageRequest(float amount, string transactionId)
             {
-                return new DamageApplicationRequest(transactionId, "test.source", null, ActorId, Owner, DamageType, amount, "Lifecycle test");
+                return new DamageApplicationRequest(transactionId, "test.source", null, ActorId, Owner, DamageType, amount, "Lifecycle test", authorityValidated: true);
             }
 
             public void Dispose()

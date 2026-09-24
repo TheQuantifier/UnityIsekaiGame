@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.Stats;
 
 namespace UnityIsekaiGame.Progression
 {
     public sealed class PlayerIdentityProgressionPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const string Key = "player.identity-progression";
-        public const int CurrentParticipantSchemaVersion = 1;
+        public const int CurrentParticipantSchemaVersion = 2;
 
         private readonly PlayerIdentityProgression progression;
         private readonly Func<DefinitionRegistry> registryProvider;
@@ -197,7 +198,7 @@ namespace UnityIsekaiGame.Progression
 
             return ValidateOrigin(saveData.origin, registry, out failureReason)
                 && ValidateBirthGift(saveData.birthGift, registry, out failureReason)
-                && ValidatePermanentGrants(saveData.permanentStatGrants, out failureReason)
+                && ValidatePermanentGrants(saveData.permanentAttributeGrants, registry, out failureReason)
                 && ValidateRoles(saveData.roles, registry, out failureReason)
                 && ValidateSocialStatuses(saveData.socialStatuses, registry, out failureReason)
                 && ValidateTitles(saveData.titles, registry, out failureReason)
@@ -289,23 +290,29 @@ namespace UnityIsekaiGame.Progression
             return true;
         }
 
-        private static bool ValidatePermanentGrants(IReadOnlyList<RuntimePermanentStatGrantRecord> grants, out string failureReason)
+        private static bool ValidatePermanentGrants(IReadOnlyList<RuntimePermanentAttributeGrantRecord> grants, DefinitionRegistry registry, out string failureReason)
         {
             failureReason = string.Empty;
             HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
-            IReadOnlyList<RuntimePermanentStatGrantRecord> entries = grants ?? Array.Empty<RuntimePermanentStatGrantRecord>();
+            IReadOnlyList<RuntimePermanentAttributeGrantRecord> entries = grants ?? Array.Empty<RuntimePermanentAttributeGrantRecord>();
             for (int i = 0; i < entries.Count; i++)
             {
-                RuntimePermanentStatGrantRecord grant = entries[i];
+                RuntimePermanentAttributeGrantRecord grant = entries[i];
                 if (grant == null || string.IsNullOrWhiteSpace(grant.sourceId) || !ids.Add(grant.sourceId))
                 {
-                    failureReason = "Saved permanent stat grant IDs must be present and unique.";
+                    failureReason = "Saved permanent attribute grant IDs must be present and unique.";
                     return false;
                 }
 
-                if (grant.value < 0f || float.IsNaN(grant.value) || float.IsInfinity(grant.value))
+                if (string.IsNullOrWhiteSpace(grant.attributeId) || registry == null || !registry.TryGet(grant.attributeId, out AttributeDefinition _))
                 {
-                    failureReason = $"Saved permanent stat grant '{grant.sourceId}' has an invalid value.";
+                    failureReason = $"Saved permanent attribute grant '{grant.sourceId}' references unknown attribute '{grant.attributeId}'.";
+                    return false;
+                }
+
+                if (grant.amount <= 0f || float.IsNaN(grant.amount) || float.IsInfinity(grant.amount))
+                {
+                    failureReason = $"Saved permanent attribute grant '{grant.sourceId}' has an invalid amount.";
                     return false;
                 }
             }

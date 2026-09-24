@@ -18,8 +18,8 @@ MonoBehaviour:
   primaryCategory: {fileID: 11400000, guid: 1c777db540c0402aaada8617229d458c, type: 2}
   tags:
   - {fileID: 11400000, guid: 83bb71c39a2f49fcb174dc321ca7aa0c, type: 2}
-  statModifiers:
-  - statType: 5
+  calculatedStatModifiers:
+  - stat: {fileID: 11400000, guid: ca000000000000000000000000000052, type: 2}
     operation: 0
     value: 1
     scaleWithStacks: 1

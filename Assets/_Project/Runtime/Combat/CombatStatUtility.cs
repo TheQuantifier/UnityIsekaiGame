@@ -12,7 +12,7 @@ namespace UnityIsekaiGame.Combat
 
         public static bool TryGetAttackPower(GameObject actor, out float attackPower)
         {
-            if (TryGetStatValue(actor, StatType.AttackPower, out float value))
+            if (TryGetStatValue(actor, CalculatedStatIds.PhysicalPower, out float value))
             {
                 attackPower = Mathf.Max(0f, value);
                 return true;
@@ -29,7 +29,7 @@ namespace UnityIsekaiGame.Combat
 
         public static bool TryGetDefense(GameObject actor, out float defense)
         {
-            if (TryGetStatValue(actor, StatType.Defense, out float value))
+            if (TryGetStatValue(actor, CalculatedStatIds.PhysicalDefense, out float value))
             {
                 defense = Mathf.Max(0f, value);
                 return true;
@@ -50,7 +50,7 @@ namespace UnityIsekaiGame.Combat
             return damage;
         }
 
-        private static bool TryGetStatValue(GameObject actor, StatType statType, out float value)
+        private static bool TryGetStatValue(GameObject actor, string statId, out float value)
         {
             value = 0f;
             if (actor == null)
@@ -58,18 +58,18 @@ namespace UnityIsekaiGame.Combat
                 return false;
             }
 
-            IRuntimeStatReceiver receiver = actor.GetComponentInParent<IRuntimeStatReceiver>();
-            if (receiver == null || !receiver.HasStat(statType))
+            IRuntimeCalculatedStatReceiver receiver = actor.GetComponentInParent<IRuntimeCalculatedStatReceiver>();
+            if (receiver == null || !receiver.HasCalculatedStat(statId))
             {
-                receiver = actor.GetComponentInChildren<IRuntimeStatReceiver>();
+                receiver = actor.GetComponentInChildren<IRuntimeCalculatedStatReceiver>();
             }
 
-            if (receiver == null || !receiver.HasStat(statType))
+            if (receiver == null || !receiver.HasCalculatedStat(statId))
             {
                 return false;
             }
 
-            value = receiver.GetStatValue(statType);
+            value = receiver.GetCalculatedStatValue(statId);
             return true;
         }
     }

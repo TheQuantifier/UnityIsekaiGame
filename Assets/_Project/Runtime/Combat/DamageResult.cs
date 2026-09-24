@@ -98,5 +98,28 @@ namespace UnityIsekaiGame.Combat
         {
             return new DamageResult(false, requestedAmount, 0f, false, message);
         }
+
+        public static DamageResult FromApplication(DamageApplicationResult result, string message = "")
+        {
+            if (result == null || !result.Succeeded)
+            {
+                return Failure(result?.RequestedAmount ?? 0f, string.IsNullOrWhiteSpace(message) ? result?.Message ?? "Damage failed." : message);
+            }
+
+            float afterDefense = Mathf.Max(0f, result.RequestedAmount - result.DefenseMitigatedAmount);
+            return new DamageResult(
+                result.HealthChanged,
+                result.RequestedAmount,
+                result.RequestedAmount,
+                result.DefenseApplied,
+                result.DefenseMitigatedAmount,
+                Mathf.Max(0f, result.ResistanceMitigatedAmount),
+                Mathf.Max(0f, result.FinalDamageAmount - afterDefense),
+                result.FinalDamageAmount,
+                result.NewHealth,
+                result.BecameZero,
+                string.IsNullOrWhiteSpace(message) ? result.Message : message,
+                System.Array.Empty<DamageComponentResult>());
+        }
     }
 }

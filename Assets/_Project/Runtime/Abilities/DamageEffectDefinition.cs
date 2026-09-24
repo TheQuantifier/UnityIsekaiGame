@@ -12,13 +12,11 @@ namespace UnityIsekaiGame.Abilities
     public sealed class DamageEffectDefinition : EffectDefinition
     {
         [SerializeField, Min(0f)] private float baseAmount = 10f;
-        [SerializeField] private DamageType damageType = DamageType.Magic;
         [SerializeField] private DamageTypeDefinition typedDamageType;
         [SerializeField] private DamageComponentDefinition[] typedComponents;
         [SerializeField] private AttackPowerScalingPolicy attackPowerScaling = AttackPowerScalingPolicy.IgnoreSourceAttackPower;
 
         public float BaseAmount => baseAmount;
-        public DamageType DamageType => damageType;
         public DamageTypeDefinition TypedDamageType => typedDamageType;
         public IReadOnlyList<DamageComponentDefinition> TypedComponents => typedComponents ?? System.Array.Empty<DamageComponentDefinition>();
         public AttackPowerScalingPolicy AttackPowerScaling => attackPowerScaling;
@@ -47,10 +45,8 @@ namespace UnityIsekaiGame.Abilities
             }
 
             return CanUseDamagePipeline(in context)
-                || SceneCombatDamageBridge.CanUseCurrentResourcePipeline(context.Target, new DamageInfo(baseAmount, context.Source, context.TargetPosition, context.Direction, damageType, CreateDamagePacket(in context, out _)))
-                || context.Target.GetComponentInParent<IDamageable>() != null
                 ? EffectExecutionResult.Success($"{DisplayName} can damage target.")
-                : EffectExecutionResult.Failure(EffectExecutionStatus.UnsupportedTarget, $"{context.Target.name} cannot take damage.");
+                : EffectExecutionResult.Failure(EffectExecutionStatus.UnsupportedTarget, $"{context.Target.name} lacks canonical Health, identity, or typed damage configuration.");
         }
 
         public override EffectExecutionResult Execute(in EffectExecutionContext context)
@@ -61,82 +57,55 @@ namespace UnityIsekaiGame.Abilities
                 return canExecute;
             }
 
-            if (TryExecuteDamagePipeline(in context, out EffectExecutionResult pipelineResult))
-            {
-                return pipelineResult;
-            }
-
-            DamagePacket packet = CreateDamagePacket(in context, out float amount);
-            DamageInfo damageInfo = new DamageInfo(amount, context.Source, context.TargetPosition, context.Direction, damageType, packet);
-            DamageResult damageResult = SceneCombatDamageBridge.ApplyDamage(
-                context.Target,
-                in damageInfo,
-                $"ability-effect.{Id}",
-                DisplayName);
-            return damageResult.Applied
-                ? EffectExecutionResult.Success(damageResult.Message, damageResult.AppliedAmount)
-                : EffectExecutionResult.Failure(EffectExecutionStatus.BlockedOrImmune, damageResult.Message);
+            TryExecuteDamagePipeline(in context, out EffectExecutionResult result);
+            return result;
         }
 
         private bool CanUseDamagePipeline(in EffectExecutionContext context)
         {
-            if (typedDamageType == null || typedComponents != null && typedComponents.Length > 0)
+            if (typedDamageType == null && (typedComponents == null || typedComponents.Length == 0))
             {
                 return false;
             }
 
-            return context.Target.GetComponentInParent<CharacterResourceCollection>() != null
-                && !string.IsNullOrWhiteSpace(ResolveActorId(context.Target));
+            CharacterResourceCollection resources = context.Target.GetComponentInParent<CharacterResourceCollection>();
+            return resources != null
+                && resources.HasResource(ResourceIds.Health)
+                && !string.IsNullOrWhiteSpace(AbilityActorIdentityUtility.ResolveActorId(context.Target));
         }
 
         private bool TryExecuteDamagePipeline(in EffectExecutionContext context, out EffectExecutionResult result)
         {
             result = default;
-            if (!CanUseDamagePipeline(in context))
-            {
-                return false;
-            }
-
-            float scaledBaseAmount = baseAmount * Mathf.Max(0f, context.MagnitudeMultiplier);
-            float amount = CombatStatUtility.CalculatePreMitigationDamage(scaledBaseAmount, context.Source, attackPowerScaling);
+            DamagePacket packet = CreateDamagePacket(in context, out _);
             DamageHealingService service = new DamageHealingService();
             DamageApplicationRequest request = new DamageApplicationRequest(
-                string.Empty,
-                ResolveActorId(context.Source),
+                string.IsNullOrWhiteSpace(context.ExecutionId) ? $"ability-effect.{Id}.{System.Guid.NewGuid():N}" : $"{context.ExecutionId}.effect.{Id}",
+                context.SourceActorId,
                 context.Source,
-                ResolveActorId(context.Target),
+                context.TargetActorId,
                 context.Target,
-                typedDamageType,
-                amount,
-                DisplayName);
+                packet,
+                DisplayName,
+                authorityValidated: true);
             DamageApplicationResult damageResult = service.ApplyDamage(request);
             string targetName = context.Target == null ? "Target" : context.Target.name;
             string damageMessage = damageResult.Succeeded && damageResult.HealthChanged
-                ? $"{targetName} took {damageResult.FinalDamageAmount:0.#} {typedDamageType.DisplayName} damage. Health: {damageResult.NewHealth:0.#} / {damageResult.HealthMaximum:0.#}."
+                ? $"{targetName} took {damageResult.FinalDamageAmount:0.#} damage. Health: {damageResult.NewHealth:0.#} / {damageResult.HealthMaximum:0.#}."
                 : damageResult.Message;
+            GameObject rollbackTarget = context.Target;
+            string rollbackSourceActorId = context.SourceActorId;
+            string rollbackExecutionId = context.ExecutionId;
             result = damageResult.Succeeded && damageResult.HealthChanged
-                ? EffectExecutionResult.Success(damageMessage, damageResult.FinalDamageAmount)
+                ? EffectExecutionResult.Success(damageMessage, damageResult.FinalDamageAmount, () =>
+                {
+                    CharacterResourceCollection resources = rollbackTarget == null ? null : rollbackTarget.GetComponentInParent<CharacterResourceCollection>();
+                    resources?.ApplyChange(new ResourceChangeRequest(ResourceIds.Health, ResourceChangeOperation.Heal, damageResult.FinalDamageAmount, ResourceChangeSourceCategory.Ability, rollbackSourceActorId, $"Rollback {DisplayName}", $"{rollbackExecutionId}.rollback.{Id}", allowPartial: true, authorityValidated: true));
+                })
                 : damageResult.Succeeded
                     ? EffectExecutionResult.Failure(EffectExecutionStatus.BlockedOrImmune, damageMessage)
                     : EffectExecutionResult.Failure(EffectExecutionStatus.UnsupportedTarget, damageMessage);
             return true;
-        }
-
-        private static string ResolveActorId(GameObject actor)
-        {
-            if (actor == null)
-            {
-                return string.Empty;
-            }
-
-            CharacterSystemCoordinator character = actor.GetComponentInParent<CharacterSystemCoordinator>();
-            if (character != null && !string.IsNullOrWhiteSpace(character.ActorId))
-            {
-                return character.ActorId;
-            }
-
-            WorldEntityIdentity identity = actor.GetComponentInParent<WorldEntityIdentity>();
-            return identity == null ? string.Empty : identity.EntityId;
         }
 
         public override void ValidateDefinition(UnityIsekaiGame.GameData.DefinitionValidationReport report)
@@ -224,9 +193,7 @@ namespace UnityIsekaiGame.Abilities
             {
                 float scaledBaseAmount = baseAmount * Mathf.Max(0f, context.MagnitudeMultiplier);
                 float amount = CombatStatUtility.CalculatePreMitigationDamage(scaledBaseAmount, context.Source, attackPowerScaling);
-                DamageComponent component = typedDamageType == null
-                    ? DamageComponent.Legacy(damageType, amount, attackPowerScaling)
-                    : new DamageComponent(typedDamageType, amount, attackPowerScaling);
+                DamageComponent component = new DamageComponent(typedDamageType, amount, attackPowerScaling);
                 components.Add(component);
                 totalAmount = amount;
             }
