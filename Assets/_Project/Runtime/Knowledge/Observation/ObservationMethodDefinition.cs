@@ -72,6 +72,10 @@ namespace UnityIsekaiGame.Knowledge.Observation
             {
                 report?.AddError($"Observation Method '{DisplayName}' must declare at least one target type.");
             }
+
+            MethodValidation.ValidateOptionalReference(RequiredCapabilityId, definitionsById, "capability", Id, report);
+            MethodValidation.ValidateOptionalReference(RequiredTraitId, definitionsById, "trait", Id, report);
+            MethodValidation.ValidateOptionalReference(RequiredSkillId, definitionsById, "skill", Id, report);
         }
     }
 
@@ -109,6 +113,16 @@ namespace UnityIsekaiGame.Knowledge.Observation
             {
                 report.AddError($"{label} '{definition.Id}' has an invalid tracking policy.");
             }
+        }
+
+        public static void ValidateOptionalReference(string referencedId, IReadOnlyDictionary<string, IGameDefinition> definitionsById, string referenceKind, string ownerId, DefinitionValidationReport report)
+        {
+            if (string.IsNullOrWhiteSpace(referencedId) || definitionsById == null || definitionsById.ContainsKey(referencedId))
+            {
+                return;
+            }
+
+            report?.AddError($"Definition '{ownerId}' references missing {referenceKind} definition '{referencedId}'.");
         }
     }
 }

@@ -150,11 +150,11 @@ namespace UnityIsekaiGame.Knowledge
 
     public sealed class KnowledgeBeliefRecord
     {
-        public KnowledgeBeliefRecord(KnowledgeBeliefRecordData data, KnowledgeFactDefinition definition)
+        public KnowledgeBeliefRecord(KnowledgeBeliefRecordData data, KnowledgeFactDefinition definition, KnowledgePolicyDefinition policy = null)
         {
             Data = data == null ? new KnowledgeBeliefRecordData() : data.Clone();
             Definition = definition;
-            State = DeriveState(Data, definition);
+            State = DeriveState(Data, definition, policy);
         }
 
         public KnowledgeBeliefRecordData Data { get; }
@@ -170,6 +170,11 @@ namespace UnityIsekaiGame.Knowledge
         public IReadOnlyList<string> OpposingEvidenceIds => Data.opposingEvidenceIds ?? Array.Empty<string>();
 
         public static KnowledgeBeliefState DeriveState(KnowledgeBeliefRecordData data, KnowledgeFactDefinition definition)
+        {
+            return DeriveState(data, definition, null);
+        }
+
+        public static KnowledgeBeliefState DeriveState(KnowledgeBeliefRecordData data, KnowledgeFactDefinition definition, KnowledgePolicyDefinition policy)
         {
             if (data == null)
             {
@@ -197,23 +202,23 @@ namespace UnityIsekaiGame.Knowledge
             }
 
             int confidence = KnowledgeConfidence.Clamp(data.confidence);
-            int threshold = definition == null ? 700 : definition.CertaintyThreshold;
+            int threshold = definition == null ? policy == null ? 700 : policy.DefaultKnownThreshold : definition.CertaintyThreshold;
             if (confidence >= threshold)
             {
                 return KnowledgeBeliefState.Known;
             }
 
-            if (confidence >= 600)
+            if (confidence >= (policy == null ? 600 : policy.StronglyBelievedThreshold))
             {
                 return KnowledgeBeliefState.StronglyBelieved;
             }
 
-            if (confidence >= 400)
+            if (confidence >= (policy == null ? 400 : policy.BelievedThreshold))
             {
                 return KnowledgeBeliefState.Believed;
             }
 
-            if (confidence > 0)
+            if (confidence >= (policy == null ? 1 : policy.SuspectedThreshold))
             {
                 return KnowledgeBeliefState.Suspected;
             }

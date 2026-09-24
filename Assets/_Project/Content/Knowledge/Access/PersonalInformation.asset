@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1918f36b09d8034458e93da46c5d8932, type: 3}
+  m_Name: PersonalInformation
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Knowledge.Access.InformationAccessPolicyDefinition
+  policyId: information-access.personal
+  displayName: Personal Information
+  description: Canonical personal information access policy.
+  subjectType: 34
+  classification: 3
+  disclosurePolicy: 1
+  resharingPolicy: 10
+  sourceVisibilityPolicy: 0
+  detailVisibilityPolicy: 0
+  auditPolicy: 3
+  defaultVisibleDetails: []
+  defaultRedactedDetails: []
+  defaultHiddenDetails: []
+  discoveryRequired: 0
+  redactedAccessAcceptable: 1

@@ -251,6 +251,9 @@ namespace UnityIsekaiGame.Knowledge.Sharing
         public string[] SenderOrganizationIds { get; set; } = Array.Empty<string>();
         public string[] SenderRoleIds { get; set; } = Array.Empty<string>();
         public string[] SenderNeedToKnowTags { get; set; } = Array.Empty<string>();
+        public string[] SenderCapabilityIds { get; set; } = Array.Empty<string>();
+        public string[] AvailableMethodIds { get; set; } = Array.Empty<string>();
+        public string[] SharedLanguageIds { get; set; } = Array.Empty<string>();
         public PersonKnowledgeRuntime SenderKnowledge { get; set; }
         public PersonMemoryRuntime SenderMemory { get; set; }
         public InformationSourceRuntime SourceRuntime { get; set; }

@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d8c7b6a5f4e4321890abc1234567802, type: 3}
+  m_Name: WrittenRecord
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Knowledge.Sources.InformationSourceDefinition
+  sourceDefinitionId: information-source.written-record
+  displayName: Written Record
+  description: Canonical written record information source.
+  category: 12
+  defaultReliability:
+    generalDependability: 700
+    domainExpertise: 700
+    firsthandProximity: 700
+    methodQuality: 700
+    authenticity: 700
+    identityCertainty: 700
+    observationQuality: 700
+    recordIntegrity: 700
+    recency: 700
+    transmissionIntegrity: 700
+    independence: 700
+    corroboration: 700
+    internalConsistency: 700
+    errorRisk: 300
+    deceptionRisk: 150
+    biasRisk: 150
+    completeness: 700
+    precision: 700
+    contextFit: 700
+  supportedDomains: 0100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000
+  supportedMethodIds: []
+  authorityClassifications: []
+  defaultErrorRisk: 300
+  defaultDeceptionRisk: 150
+  defaultBiasRisk: 150
+  stalenessPolicy: 0
+  stalenessHalfLifeSeconds: 0
+  transmissionPenaltyPerHop: 80
+  allowsAnonymous: 0
+  allowsCopying: 1
+  allowsTranslation: 1
+  allowsSummary: 1
+  requiresIdentityVerification: 0
+  tags:
+  - knowledge-source
+  - source-category.written-record
+  version: 1

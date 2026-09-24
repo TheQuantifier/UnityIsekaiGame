@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d8c7b6a5f4e4321890abc1234567802, type: 3}
+  m_Name: DirectParticipation
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Knowledge.Sources.InformationSourceDefinition
+  sourceDefinitionId: information-source.direct-participation
+  displayName: Direct Participation
+  description: Canonical direct participation information source.
+  category: 2
+  defaultReliability:
+    generalDependability: 875
+    domainExpertise: 875
+    firsthandProximity: 875
+    methodQuality: 875
+    authenticity: 875
+    identityCertainty: 875
+    observationQuality: 875
+    recordIntegrity: 875
+    recency: 875
+    transmissionIntegrity: 875
+    independence: 875
+    corroboration: 875
+    internalConsistency: 875
+    errorRisk: 125
+    deceptionRisk: 62
+    biasRisk: 62
+    completeness: 875
+    precision: 875
+    contextFit: 875
+  supportedDomains: 0100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000
+  supportedMethodIds: []
+  authorityClassifications: []
+  defaultErrorRisk: 125
+  defaultDeceptionRisk: 62
+  defaultBiasRisk: 62
+  stalenessPolicy: 0
+  stalenessHalfLifeSeconds: 0
+  transmissionPenaltyPerHop: 80
+  allowsAnonymous: 0
+  allowsCopying: 0
+  allowsTranslation: 0
+  allowsSummary: 0
+  requiresIdentityVerification: 0
+  tags:
+  - knowledge-source
+  - source-category.direct-participation
+  version: 1

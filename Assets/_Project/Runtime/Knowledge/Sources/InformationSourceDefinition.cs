@@ -120,6 +120,14 @@ namespace UnityIsekaiGame.Knowledge.Sources
 
             ValidateEnum(category, nameof(InformationSourceCategory), report);
             ValidateEnum(stalenessPolicy, nameof(KnowledgeStalenessPolicy), report);
+
+            foreach (string methodId in SupportedMethodIds)
+            {
+                if (!string.IsNullOrWhiteSpace(methodId) && definitionsById != null && !definitionsById.ContainsKey(methodId))
+                {
+                    report.AddError($"Information Source '{Id}' references missing supported method '{methodId}'.");
+                }
+            }
         }
 
         private void ValidateEnum<T>(T value, string enumName, DefinitionValidationReport report)

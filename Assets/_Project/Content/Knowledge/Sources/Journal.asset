@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d8c7b6a5f4e4321890abc1234567802, type: 3}
+  m_Name: Journal
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Knowledge.Sources.InformationSourceDefinition
+  sourceDefinitionId: information-source.journal
+  displayName: Journal
+  description: Canonical journal information source.
+  category: 17
+  defaultReliability:
+    generalDependability: 625
+    domainExpertise: 625
+    firsthandProximity: 625
+    methodQuality: 625
+    authenticity: 625
+    identityCertainty: 625
+    observationQuality: 625
+    recordIntegrity: 625
+    recency: 625
+    transmissionIntegrity: 625
+    independence: 625
+    corroboration: 625
+    internalConsistency: 625
+    errorRisk: 375
+    deceptionRisk: 187
+    biasRisk: 187
+    completeness: 625
+    precision: 625
+    contextFit: 625
+  supportedDomains: 0100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000
+  supportedMethodIds: []
+  authorityClassifications: []
+  defaultErrorRisk: 375
+  defaultDeceptionRisk: 187
+  defaultBiasRisk: 187
+  stalenessPolicy: 0
+  stalenessHalfLifeSeconds: 0
+  transmissionPenaltyPerHop: 80
+  allowsAnonymous: 0
+  allowsCopying: 1
+  allowsTranslation: 1
+  allowsSummary: 1
+  requiresIdentityVerification: 0
+  tags:
+  - knowledge-source
+  - source-category.journal
+  version: 1

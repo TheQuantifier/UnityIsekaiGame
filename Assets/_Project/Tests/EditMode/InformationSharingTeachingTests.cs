@@ -529,7 +529,10 @@ namespace UnityIsekaiGame.Tests
                 id,
                 mode,
                 new[] { KnowledgeDomain.Species, KnowledgeDomain.Medical },
-                new[] { InformationSourceCategory.PersonalTestimony, InformationSourceCategory.ExpertTestimony, InformationSourceCategory.DirectObservation },
+                Enum.GetValues(typeof(InformationSourceCategory))
+                    .Cast<InformationSourceCategory>()
+                    .Where(category => category != InformationSourceCategory.Unknown)
+                    .ToArray(),
                 false,
                 true,
                 true,
@@ -591,11 +594,14 @@ namespace UnityIsekaiGame.Tests
             {
                 SenderId = "person.sender";
                 RecipientId = "person.recipient";
-                Registry = new DefinitionRegistry(new IGameDefinition[]
+                Registry = KnowledgeTestDefinitionFactory.AddSourceDefinitions(new IGameDefinition[]
                 {
                     Fact(),
                     TransferDefinition("information-transfer.test.direct", InformationTransferMode.DirectTestimony),
-                    TransferDefinition("information-transfer.test.demo", InformationTransferMode.Demonstration)
+                    TransferDefinition("information-transfer.test.demo", InformationTransferMode.Demonstration),
+                    TransferDefinition("information-transfer.test.explanation", InformationTransferMode.Explanation),
+                    TransferDefinition("information-transfer.test.summary", InformationTransferMode.Summary),
+                    TransferDefinition("information-transfer.test.rumor-retelling", InformationTransferMode.RumorRetelling)
                 });
                 history.Configure(Registry, "world.test", new[] { SenderId, RecipientId });
                 SenderKnowledge = senderObject.AddComponent<PersonKnowledgeRuntime>();

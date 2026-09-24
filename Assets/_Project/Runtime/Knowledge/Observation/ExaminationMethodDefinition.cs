@@ -64,6 +64,8 @@ namespace UnityIsekaiGame.Knowledge.Observation
             {
                 report?.AddError($"Examination Method '{DisplayName}' must declare a concrete target type.");
             }
+
+            MethodValidation.ValidateOptionalReference(RequiredSkillId, definitionsById, "skill", Id, report);
         }
     }
 }

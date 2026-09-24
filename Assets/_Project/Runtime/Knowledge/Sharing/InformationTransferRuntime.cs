@@ -82,7 +82,7 @@ namespace UnityIsekaiGame.Knowledge.Sharing
                 transactionId = request.TransactionId,
                 senderPersonId = request.SenderPersonId,
                 recipientPersonIds = recipientIds,
-                transferDefinitionId = request.TransferDefinitionId ?? string.Empty,
+                transferDefinitionId = definition.Id,
                 mode = ResolveMode(request, definition),
                 worldTimeSeconds = Math.Max(0d, request.WorldTimeSeconds),
                 locationContextId = request.LocationContextId ?? string.Empty,
@@ -281,6 +281,15 @@ namespace UnityIsekaiGame.Knowledge.Sharing
                 return false;
             }
 
+
+            definition ??= ResolveDefinition(request.Mode);
+            if (definition == null)
+            {
+                status = InformationTransferStatus.MissingDefinition;
+                failure = $"No authored Information Transfer definition resolves mode '{request.Mode}'.";
+                return false;
+            }
+
             if (definition != null && !DefinitionAllowsRequest(definition, request, out failure))
             {
                 status = InformationTransferStatus.InvalidRequest;
@@ -297,6 +306,47 @@ namespace UnityIsekaiGame.Knowledge.Sharing
             if (definition.Mode != InformationTransferMode.Unknown && definition.Mode != mode)
             {
                 failure = $"Information Transfer definition '{definition.Id}' expects mode {definition.Mode}, not {mode}.";
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(definition.RequiredCapabilityId)
+                && !(request.SenderCapabilityIds ?? Array.Empty<string>()).Contains(definition.RequiredCapabilityId, StringComparer.Ordinal))
+            {
+                failure = $"Information Transfer definition '{definition.Id}' requires capability '{definition.RequiredCapabilityId}'.";
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(definition.RequiredMethodId)
+                && !(request.AvailableMethodIds ?? Array.Empty<string>()).Contains(definition.RequiredMethodId, StringComparer.Ordinal))
+            {
+                failure = $"Information Transfer definition '{definition.Id}' requires method '{definition.RequiredMethodId}'.";
+                return false;
+            }
+
+            KnowledgeDomain[] requestedDomains = (request.ContentItems ?? Array.Empty<TransferContentItemData>())
+                .Where(item => item != null && item.domain != KnowledgeDomain.Unknown)
+                .Select(item => item.domain)
+                .Distinct()
+                .ToArray();
+            if (definition.SupportedDomains.Count > 0 && requestedDomains.Any(domain => !definition.SupportedDomains.Contains(domain)))
+            {
+                failure = $"Information Transfer definition '{definition.Id}' does not support every requested Knowledge domain.";
+                return false;
+            }
+
+            if ((mode == InformationTransferMode.Translation || request.TranslationRequested)
+                && (request.SharedLanguageIds == null || request.SharedLanguageIds.Length == 0))
+            {
+                failure = $"Information Transfer definition '{definition.Id}' requires a declared shared or translation language.";
+                return false;
+            }
+
+            if (request.SourceRuntime != null && !string.IsNullOrWhiteSpace(request.ImmediateSourceId)
+                && request.SourceRuntime.TryGetSource(request.ImmediateSourceId, out InformationSourceRecord source)
+                && definition.AllowedSourceCategories.Count > 0
+                && !definition.AllowedSourceCategories.Contains(source.Category))
+            {
+                failure = $"Information Transfer definition '{definition.Id}' does not allow source category '{source.Category}'.";
                 return false;
             }
 
@@ -327,6 +377,21 @@ namespace UnityIsekaiGame.Knowledge.Sharing
             }
 
             return true;
+        }
+
+        private InformationTransferDefinition ResolveDefinition(InformationTransferMode mode)
+        {
+            if (registry == null || mode == InformationTransferMode.Unknown)
+            {
+                return null;
+            }
+
+            InformationTransferDefinition[] matches = registry.DefinitionsById.Values
+                .OfType<InformationTransferDefinition>()
+                .Where(definition => definition.Mode == mode)
+                .OrderBy(definition => definition.Id, StringComparer.Ordinal)
+                .ToArray();
+            return matches.Length == 1 ? matches[0] : null;
         }
 
         private bool ValidateSenderAccess(InformationTransferRequest request, InformationTransferDefinition definition, out string recallOutcome, out string failure, out InformationTransferStatus status)
@@ -686,8 +751,12 @@ namespace UnityIsekaiGame.Knowledge.Sharing
                 TransactionId = $"{request.TransactionId}.source.{recipientId}",
                 SourceInstanceId = sourceId,
                 Category = SourceCategoryFor(request),
-                ReferenceType = InformationSourceReferenceType.Person,
-                ReferencedId = request.PrivacyScope == TransferPrivacyScope.HiddenSource || request.PrivacyScope == TransferPrivacyScope.Secret ? string.Empty : request.SenderPersonId,
+                ReferenceType = request.PrivacyScope == TransferPrivacyScope.HiddenSource || request.PrivacyScope == TransferPrivacyScope.Secret
+                    ? InformationSourceReferenceType.None
+                    : InformationSourceReferenceType.Person,
+                ReferencedId = request.PrivacyScope == TransferPrivacyScope.HiddenSource || request.PrivacyScope == TransferPrivacyScope.Secret
+                    ? string.Empty
+                    : request.SenderPersonId,
                 OriginalCreatorPersonId = request.SenderPersonId,
                 ObserverPersonId = recipientId,
                 HolderPersonId = recipientId,

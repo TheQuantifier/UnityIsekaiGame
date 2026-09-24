@@ -34,7 +34,7 @@ namespace UnityIsekaiGame.Persistence
 
         public string ParticipantKey => Key;
         public int ParticipantSchemaVersion => CurrentParticipantSchemaVersion;
-        public bool IsRequired => false;
+        public bool IsRequired => true;
         public PersistenceScope Scope => PersistenceScope.SharedWorld;
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Notification;

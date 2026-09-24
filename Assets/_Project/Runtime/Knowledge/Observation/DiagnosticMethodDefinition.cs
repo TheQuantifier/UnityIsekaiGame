@@ -78,6 +78,8 @@ namespace UnityIsekaiGame.Knowledge.Observation
             {
                 report?.AddWarning($"Diagnostic Method '{DisplayName}' exact threshold exceeds its confidence ceiling; exact diagnosis will not be reachable.");
             }
+
+            MethodValidation.ValidateOptionalReference(RequiredSkillId, definitionsById, "skill", Id, report);
         }
     }
 }

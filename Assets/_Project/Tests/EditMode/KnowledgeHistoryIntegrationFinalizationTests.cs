@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
+using UnityIsekaiGame.Development;
 using UnityIsekaiGame.Development.Automation;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Gameplay;
@@ -58,7 +60,7 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void DefinitionFallbackDiagnostics_PreferCatalogAndReportFallbackNeed()
+        public void DefinitionCoverageDiagnostics_ReportMissingDefinitionsWithoutFallbacks()
         {
             DefinitionRegistry registry = new DefinitionRegistry(new IGameDefinition[]
             {
@@ -71,15 +73,14 @@ namespace UnityIsekaiGame.Tests
                 WorldId = "world.prototype.test"
             });
 
-            IReadOnlyList<KnowledgeHistoryDefinitionFallbackDiagnostic> diagnostics = facade.CreateDefinitionFallbackDiagnostics(new[] { "record-definition.authored", "record-definition.fallback" }, "test-provider");
+            IReadOnlyList<KnowledgeHistoryDefinitionCoverageDiagnostic> diagnostics = facade.CreateDefinitionCoverageDiagnostics(new[] { "record-definition.authored", "record-definition.missing" });
 
-            KnowledgeHistoryDefinitionFallbackDiagnostic authored = diagnostics.First(item => item.DefinitionId == "record-definition.authored");
-            KnowledgeHistoryDefinitionFallbackDiagnostic fallback = diagnostics.First(item => item.DefinitionId == "record-definition.fallback");
+            KnowledgeHistoryDefinitionCoverageDiagnostic authored = diagnostics.First(item => item.DefinitionId == "record-definition.authored");
+            KnowledgeHistoryDefinitionCoverageDiagnostic missing = diagnostics.First(item => item.DefinitionId == "record-definition.missing");
             Assert.That(authored.CatalogAuthored, Is.True);
-            Assert.That(authored.FallbackWouldBeUsed, Is.False);
-            Assert.That(fallback.CatalogAuthored, Is.False);
-            Assert.That(fallback.FallbackWouldBeUsed, Is.True);
-            Assert.That(fallback.Missing, Is.False);
+            Assert.That(authored.Missing, Is.False);
+            Assert.That(missing.CatalogAuthored, Is.False);
+            Assert.That(missing.Missing, Is.True);
         }
 
         [Test]
@@ -91,7 +92,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(inventory.Participants, Does.Contain("person.memory"));
             Assert.That(inventory.Participants, Does.Contain("world.authoritative-history"));
             Assert.That(inventory.RequiredDependencies, Does.Contain("person.memory -> world.authoritative-history"));
-            Assert.That(inventory.OptionalDependencies.Any(value => value.Contains("person.knowledge-records")), Is.True);
+            Assert.That(inventory.OptionalDependencies.Any(value => value.Contains("world.knowledge-records")), Is.True);
         }
 
         [Test]
@@ -113,7 +114,9 @@ namespace UnityIsekaiGame.Tests
             GameObject owner = new GameObject("Knowledge History Integration Test");
             try
             {
-                DefinitionRegistry registry = new DefinitionRegistry(PrototypeKnowledgeRecordDefinitionFactory.CreateKnowledgeRecordDefinitions().Cast<IGameDefinition>());
+                DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(PrototypeTestLabService.PrototypeCatalogPath);
+                Assert.That(catalog, Is.Not.Null);
+                DefinitionRegistry registry = catalog.CreateRegistry();
                 PersonKnowledgeRuntime knowledge = owner.AddComponent<PersonKnowledgeRuntime>();
                 knowledge.Configure(registry, personId, "actor.prototype.integration-test", "body.prototype.integration-test");
                 AuthoritativeHistoryRuntime history = new AuthoritativeHistoryRuntime();

@@ -30,6 +30,11 @@ namespace UnityIsekaiGame.Knowledge.Observation
                 return Failure(ObservationOutcomeCode.MissingMethod, $"Observation Method '{method.Id}' is not active.", context, method.Id, 0, 0, preview);
             }
 
+            if (!ValidateObservationRequirements(method, context, out string requirementFailure))
+            {
+                return Failure(ObservationOutcomeCode.AccessDenied, requirementFailure, context, method.Id, 0, 0, preview);
+            }
+
             if (!method.SensoryChannels.Contains(context.SensoryChannel))
             {
                 return Failure(ObservationOutcomeCode.InvalidContext, $"Method '{method.Id}' does not support sensory channel '{context.SensoryChannel}'.", context, method.Id, 0, 0, preview);
@@ -87,6 +92,21 @@ namespace UnityIsekaiGame.Knowledge.Observation
                 return Failure(ObservationOutcomeCode.MissingMethod, $"Identification Method '{method.Id}' is not active.", context, method.Id, 0, 0, preview);
             }
 
+            if (method.TargetType != ObservationTargetType.Unknown && method.TargetType != context.TargetType)
+            {
+                return Failure(ObservationOutcomeCode.InvalidContext, $"Identification Method '{method.Id}' does not support target type '{context.TargetType}'.", context, method.Id, 0, 0, preview);
+            }
+
+            if (!context.HasSkill(method.RequiredSkillId))
+            {
+                return Failure(ObservationOutcomeCode.AccessDenied, $"Identification Method '{method.Id}' requires skill '{method.RequiredSkillId}'.", context, method.Id, 0, 0, preview);
+            }
+
+            if (method.CandidateTags.Count > 0 && !method.CandidateTags.Any(tag => context.Tags.Contains(tag, StringComparer.Ordinal)))
+            {
+                return Failure(ObservationOutcomeCode.InvalidContext, $"Identification Method '{method.Id}' has no candidate matching the target tags.", context, method.Id, 0, 0, preview);
+            }
+
             int quality = CalculateQuality(method.ExactThreshold, context, privacyBypass: false);
             IdentificationResultState state = quality >= method.ExactThreshold
                 ? IdentificationResultState.Exact
@@ -124,19 +144,29 @@ namespace UnityIsekaiGame.Knowledge.Observation
                 return Failure(ObservationOutcomeCode.MissingMethod, $"Examination Method '{method.Id}' is not active.", context, method.Id, 0, 0, preview);
             }
 
-            if (projection == null || projection.Indicators.Count == 0)
-            {
-                return Failure(ObservationOutcomeCode.MissingProjection, "Examination projection has no indicators.", context, method.Id, 0, 0, preview);
-            }
-
-            if (context.TargetType != method.TargetType)
+            if (method.TargetType != context.TargetType)
             {
                 return Failure(ObservationOutcomeCode.InvalidContext, $"Examination Method '{method.Id}' does not support target type '{context.TargetType}'.", context, method.Id, 0, 0, preview);
+            }
+
+            if (context.ActualDistance > method.RequiredProximity)
+            {
+                return Failure(ObservationOutcomeCode.AccessDenied, $"Examination Method '{method.Id}' requires proximity {method.RequiredProximity:0.##}; actual distance is {context.ActualDistance:0.##}.", context, method.Id, 0, 0, preview);
             }
 
             if (method.RequiresConsent && !ConsentAllows(context.Consent, context.PrivateAccessAuthorized))
             {
                 return Failure(ObservationOutcomeCode.AccessDenied, $"Examination Method '{method.Id}' requires consent or authorized access.", context, method.Id, 0, 0, preview);
+            }
+
+            if (!context.HasSkill(method.RequiredSkillId) || !context.HasEquipmentTag(method.RequiredToolTagId))
+            {
+                return Failure(ObservationOutcomeCode.AccessDenied, $"Examination Method '{method.Id}' requirements are not satisfied.", context, method.Id, 0, 0, preview);
+            }
+
+            if (projection == null || projection.Indicators.Count == 0)
+            {
+                return Failure(ObservationOutcomeCode.MissingProjection, "Examination projection has no indicators.", context, method.Id, 0, 0, preview);
             }
 
             ObservableProjection indicator = projection.Indicators.FirstOrDefault(value => value.TargetType == method.TargetType);
@@ -195,6 +225,18 @@ namespace UnityIsekaiGame.Knowledge.Observation
             if (!method.Active)
             {
                 return Failure(ObservationOutcomeCode.MissingMethod, $"Diagnostic Method '{method.Id}' is not active.", context, method.Id, 0, 0, preview);
+            }
+
+            if (!context.HasSkill(method.RequiredSkillId)
+                || !context.HasEquipmentTag(method.RequiredToolTagId)
+                || !context.HasKnowledgeDomain(method.RequiredKnowledgeDomain))
+            {
+                return Failure(ObservationOutcomeCode.AccessDenied, $"Diagnostic Method '{method.Id}' requirements are not satisfied.", context, method.Id, 0, 0, preview);
+            }
+
+            if (!AccessLevelAllows(context.AccessLevel, method.RequiredAccess, context.PrivateAccessAuthorized, out string diagnosticAccessFailure))
+            {
+                return Failure(ObservationOutcomeCode.AccessDenied, diagnosticAccessFailure, context, method.Id, 0, 0, preview);
             }
 
             int quality = CalculateQuality(method.ConfidenceCeiling, context, privacyBypass: false);
@@ -367,6 +409,33 @@ namespace UnityIsekaiGame.Knowledge.Observation
         private static bool ConsentAllows(ObservationConsentState consent, bool privateAuthorized)
         {
             return privateAuthorized || consent == ObservationConsentState.Granted || consent == ObservationConsentState.NotRequired || consent == ObservationConsentState.IncapacitatedAccess;
+        }
+
+        private static bool ValidateObservationRequirements(ObservationMethodDefinition method, ObservationContext context, out string failure)
+        {
+            failure = string.Empty;
+            if (context.ActualDistance > method.MaximumRange)
+            {
+                failure = $"Observation Method '{method.Id}' maximum range is {method.MaximumRange:0.##}; actual distance is {context.ActualDistance:0.##}.";
+                return false;
+            }
+
+            if (method.RequiresLineOfSight && !context.HasLineOfSight)
+            {
+                failure = $"Observation Method '{method.Id}' requires line of sight.";
+                return false;
+            }
+
+            if (!context.HasCapability(method.RequiredCapabilityId)
+                || !context.HasTrait(method.RequiredTraitId)
+                || !context.HasSkill(method.RequiredSkillId)
+                || !context.HasEquipmentTag(method.RequiredEquipmentTagId))
+            {
+                failure = $"Observation Method '{method.Id}' observer requirements are not satisfied.";
+                return false;
+            }
+
+            return true;
         }
 
         private static bool ShouldTrack(KnowledgeTrackingPolicy policy, bool mechanicallyRelevant)

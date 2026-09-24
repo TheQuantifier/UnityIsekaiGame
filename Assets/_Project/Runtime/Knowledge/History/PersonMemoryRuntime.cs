@@ -627,7 +627,7 @@ namespace UnityIsekaiGame.Knowledge.History
                 return false;
             }
 
-            if (saveData.schemaVersion < 1 || saveData.schemaVersion > PersonMemorySaveData.CurrentSchemaVersion)
+            if (saveData.schemaVersion != PersonMemorySaveData.CurrentSchemaVersion)
             {
                 failureReason = $"Unsupported Person Memory schema version {saveData.schemaVersion}.";
                 return false;
@@ -643,7 +643,6 @@ namespace UnityIsekaiGame.Knowledge.History
             HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
             foreach (HistoryMemoryRecordData memory in saveData.memories ?? Array.Empty<HistoryMemoryRecordData>())
             {
-                NormalizeMigratedMemory(memory, saveData.schemaVersion);
                 if (!ValidateMemoryData(memory, saveData.personId, authoritativeHistory, out failureReason) || !ids.Add(memory.memoryId ?? string.Empty))
                 {
                     failureReason = string.IsNullOrWhiteSpace(failureReason) ? $"Missing or duplicate memory ID '{memory?.memoryId}'." : failureReason;
@@ -1093,47 +1092,6 @@ namespace UnityIsekaiGame.Knowledge.History
                 bodyAtTimeId = memory.bodyAtTimeId,
                 details = memory.rememberedDetails == null ? Array.Empty<MemoryDetailData>() : memory.rememberedDetails.Select(detail => detail.Clone()).ToArray()
             };
-        }
-
-        private static void NormalizeMigratedMemory(HistoryMemoryRecordData memory, int schemaVersion)
-        {
-            if (memory == null)
-            {
-                return;
-            }
-
-            memory.evidenceIds ??= Array.Empty<string>();
-            memory.tags ??= Array.Empty<string>();
-            memory.rememberedDetails ??= Array.Empty<MemoryDetailData>();
-            memory.suppressions ??= Array.Empty<MemorySuppressionData>();
-            memory.revisions ??= Array.Empty<MemoryRevisionData>();
-            if (schemaVersion <= 1)
-            {
-            memory.lastRecallAttemptWorldTime = memory.lastRecalledWorldTime;
-            memory.lastReinforcedWorldTime = -1d;
-            memory.lastDegradationEvaluatedWorldTime = memory.formedAtWorldTime;
-            memory.recallCount = 0;
-            memory.reinforcementCount = 0;
-            memory.stateBeforeSuppression = memory.state == MemoryState.Suppressed ? MemoryState.Accessible : memory.state;
-                if (string.IsNullOrWhiteSpace(memory.currentRevisionId))
-                {
-                    memory.currentRevisionId = $"{memory.memoryId}.revision.0";
-                }
-
-                if (memory.rememberedDetails.Length == 0)
-                {
-                    memory.rememberedDetails = new[]
-                    {
-                        Detail("detail.event", MemoryDetailKind.Event, memory.historicalEventId),
-                        Detail("detail.time", MemoryDetailKind.Time, memory.rememberedOccurredAtWorldTime.ToString("R"))
-                    };
-                }
-
-                if (memory.revisions.Length == 0)
-                {
-                    memory.revisions = new[] { CreateRevision(memory, "migration.memory.v1", MemoryAlterationType.None, memory.formedAtWorldTime, "migration", "Migrated Feature 8.3 memory.", string.Empty) };
-                }
-            }
         }
 
         private bool ValidateFormMemory(FormMemoryRequest request, out string failure, out HistoryResultCode code)

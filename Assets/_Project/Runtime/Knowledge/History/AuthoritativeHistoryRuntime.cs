@@ -46,18 +46,21 @@ namespace UnityIsekaiGame.Knowledge.History
         public HistoryOperationResult RecordEvent(RecordHistoricalEventRequest request, bool preview = false, bool restoring = false)
         {
             long priorRevision = HistoryRevision;
-            if (!ValidateRecordRequest(request, out HistoricalEventDefinition definition, out string failure, out HistoryResultCode code))
-            {
-                return HistoryOperationResult.Failure(code, failure, request?.TransactionId, preview, HistoryRevision);
-            }
-
-            string transactionKey = TransactionKey(request.TransactionId);
-            if (!preview && processedTransactions.Contains(transactionKey))
+            string transactionKey = TransactionKey(request?.TransactionId);
+            if (!preview
+                && request != null
+                && !string.IsNullOrWhiteSpace(request.TransactionId)
+                && processedTransactions.Contains(transactionKey))
             {
                 HistoricalEventRecord existingById = TryGetEvent(request.EventId, out HistoricalEventRecord duplicateRecord)
                     ? duplicateRecord
                     : null;
                 return HistoryOperationResult.Success("Historical event transaction already processed.", request.TransactionId, existingById, null, null, priorRevision, HistoryRevision, duplicate: true);
+            }
+
+            if (!ValidateRecordRequest(request, out HistoricalEventDefinition definition, out string failure, out HistoryResultCode code))
+            {
+                return HistoryOperationResult.Failure(code, failure, request?.TransactionId, preview, HistoryRevision);
             }
 
             HistoricalEventRecordData data = CreateEventData(request, definition);
@@ -135,6 +138,26 @@ namespace UnityIsekaiGame.Knowledge.History
 
         public HistoryOperationResult RecordLifeEvent(RecordLifeEventRequest request, bool preview = false, bool restoring = false)
         {
+            string transactionKey = TransactionKey(request?.TransactionId);
+            if (!preview
+                && request != null
+                && !string.IsNullOrWhiteSpace(request.TransactionId)
+                && processedTransactions.Contains(transactionKey))
+            {
+                HistoricalEventRecord existing = TryGetEvent(request.EventId, out HistoricalEventRecord duplicateRecord)
+                    ? duplicateRecord
+                    : null;
+                return HistoryOperationResult.Success(
+                    "Life event transaction already processed.",
+                    request.TransactionId,
+                    existing,
+                    null,
+                    null,
+                    HistoryRevision,
+                    HistoryRevision,
+                    duplicate: true);
+            }
+
             if (!ValidateLifeEventRequest(request, out HistoricalEventDefinition definition, out string failure, out HistoryResultCode code))
             {
                 return HistoryOperationResult.Failure(code, failure, request?.TransactionId, preview, HistoryRevision);

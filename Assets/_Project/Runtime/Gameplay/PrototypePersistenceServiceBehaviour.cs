@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using UnityIsekaiGame.ActorLifecycle;
 using UnityIsekaiGame.Beings.Biology;
+using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Combat.Defense;
@@ -40,6 +41,8 @@ using UnityIsekaiGame.Inventory.Recipes;
 using UnityIsekaiGame.Knowledge;
 using UnityIsekaiGame.Knowledge.Access;
 using UnityIsekaiGame.Knowledge.History;
+using UnityIsekaiGame.Knowledge.Integration;
+using UnityIsekaiGame.Knowledge.Observation;
 using UnityIsekaiGame.Knowledge.Records;
 using UnityIsekaiGame.Knowledge.Sharing;
 using UnityIsekaiGame.Knowledge.Sources;
@@ -143,6 +146,8 @@ namespace UnityIsekaiGame.Gameplay
         [SerializeField] private bool registerPlayerTraits = true;
         [SerializeField] private bool registerPlayerBody = true;
         [SerializeField] private bool registerPlayerKnowledge = true;
+        [SerializeField] private bool registerWorldAuthoritativeHistory = true;
+        [SerializeField] private bool registerPlayerMemory = true;
         [SerializeField] private bool registerPlayerProfessions = true;
         [SerializeField] private bool registerPlayerProfessionEntries = true;
         [SerializeField] private bool registerPlayerTraining = true;
@@ -163,10 +168,10 @@ namespace UnityIsekaiGame.Gameplay
         [SerializeField] private bool registerWorldSocialInfluence = true;
         [SerializeField] private bool registerWorldSocialEmotions = true;
         [SerializeField] private bool registerWorldFamilyRelationships = true;
-        [SerializeField] private bool registerPlayerInformationSources = true;
-        [SerializeField] private bool registerPlayerInformationTransfers = true;
-        [SerializeField] private bool registerPlayerInformationAccess = true;
-        [SerializeField] private bool registerPlayerKnowledgeRecords = true;
+        [SerializeField] private bool registerWorldInformationSources = true;
+        [SerializeField] private bool registerWorldInformationTransfers = true;
+        [SerializeField] private bool registerWorldInformationAccess = true;
+        [SerializeField] private bool registerWorldKnowledgeRecords = true;
         [SerializeField] private bool registerPlayerStatusEffects = true;
         [SerializeField] private bool registerPlayerResources = true;
         [SerializeField] private bool registerPlayerCombatExecution = true;
@@ -192,6 +197,8 @@ namespace UnityIsekaiGame.Gameplay
         private PlayerTraitsPersistenceParticipant playerTraitsParticipant;
         private PlayerBodyPersistenceParticipant playerBodyParticipant;
         private PersonKnowledgePersistenceParticipant playerKnowledgeParticipant;
+        private AuthoritativeHistoryPersistenceParticipant worldAuthoritativeHistoryParticipant;
+        private PersonMemoryPersistenceParticipant playerMemoryParticipant;
         private InformationSourcePersistenceParticipant playerInformationSourceParticipant;
         private InformationTransferPersistenceParticipant playerInformationTransferParticipant;
         private InformationAccessPersistenceParticipant playerInformationAccessParticipant;
@@ -261,6 +268,14 @@ namespace UnityIsekaiGame.Gameplay
         private InformationTransferRuntime playerInformationTransfers;
         private InformationAccessRuntime playerInformationAccess;
         private KnowledgeRecordRuntime playerKnowledgeRecords;
+        private AuthoritativeHistoryRuntime worldAuthoritativeHistory;
+        private PersonMemoryRuntime playerMemory;
+        private KnowledgeHistoryFacade knowledgeHistoryFacade;
+        private ObservationService observationService;
+        private GameplayObservationCoordinator gameplayObservationCoordinator;
+        private MemoryMaintenanceService memoryMaintenance;
+        private KnowledgeHistoryEventBridge knowledgeHistoryEventBridge;
+        private bool characterCreationHistoryEnsured;
         private PersonProfessionRuntime playerProfessions;
         private ProfessionEntryRuntime playerProfessionEntries;
         private TrainingRuntime playerTraining;
@@ -348,6 +363,18 @@ namespace UnityIsekaiGame.Gameplay
         public InformationTransferRuntime InformationTransfers => playerInformationTransfers ??= new InformationTransferRuntime();
         public InformationAccessRuntime InformationAccess => playerInformationAccess ??= new InformationAccessRuntime();
         public KnowledgeRecordRuntime KnowledgeRecords => playerKnowledgeRecords ??= new KnowledgeRecordRuntime();
+        public AuthoritativeHistoryRuntime AuthoritativeHistory => worldAuthoritativeHistory ??= new AuthoritativeHistoryRuntime();
+        public PersonMemoryRuntime PlayerMemory => playerMemory ??= new PersonMemoryRuntime();
+        public ObservationService Observations => observationService ??= new ObservationService(GetDefinitionRegistry());
+        public GameplayObservationCoordinator GameplayObservations => gameplayObservationCoordinator ??= new GameplayObservationCoordinator(GetDefinitionRegistry(), Observations);
+        public KnowledgeHistoryFacade KnowledgeHistory
+        {
+            get
+            {
+                EnsureKnowledgeHistoryRuntimesConfigured();
+                return knowledgeHistoryFacade ??= new KnowledgeHistoryFacade(CreateKnowledgeHistoryRuntimeSet());
+            }
+        }
         public RelationshipRuntime Relationships
         {
             get
@@ -917,6 +944,20 @@ namespace UnityIsekaiGame.Gameplay
             EnsureInitialized();
         }
 
+        private void Update()
+        {
+            if (memoryMaintenance == null || playTimeTracker == null)
+            {
+                return;
+            }
+
+            IReadOnlyList<HistoryOperationResult> results = memoryMaintenance.AdvanceTo(playTimeTracker.CumulativeSeconds);
+            if (results.Any(result => result != null && result.Succeeded && !result.Duplicate))
+            {
+                dirtyTracker?.MarkDirty("Player memory advanced with authoritative world time.");
+            }
+        }
+
         private void OnDisable()
         {
             if (playerService != null && inventoryEquipmentParticipant != null)
@@ -1133,6 +1174,36 @@ namespace UnityIsekaiGame.Gameplay
             {
                 UnregisterParticipant(playerKnowledgeParticipant);
                 playerKnowledgeParticipant = null;
+            }
+
+            if (worldAuthoritativeHistoryParticipant != null)
+            {
+                UnregisterParticipant(worldAuthoritativeHistoryParticipant);
+                worldAuthoritativeHistoryParticipant = null;
+            }
+
+            if (playerMemoryParticipant != null)
+            {
+                UnregisterParticipant(playerMemoryParticipant);
+                playerMemoryParticipant = null;
+            }
+
+            if (playerInformationSourceParticipant != null)
+            {
+                UnregisterParticipant(playerInformationSourceParticipant);
+                playerInformationSourceParticipant = null;
+            }
+
+            if (playerInformationTransferParticipant != null)
+            {
+                UnregisterParticipant(playerInformationTransferParticipant);
+                playerInformationTransferParticipant = null;
+            }
+
+            if (playerInformationAccessParticipant != null)
+            {
+                UnregisterParticipant(playerInformationAccessParticipant);
+                playerInformationAccessParticipant = null;
             }
 
             if (playerService != null && playerProfessionParticipant != null)
@@ -1367,6 +1438,9 @@ namespace UnityIsekaiGame.Gameplay
             EnsurePlayerTraitsParticipant();
             EnsurePlayerBodyParticipant();
             EnsurePlayerKnowledgeParticipant();
+            EnsureWorldAuthoritativeHistoryParticipant();
+            EnsurePlayerMemoryParticipant();
+            EnsureKnowledgeHistoryEventBridge();
             EnsurePlayerProfessionParticipant();
             EnsurePlayerProfessionEntryParticipant();
             EnsurePlayerInformationSourceParticipant();
@@ -1436,6 +1510,8 @@ namespace UnityIsekaiGame.Gameplay
                 PlayerIdentityProgressionPersistenceParticipant.Key,
                 PlayerAttributesPersistenceParticipant.Key,
                 PlayerSkillsPersistenceParticipant.Key,
+                PersonKnowledgePersistenceParticipant.Key,
+                PersonMemoryPersistenceParticipant.Key,
                 PlayerInventoryEquipmentPersistenceParticipant.Key,
                 PlayerStatusEffectsPersistenceParticipant.Key,
                 PlayerResourcesPersistenceParticipant.Key,
@@ -1443,6 +1519,11 @@ namespace UnityIsekaiGame.Gameplay
             });
             WorldReadiness = worldPersistenceContext.BuildReadiness(new[]
             {
+                AuthoritativeHistoryPersistenceParticipant.Key,
+                InformationSourcePersistenceParticipant.WorldKey,
+                InformationTransferPersistenceParticipant.WorldKey,
+                InformationAccessPersistenceParticipant.WorldKey,
+                KnowledgeRecordPersistenceParticipant.WorldKey,
                 LocationPersistenceParticipant.Key,
                 EntityLocationPersistenceParticipant.Key,
                 InteractionPointPersistenceParticipant.Key,
@@ -1463,6 +1544,29 @@ namespace UnityIsekaiGame.Gameplay
                 NarrativeArcPersistenceParticipant.Key
             });
             SubscribeDirtyEvents();
+        }
+
+        private void EnsureKnowledgeHistoryEventBridge()
+        {
+            if (worldAuthoritativeHistoryParticipant == null || playerMemoryParticipant == null)
+            {
+                return;
+            }
+
+            knowledgeHistoryEventBridge ??= new KnowledgeHistoryEventBridge(
+                AuthoritativeHistory,
+                () => playTimeTracker == null ? 0d : playTimeTracker.CumulativeSeconds,
+                ResolvePlayerPersonId,
+                () => playerBody == null ? string.Empty : playerBody.ActorBodyId,
+                () => currentPlaceTracker == null ? string.Empty : currentPlaceTracker.CurrentPlaceId);
+
+            if (!characterCreationHistoryEnsured && playerIdentityProgression != null)
+            {
+                HistoryOperationResult result = knowledgeHistoryEventBridge.EnsureCharacterCreation(
+                    playerIdentityProgression.Origin?.originId,
+                    playerIdentityProgression.BirthGift?.giftDefinitionId);
+                characterCreationHistoryEnsured = result != null && (result.Succeeded || result.Duplicate);
+            }
         }
 
         private void InitializeSceneCharacters()
@@ -1542,7 +1646,10 @@ namespace UnityIsekaiGame.Gameplay
         public PersistenceSaveResult SaveManualSlot(int zeroBasedIndex)
         {
             string slotId = PrototypeSaveSlotCatalog.ManualSlotId(zeroBasedIndex);
-            return SaveNamedSlot(slotId, PrototypeSaveSlotCatalog.ManualDisplayName(zeroBasedIndex), markClean: true);
+            PersistenceSaveResult playerResult = SaveNamedSlot(slotId, PrototypeSaveSlotCatalog.ManualDisplayName(zeroBasedIndex), markClean: true);
+            return playerResult.Succeeded
+                ? CombineWithWorldCheckpoint(playerResult, $"Manual slot {zeroBasedIndex + 1}")
+                : playerResult;
         }
 
         public PersistenceSaveResult SaveNamedSlot(string slotId, string displayName, bool markClean)
@@ -1603,9 +1710,33 @@ namespace UnityIsekaiGame.Gameplay
             if (rotate.Succeeded)
             {
                 dirtyTracker?.MarkClean($"Autosaved: {reason}.");
+                return CombineWithWorldCheckpoint(rotate, $"Autosave: {reason}");
             }
 
             return rotate;
+        }
+
+        private PersistenceSaveResult CombineWithWorldCheckpoint(PersistenceSaveResult playerResult, string reason)
+        {
+            PersistenceSaveResult worldResult = SaveWorldCheckpoint(reason);
+            if (!worldResult.Succeeded)
+            {
+                return PersistenceSaveResult.Failure(
+                    worldResult.Status,
+                    playerResult.SlotId,
+                    playerResult.Path,
+                    $"The player save completed, but the durable world checkpoint failed: {worldResult.Message}",
+                    worldResult.Exception,
+                    worldResult.TransactionId,
+                    worldResult.Phase);
+            }
+
+            return PersistenceSaveResult.Success(
+                playerResult.SlotId,
+                playerResult.Path,
+                $"{playerResult.Message} World knowledge and history were checkpointed successfully.",
+                playerResult.TransactionId,
+                playerResult.Phase);
         }
 
         public PersistenceSaveResult ForceAutosave(string reason = "DevelopmentCommand")
@@ -3026,6 +3157,79 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
+        private void EnsureWorldAuthoritativeHistoryParticipant()
+        {
+            if (!registerWorldAuthoritativeHistory || worldAuthoritativeHistoryParticipant != null)
+            {
+                return;
+            }
+
+            ResolvePlayerPersistenceReferences();
+            if (definitionCatalog == null)
+            {
+                Debug.LogWarning("Authoritative History persistence participant was not registered because no definition catalog is assigned.");
+                return;
+            }
+
+            string personId = ResolvePlayerPersonId();
+            AuthoritativeHistory.Configure(
+                GetDefinitionRegistry(),
+                worldService.WorldId,
+                GetPrototypeSocialPersonIds(personId),
+                GetKnownBodyIds());
+            worldAuthoritativeHistoryParticipant = new AuthoritativeHistoryPersistenceParticipant(
+                AuthoritativeHistory,
+                GetDefinitionRegistry,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
+                GetKnownBodyIds,
+                worldService.WorldId);
+
+            RegisterParticipant(worldAuthoritativeHistoryParticipant, out string failureReason);
+            if (!string.IsNullOrWhiteSpace(failureReason))
+            {
+                Debug.LogWarning(failureReason);
+                worldAuthoritativeHistoryParticipant = null;
+            }
+        }
+
+        private void EnsurePlayerMemoryParticipant()
+        {
+            if (!registerPlayerMemory || playerMemoryParticipant != null)
+            {
+                return;
+            }
+
+            ResolvePlayerPersistenceReferences();
+            if (playerIdentityProgression == null || definitionCatalog == null || worldAuthoritativeHistoryParticipant == null)
+            {
+                Debug.LogWarning("Person Memory persistence participant requires identity, definitions, and live Authoritative History.");
+                return;
+            }
+
+            PlayerMemory.Configure(
+                playerIdentityProgression.PersonId,
+                GetDefinitionRegistry(),
+                AuthoritativeHistory,
+                GetPrototypeSocialPersonIds(playerIdentityProgression.PersonId));
+            GetDefinitionRegistry().TryGet(KnowledgePolicyDefinition.DefaultPolicyId, out KnowledgePolicyDefinition knowledgePolicy);
+            memoryMaintenance = new MemoryMaintenanceService(PlayerMemory, knowledgePolicy);
+            playerMemoryParticipant = new PersonMemoryPersistenceParticipant(
+                PlayerMemory,
+                AuthoritativeHistory,
+                GetDefinitionRegistry,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
+                playerService.PlayerId);
+
+            RegisterParticipant(playerMemoryParticipant, out string failureReason);
+            if (!string.IsNullOrWhiteSpace(failureReason))
+            {
+                Debug.LogWarning(failureReason);
+                playerMemoryParticipant = null;
+            }
+
+            knowledgeHistoryFacade = null;
+        }
+
         private void EnsurePlayerProfessionParticipant()
         {
             if (!registerPlayerProfessions || playerProfessionParticipant != null)
@@ -3094,7 +3298,7 @@ namespace UnityIsekaiGame.Gameplay
 
         private void EnsurePlayerInformationSourceParticipant()
         {
-            if (!registerPlayerInformationSources || playerInformationSourceParticipant != null)
+            if (!registerWorldInformationSources || playerInformationSourceParticipant != null)
             {
                 return;
             }
@@ -3112,11 +3316,14 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            InformationSources.Configure(GetDefinitionRegistry(), playerIdentityProgression.PersonId);
+            InformationSources.Configure(GetDefinitionRegistry(), worldService.WorldId);
             playerInformationSourceParticipant = new InformationSourcePersistenceParticipant(
                 InformationSources,
                 GetDefinitionRegistry,
-                playerService.PlayerId);
+                worldService.WorldId,
+                PersistenceScope.SharedWorld,
+                InformationSourcePersistenceParticipant.WorldKey,
+                required: true);
 
             RegisterParticipant(playerInformationSourceParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -3128,7 +3335,7 @@ namespace UnityIsekaiGame.Gameplay
 
         private void EnsurePlayerInformationTransferParticipant()
         {
-            if (!registerPlayerInformationTransfers || playerInformationTransferParticipant != null)
+            if (!registerWorldInformationTransfers || playerInformationTransferParticipant != null)
             {
                 return;
             }
@@ -3146,11 +3353,14 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            InformationTransfers.Configure(GetDefinitionRegistry(), playerIdentityProgression.PersonId);
+            InformationTransfers.Configure(GetDefinitionRegistry(), worldService.WorldId);
             playerInformationTransferParticipant = new InformationTransferPersistenceParticipant(
                 InformationTransfers,
                 GetDefinitionRegistry,
-                playerService.PlayerId);
+                worldService.WorldId,
+                PersistenceScope.SharedWorld,
+                InformationTransferPersistenceParticipant.WorldKey,
+                required: true);
 
             RegisterParticipant(playerInformationTransferParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -3180,7 +3390,7 @@ namespace UnityIsekaiGame.Gameplay
             string[] knownPersons = new[] { personId, playerService.PlayerId };
             Professions.Configure(GetDefinitionRegistry(), knownPersons);
             ProfessionEntries.Configure(GetDefinitionRegistry(), Professions, knownPersons);
-            InformationTransfers.Configure(GetDefinitionRegistry(), personId);
+            InformationTransfers.Configure(GetDefinitionRegistry(), worldService.WorldId);
             Training.Configure(GetDefinitionRegistry(), Professions, InformationTransfers, knownPersons);
             playerTrainingParticipant = new TrainingPersistenceParticipant(
                 Training,
@@ -3831,7 +4041,7 @@ namespace UnityIsekaiGame.Gameplay
 
         private void EnsurePlayerInformationAccessParticipant()
         {
-            if (!registerPlayerInformationAccess || playerInformationAccessParticipant != null)
+            if (!registerWorldInformationAccess || playerInformationAccessParticipant != null)
             {
                 return;
             }
@@ -3849,11 +4059,29 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            InformationAccess.Configure(GetDefinitionRegistry(), playerIdentityProgression.PersonId);
+            InformationAccess.Configure(GetDefinitionRegistry(), worldService.WorldId);
+            foreach (InformationAccessPolicyDefinition definition in GetDefinitionRegistry().DefinitionsById.Values
+                .OfType<InformationAccessPolicyDefinition>()
+                .OrderBy(value => value.Id, StringComparer.Ordinal))
+            {
+                InformationAccessPolicyData policy = definition.CreatePolicyData(
+                    new InformationSubjectReferenceData
+                    {
+                        subjectType = definition.SubjectType == InformationSubjectType.Unknown ? InformationSubjectType.Custom : definition.SubjectType,
+                        subjectId = $"policy-template.{definition.Id}",
+                        controllingEntityId = worldService.WorldId,
+                        tags = new[] { "policy-template", definition.Id }
+                    },
+                    controllingEntityId: worldService.WorldId);
+                InformationAccess.RegisterPolicy(policy, $"information-access.seed.{definition.Id}");
+            }
             playerInformationAccessParticipant = new InformationAccessPersistenceParticipant(
                 InformationAccess,
                 GetDefinitionRegistry,
-                playerService.PlayerId);
+                worldService.WorldId,
+                PersistenceScope.SharedWorld,
+                InformationAccessPersistenceParticipant.WorldKey,
+                required: true);
 
             RegisterParticipant(playerInformationAccessParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -3865,7 +4093,7 @@ namespace UnityIsekaiGame.Gameplay
 
         private void EnsurePlayerKnowledgeRecordParticipant()
         {
-            if (!registerPlayerKnowledgeRecords || playerKnowledgeRecordParticipant != null)
+            if (!registerWorldKnowledgeRecords || playerKnowledgeRecordParticipant != null)
             {
                 return;
             }
@@ -3883,11 +4111,14 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            KnowledgeRecords.Configure(GetDefinitionRegistry(), playerIdentityProgression.PersonId);
+            KnowledgeRecords.Configure(GetDefinitionRegistry(), worldService.WorldId);
             playerKnowledgeRecordParticipant = new KnowledgeRecordPersistenceParticipant(
                 KnowledgeRecords,
                 GetDefinitionRegistry,
-                playerService.PlayerId);
+                worldService.WorldId,
+                PersistenceScope.SharedWorld,
+                KnowledgeRecordPersistenceParticipant.WorldKey,
+                required: true);
 
             RegisterParticipant(playerKnowledgeRecordParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -4427,6 +4658,8 @@ namespace UnityIsekaiGame.Gameplay
             if (playerIdentityProgression != null)
             {
                 playerIdentityProgression.ProgressionChanged += OnIdentityProgressionChanged;
+                playerIdentityProgression.OriginAssigned += OnOriginAssigned;
+                playerIdentityProgression.BirthGiftAssigned += OnBirthGiftAssigned;
             }
 
             if (playerAttributes != null)
@@ -4540,6 +4773,8 @@ namespace UnityIsekaiGame.Gameplay
             if (playerIdentityProgression != null)
             {
                 playerIdentityProgression.ProgressionChanged -= OnIdentityProgressionChanged;
+                playerIdentityProgression.OriginAssigned -= OnOriginAssigned;
+                playerIdentityProgression.BirthGiftAssigned -= OnBirthGiftAssigned;
             }
 
             if (playerAttributes != null)
@@ -4601,6 +4836,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             dirtyTracker?.MarkDirty("Quest or contract state changed.");
             autosaveCoordinator?.RequestAutosave("Progression");
+            knowledgeHistoryEventBridge?.RecordQuestState(playerQuestLog?.Quests.Select(quest => quest?.Definition?.QuestId));
         }
 
         private void OnVitalsChanged(int current, int maximum)
@@ -4631,6 +4867,14 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             dirtyTracker?.MarkDirty("Player actor lifecycle changed.");
+            if (result.ResultingState == ActorLifecycleState.Dead)
+            {
+                knowledgeHistoryEventBridge?.RecordDeath(result.TransactionId, result.Trigger.ToString());
+            }
+            else if (result.Transition == LifecycleTransitionKind.Revival)
+            {
+                knowledgeHistoryEventBridge?.RecordRevival(result.TransactionId);
+            }
         }
 
         private void OnCombatExecutionCommitted(CombatExecutionCommitted committed)
@@ -4716,6 +4960,7 @@ namespace UnityIsekaiGame.Gameplay
         private void OnPlaceChanged(PlaceDefinition place, bool entered)
         {
             dirtyTracker?.MarkDirty("Player location changed.");
+            knowledgeHistoryEventBridge?.RecordLocation(place == null ? string.Empty : place.Id, entered);
         }
 
         private void OnIdentityProgressionChanged(PlayerIdentityProgression progression, bool restoring)
@@ -4726,6 +4971,22 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             dirtyTracker?.MarkDirty("Player identity/progression changed.");
+        }
+
+        private void OnOriginAssigned(PlayerIdentityProgression progression, RuntimeOriginAssignmentRecord origin, bool restoring)
+        {
+            if (!restoring)
+            {
+                knowledgeHistoryEventBridge?.RecordIdentityAssignment($"origin.{origin?.originId}", origin?.originId, progression?.BirthGift?.giftDefinitionId);
+            }
+        }
+
+        private void OnBirthGiftAssigned(PlayerIdentityProgression progression, RuntimeBirthGiftRecord gift, bool restoring)
+        {
+            if (!restoring)
+            {
+                knowledgeHistoryEventBridge?.RecordIdentityAssignment($"birth-gift.{gift?.giftDefinitionId}", progression?.Origin?.originId, gift?.giftDefinitionId);
+            }
         }
 
         private void OnAttributesChanged(CharacterAttributes attributes, IReadOnlyList<string> attributeIds, bool restoring)
@@ -4796,6 +5057,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             dirtyTracker?.MarkDirty("Player body Species changed.");
+            knowledgeHistoryEventBridge?.RecordBodyTransition(result.Snapshot?.ActorBodyId, result.Message);
             if (playerKnowledge != null && result.Snapshot != null)
             {
                 foreach (KnowledgeBeliefRecord belief in playerKnowledge.CreateSnapshot(bodyId: result.Snapshot.ActorBodyId).Beliefs)
@@ -4813,6 +5075,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             dirtyTracker?.MarkDirty("Player Knowledge changed.");
+            knowledgeHistoryEventBridge?.RecordDiscovery(result);
         }
 
         private string ResolveSceneKey()
@@ -4849,11 +5112,6 @@ namespace UnityIsekaiGame.Gameplay
                 {
                     definitions.Add(definition);
                 }
-            }
-
-            foreach (KnowledgeRecordDefinition definition in PrototypeKnowledgeRecordDefinitionFactory.CreateMissingKnowledgeRecordDefinitions(definitionIds))
-            {
-                definitions.Add(definition);
             }
 
             definitionRegistry = PrototypeFamilyRelationshipDefinitionFactory.AddMissingPrototypeFamilyRelationshipDefinitions(
@@ -4906,6 +5164,94 @@ namespace UnityIsekaiGame.Gameplay
                 : null;
         }
 
+        private string ResolvePlayerPersonId()
+        {
+            return playerIdentityProgression == null || string.IsNullOrWhiteSpace(playerIdentityProgression.PersonId)
+                ? playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId
+                : playerIdentityProgression.PersonId;
+        }
+
+        private IEnumerable<string> GetKnownBodyIds()
+        {
+            string bodyId = playerBody == null ? string.Empty : playerBody.ActorBodyId;
+            return string.IsNullOrWhiteSpace(bodyId) ? Array.Empty<string>() : new[] { bodyId };
+        }
+
+        private void EnsureKnowledgeHistoryRuntimesConfigured()
+        {
+            DefinitionRegistry registry = GetDefinitionRegistry();
+            string personId = ResolvePlayerPersonId();
+            string worldId = worldService == null ? PersistenceService.LocalWorldId : worldService.WorldId;
+            string[] people = GetPrototypeSocialPersonIds(personId);
+
+            AuthoritativeHistory.Configure(registry, worldId, people, GetKnownBodyIds());
+            PlayerMemory.Configure(personId, registry, AuthoritativeHistory, people);
+            InformationSources.Configure(registry, worldId);
+            InformationTransfers.Configure(registry, worldId);
+            InformationAccess.Configure(registry, worldId);
+            KnowledgeRecords.Configure(registry, worldId);
+        }
+
+        private KnowledgeHistoryRuntimeSet CreateKnowledgeHistoryRuntimeSet()
+        {
+            return new KnowledgeHistoryRuntimeSet
+            {
+                DefinitionRegistry = GetDefinitionRegistry(),
+                PersonId = ResolvePlayerPersonId(),
+                WorldId = worldService == null ? PersistenceService.LocalWorldId : worldService.WorldId,
+                KnownPersonIds = GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
+                KnownBodyIds = GetKnownBodyIds().ToArray(),
+                KnowledgeRuntime = playerKnowledge,
+                HistoryRuntime = AuthoritativeHistory,
+                MemoryRuntime = PlayerMemory,
+                SourceRuntime = InformationSources,
+                TransferRuntime = InformationTransfers,
+                AccessRuntime = InformationAccess,
+                RecordRuntime = KnowledgeRecords
+            };
+        }
+
+        public ObservationAuthoritySnapshot CreatePlayerObservationAuthority()
+        {
+            CharacterCapabilityCollection capabilities = playerBody == null ? null : playerBody.GetComponent<CharacterCapabilityCollection>();
+            string[] equipmentTags = (playerEquipment?.Slots ?? Array.Empty<EquipmentSlotState>())
+                .Where(slot => slot != null && !slot.IsEmpty && slot.Item != null)
+                .SelectMany(slot => slot.Item.Tags)
+                .Where(tag => tag != null && !string.IsNullOrWhiteSpace(tag.Id))
+                .Select(tag => tag.Id)
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .ToArray();
+            string[] knowledgeDomains = (playerKnowledge?.CreateSnapshot().Beliefs ?? Array.Empty<KnowledgeBeliefRecord>())
+                .Where(belief => belief.Definition != null && belief.State != KnowledgeBeliefState.Unknown && belief.State != KnowledgeBeliefState.Forgotten)
+                .Select(belief => $"domain.{belief.Definition.Domain.ToString().ToLowerInvariant()}")
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .ToArray();
+            return new ObservationAuthoritySnapshot
+            {
+                CapabilityIds = capabilities?.GetSnapshots()
+                    .Where(snapshot => snapshot.BooleanValue && !snapshot.Blocked)
+                    .Select(snapshot => snapshot.CapabilityId)
+                    .OrderBy(id => id, StringComparer.Ordinal)
+                    .ToArray() ?? Array.Empty<string>(),
+                TraitIds = playerTraits?.GetActiveTraits()
+                    .Where(snapshot => snapshot?.Definition != null)
+                    .Select(snapshot => snapshot.Definition.Id)
+                    .OrderBy(id => id, StringComparer.Ordinal)
+                    .ToArray() ?? Array.Empty<string>(),
+                SkillIds = playerSkills?.LearnedSkills
+                    .Where(skill => skill != null && !string.IsNullOrWhiteSpace(skill.skillDefinitionId))
+                    .Select(skill => skill.skillDefinitionId)
+                    .OrderBy(id => id, StringComparer.Ordinal)
+                    .ToArray() ?? Array.Empty<string>(),
+                EquipmentTagIds = equipmentTags,
+                KnowledgeDomainIds = knowledgeDomains,
+                ExpertiseQuality = playerSkills == null || playerSkills.LearnedSkills.Count == 0 ? KnowledgeConfidence.DefaultObservation : 700,
+                ToolQuality = equipmentTags.Length == 0 ? KnowledgeConfidence.DefaultObservation : 700
+            };
+        }
+
         private string[] GetKnownPlaceIds()
         {
             DefinitionRegistry registry = GetDefinitionRegistry();
@@ -4920,7 +5266,9 @@ namespace UnityIsekaiGame.Gameplay
 
         private PersonMemoryRuntime ResolveMemoryRuntimeForPerson(string personId)
         {
-            return null;
+            return string.Equals(ResolvePlayerPersonId(), personId, StringComparison.Ordinal)
+                ? PlayerMemory
+                : null;
         }
 
         private string[] GetPrototypeSocialPersonIds(string primaryPersonId)

@@ -34,12 +34,14 @@ namespace UnityIsekaiGame.Persistence
 
         public string ParticipantKey => Key;
         public int ParticipantSchemaVersion => CurrentParticipantSchemaVersion;
-        public bool IsRequired => false;
+        public bool IsRequired => true;
         public PersistenceScope Scope => PersistenceScope.Player;
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Notification;
         public int LoadPriority => 95;
-        public IReadOnlyList<string> RequiredDependencies => new[] { AuthoritativeHistoryPersistenceParticipant.Key };
+        // History is world-owned and therefore lives in a separate persistence context.
+        // Runtime validation still requires it, but it cannot be a same-context dependency.
+        public IReadOnlyList<string> RequiredDependencies => Array.Empty<string>();
         public IReadOnlyList<string> OptionalDependencies => new[] { PersonKnowledgePersistenceParticipant.Key };
         public bool SupportsRollback => true;
         public bool RequiresSceneReadiness => false;
@@ -66,7 +68,7 @@ namespace UnityIsekaiGame.Persistence
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
         {
-            if (payloadSchemaVersion < 1 || payloadSchemaVersion > CurrentParticipantSchemaVersion)
+            if (payloadSchemaVersion != CurrentParticipantSchemaVersion)
             {
                 return PersistenceParticipantPrepareResult.Failure($"Unsupported Person Memory schema version {payloadSchemaVersion}.");
             }

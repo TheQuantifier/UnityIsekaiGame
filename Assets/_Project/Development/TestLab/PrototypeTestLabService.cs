@@ -87,7 +87,7 @@ namespace UnityIsekaiGame.Development
     public sealed class PrototypeTestLabService
     {
         public const int DefaultHistoryLimit = 40;
-        private const string PrototypeCatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
+        public const string PrototypeCatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
         private const string DevelopmentStatusSource = "development.prototype-test-lab";
         private const string PrototypePublicPolicyId = "information-access.prototype.public-rumor";
         private const string PrototypeSecretPolicyId = "information-access.prototype.previous-body-secret";
@@ -6014,14 +6014,14 @@ namespace UnityIsekaiGame.Development
             KnowledgeHistoryFacade facade = CreateKnowledgeHistoryFacade();
             KnowledgeHistoryValidationResult validation = facade.ValidateCurrentState();
             KnowledgeHistoryPersistenceInventory persistence = facade.CreatePersistenceInventory();
-            IReadOnlyList<KnowledgeHistoryDefinitionFallbackDiagnostic> fallbackDiagnostics = facade.CreateDefinitionFallbackDiagnostics(CreatePrototypeKnowledgeRecordDefinitions().Select(definition => definition.Id), "PrototypeKnowledgeRecordDefinitionFactory");
+            IReadOnlyList<KnowledgeHistoryDefinitionCoverageDiagnostic> coverageDiagnostics = facade.CreateDefinitionCoverageDiagnostics(CreatePrototypeKnowledgeRecordDefinitions().Select(definition => definition.Id));
 
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("Feature 8.10 Knowledge and History Integration Finalization");
             builder.AppendLine(validation.Readiness?.ToSummary() ?? "Readiness unavailable.");
             builder.AppendLine(validation.ToSummary());
             builder.AppendLine(persistence.ToSummary());
-            builder.AppendLine($"Definition fallbacks: Catalog={fallbackDiagnostics.Count(item => item.CatalogAuthored)} FallbackNeeded={fallbackDiagnostics.Count(item => item.FallbackWouldBeUsed)} Missing={fallbackDiagnostics.Count(item => item.Missing)}");
+            builder.AppendLine($"Definition coverage: Catalog={coverageDiagnostics.Count(item => item.CatalogAuthored)} Missing={coverageDiagnostics.Count(item => item.Missing)}");
             PrototypeTestLabOperation last = history.Count == 0 ? default : history[0];
             if (!string.IsNullOrWhiteSpace(last.OperationName) && last.OperationName.Contains("8.10", StringComparison.Ordinal))
             {
@@ -6077,12 +6077,12 @@ namespace UnityIsekaiGame.Development
             return Record(validation.Succeeded, "Validate 8.10 Integration", validation.Succeeded ? "Success" : "ValidationFailed", validation.ToSummary());
         }
 
-        public PrototypeTestLabOperation ShowKnowledgeHistoryFallbackDiagnostics()
+        public PrototypeTestLabOperation ShowKnowledgeHistoryDefinitionCoverage()
         {
-            IReadOnlyList<KnowledgeHistoryDefinitionFallbackDiagnostic> diagnostics = CreateKnowledgeHistoryFacade().CreateDefinitionFallbackDiagnostics(CreatePrototypeKnowledgeRecordDefinitions().Select(definition => definition.Id), "PrototypeKnowledgeRecordDefinitionFactory");
+            IReadOnlyList<KnowledgeHistoryDefinitionCoverageDiagnostic> diagnostics = CreateKnowledgeHistoryFacade().CreateDefinitionCoverageDiagnostics(CreatePrototypeKnowledgeRecordDefinitions().Select(definition => definition.Id));
             bool succeeded = diagnostics.All(item => !item.Missing);
             string message = string.Join(Environment.NewLine, diagnostics.Select(item => item.ToSummary()));
-            return Record(succeeded, "Show 8.10 Definition Fallbacks", succeeded ? "Success" : "MissingFallback", message);
+            return Record(succeeded, "Show 8.10 Definition Coverage", succeeded ? "Success" : "MissingDefinition", message);
         }
 
         public PrototypeTestLabOperation RunKnowledgeHistoryDiscoveryFlow()
@@ -6151,7 +6151,7 @@ namespace UnityIsekaiGame.Development
             KnowledgeHistoryFacade facade = CreateKnowledgeHistoryFacade();
             KnowledgeHistoryValidationResult validation = facade.ValidateCurrentState();
             KnowledgeHistoryPersistenceInventory inventory = facade.CreatePersistenceInventory();
-            bool succeeded = validation.Succeeded && inventory.Participants.Contains(KnowledgeRecordPersistenceParticipant.Key) && inventory.RequiredDependencies.Contains($"{PersonMemoryPersistenceParticipant.Key} -> {AuthoritativeHistoryPersistenceParticipant.Key}");
+            bool succeeded = validation.Succeeded && inventory.Participants.Contains(KnowledgeRecordPersistenceParticipant.WorldKey) && inventory.RequiredDependencies.Contains($"{PersonMemoryPersistenceParticipant.Key} -> {AuthoritativeHistoryPersistenceParticipant.Key}");
             return Record(succeeded, "Validate 8.10 Save Capture", succeeded ? "Success" : "PersistenceMismatch", $"{validation.ToSummary()} {inventory.ToSummary()}");
         }
 
@@ -6508,12 +6508,42 @@ namespace UnityIsekaiGame.Development
             if (currentAutomationScenarioContext?.Runtimes?.Access != null)
             {
                 informationAccess = currentAutomationScenarioContext.Runtimes.Access;
+                EnsureAuthoredAccessPolicyTemplates();
                 return informationAccess;
             }
 
             informationAccess ??= context?.InformationAccess ?? context?.Persistence?.InformationAccess ?? new InformationAccessRuntime();
             informationAccess.Configure(registry, GetPrototypePersonId());
+            EnsureAuthoredAccessPolicyTemplates();
             return informationAccess;
+        }
+
+        private void EnsureAuthoredAccessPolicyTemplates()
+        {
+            if (informationAccess == null || registry == null)
+            {
+                return;
+            }
+
+            HashSet<string> registeredIds = informationAccess.CreateSnapshot().Policies
+                .Select(policy => policy.PolicyId)
+                .ToHashSet(StringComparer.Ordinal);
+            foreach (InformationAccessPolicyDefinition definition in registry.DefinitionsById.Values
+                .OfType<InformationAccessPolicyDefinition>()
+                .Where(definition => !registeredIds.Contains(definition.Id))
+                .OrderBy(definition => definition.Id, StringComparer.Ordinal))
+            {
+                InformationAccessPolicyData policy = definition.CreatePolicyData(
+                    new InformationSubjectReferenceData
+                    {
+                        subjectType = definition.SubjectType == InformationSubjectType.Unknown ? InformationSubjectType.Custom : definition.SubjectType,
+                        subjectId = $"policy-template.{definition.Id}",
+                        controllingEntityId = GetPrototypePersonId(),
+                        tags = new[] { "policy-template", definition.Id }
+                    },
+                    controllingEntityId: GetPrototypePersonId());
+                informationAccess.RegisterPolicy(policy, $"information-access.seed.{definition.Id}");
+            }
         }
 
         private InformationSourceRuntime EnsureInformationSourceRuntime()
@@ -14493,14 +14523,6 @@ namespace UnityIsekaiGame.Development
                 }
             }
 
-            foreach (KnowledgeRecordDefinition definition in CreatePrototypeKnowledgeRecordDefinitions())
-            {
-                if (!definitions.Any(existing => string.Equals(existing.Id, definition.Id, StringComparison.Ordinal)))
-                {
-                    definitions.Add(definition);
-                }
-            }
-
             DefinitionRegistry registry = new DefinitionRegistry(definitions);
             registry = PrototypeOrganizationDefinitionFactory.AddMissingPrototypeOrganizationDefinitions(registry);
             registry = PrototypeOrganizationMembershipDefinitionFactory.AddMissingPrototypeOrganizationMembershipDefinitions(registry);
@@ -14563,9 +14585,12 @@ namespace UnityIsekaiGame.Development
             };
         }
 
-        private static IReadOnlyList<KnowledgeRecordDefinition> CreatePrototypeKnowledgeRecordDefinitions()
+        private IReadOnlyList<KnowledgeRecordDefinition> CreatePrototypeKnowledgeRecordDefinitions()
         {
-            return PrototypeKnowledgeRecordDefinitionFactory.CreateKnowledgeRecordDefinitions();
+            return registry?.DefinitionsById.Values
+                .OfType<KnowledgeRecordDefinition>()
+                .OrderBy(definition => definition.Id, StringComparer.Ordinal)
+                .ToArray() ?? Array.Empty<KnowledgeRecordDefinition>();
         }
 
         private static HistoricalEventDefinition LifeEventDefinition(string id, string displayName, HistoricalEventCategory historicalCategory, KnowledgeVisibility visibility, HistoricalEventPayloadKind historicalPayloadKind, bool isLifeEvent, LifeEventCategory lifeCategory, LifeEventPayloadKind lifePayloadKind, LifeEventSignificance significance, LifeEventBiographyRelevance biography, LifeEventPublicRecordRelevance publicRecord, LifeEventParticipantRole requiredRole)

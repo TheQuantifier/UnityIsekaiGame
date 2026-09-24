@@ -474,6 +474,8 @@ namespace UnityIsekaiGame.Tests
             Assert.That(deathService.TryGetActiveDefense(dead.TargetActorId, out _), Is.False);
 
             dead.SetTargetHealth(0f);
+            typeof(ActorLifecycleController).GetField("revivalAvailableAtUtc", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(dead.TargetLifecycle, DateTimeOffset.UtcNow.AddSeconds(-1d));
             dead.TargetLifecycle.ExecuteRevival(new LifecycleRevivalRequest("defense.lifecycle.revive", "test", null, dead.TargetActorId, dead.Target, 25f));
             Assert.That(dead.TargetLifecycle.State, Is.EqualTo(ActorLifecycleState.Active));
             Assert.That(deathService.TryGetActiveDefense(dead.TargetActorId, out _), Is.False);

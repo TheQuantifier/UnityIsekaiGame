@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: PrototypeDefinitionCatalog
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.GameData.DefinitionCatalog
   catalogId: catalog.prototype
-  contentVersion: phase-3.group-1.clean-break
-  contentHash: 12fdb522c127fd4bb07fc403777cf4c208306aa55aab1b6e1e571bef88108ffe
+  contentVersion: phase-3.group-5
+  contentHash: b3b8f80e23ab61e3b3583881f193c6e680ddd72159cde2a748bb567e1ca6d57d
   defaults: {fileID: 11400000, guid: 4853c1eba0d3bd44c949551fd9b873d7, type: 2}
   sections:
   - domainId: domain.ability
@@ -346,6 +346,14 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 19b98af96deb49788fc042cc3d39ab32, type: 2}
     - {fileID: 11400000, guid: 642b47d86ef64d8db00f0f9dfefaaab1, type: 2}
     - {fileID: 11400000, guid: 1c72e712a28b458381b63d5e1f636f9b, type: 2}
+    - {fileID: 11400000, guid: 97161c92b9e17054aa89ed66f8bbb0f9, type: 2}
+    - {fileID: 11400000, guid: 8debb3d66a977054796f8e35ad5d55ac, type: 2}
+    - {fileID: 11400000, guid: d15026a2402d2ff47befa4ba41c88eb0, type: 2}
+    - {fileID: 11400000, guid: 9940cf5829e216d4f830d4bc6a3d0b28, type: 2}
+    - {fileID: 11400000, guid: 4c45d6d783a724c46a7594c2a36793df, type: 2}
+    - {fileID: 11400000, guid: 93b8aef864452de439aeb35c7b5a5c73, type: 2}
+    - {fileID: 11400000, guid: da8ad218d5ac42c47b6e2c0084cf3c57, type: 2}
+    - {fileID: 11400000, guid: a4a7594740d2eed41b3437aa804e9dce, type: 2}
   - domainId: domain.identification-method
     definitions:
     - {fileID: 11400000, guid: e0d7088777ae4cec8c27da77f82a5e86, type: 2}
@@ -695,3 +703,59 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 7a250000000000000000000000000023, type: 2}
     - {fileID: 11400000, guid: 7a250000000000000000000000000020, type: 2}
     - {fileID: 11400000, guid: 7a250000000000000000000000000021, type: 2}
+  - domainId: domain.knowledge-policy
+    definitions:
+    - {fileID: 11400000, guid: 7c44a4263ee2f96449356cdf3e201622, type: 2}
+  - domainId: domain.information-source
+    definitions:
+    - {fileID: 11400000, guid: e651f10a7fc6d5d46ba25f714fc4119c, type: 2}
+    - {fileID: 11400000, guid: f4da3ccfb9a97e54295fcaca5b685693, type: 2}
+    - {fileID: 11400000, guid: fd92625bcecd83b4294565832fd1b21f, type: 2}
+    - {fileID: 11400000, guid: c48001e3f6de4f148a8b64d1f1c1027c, type: 2}
+    - {fileID: 11400000, guid: de5766651e8443442b413c1a4e561253, type: 2}
+    - {fileID: 11400000, guid: 98ef934c415f03e48b369289f5ec7bb6, type: 2}
+    - {fileID: 11400000, guid: ba72cafc946d5a841baf8a1b14b1e589, type: 2}
+    - {fileID: 11400000, guid: ede1a88f516bcc140b76473a72b3915f, type: 2}
+    - {fileID: 11400000, guid: 2ca35166583fd01488076e4ca13f981e, type: 2}
+    - {fileID: 11400000, guid: 9e41832331864ce44b9d959aff2fa765, type: 2}
+    - {fileID: 11400000, guid: 43f87f8628dfa0d41a5c5a2fa9f4c174, type: 2}
+    - {fileID: 11400000, guid: 1200ae4d51b0e5b458fa3b5b83bf3365, type: 2}
+    - {fileID: 11400000, guid: 7e7c61dcd1578004e9b278a7072a2a24, type: 2}
+    - {fileID: 11400000, guid: 37c73442c6fd9734789def1b5069de45, type: 2}
+    - {fileID: 11400000, guid: 420c2c4771bfcf14eabdaa23a852c810, type: 2}
+    - {fileID: 11400000, guid: 157dbacf18e6eed47a7bdd3403d732d6, type: 2}
+    - {fileID: 11400000, guid: 95accc62e5361b54ca9467e2ceef6596, type: 2}
+    - {fileID: 11400000, guid: b89b4a77cdfb42949a279f5379f3fbe4, type: 2}
+    - {fileID: 11400000, guid: 4404b4dfafe3d2a47995419bb6d714bc, type: 2}
+  - domainId: domain.information-transfer
+    definitions:
+    - {fileID: 11400000, guid: bb7c7f8424a97cc44b4d2a6cfaf9e90c, type: 2}
+    - {fileID: 11400000, guid: a03c9ca1f9f5cbe48baa96870da898c0, type: 2}
+    - {fileID: 11400000, guid: d53ba9d8baa213945a05e2e610ac9129, type: 2}
+    - {fileID: 11400000, guid: 98d8ad143e361a2449bbc15b5735478e, type: 2}
+    - {fileID: 11400000, guid: 8d92a3834da49934bbcc9807d8c7b923, type: 2}
+    - {fileID: 11400000, guid: dc32f7ca6bbf64a4fa90ca0e8bbed4cf, type: 2}
+    - {fileID: 11400000, guid: 2731694c382e3894db8c7c1a9718bb86, type: 2}
+    - {fileID: 11400000, guid: d12edfad970fed74bbf9f2941bf0b757, type: 2}
+    - {fileID: 11400000, guid: 89066b7a7cda2fd46b970bd632c7587c, type: 2}
+    - {fileID: 11400000, guid: 1b2daf6e0c7bf734199bdd362014be42, type: 2}
+  - domainId: domain.information-access
+    definitions:
+    - {fileID: 11400000, guid: 82624a2a23f7f6347927b837885e12c6, type: 2}
+    - {fileID: 11400000, guid: dd5f26ca27aca8b4c907361ed8bd92d1, type: 2}
+    - {fileID: 11400000, guid: c86ceec9cea4f384fadc521122eb489c, type: 2}
+    - {fileID: 11400000, guid: 42e54dac45323c442a0715c07b96f5e9, type: 2}
+    - {fileID: 11400000, guid: 3366dc0642b0bdc4db21f41fface552f, type: 2}
+    - {fileID: 11400000, guid: 969dc0b0218c1b04d9847150c2b4a92f, type: 2}
+  - domainId: domain.knowledge-record
+    definitions:
+    - {fileID: 11400000, guid: f76053e9a8af02c4ca12090acd4360d4, type: 2}
+    - {fileID: 11400000, guid: c25e5684658b73c479b46abef8e28cdc, type: 2}
+    - {fileID: 11400000, guid: 020b1f2eef4ce7c4c8ece52719431ccf, type: 2}
+    - {fileID: 11400000, guid: 3e8c2d41ace8d8844aebb1730546132f, type: 2}
+    - {fileID: 11400000, guid: 7c5370b3125675d4cb8547ce8448fdd6, type: 2}
+    - {fileID: 11400000, guid: 05ce8cefefaf9f14fbe65160593db1c2, type: 2}
+    - {fileID: 11400000, guid: 34beaa7542a0fe349bf9d00465302404, type: 2}
+    - {fileID: 11400000, guid: 3411e033fb4331749b639b8a16e3732e, type: 2}
+    - {fileID: 11400000, guid: eb3c8317f856ffd499dca01ddf981820, type: 2}
+    - {fileID: 11400000, guid: 397ced70bc001bf47a741677514c2263, type: 2}

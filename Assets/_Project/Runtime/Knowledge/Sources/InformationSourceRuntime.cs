@@ -41,6 +41,35 @@ namespace UnityIsekaiGame.Knowledge.Sources
             }
 
             InformationSourceDefinition definition = ResolveDefinition(request.SourceDefinitionId);
+            if (definition == null)
+            {
+                definition = ResolveDefinition(request.Category);
+            }
+
+            if (definition == null)
+            {
+                return InformationSourceOperationResult.Failure(InformationSourceResultCode.MissingDefinition, $"No authored Information Source definition resolves category '{request.Category}'.", request.TransactionId, preview, SourceRevision);
+            }
+
+            if (definition.Category != request.Category)
+            {
+                return InformationSourceOperationResult.Failure(InformationSourceResultCode.InvalidRequest, $"Information Source definition '{definition.Id}' declares category '{definition.Category}', not '{request.Category}'.", request.TransactionId, preview, SourceRevision);
+            }
+
+            if (definition.SupportedDomains.Count > 0 && request.Domain != KnowledgeDomain.Unknown && !definition.SupportedDomains.Contains(request.Domain))
+            {
+                return InformationSourceOperationResult.Failure(InformationSourceResultCode.InvalidRequest, $"Information Source definition '{definition.Id}' does not support domain '{request.Domain}'.", request.TransactionId, preview, SourceRevision);
+            }
+
+            if (definition.SupportedMethodIds.Count > 0 && !definition.SupportedMethodIds.Contains(request.MethodId ?? string.Empty, StringComparer.Ordinal))
+            {
+                return InformationSourceOperationResult.Failure(InformationSourceResultCode.InvalidRequest, $"Information Source definition '{definition.Id}' does not support method '{request.MethodId}'.", request.TransactionId, preview, SourceRevision);
+            }
+
+            if (string.IsNullOrWhiteSpace(request.OriginalCreatorPersonId) && !definition.AllowsAnonymous)
+            {
+                return InformationSourceOperationResult.Failure(InformationSourceResultCode.InvalidRequest, $"Information Source definition '{definition.Id}' does not allow anonymous sources.", request.TransactionId, preview, SourceRevision);
+            }
             string sourceId = string.IsNullOrWhiteSpace(request.SourceInstanceId)
                 ? StableSourceId(request.Category, request.ReferencedId, request.TransactionId)
                 : request.SourceInstanceId.Trim();
@@ -58,7 +87,7 @@ namespace UnityIsekaiGame.Knowledge.Sources
             InformationSourceInstanceData data = new InformationSourceInstanceData
             {
                 sourceInstanceId = sourceId,
-                sourceDefinitionId = request.SourceDefinitionId ?? string.Empty,
+                sourceDefinitionId = definition.Id,
                 category = request.Category,
                 referenceType = request.ReferenceType,
                 referencedId = request.ReferencedId ?? string.Empty,
@@ -119,6 +148,20 @@ namespace UnityIsekaiGame.Knowledge.Sources
                 return InformationSourceOperationResult.Failure(InformationSourceResultCode.MissingSource, $"Parent source '{request.ParentSourceId}' is missing.", request.TransactionId, preview, SourceRevision);
             }
 
+            InformationSourceDefinition parentDefinition = ResolveDefinition(parent.sourceDefinitionId);
+            bool transformationAllowed = request.TransformationType switch
+            {
+                InformationSourceTransformationType.Copy => parentDefinition != null && parentDefinition.AllowsCopying,
+                InformationSourceTransformationType.Translation => parentDefinition != null && parentDefinition.AllowsTranslation,
+                InformationSourceTransformationType.Summary => parentDefinition != null && parentDefinition.AllowsSummary,
+                InformationSourceTransformationType.Correction or InformationSourceTransformationType.Supersession or InformationSourceTransformationType.Inference => parentDefinition != null,
+                _ => false
+            };
+            if (!transformationAllowed)
+            {
+                return InformationSourceOperationResult.Failure(InformationSourceResultCode.InvalidRequest, $"Information Source definition '{parent.sourceDefinitionId}' does not allow transformation '{request.TransformationType}'.", request.TransactionId, preview, SourceRevision);
+            }
+
             InformationSourceCategory category = request.TransformationType switch
             {
                 InformationSourceTransformationType.Copy => InformationSourceCategory.CopiedSource,
@@ -126,9 +169,16 @@ namespace UnityIsekaiGame.Knowledge.Sources
                 InformationSourceTransformationType.Summary => InformationSourceCategory.Summary,
                 _ => InformationSourceCategory.Custom
             };
+            InformationSourceDefinition childDefinition = ResolveDefinition(category);
+            if (childDefinition == null)
+            {
+                return InformationSourceOperationResult.Failure(InformationSourceResultCode.MissingDefinition, $"No authored Information Source definition resolves transformed category '{category}'.", request.TransactionId, preview, SourceRevision);
+            }
+
             InformationSourceInstanceData child = parent.Clone();
             child.sourceInstanceId = request.SourceInstanceId.Trim();
             child.category = category;
+            child.sourceDefinitionId = childDefinition.Id;
             child.parentSourceId = parent.sourceInstanceId;
             child.originalSourceId = string.IsNullOrWhiteSpace(parent.originalSourceId) ? parent.sourceInstanceId : parent.originalSourceId;
             child.transmitterPersonId = request.ActorPersonId ?? string.Empty;
@@ -656,6 +706,21 @@ namespace UnityIsekaiGame.Knowledge.Sources
                 : null;
         }
 
+        private InformationSourceDefinition ResolveDefinition(InformationSourceCategory category)
+        {
+            if (registry == null || category == InformationSourceCategory.Unknown)
+            {
+                return null;
+            }
+
+            InformationSourceDefinition[] matches = registry.DefinitionsById.Values
+                .OfType<InformationSourceDefinition>()
+                .Where(definition => definition.Category == category)
+                .OrderBy(definition => definition.Id, StringComparer.Ordinal)
+                .ToArray();
+            return matches.Length == 1 ? matches[0] : null;
+        }
+
         private static int SpecificityScore(PersonSourceAssessmentData assessment)
         {
             int score = 0;
@@ -682,19 +747,19 @@ namespace UnityIsekaiGame.Knowledge.Sources
 
         private static int ApplyAge(InformationSourceInstanceData source, InformationSourceDefinition definition, double worldTime)
         {
-            if (definition == null && source.category != InformationSourceCategory.HistoricalRecord)
+            if (definition == null)
             {
-                return 900;
+                return 0;
             }
 
-            if (definition != null && (definition.StalenessPolicy == KnowledgeStalenessPolicy.NeverStale || definition.StalenessHalfLifeSeconds <= 0d))
+            if (definition.StalenessPolicy == KnowledgeStalenessPolicy.NeverStale || definition.StalenessHalfLifeSeconds <= 0d)
             {
                 return 900;
             }
 
             double sourceTime = Math.Max(source.creationWorldTimeSeconds, Math.Max(source.observationWorldTimeSeconds, source.transmissionWorldTimeSeconds));
             double age = Math.Max(0d, worldTime - sourceTime);
-            double halfLifeSeconds = definition == null ? 1000d : definition.StalenessHalfLifeSeconds;
+            double halfLifeSeconds = definition.StalenessHalfLifeSeconds;
             double halfLives = age / halfLifeSeconds;
             int score = 900 - (int)Math.Round(halfLives * 250d);
             return KnowledgeConfidence.Clamp(score);
@@ -702,7 +767,7 @@ namespace UnityIsekaiGame.Knowledge.Sources
 
         private static int ApplyTransmissionIntegrity(SourceChainSnapshot chain, InformationSourceDefinition definition)
         {
-            int penalty = definition == null ? 80 : definition.TransmissionPenaltyPerHop;
+            int penalty = definition == null ? KnowledgeConfidence.Maximum : definition.TransmissionPenaltyPerHop;
             int score = 900 - Math.Max(0, chain.TransmissionDepth) * penalty;
             foreach (SourceTransformationData transformation in chain.Transformations)
             {

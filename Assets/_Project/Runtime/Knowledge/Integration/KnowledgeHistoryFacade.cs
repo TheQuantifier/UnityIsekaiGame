@@ -162,12 +162,83 @@ namespace UnityIsekaiGame.Knowledge.Integration
             return Wrap(result.Succeeded, result.Code.ToString(), result.Message, KnowledgeHistoryOperationKind.ReadRecord, result.TransactionId, stage, result, KnowledgeHistorySubsystem.Records, KnowledgeHistorySubsystem.Access, KnowledgeHistorySubsystem.Sources, KnowledgeHistorySubsystem.Knowledge, KnowledgeHistorySubsystem.Memory);
         }
 
-        public IReadOnlyList<KnowledgeHistoryDefinitionFallbackDiagnostic> CreateDefinitionFallbackDiagnostics(IEnumerable<string> expectedDefinitionIds, string fallbackProviderId)
+        public IReadOnlyList<InformationAccessProjection<KnowledgeBeliefRecord>> QueryKnowledgeForPerson(
+            InformationAccessContext accessContext,
+            KnowledgeDomain? domain = null,
+            string subjectId = null,
+            string policyId = "")
+        {
+            if (runtimes.KnowledgeRuntime == null)
+            {
+                return Array.Empty<InformationAccessProjection<KnowledgeBeliefRecord>>();
+            }
+
+            return runtimes.KnowledgeRuntime.QueryKnowledgeProjections(
+                runtimes.AccessRuntime,
+                accessContext,
+                domain,
+                subjectId,
+                policyId);
+        }
+
+        public IReadOnlyList<InformationAccessProjection<HistoricalEventRecord>> QueryHistoryForPerson(
+            string personId,
+            InformationAccessContext accessContext,
+            bool publicOnly = false,
+            string policyId = "")
+        {
+            if (runtimes.HistoryRuntime == null)
+            {
+                return Array.Empty<InformationAccessProjection<HistoricalEventRecord>>();
+            }
+
+            return runtimes.HistoryRuntime.QueryHistoryProjectionsByPerson(
+                personId,
+                runtimes.AccessRuntime,
+                accessContext,
+                runtimes.MemoryRuntime,
+                publicOnly,
+                policyId);
+        }
+
+        public IReadOnlyList<InformationAccessProjection<BiographyTimelineEntry>> QueryBiographyForPerson(
+            string personId,
+            InformationAccessContext accessContext,
+            bool publicOnly = false,
+            bool personKnown = false,
+            bool personRemembered = false,
+            string policyId = "")
+        {
+            if (runtimes.HistoryRuntime == null)
+            {
+                return Array.Empty<InformationAccessProjection<BiographyTimelineEntry>>();
+            }
+
+            return runtimes.HistoryRuntime.GetBiographyProjection(
+                personId,
+                runtimes.AccessRuntime,
+                accessContext,
+                runtimes.MemoryRuntime,
+                publicOnly,
+                personKnown,
+                personRemembered,
+                policyId);
+        }
+
+        public IReadOnlyList<KnowledgeRecordProjection> SearchRecords(
+            KnowledgeRecordSearchQuery query,
+            KnowledgeRecordProjectionContext projectionContext)
+        {
+            return runtimes.RecordRuntime?.Search(query, projectionContext, runtimes.AccessRuntime)
+                ?? Array.Empty<KnowledgeRecordProjection>();
+        }
+
+        public IReadOnlyList<KnowledgeHistoryDefinitionCoverageDiagnostic> CreateDefinitionCoverageDiagnostics(IEnumerable<string> expectedDefinitionIds)
         {
             HashSet<string> expected = new HashSet<string>((expectedDefinitionIds ?? Array.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value)), StringComparer.Ordinal);
             return expected
                 .OrderBy(value => value, StringComparer.Ordinal)
-                .Select(id => new KnowledgeHistoryDefinitionFallbackDiagnostic(id, runtimes.DefinitionRegistry != null && runtimes.DefinitionRegistry.Contains(id), true, fallbackProviderId))
+                .Select(id => new KnowledgeHistoryDefinitionCoverageDiagnostic(id, runtimes.DefinitionRegistry != null && runtimes.DefinitionRegistry.Contains(id)))
                 .ToArray();
         }
 
@@ -178,10 +249,10 @@ namespace UnityIsekaiGame.Knowledge.Integration
                 {
                     PersonKnowledgePersistenceParticipant.Key,
                     PersonMemoryPersistenceParticipant.Key,
-                    InformationSourcePersistenceParticipant.Key,
-                    InformationTransferPersistenceParticipant.Key,
-                    InformationAccessPersistenceParticipant.Key,
-                    KnowledgeRecordPersistenceParticipant.Key,
+                    InformationSourcePersistenceParticipant.WorldKey,
+                    InformationTransferPersistenceParticipant.WorldKey,
+                    InformationAccessPersistenceParticipant.WorldKey,
+                    KnowledgeRecordPersistenceParticipant.WorldKey,
                     AuthoritativeHistoryPersistenceParticipant.Key
                 },
                 new[]
@@ -191,10 +262,10 @@ namespace UnityIsekaiGame.Knowledge.Integration
                 new[]
                 {
                     $"{PersonKnowledgePersistenceParticipant.Key} -> {PlayerBodyPersistenceParticipant.Key}",
-                    $"{InformationSourcePersistenceParticipant.Key} -> {PersonKnowledgePersistenceParticipant.Key}",
-                    $"{InformationTransferPersistenceParticipant.Key} -> {PersonKnowledgePersistenceParticipant.Key}/{PersonMemoryPersistenceParticipant.Key}/{InformationSourcePersistenceParticipant.Key}",
-                    $"{InformationAccessPersistenceParticipant.Key} -> {PersonKnowledgePersistenceParticipant.Key}/{PersonMemoryPersistenceParticipant.Key}/{InformationSourcePersistenceParticipant.Key}/{InformationTransferPersistenceParticipant.Key}",
-                    $"{KnowledgeRecordPersistenceParticipant.Key} -> {PersonKnowledgePersistenceParticipant.Key}/{AuthoritativeHistoryPersistenceParticipant.Key}/{PersonMemoryPersistenceParticipant.Key}/{InformationSourcePersistenceParticipant.Key}/{InformationTransferPersistenceParticipant.Key}/{InformationAccessPersistenceParticipant.Key}"
+                    $"{InformationSourcePersistenceParticipant.WorldKey} -> {PersonKnowledgePersistenceParticipant.Key}",
+                    $"{InformationTransferPersistenceParticipant.WorldKey} -> {PersonKnowledgePersistenceParticipant.Key}/{PersonMemoryPersistenceParticipant.Key}/{InformationSourcePersistenceParticipant.WorldKey}",
+                    $"{InformationAccessPersistenceParticipant.WorldKey} -> {PersonKnowledgePersistenceParticipant.Key}/{PersonMemoryPersistenceParticipant.Key}/{InformationSourcePersistenceParticipant.WorldKey}/{InformationTransferPersistenceParticipant.WorldKey}",
+                    $"{KnowledgeRecordPersistenceParticipant.WorldKey} -> {PersonKnowledgePersistenceParticipant.Key}/{AuthoritativeHistoryPersistenceParticipant.Key}/{PersonMemoryPersistenceParticipant.Key}/{InformationSourcePersistenceParticipant.WorldKey}/{InformationTransferPersistenceParticipant.WorldKey}/{InformationAccessPersistenceParticipant.WorldKey}"
                 });
         }
 
