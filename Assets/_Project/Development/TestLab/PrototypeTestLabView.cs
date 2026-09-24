@@ -997,7 +997,7 @@ namespace UnityIsekaiGame.Development
                 ("Prepare", () => service.PrepareKnowledgeHistoryIntegrationFixtures()),
                 ("Readiness", () => service.ValidateKnowledgeHistoryReadiness()),
                 ("Validate", () => service.ValidateKnowledgeHistoryIntegration()),
-                ("Fallbacks", () => service.ShowKnowledgeHistoryFallbackDiagnostics()));
+                ("Definition Coverage", () => service.ShowKnowledgeHistoryDefinitionCoverage()));
             AddButtonRow(parent, font,
                 ("Save Graph", () => service.ValidateKnowledgeHistorySaveCapture()),
                 ("Discovery", () => service.RunKnowledgeHistoryDiscoveryFlow()),

@@ -6487,6 +6487,8 @@ MonoBehaviour:
   registerPlayerTraits: 1
   registerPlayerBody: 1
   registerPlayerKnowledge: 1
+  registerWorldAuthoritativeHistory: 1
+  registerPlayerMemory: 1
   registerPlayerProfessions: 1
   registerPlayerProfessionEntries: 1
   registerPlayerTraining: 1
@@ -6507,10 +6509,10 @@ MonoBehaviour:
   registerWorldSocialInfluence: 1
   registerWorldSocialEmotions: 1
   registerWorldFamilyRelationships: 1
-  registerPlayerInformationSources: 1
-  registerPlayerInformationTransfers: 1
-  registerPlayerInformationAccess: 1
-  registerPlayerKnowledgeRecords: 1
+  registerWorldInformationSources: 1
+  registerWorldInformationTransfers: 1
+  registerWorldInformationAccess: 1
+  registerWorldKnowledgeRecords: 1
   registerPlayerStatusEffects: 1
   registerPlayerResources: 1
   registerPlayerCombatExecution: 1

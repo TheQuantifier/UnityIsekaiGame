@@ -67,6 +67,8 @@ namespace UnityIsekaiGame.Knowledge.Observation
             {
                 report?.AddError($"Identification Method '{DisplayName}' partial threshold cannot exceed exact threshold.");
             }
+
+            MethodValidation.ValidateOptionalReference(RequiredSkillId, definitionsById, "skill", Id, report);
         }
     }
 }

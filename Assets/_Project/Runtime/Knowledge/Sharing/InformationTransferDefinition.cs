@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Knowledge.Observation;
 using UnityIsekaiGame.Knowledge.Sources;
 
 namespace UnityIsekaiGame.Knowledge.Sharing
@@ -166,6 +167,9 @@ namespace UnityIsekaiGame.Knowledge.Sharing
             {
                 report.AddError($"Information Transfer '{DisplayName}' has invalid fidelity or completeness.");
             }
+
+            MethodValidation.ValidateOptionalReference(RequiredCapabilityId, definitionsById, "capability", Id, report);
+            MethodValidation.ValidateOptionalReference(RequiredMethodId, definitionsById, "method", Id, report);
         }
 
         private void ValidateEnum<T>(T value, string enumName, DefinitionValidationReport report)

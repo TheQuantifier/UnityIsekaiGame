@@ -24,7 +24,7 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void RegistersSourceInstancesWithoutMakingEverySourceADefinition()
+        public void RegistersSourceInstancesAgainstCanonicalCategoryDefinition()
         {
             InformationSourceRuntime runtime = Runtime();
 
@@ -32,7 +32,7 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(result.Succeeded, Is.True, result.Message);
             Assert.That(runtime.CreateSnapshot().Sources.Count, Is.EqualTo(1));
-            Assert.That(runtime.CreateSnapshot().Sources[0].Data.sourceDefinitionId, Is.Empty);
+            Assert.That(runtime.CreateSnapshot().Sources[0].Data.sourceDefinitionId, Is.EqualTo("information-source.test.directobservation"));
         }
 
         [Test]
@@ -200,7 +200,8 @@ namespace UnityIsekaiGame.Tests
 
         private static DefinitionRegistry Registry()
         {
-            return new DefinitionRegistry(new IGameDefinition[]
+            return KnowledgeTestDefinitionFactory.AddSourceDefinitions(
+                new IGameDefinition[]
             {
                 Fact(BuiltInKnowledgeFacts.SpeciesCapability, KnowledgeDomain.Species, KnowledgePropositionType.Capability, KnowledgeSubjectType.Species, KnowledgeValueType.StableId)
             });

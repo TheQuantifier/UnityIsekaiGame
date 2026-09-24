@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a16b789c63f4f72b1a84710afbb8f0b, type: 3}
+  m_Name: JournalEntry
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Knowledge.Records.KnowledgeRecordDefinition
+  recordDefinitionId: record-definition.journal-entry
+  displayName: Journal Entry
+  description: Canonical journal entry record type.
+  category: 10
+  allowedSubjectTypes: 0a0000000400000008000000
+  allowedOwnerKinds: 0a00000064000000
+  defaultProjectionKind: 10
+  defaultAccessPolicyId: information-access.personal
+  defaultPersistencePolicy: 10
+  defaultIndexingFields:
+  - subject
+  - category
+  - world-time
+  defaultSortingPolicy: time-then-id
+  defaultGroupingPolicy: category
+  defaultInclusionRequirementId: 
+  explicitDiscoveryRequired: 0
+  explicitRecordingRequired: 1
+  automaticProjectionAllowed: 1
+  multipleEntriesPerSubjectAllowed: 1
+  correctionsSupported: 1
+  revisionsSupported: 1
+  sourceReferencesRequired: 0
+  evidenceReferencesRequired: 0
+  uncertaintyShown: 1
+  contradictionsShown: 1
+  redactionSupported: 1
+  titleLocalizationKey: 
+  summaryLocalizationKey: 
+  tags:
+  - knowledge-record
+  - record-category.journal-entry
+  schemaVersion: 1

@@ -209,26 +209,21 @@ namespace UnityIsekaiGame.Knowledge.Integration
         }
     }
 
-    public sealed class KnowledgeHistoryDefinitionFallbackDiagnostic
+    public sealed class KnowledgeHistoryDefinitionCoverageDiagnostic
     {
-        public KnowledgeHistoryDefinitionFallbackDiagnostic(string definitionId, bool catalogAuthored, bool fallbackAvailable, string providerId)
+        public KnowledgeHistoryDefinitionCoverageDiagnostic(string definitionId, bool catalogAuthored)
         {
             DefinitionId = definitionId ?? string.Empty;
             CatalogAuthored = catalogAuthored;
-            FallbackAvailable = fallbackAvailable;
-            ProviderId = providerId ?? string.Empty;
         }
 
         public string DefinitionId { get; }
         public bool CatalogAuthored { get; }
-        public bool FallbackAvailable { get; }
-        public bool FallbackWouldBeUsed => !CatalogAuthored && FallbackAvailable;
-        public bool Missing => !CatalogAuthored && !FallbackAvailable;
-        public string ProviderId { get; }
+        public bool Missing => !CatalogAuthored;
 
         public string ToSummary()
         {
-            return $"{DefinitionId}: Catalog={CatalogAuthored} Fallback={FallbackAvailable} Provider={ProviderId}";
+            return $"{DefinitionId}: Catalog={CatalogAuthored} Missing={Missing}";
         }
     }
 

@@ -380,7 +380,8 @@ namespace UnityIsekaiGame.Tests
 
         private static DefinitionRegistry Registry()
         {
-            return new DefinitionRegistry(Array.Empty<IGameDefinition>());
+            return KnowledgeTestDefinitionFactory.AddSourceDefinitions(
+                KnowledgeTestDefinitionFactory.TransferDefinition("information-transfer.test.direct", InformationTransferMode.DirectTestimony));
         }
 
         private static InformationAccessRuntime Runtime()
@@ -539,6 +540,7 @@ namespace UnityIsekaiGame.Tests
                 SenderPersonId = "person.sender",
                 RecipientPersonIds = new[] { "person.recipient" },
                 Mode = InformationTransferMode.DirectTestimony,
+                TransferDefinitionId = "information-transfer.test.direct",
                 PrivacyScope = TransferPrivacyScope.Private,
                 DeliberateFalsehoodAuthorized = true,
                 AccessRuntime = access,
@@ -605,7 +607,7 @@ namespace UnityIsekaiGame.Tests
 
             public static AccessFixture Create()
             {
-                DefinitionRegistry registry = new DefinitionRegistry(new IGameDefinition[]
+                DefinitionRegistry registry = KnowledgeTestDefinitionFactory.AddSourceDefinitions(new IGameDefinition[]
                 {
                     Fact(BuiltInKnowledgeFacts.EventOccurred, "Event Occurred", KnowledgeDomain.Historical, KnowledgePropositionType.Event, KnowledgeSubjectType.Event, KnowledgeValueType.Boolean),
                     EventDefinition("history-event.access.secret", HistoricalEventCategory.Discovery, KnowledgeVisibility.Hidden, HistoricalEventPayloadKind.Generic),

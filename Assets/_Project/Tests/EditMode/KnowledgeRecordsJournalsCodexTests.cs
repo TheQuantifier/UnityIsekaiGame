@@ -2,7 +2,9 @@ using System;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
+using UnityIsekaiGame.Development;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Gameplay;
@@ -284,7 +286,7 @@ namespace UnityIsekaiGame.Tests
 
         private static KnowledgeRecordRuntime Runtime(out DefinitionRegistry registry)
         {
-            registry = new DefinitionRegistry(new IGameDefinition[]
+            registry = KnowledgeTestDefinitionFactory.AddSourceDefinitions(new IGameDefinition[]
             {
                 Definition("record-definition.journal-entry", KnowledgeRecordCategory.PersonalJournal, new[] { InformationSubjectType.HistoricalEvent, InformationSubjectType.Claim }, new[] { KnowledgeRecordOwnerKind.Person }),
                 Definition("record-definition.custom-entry", KnowledgeRecordCategory.Custom, new[] { InformationSubjectType.KnowledgeRecord }, new[] { KnowledgeRecordOwnerKind.Person }),
@@ -299,7 +301,9 @@ namespace UnityIsekaiGame.Tests
 
         private static DefinitionRegistry PrototypeRecordRegistry()
         {
-            return new DefinitionRegistry(PrototypeKnowledgeRecordDefinitionFactory.CreateKnowledgeRecordDefinitions().Cast<IGameDefinition>());
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(PrototypeTestLabService.PrototypeCatalogPath);
+            Assert.That(catalog, Is.Not.Null);
+            return catalog.CreateRegistry();
         }
 
         private static KnowledgeRecordDefinition Definition(string id, KnowledgeRecordCategory category, InformationSubjectType[] subjects, KnowledgeRecordOwnerKind[] owners)

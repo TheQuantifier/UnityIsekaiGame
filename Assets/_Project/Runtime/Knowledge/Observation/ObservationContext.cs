@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace UnityIsekaiGame.Knowledge.Observation
@@ -39,7 +40,14 @@ namespace UnityIsekaiGame.Knowledge.Observation
             long expectedBodyRevision = 0L,
             long expectedConditionRevision = 0L,
             string authorityContext = "",
-            string[] tags = null)
+            string[] tags = null,
+            float actualDistance = 0f,
+            bool hasLineOfSight = true,
+            string[] capabilityIds = null,
+            string[] traitIds = null,
+            string[] skillIds = null,
+            string[] equipmentTagIds = null,
+            string[] knowledgeDomainIds = null)
         {
             ObserverPersonId = observerPersonId ?? string.Empty;
             TransactionId = transactionId ?? string.Empty;
@@ -75,6 +83,13 @@ namespace UnityIsekaiGame.Knowledge.Observation
             ExpectedConditionRevision = Math.Max(0L, expectedConditionRevision);
             AuthorityContext = authorityContext ?? string.Empty;
             Tags = (tags ?? Array.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value)).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+            ActualDistance = Math.Max(0f, actualDistance);
+            HasLineOfSight = hasLineOfSight;
+            CapabilityIds = Normalize(capabilityIds);
+            TraitIds = Normalize(traitIds);
+            SkillIds = Normalize(skillIds);
+            EquipmentTagIds = Normalize(equipmentTagIds);
+            KnowledgeDomainIds = Normalize(knowledgeDomainIds);
         }
 
         public string ObserverPersonId { get; }
@@ -111,5 +126,33 @@ namespace UnityIsekaiGame.Knowledge.Observation
         public long ExpectedConditionRevision { get; }
         public string AuthorityContext { get; }
         public string[] Tags { get; }
+        public float ActualDistance { get; }
+        public bool HasLineOfSight { get; }
+        public string[] CapabilityIds { get; }
+        public string[] TraitIds { get; }
+        public string[] SkillIds { get; }
+        public string[] EquipmentTagIds { get; }
+        public string[] KnowledgeDomainIds { get; }
+
+        public bool HasCapability(string id) => Contains(CapabilityIds, id);
+        public bool HasTrait(string id) => Contains(TraitIds, id);
+        public bool HasSkill(string id) => Contains(SkillIds, id);
+        public bool HasEquipmentTag(string id) => Contains(EquipmentTagIds, id);
+        public bool HasKnowledgeDomain(string id) => Contains(KnowledgeDomainIds, id);
+
+        private static string[] Normalize(IEnumerable<string> values)
+        {
+            return (values ?? Array.Empty<string>())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private static bool Contains(IEnumerable<string> values, string id)
+        {
+            return string.IsNullOrWhiteSpace(id) || (values ?? Array.Empty<string>()).Contains(id, StringComparer.Ordinal);
+        }
     }
 }

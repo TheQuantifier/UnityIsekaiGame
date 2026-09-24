@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e35e03a9815343d8a85ec7dad683ef16, type: 3}
+  m_Name: WrittenMessage
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Knowledge.Sharing.InformationTransferDefinition
+  transferDefinitionId: information-transfer.written-message
+  displayName: Written Message
+  description: Canonical written message transfer method.
+  mode: 5
+  supportedDomains: 0100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000
+  allowedSourceCategories: 0100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f000000100000001100000012000000130000001400000015000000160000001700000018000000190000001a0000001b0000001c0000001d0000001e0000001f00000020000000
+  recallRequired: 0
+  directKnowledgeAccessPermitted: 1
+  writtenPersistenceInvolved: 1
+  publicAllowed: 1
+  privateAllowed: 1
+  secretAllowed: 1
+  summarizationAllowed: 1
+  translationAllowed: 1
+  demonstrationAllowed: 0
+  defaultFidelity: 800
+  defaultCompleteness: 800
+  defaultTransmissionCost: 100
+  defaultEvidenceStrength: 650
+  inheritedConfidencePolicy: 1
+  memoryPolicy: 1
+  evidencePolicy: 1
+  defaultPrivacy: 1
+  requiredCapabilityId: 
+  requiredMethodId: 
+  versionMetadata: 1
+  tags:
+  - knowledge-transfer
+  - transfer-mode.WrittenMessage

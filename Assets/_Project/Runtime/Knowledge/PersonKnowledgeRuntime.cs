@@ -562,7 +562,7 @@ namespace UnityIsekaiGame.Knowledge
                 ? CreateBeliefData(PersonId, request.Proposition, definition, request.GameTimeSeconds, request.Visibility)
                 : priorData.Clone();
             ApplyEvidenceToBelief(resultingData, evidence, definition, request.MarkAsMisconception, request.HasTruthAuthorization);
-            KnowledgeBeliefRecord resultingBelief = new KnowledgeBeliefRecord(resultingData, definition);
+            KnowledgeBeliefRecord resultingBelief = new KnowledgeBeliefRecord(resultingData, definition, ResolvePolicy());
             KnowledgeEvidenceRecord evidenceRecord = new KnowledgeEvidenceRecord(evidence);
             KnowledgeDiscovery discovery = BuildDiscovery(priorBelief, resultingBelief, evidenceRecord);
 
@@ -699,7 +699,14 @@ namespace UnityIsekaiGame.Knowledge
         private KnowledgeBeliefRecord WrapBelief(KnowledgeBeliefRecordData data)
         {
             TryResolveFact(data?.proposition?.factDefinitionId, out KnowledgeFactDefinition definition);
-            return data == null ? null : new KnowledgeBeliefRecord(data, definition);
+            return data == null ? null : new KnowledgeBeliefRecord(data, definition, ResolvePolicy());
+        }
+
+        private KnowledgePolicyDefinition ResolvePolicy()
+        {
+            return registry != null && registry.TryGet(KnowledgePolicyDefinition.DefaultPolicyId, out KnowledgePolicyDefinition policy)
+                ? policy
+                : null;
         }
 
         private static InformationSubjectReferenceData BuildKnowledgeSubject(KnowledgeBeliefRecord belief)

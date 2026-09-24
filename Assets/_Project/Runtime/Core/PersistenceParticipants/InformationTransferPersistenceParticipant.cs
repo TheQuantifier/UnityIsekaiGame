@@ -10,31 +10,43 @@ namespace UnityIsekaiGame.Persistence
     public sealed class InformationTransferPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const string Key = "person.information-transfers";
+        public const string WorldKey = "world.information-transfers";
         public const int CurrentParticipantSchemaVersion = InformationTransferSaveData.CurrentSchemaVersion;
 
         private readonly InformationTransferRuntime runtime;
         private readonly Func<DefinitionRegistry> registryProvider;
         private readonly string ownerId;
+        private readonly string participantKey;
+        private readonly PersistenceScope scope;
+        private readonly bool required;
 
         public InformationTransferPersistenceParticipant(
             InformationTransferRuntime runtime,
             Func<DefinitionRegistry> registryProvider,
-            string ownerId = PersistenceService.LocalPlayerId)
+            string ownerId = PersistenceService.LocalPlayerId,
+            PersistenceScope scope = PersistenceScope.Player,
+            string participantKey = Key,
+            bool required = false)
         {
             this.runtime = runtime;
             this.registryProvider = registryProvider;
             this.ownerId = string.IsNullOrWhiteSpace(ownerId) ? PersistenceService.LocalPlayerId : ownerId;
+            this.scope = scope;
+            this.participantKey = string.IsNullOrWhiteSpace(participantKey) ? Key : participantKey;
+            this.required = required;
         }
 
-        public string ParticipantKey => Key;
+        public string ParticipantKey => participantKey;
         public int ParticipantSchemaVersion => CurrentParticipantSchemaVersion;
-        public bool IsRequired => false;
-        public PersistenceScope Scope => PersistenceScope.Player;
+        public bool IsRequired => required;
+        public PersistenceScope Scope => scope;
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Notification;
         public int LoadPriority => 84;
         public IReadOnlyList<string> RequiredDependencies => Array.Empty<string>();
-        public IReadOnlyList<string> OptionalDependencies => new[] { PersonKnowledgePersistenceParticipant.Key, PersonMemoryPersistenceParticipant.Key, InformationSourcePersistenceParticipant.Key };
+        public IReadOnlyList<string> OptionalDependencies => scope == PersistenceScope.Player
+            ? new[] { PersonKnowledgePersistenceParticipant.Key, PersonMemoryPersistenceParticipant.Key, InformationSourcePersistenceParticipant.Key }
+            : new[] { InformationSourcePersistenceParticipant.WorldKey };
         public bool SupportsRollback => true;
         public bool RequiresSceneReadiness => false;
         public bool RequiresDefinitionRegistry => true;
