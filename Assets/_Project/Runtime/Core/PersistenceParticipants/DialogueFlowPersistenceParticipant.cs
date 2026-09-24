@@ -73,7 +73,7 @@ namespace UnityIsekaiGame.Persistence
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Dialogue flow runtime is missing.");
             DialogueFlowRuntimeSaveData saveData = runtime.CreateSaveData();
-            string payload = JsonUtility.ToJson(saveData);
+            string payload = PersistenceSerialization.Serialize(saveData);
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Dialogue flow snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -88,7 +88,7 @@ namespace UnityIsekaiGame.Persistence
             DialogueFlowRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<DialogueFlowRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<DialogueFlowRuntimeSaveData>(payloadJson);
             }
             catch
             {

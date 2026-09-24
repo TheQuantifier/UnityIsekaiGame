@@ -32,7 +32,7 @@ namespace UnityIsekaiGame.Persistence
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.IdentityAndProgression;
         public int LoadPriority => 106;
-        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { PlayerIdentityProgressionPersistenceParticipant.Key, SocialInteractionPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { SocialInteractionPersistenceParticipant.Key };
         public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => new[]
         {
             RelationshipPersistenceParticipant.Key,
@@ -59,14 +59,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             SocialDecisionRuntimeSaveData saveData = runtime.CreateSaveData();
-            PersistenceParticipantPrepareResult prepared = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult prepared = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Social Decision snapshot failed validation.");
             }
 
             DiscardPreparedPayload(prepared.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -84,7 +84,7 @@ namespace UnityIsekaiGame.Persistence
             SocialDecisionRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<SocialDecisionRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<SocialDecisionRuntimeSaveData>(payloadJson);
             }
             catch
             {

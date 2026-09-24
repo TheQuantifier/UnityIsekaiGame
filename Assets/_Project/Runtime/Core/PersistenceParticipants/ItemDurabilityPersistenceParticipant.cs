@@ -61,14 +61,14 @@ namespace UnityIsekaiGame.Persistence
                 return PersistenceParticipantSaveResult.Failure(failure);
             }
 
-            PersistenceParticipantPrepareResult prepared = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult prepared = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Item durability snapshot failed validation.");
             }
 
             DiscardPreparedPayload(prepared.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -86,7 +86,7 @@ namespace UnityIsekaiGame.Persistence
             ItemDurabilityRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<ItemDurabilityRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<ItemDurabilityRuntimeSaveData>(payloadJson);
             }
             catch (Exception)
             {

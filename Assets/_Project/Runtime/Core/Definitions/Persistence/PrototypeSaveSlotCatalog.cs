@@ -10,14 +10,25 @@ namespace UnityIsekaiGame.GameData.Persistence
         public const int DefaultManualSlotCount = 5;
         public const int DefaultAutosaveSlotCount = 3;
         public const string AutosaveStagingSlotId = "autosave-staging";
+        public const string CurrentWorldCheckpointSlotId = "world-current";
 
         public static string ManualSlotId(int zeroBasedIndex)
         {
+            if (zeroBasedIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(zeroBasedIndex));
+            }
+
             return $"manual-{zeroBasedIndex + 1}";
         }
 
         public static string AutosaveSlotId(int zeroBasedGeneration)
         {
+            if (zeroBasedGeneration < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(zeroBasedGeneration));
+            }
+
             return $"autosave-{zeroBasedGeneration}";
         }
 
@@ -150,6 +161,16 @@ namespace UnityIsekaiGame.GameData.Persistence
             if (metadata.schemaVersion > PersistenceService.CurrentSchemaVersion)
             {
                 return SaveCompatibilityStatus.FutureVersion;
+            }
+
+            if (metadata.schemaVersion != PersistenceService.CurrentSchemaVersion)
+            {
+                return SaveCompatibilityStatus.Corrupted;
+            }
+
+            if (service != null && service.ContextKind != PersistenceContextKind.Player)
+            {
+                return SaveCompatibilityStatus.WrongContext;
             }
 
             if (service != null && !string.IsNullOrWhiteSpace(metadata.worldId) && metadata.worldId != service.WorldId)

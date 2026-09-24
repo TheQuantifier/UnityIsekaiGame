@@ -20,6 +20,46 @@ namespace UnityIsekaiGame.GameData.Persistence
 
         public string RootDirectory => rootDirectory;
 
+        public static PersistencePathProvider ForPlayer(string playerId, string baseRoot = null)
+        {
+            return ForContext("Players", playerId, baseRoot);
+        }
+
+        public static PersistencePathProvider ForWorld(string worldId, string baseRoot = null)
+        {
+            return ForContext("Worlds", worldId, baseRoot);
+        }
+
+        private static PersistencePathProvider ForContext(string contextFolder, string ownerId, string baseRoot)
+        {
+            string normalizedOwner = NormalizeOwnerPathSegment(ownerId);
+            string root = string.IsNullOrWhiteSpace(baseRoot)
+                ? Path.Combine(Application.persistentDataPath, DefaultFolderName)
+                : Path.GetFullPath(baseRoot);
+            return new PersistencePathProvider(Path.Combine(root, contextFolder, normalizedOwner));
+        }
+
+        private static string NormalizeOwnerPathSegment(string ownerId)
+        {
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                throw new ArgumentException("Persistence owner ID cannot be empty.", nameof(ownerId));
+            }
+
+            string normalized = ownerId.Trim();
+            for (int i = 0; i < normalized.Length; i++)
+            {
+                char value = normalized[i];
+                bool valid = char.IsLetterOrDigit(value) || value == '-' || value == '_' || value == '.';
+                if (!valid)
+                {
+                    throw new ArgumentException($"Persistence owner ID '{ownerId}' contains a path-unsafe character.", nameof(ownerId));
+                }
+            }
+
+            return normalized;
+        }
+
         public bool IsValidSlotId(string slotId)
         {
             if (string.IsNullOrWhiteSpace(slotId) || slotId.Length > 64)

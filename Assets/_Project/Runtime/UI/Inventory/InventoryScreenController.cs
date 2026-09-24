@@ -289,6 +289,7 @@ namespace UnityIsekaiGame.UI.Inventory
             previousLockState = Cursor.lockState;
             previousCursorVisible = Cursor.visible;
             isOpen = true;
+            saveLoadPersistence?.PlayTime?.SetMenuOpen(true);
 
             if (input != null)
             {
@@ -328,6 +329,7 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             isOpen = false;
+            saveLoadPersistence?.PlayTime?.SetMenuOpen(false);
         }
 
         private void Refresh()

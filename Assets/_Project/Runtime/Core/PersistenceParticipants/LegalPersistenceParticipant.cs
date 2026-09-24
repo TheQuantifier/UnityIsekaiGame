@@ -81,7 +81,7 @@ namespace UnityIsekaiGame.Persistence
         public PersistenceParticipantSaveResult CapturePayload()
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Legal runtime is missing.");
-            string payload = JsonUtility.ToJson(runtime.CreateSaveData());
+            string payload = PersistenceSerialization.Serialize(runtime.CreateSaveData());
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Legal snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -93,7 +93,7 @@ namespace UnityIsekaiGame.Persistence
             if (payloadSchemaVersion != CurrentParticipantSchemaVersion) return PersistenceParticipantPrepareResult.Failure($"Unsupported legal participant schema version {payloadSchemaVersion}.");
             if (string.IsNullOrWhiteSpace(payloadJson)) return PersistenceParticipantPrepareResult.Failure("Legal payload is empty.");
             LegalRuntimeSaveData saveData;
-            try { saveData = JsonUtility.FromJson<LegalRuntimeSaveData>(payloadJson); }
+            try { saveData = PersistenceSerialization.Deserialize<LegalRuntimeSaveData>(payloadJson); }
             catch { return PersistenceParticipantPrepareResult.Failure("Legal payload is malformed JSON."); }
             LegalValidationReport validation = validationService.Validate(saveData, registryProvider?.Invoke(), governmentProvider?.Invoke(), organizationProvider?.Invoke(), authorityProvider?.Invoke(), decisionProvider?.Invoke(), diplomacyProvider?.Invoke(), propertyProvider?.Invoke(), ownerId, personProvider?.Invoke(), placeProvider?.Invoke());
             if (!validation.IsValid) return PersistenceParticipantPrepareResult.Failure(validation.Errors.FirstOrDefault() ?? "Legal payload failed validation.");

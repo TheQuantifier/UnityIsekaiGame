@@ -32,7 +32,7 @@ namespace UnityIsekaiGame.Persistence
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.IdentityAndProgression;
         public int LoadPriority => 98;
-        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { PlayerIdentityProgressionPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => Array.Empty<string>();
         public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => new[]
         {
             PersonKnowledgePersistenceParticipant.Key,
@@ -57,14 +57,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             RumorRuntimeSaveData saveData = runtime.CreateSaveData();
-            PersistenceParticipantPrepareResult prepared = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult prepared = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Rumor snapshot failed validation.");
             }
 
             DiscardPreparedPayload(prepared.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -82,7 +82,7 @@ namespace UnityIsekaiGame.Persistence
             RumorRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<RumorRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<RumorRuntimeSaveData>(payloadJson);
             }
             catch
             {

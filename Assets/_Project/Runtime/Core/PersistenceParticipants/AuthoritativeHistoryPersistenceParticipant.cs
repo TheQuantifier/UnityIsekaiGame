@@ -54,14 +54,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             AuthoritativeHistorySaveData saveData = history.CreateSaveData();
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Authoritative History snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -79,7 +79,7 @@ namespace UnityIsekaiGame.Persistence
             AuthoritativeHistorySaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<AuthoritativeHistorySaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<AuthoritativeHistorySaveData>(payloadJson);
             }
             catch
             {

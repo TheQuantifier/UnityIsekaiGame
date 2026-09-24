@@ -174,7 +174,7 @@ namespace UnityIsekaiGame.Development
 
         public IReadOnlyList<PrototypeTestLabOperation> History => history;
         public DefinitionRegistry Registry => registry;
-        public string CurrentSlotId => context?.Persistence == null ? PersistenceService.PrototypeSlotId : context.Persistence.PrototypeSlotId;
+        public string CurrentSlotId => PrototypeSaveSlotCatalog.ManualSlotId(0);
 
         public PrototypeTestLabService()
         {
@@ -832,7 +832,7 @@ namespace UnityIsekaiGame.Development
                 sections.Add(CreateSceneFingerprintSection(
                     "Scene.Persistence",
                     context?.Persistence == null ? 0L : (long)Math.Round(context.Persistence.PlayTime == null ? 0d : context.Persistence.PlayTime.CumulativeSeconds),
-                    context?.Persistence == null ? null : context.Persistence.PrototypeSlotId,
+                    CurrentSlotId,
                     context?.Persistence == null ? null : context.Persistence.DirtyTracker,
                     context?.Persistence == null || context.Persistence.PlayTime == null ? null : context.Persistence.PlayTime.CumulativeSeconds,
                     CurrentSlotId));
@@ -12972,33 +12972,33 @@ namespace UnityIsekaiGame.Development
         {
             if (!EnsurePersistence(out PrototypePersistenceServiceBehaviour persistence))
             {
-                return RecordFailure("Save Prototype Slot", "Persistence service is missing.", "MissingPersistence");
+                return RecordFailure("Save Manual Slot 1", "Persistence service is missing.", "MissingPersistence");
             }
 
-            PersistenceSaveResult result = persistence.SavePrototypeSlot();
-            return Record(result.Succeeded, "Save Prototype Slot", result.Status.ToString(), result.Message);
+            PersistenceSaveResult result = persistence.SaveManualSlot(0);
+            return Record(result.Succeeded, "Save Manual Slot 1", result.Status.ToString(), result.Message);
         }
 
         public PrototypeTestLabOperation Load()
         {
             if (!EnsurePersistence(out PrototypePersistenceServiceBehaviour persistence))
             {
-                return RecordFailure("Load Prototype Slot", "Persistence service is missing.", "MissingPersistence");
+                return RecordFailure("Load Manual Slot 1", "Persistence service is missing.", "MissingPersistence");
             }
 
-            PersistenceLoadResult result = persistence.LoadPrototypeSlot(suppressExpectedAutomationWarnings);
-            return Record(result.Succeeded, "Load Prototype Slot", result.Status.ToString(), result.Message);
+            PersistenceLoadResult result = persistence.LoadSaveSlot(CurrentSlotId);
+            return Record(result.Succeeded, "Load Manual Slot 1", result.Status.ToString(), result.Message);
         }
 
         public PrototypeTestLabOperation ValidateSave()
         {
             if (!EnsurePersistence(out PrototypePersistenceServiceBehaviour persistence))
             {
-                return RecordFailure("Validate Prototype Slot", "Persistence service is missing.", "MissingPersistence");
+                return RecordFailure("Validate Manual Slot 1", "Persistence service is missing.", "MissingPersistence");
             }
 
-            PersistenceValidationResult result = persistence.ValidatePrototypeSlot();
-            return Record(result.Succeeded, "Validate Prototype Slot", result.Status.ToString(), $"{result.Message} BackupAvailable={result.BackupAvailable}");
+            PersistenceValidationResult result = persistence.ValidateSaveSlot(CurrentSlotId);
+            return Record(result.Succeeded, "Validate Manual Slot 1", result.Status.ToString(), $"{result.Message} BackupAvailable={result.BackupAvailable}");
         }
 
         public PrototypeTestLabOperation DeleteSave(bool confirmed)
@@ -13010,11 +13010,11 @@ namespace UnityIsekaiGame.Development
 
             if (!EnsurePersistence(out PrototypePersistenceServiceBehaviour persistence))
             {
-                return RecordFailure("Delete Prototype Slot", "Persistence service is missing.", "MissingPersistence");
+                return RecordFailure("Delete Manual Slot 1", "Persistence service is missing.", "MissingPersistence");
             }
 
-            PersistenceDeleteResult result = persistence.DeletePrototypeSlot();
-            return Record(result.Succeeded, "Delete Prototype Slot", result.Status.ToString(), result.Message);
+            PersistenceDeleteResult result = persistence.DeleteSaveSlot(CurrentSlotId);
+            return Record(result.Succeeded, "Delete Manual Slot 1", result.Status.ToString(), result.Message);
         }
 
         public PrototypeTestLabOperation ForceAutosave()

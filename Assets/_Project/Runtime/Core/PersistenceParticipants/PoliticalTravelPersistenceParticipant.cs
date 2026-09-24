@@ -64,7 +64,7 @@ namespace UnityIsekaiGame.Persistence
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Political travel runtime is missing.");
             PoliticalTravelRuntimeSaveData saveData = runtime.CreateSaveData();
-            string payload = JsonUtility.ToJson(saveData);
+            string payload = PersistenceSerialization.Serialize(saveData);
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Political travel snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -78,7 +78,7 @@ namespace UnityIsekaiGame.Persistence
             PoliticalTravelRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<PoliticalTravelRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<PoliticalTravelRuntimeSaveData>(payloadJson);
             }
             catch
             {

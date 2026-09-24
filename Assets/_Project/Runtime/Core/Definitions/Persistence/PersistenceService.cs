@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
@@ -10,15 +12,17 @@ namespace UnityIsekaiGame.GameData.Persistence
     public sealed class PersistenceService
     {
         public const string FormatIdentifier = "UnityIsekaiGame.Save";
-        public const int CurrentSchemaVersion = 2;
-        public const string PrototypeSlotId = "slot-0001";
+        public const int CurrentSchemaVersion = 3;
         public const string LocalWorldId = "local-world";
         public const string LocalPlayerId = "local-player";
         public const string LocalAccountId = "local-account";
 
         private readonly PersistencePathProvider pathProvider;
+        private readonly ISaveSerializer serializer;
         private readonly List<IPersistenceParticipant> participants = new List<IPersistenceParticipant>();
         private readonly Dictionary<string, IPersistenceParticipant> participantsByKey = new Dictionary<string, IPersistenceParticipant>(StringComparer.Ordinal);
+        private readonly Dictionary<string, PersistenceParticipantDescriptor> descriptorsByKey = new Dictionary<string, PersistenceParticipantDescriptor>(StringComparer.Ordinal);
+        private readonly List<IPersistenceConsistencyValidator> consistencyValidators = new List<IPersistenceConsistencyValidator>();
         private bool operationInProgress;
         private PersistenceOperationState operationState = PersistenceOperationState.Idle;
         private PersistenceTransactionPhase currentPhase = PersistenceTransactionPhase.Idle;
@@ -32,12 +36,18 @@ namespace UnityIsekaiGame.GameData.Persistence
             string gameVersion = "0.4.1-prototype",
             string worldId = LocalWorldId,
             string playerId = LocalPlayerId,
-            string accountId = LocalAccountId)
+            string accountId = LocalAccountId,
+            PersistenceContextKind contextKind = PersistenceContextKind.Player,
+            ISaveSerializer serializer = null)
         {
             this.pathProvider = pathProvider ?? new PersistencePathProvider();
+            this.serializer = serializer ?? PersistenceSerialization.Serializer;
+            ContextKind = contextKind;
             GameVersion = gameVersion;
             WorldId = string.IsNullOrWhiteSpace(worldId) ? LocalWorldId : worldId;
-            PlayerId = string.IsNullOrWhiteSpace(playerId) ? LocalPlayerId : playerId;
+            PlayerId = contextKind == PersistenceContextKind.World
+                ? string.Empty
+                : string.IsNullOrWhiteSpace(playerId) ? LocalPlayerId : playerId;
             AccountId = string.IsNullOrWhiteSpace(accountId) ? LocalAccountId : accountId;
         }
 
@@ -55,6 +65,7 @@ namespace UnityIsekaiGame.GameData.Persistence
         public string WorldId { get; }
         public string PlayerId { get; }
         public string AccountId { get; }
+        public PersistenceContextKind ContextKind { get; }
         public bool OperationInProgress => operationInProgress;
         public PersistenceOperationState OperationState => operationState;
         public PersistenceTransactionPhase CurrentPhase => currentPhase;
@@ -63,7 +74,7 @@ namespace UnityIsekaiGame.GameData.Persistence
         public int ParticipantCount => participants.Count;
         public PersistencePathProvider PathProvider => pathProvider;
         public Func<double> PlaytimeSecondsProvider { get; set; }
-        public Func<PersistenceConsistencyAuditReport> ConsistencyAuditProvider { get; set; }
+        public ISaveMetadataProvider MetadataProvider { get; set; }
         public PersistenceFaultInjection FaultInjection { get; } = new PersistenceFaultInjection();
 
         public bool RegisterParticipant(IPersistenceParticipant participant, out string failureReason)
@@ -87,9 +98,43 @@ namespace UnityIsekaiGame.GameData.Persistence
                 return false;
             }
 
+            if (!AcceptsScope(participant.Scope))
+            {
+                failureReason = $"Persistence participant '{participant.ParticipantKey}' with scope {participant.Scope} cannot be registered in the {ContextKind} persistence context.";
+                return false;
+            }
+
+            PersistenceParticipantDescriptor descriptor = PersistenceParticipantDescriptor.From(participant);
+            if (descriptor.SchemaVersion <= 0)
+            {
+                failureReason = $"Persistence participant '{descriptor.Key}' has invalid schema version {descriptor.SchemaVersion}.";
+                return false;
+            }
+
             participants.Add(participant);
             participantsByKey.Add(participant.ParticipantKey, participant);
+            descriptorsByKey.Add(participant.ParticipantKey, descriptor);
             participants.Sort(CompareParticipants);
+            return true;
+        }
+
+        public bool RegisterConsistencyValidator(IPersistenceConsistencyValidator validator, out string failureReason)
+        {
+            failureReason = string.Empty;
+            if (validator == null || string.IsNullOrWhiteSpace(validator.ValidatorKey))
+            {
+                failureReason = "Cannot register a missing or unnamed persistence consistency validator.";
+                return false;
+            }
+
+            if (consistencyValidators.Exists(candidate => string.Equals(candidate.ValidatorKey, validator.ValidatorKey, StringComparison.Ordinal)))
+            {
+                failureReason = $"Persistence consistency validator '{validator.ValidatorKey}' is already registered.";
+                return false;
+            }
+
+            consistencyValidators.Add(validator);
+            consistencyValidators.Sort((a, b) => string.CompareOrdinal(a.ValidatorKey, b.ValidatorKey));
             return true;
         }
 
@@ -104,6 +149,7 @@ namespace UnityIsekaiGame.GameData.Persistence
             if (participantsByKey.TryGetValue(participant.ParticipantKey, out IPersistenceParticipant found) && ReferenceEquals(found, participant))
             {
                 participantsByKey.Remove(participant.ParticipantKey);
+                descriptorsByKey.Remove(participant.ParticipantKey);
             }
         }
 
@@ -111,6 +157,8 @@ namespace UnityIsekaiGame.GameData.Persistence
         {
             participants.Clear();
             participantsByKey.Clear();
+            descriptorsByKey.Clear();
+            consistencyValidators.Clear();
             operationInProgress = false;
             operationState = PersistenceOperationState.Idle;
             currentPhase = PersistenceTransactionPhase.Idle;
@@ -165,7 +213,7 @@ namespace UnityIsekaiGame.GameData.Persistence
                 string serialized;
                 try
                 {
-                    serialized = JsonUtility.ToJson(envelope, true);
+                    serialized = serializer.Serialize(envelope, true);
                     if (string.IsNullOrWhiteSpace(serialized))
                     {
                         return FinishSave(PersistenceSaveResult.Failure(PersistenceSaveStatus.SerializationFailed, slotId, paths.PrimaryPath, "Save envelope serialized to empty JSON.", transactionId: transactionId, phase: PersistenceTransactionPhase.BuildEnvelope));
@@ -426,6 +474,13 @@ namespace UnityIsekaiGame.GameData.Persistence
                 lastRecoveryRecommendation = lastRecoveryRecommendation ?? string.Empty,
                 lastConsistencyAudit = lastConsistencyAudit ?? string.Empty
             };
+        }
+
+        public IReadOnlyList<PersistenceParticipantDescriptor> BuildParticipantManifest()
+        {
+            List<PersistenceParticipantDescriptor> manifest = new List<PersistenceParticipantDescriptor>(descriptorsByKey.Values);
+            manifest.Sort((a, b) => string.CompareOrdinal(a.Key, b.Key));
+            return manifest;
         }
 
         public string BuildRuntimeStateFingerprint()
@@ -701,6 +756,7 @@ namespace UnityIsekaiGame.GameData.Persistence
             {
                 formatIdentifier = FormatIdentifier,
                 schemaVersion = CurrentSchemaVersion,
+                persistenceContext = (int)ContextKind,
                 gameVersion = GameVersion,
                 saveId = string.IsNullOrWhiteSpace(previous?.saveId) ? Guid.NewGuid().ToString("N") : previous.saveId,
                 slotId = slotId,
@@ -711,18 +767,27 @@ namespace UnityIsekaiGame.GameData.Persistence
                 createdUtc = string.IsNullOrWhiteSpace(previous?.createdUtc) ? now : previous.createdUtc,
                 lastWrittenUtc = now,
                 playtimeSeconds = PlaytimeSecondsProvider == null ? previous?.playtimeSeconds ?? 0 : Math.Max(0d, PlaytimeSecondsProvider.Invoke()),
-                sceneSummary = "Prototype scene placeholder",
-                placeSummary = "Prototype place placeholder",
-                playerSummary = "Prototype player placeholder",
+                sceneSummary = string.Empty,
+                placeSummary = string.Empty,
+                playerSummary = string.Empty,
                 transactionId = string.IsNullOrWhiteSpace(transactionId) ? Guid.NewGuid().ToString("N") : transactionId,
                 parentTransactionId = previous?.transactionId ?? string.Empty,
                 saveRevision = Math.Max(0, previous?.saveRevision ?? 0) + 1,
                 completedWriteMarker = true
             };
 
+            SaveMetadataSnapshot metadata = MetadataProvider?.CaptureMetadata();
+            if (metadata != null)
+            {
+                envelope.sceneSummary = metadata.SceneId ?? string.Empty;
+                envelope.placeSummary = metadata.PlaceId ?? string.Empty;
+                envelope.playerSummary = metadata.PlayerSummary ?? string.Empty;
+            }
+
             IReadOnlyList<IPersistenceParticipant> orderedParticipants = GetOrderedParticipants();
             foreach (IPersistenceParticipant participant in orderedParticipants)
             {
+                PersistenceParticipantDescriptor descriptor = descriptorsByKey[participant.ParticipantKey];
                 PersistenceParticipantSaveResult result = participant.CapturePayload();
                 if (result == null || !result.Succeeded)
                 {
@@ -741,16 +806,15 @@ namespace UnityIsekaiGame.GameData.Persistence
                 }
 
                 participant.DiscardPreparedPayload(prepareResult.PreparedPayload);
-                ApplyParticipantMetadata(envelope, participant, result.PayloadJson);
                 envelope.participants.Add(new SaveParticipantRecord
                 {
                     participantKey = participant.ParticipantKey,
-                    participantSchemaVersion = participant.ParticipantSchemaVersion,
-                    required = participant.IsRequired,
-                    persistenceScope = (int)participant.Scope,
-                    ownerId = participant.OwnerId ?? string.Empty,
-                    loadPhase = (int)participant.LoadPhase,
-                    loadPriority = participant.LoadPriority,
+                    participantSchemaVersion = descriptor.SchemaVersion,
+                    required = descriptor.Required,
+                    persistenceScope = (int)descriptor.Scope,
+                    ownerId = descriptor.OwnerId,
+                    loadPhase = (int)descriptor.LoadPhase,
+                    loadPriority = descriptor.LoadPriority,
                     payloadJson = result.PayloadJson
                 });
             }
@@ -759,43 +823,6 @@ namespace UnityIsekaiGame.GameData.Persistence
             envelope.contentChecksum = ComputeChecksum(envelope);
             return envelope;
         }
-
-        private static void ApplyParticipantMetadata(GameSaveEnvelope envelope, IPersistenceParticipant participant, string payloadJson)
-        {
-            if (envelope == null || participant == null || participant.ParticipantKey != "player.location" || string.IsNullOrWhiteSpace(payloadJson))
-            {
-                return;
-            }
-
-            try
-            {
-                PlayerLocationMetadataPayload location = JsonUtility.FromJson<PlayerLocationMetadataPayload>(payloadJson);
-                if (location == null)
-                {
-                    return;
-                }
-
-                envelope.sceneSummary = location.sceneKey;
-                envelope.placeSummary = location.placeId;
-                envelope.playerSummary = $"Position {location.positionX:0.##}, {location.positionY:0.##}, {location.positionZ:0.##}";
-            }
-            catch
-            {
-                // Metadata must never make an otherwise valid save fail.
-            }
-        }
-
-#pragma warning disable 0649
-        [Serializable]
-        private sealed class PlayerLocationMetadataPayload
-        {
-            public string sceneKey;
-            public string placeId;
-            public float positionX;
-            public float positionY;
-            public float positionZ;
-        }
-#pragma warning restore 0649
 
         private PersistenceSaveResult WriteAtomically(SaveSlotPaths paths, string serialized, string transactionId)
         {
@@ -1078,14 +1105,59 @@ namespace UnityIsekaiGame.GameData.Persistence
             }
             else
             {
-                report = ConsistencyAuditProvider == null
-                    ? PersistenceConsistencyAuditReport.Success()
-                    : ConsistencyAuditProvider.Invoke() ?? PersistenceConsistencyAuditReport.Critical("MissingAuditReport", "Consistency audit provider returned no report.");
+                report = RunRegisteredConsistencyValidators();
             }
 
             lastConsistencyAudit = report.message ?? string.Empty;
             ConsistencyAuditCompleted?.Invoke(report);
             return report;
+        }
+
+        private PersistenceConsistencyAuditReport RunRegisteredConsistencyValidators()
+        {
+            if (consistencyValidators.Count == 0)
+            {
+                return PersistenceConsistencyAuditReport.Success("No domain consistency validators are registered for this persistence context.");
+            }
+
+            List<PersistenceConsistencyFinding> findings = new List<PersistenceConsistencyFinding>();
+            bool requiredFailure = false;
+            for (int i = 0; i < consistencyValidators.Count; i++)
+            {
+                IPersistenceConsistencyValidator validator = consistencyValidators[i];
+                PersistenceConsistencyAuditReport result;
+                try
+                {
+                    result = validator.Validate();
+                }
+                catch (Exception exception)
+                {
+                    result = PersistenceConsistencyAuditReport.Critical(
+                        "ValidatorException",
+                        $"Consistency validator '{validator.ValidatorKey}' threw {exception.GetType().Name}: {exception.Message}");
+                }
+
+                if (result == null)
+                {
+                    result = PersistenceConsistencyAuditReport.Critical("MissingAuditReport", $"Consistency validator '{validator.ValidatorKey}' returned no report.");
+                }
+
+                if (result.findings != null)
+                {
+                    findings.AddRange(result.findings);
+                }
+
+                requiredFailure |= validator.IsRequired && (!result.succeeded || result.HasCriticalFinding);
+            }
+
+            return new PersistenceConsistencyAuditReport
+            {
+                succeeded = !requiredFailure,
+                message = requiredFailure
+                    ? $"{ContextKind} persistence consistency validation failed."
+                    : $"{ContextKind} persistence consistency validation passed.",
+                findings = findings.ToArray()
+            };
         }
 
         private PersistenceValidationResult ValidatePath(string slotId, string path, bool isBackup, bool validateParticipants)
@@ -1113,7 +1185,7 @@ namespace UnityIsekaiGame.GameData.Persistence
             GameSaveEnvelope envelope;
             try
             {
-                envelope = JsonUtility.FromJson<GameSaveEnvelope>(json);
+                envelope = serializer.Deserialize<GameSaveEnvelope>(json);
             }
             catch (Exception exception)
             {
@@ -1141,6 +1213,41 @@ namespace UnityIsekaiGame.GameData.Persistence
             if (envelope.schemaVersion != CurrentSchemaVersion)
             {
                 return PersistenceValidationResult.Failure(PersistenceValidationStatus.UnsupportedSchemaVersion, slotId, path, $"Unsupported save schema version {envelope.schemaVersion}.");
+            }
+
+            if (!string.Equals(envelope.gameVersion, GameVersion, StringComparison.Ordinal))
+            {
+                return PersistenceValidationResult.Failure(PersistenceValidationStatus.UnsupportedGameVersion, slotId, path, $"Save game version '{envelope.gameVersion}' does not match runtime version '{GameVersion}'.");
+            }
+
+            if (envelope.persistenceContext != (int)ContextKind)
+            {
+                return PersistenceValidationResult.Failure(PersistenceValidationStatus.WrongSaveContext, slotId, path, $"Save context {(PersistenceContextKind)envelope.persistenceContext} cannot be loaded by the {ContextKind} service.");
+            }
+
+            if (!string.Equals(envelope.slotId, slotId, StringComparison.Ordinal))
+            {
+                return PersistenceValidationResult.Failure(PersistenceValidationStatus.WrongSlot, slotId, path, $"Save declares slot '{envelope.slotId}' instead of requested slot '{slotId}'.");
+            }
+
+            if (!string.Equals(envelope.worldId, WorldId, StringComparison.Ordinal))
+            {
+                return PersistenceValidationResult.Failure(PersistenceValidationStatus.WrongWorld, slotId, path, $"Save belongs to world '{envelope.worldId}', not '{WorldId}'.");
+            }
+
+            if (!string.Equals(envelope.playerId ?? string.Empty, PlayerId ?? string.Empty, StringComparison.Ordinal))
+            {
+                return PersistenceValidationResult.Failure(PersistenceValidationStatus.WrongPlayer, slotId, path, $"Save belongs to player '{envelope.playerId}', not '{PlayerId}'.");
+            }
+
+            if (!string.Equals(envelope.accountId, AccountId, StringComparison.Ordinal))
+            {
+                return PersistenceValidationResult.Failure(PersistenceValidationStatus.WrongAccount, slotId, path, $"Save belongs to account '{envelope.accountId}', not '{AccountId}'.");
+            }
+
+            if (!envelope.completedWriteMarker)
+            {
+                return PersistenceValidationResult.Failure(PersistenceValidationStatus.IncompleteWrite, slotId, path, "Save does not contain a completed-write marker.");
             }
 
             envelope.participants?.Sort(CompareRecords);
@@ -1305,63 +1412,18 @@ namespace UnityIsekaiGame.GameData.Persistence
 
         private static PersistenceParticipantDependencyMetadata BuildDependencyMetadata(IPersistenceParticipant participant)
         {
-            string[] required = Array.Empty<string>();
-            string[] optional = DefaultOrderingDependencies(participant?.ParticipantKey);
-            bool supportsRollback = true;
-            bool requiresScene = false;
-            bool requiresDefinitions = false;
-            bool requiresWorldEntities = false;
-
-            if (participant is IPersistenceParticipantDependencies dependencyProvider)
-            {
-                required = MergeDependencies(required, dependencyProvider.RequiredDependencies);
-                optional = MergeDependencies(optional, dependencyProvider.OptionalDependencies);
-                supportsRollback = dependencyProvider.SupportsRollback;
-                requiresScene = dependencyProvider.RequiresSceneReadiness;
-                requiresDefinitions = dependencyProvider.RequiresDefinitionRegistry;
-                requiresWorldEntities = dependencyProvider.RequiresWorldEntityRegistry;
-            }
+            PersistenceParticipantDescriptor descriptor = PersistenceParticipantDescriptor.From(participant);
 
             return new PersistenceParticipantDependencyMetadata
             {
-                participantKey = participant?.ParticipantKey ?? string.Empty,
-                requiredDependencies = required,
-                optionalDependencies = optional,
-                supportsRollback = supportsRollback,
-                requiresSceneReadiness = requiresScene || participant?.ParticipantKey == "player.location",
-                requiresDefinitionRegistry = requiresDefinitions || IsPlayerDataParticipant(participant?.ParticipantKey),
-                requiresWorldEntityRegistry = requiresWorldEntities
+                participantKey = descriptor?.Key ?? string.Empty,
+                requiredDependencies = ToArray(descriptor?.RequiredDependencies),
+                optionalDependencies = ToArray(descriptor?.OptionalDependencies),
+                supportsRollback = descriptor?.SupportsRollback ?? false,
+                requiresSceneReadiness = descriptor?.RequiresSceneReadiness ?? false,
+                requiresDefinitionRegistry = descriptor?.RequiresDefinitionRegistry ?? false,
+                requiresWorldEntityRegistry = descriptor?.RequiresWorldEntityRegistry ?? false
             };
-        }
-
-        private static string[] DefaultOrderingDependencies(string participantKey)
-        {
-            return participantKey switch
-            {
-                "player.skills" => new[] { "player.identity-progression", "player.attributes" },
-                "player.traits" => new[] { "player.identity-progression", "player.attributes", "player.skills" },
-                "player.body" => new[] { "player.identity-progression", "player.attributes", "player.skills", "player.traits" },
-                "player.inventory-equipment" => new[] { "player.skills", "player.traits", "player.body" },
-                "player.stats-vitals-status" => new[] { "player.inventory-equipment" },
-                "player.resources" => new[] { "player.stats-vitals-status" },
-                "player.combat-execution" => new[] { "player.resources" },
-                "player.quests-contracts" => new[] { "player.inventory-equipment", "player.resources", "player.stats-vitals-status" },
-                "player.location" => new[] { "player.quests-contracts" },
-                _ => Array.Empty<string>()
-            };
-        }
-
-        private static bool IsPlayerDataParticipant(string participantKey)
-        {
-            return participantKey == "player.skills"
-                || participantKey == "player.traits"
-                || participantKey == "player.body"
-                || participantKey == "player.inventory-equipment"
-                || participantKey == "player.stats-vitals-status"
-                || participantKey == "player.resources"
-                || participantKey == "player.combat-execution"
-                || participantKey == "player.quests-contracts"
-                || participantKey == "player.location";
         }
 
         private static string[] MergeDependencies(string[] defaults, IReadOnlyList<string> provided)
@@ -1393,6 +1455,17 @@ namespace UnityIsekaiGame.GameData.Persistence
             merged.CopyTo(result);
             Array.Sort(result, StringComparer.Ordinal);
             return result;
+        }
+
+        private bool AcceptsScope(PersistenceScope scope)
+        {
+            return ContextKind switch
+            {
+                PersistenceContextKind.Player => scope == PersistenceScope.Player,
+                PersistenceContextKind.World => scope == PersistenceScope.SharedWorld || scope == PersistenceScope.RegionOrScene,
+                PersistenceContextKind.Account => scope == PersistenceScope.Account,
+                _ => false
+            };
         }
 
         private static string[] ToArray(IReadOnlyList<string> values)
@@ -1522,37 +1595,41 @@ namespace UnityIsekaiGame.GameData.Persistence
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.Append(envelope.formatIdentifier).Append('|')
-                .Append(envelope.schemaVersion).Append('|')
-                .Append(envelope.gameVersion).Append('|')
-                .Append(envelope.saveId).Append('|')
-                .Append(envelope.slotId).Append('|')
-                .Append(envelope.displayName).Append('|')
-                .Append(envelope.worldId).Append('|')
-                .Append(envelope.playerId).Append('|')
-                .Append(envelope.accountId).Append('|')
-                .Append(envelope.createdUtc).Append('|')
-                .Append(envelope.lastWrittenUtc).Append('|')
-                .Append(envelope.playtimeSeconds).Append('|')
-                .Append(envelope.sceneSummary).Append('|')
-                .Append(envelope.placeSummary).Append('|')
-                .Append(envelope.playerSummary);
+            AppendCanonical(builder, envelope.formatIdentifier);
+            AppendCanonical(builder, envelope.schemaVersion.ToString(CultureInfo.InvariantCulture));
+            AppendCanonical(builder, envelope.persistenceContext.ToString(CultureInfo.InvariantCulture));
+            AppendCanonical(builder, envelope.gameVersion);
+            AppendCanonical(builder, envelope.saveId);
+            AppendCanonical(builder, envelope.slotId);
+            AppendCanonical(builder, envelope.displayName);
+            AppendCanonical(builder, envelope.worldId);
+            AppendCanonical(builder, envelope.playerId);
+            AppendCanonical(builder, envelope.accountId);
+            AppendCanonical(builder, envelope.createdUtc);
+            AppendCanonical(builder, envelope.lastWrittenUtc);
+            AppendCanonical(builder, envelope.playtimeSeconds.ToString("R", CultureInfo.InvariantCulture));
+            AppendCanonical(builder, envelope.sceneSummary);
+            AppendCanonical(builder, envelope.placeSummary);
+            AppendCanonical(builder, envelope.playerSummary);
+            AppendCanonical(builder, envelope.transactionId);
+            AppendCanonical(builder, envelope.parentTransactionId);
+            AppendCanonical(builder, envelope.saveRevision.ToString(CultureInfo.InvariantCulture));
+            AppendCanonical(builder, envelope.completedWriteMarker ? "1" : "0");
 
             IReadOnlyList<SaveParticipantRecord> records = envelope.participants == null
                 ? Array.Empty<SaveParticipantRecord>()
-                : envelope.participants;
+                : envelope.participants.OrderBy(record => record?.participantKey, StringComparer.Ordinal).ToArray();
             for (int i = 0; i < records.Count; i++)
             {
                 SaveParticipantRecord record = records[i];
-                builder.Append('|')
-                    .Append(record?.participantKey).Append(':')
-                    .Append(record?.participantSchemaVersion ?? 0).Append(':')
-                    .Append(record?.required ?? false).Append(':')
-                    .Append(record?.persistenceScope ?? 0).Append(':')
-                    .Append(record?.ownerId).Append(':')
-                    .Append(record?.loadPhase ?? 0).Append(':')
-                    .Append(record?.loadPriority ?? 0).Append(':')
-                    .Append(record?.payloadJson);
+                AppendCanonical(builder, record?.participantKey);
+                AppendCanonical(builder, (record?.participantSchemaVersion ?? 0).ToString(CultureInfo.InvariantCulture));
+                AppendCanonical(builder, record?.required == true ? "1" : "0");
+                AppendCanonical(builder, (record?.persistenceScope ?? 0).ToString(CultureInfo.InvariantCulture));
+                AppendCanonical(builder, record?.ownerId);
+                AppendCanonical(builder, (record?.loadPhase ?? 0).ToString(CultureInfo.InvariantCulture));
+                AppendCanonical(builder, (record?.loadPriority ?? 0).ToString(CultureInfo.InvariantCulture));
+                AppendCanonical(builder, record?.payloadJson);
             }
 
             using SHA256 sha = SHA256.Create();
@@ -1566,6 +1643,14 @@ namespace UnityIsekaiGame.GameData.Persistence
             return hex.ToString();
         }
 
+        private static void AppendCanonical(StringBuilder builder, string value)
+        {
+            string normalized = value ?? string.Empty;
+            builder.Append(normalized.Length.ToString(CultureInfo.InvariantCulture))
+                .Append(':')
+                .Append(normalized);
+        }
+
         private GameSaveEnvelope TryReadEnvelopeHeader(string path)
         {
             if (!File.Exists(path))
@@ -1575,7 +1660,7 @@ namespace UnityIsekaiGame.GameData.Persistence
 
             try
             {
-                return JsonUtility.FromJson<GameSaveEnvelope>(File.ReadAllText(path, Encoding.UTF8));
+                return serializer.Deserialize<GameSaveEnvelope>(File.ReadAllText(path, Encoding.UTF8));
             }
             catch
             {
@@ -1646,6 +1731,13 @@ namespace UnityIsekaiGame.GameData.Persistence
                 PersistenceValidationStatus.MalformedJson => PersistenceLoadStatus.MalformedJson,
                 PersistenceValidationStatus.WrongFormatIdentifier => PersistenceLoadStatus.WrongFormatIdentifier,
                 PersistenceValidationStatus.UnsupportedSchemaVersion => PersistenceLoadStatus.UnsupportedSchemaVersion,
+                PersistenceValidationStatus.UnsupportedGameVersion => PersistenceLoadStatus.UnsupportedGameVersion,
+                PersistenceValidationStatus.WrongSaveContext => PersistenceLoadStatus.WrongSaveContext,
+                PersistenceValidationStatus.WrongSlot => PersistenceLoadStatus.WrongSlot,
+                PersistenceValidationStatus.WrongWorld => PersistenceLoadStatus.WrongWorld,
+                PersistenceValidationStatus.WrongPlayer => PersistenceLoadStatus.WrongPlayer,
+                PersistenceValidationStatus.WrongAccount => PersistenceLoadStatus.WrongAccount,
+                PersistenceValidationStatus.IncompleteWrite => PersistenceLoadStatus.IncompleteWrite,
                 PersistenceValidationStatus.ChecksumMismatch => PersistenceLoadStatus.ChecksumMismatch,
                 PersistenceValidationStatus.DuplicateParticipantKey => PersistenceLoadStatus.DuplicateParticipantKey,
                 PersistenceValidationStatus.DependencyValidationFailed => PersistenceLoadStatus.DependencyValidationFailed,
@@ -1697,7 +1789,7 @@ namespace UnityIsekaiGame.GameData.Persistence
             }
         }
 
-        private static void CopySlotFiles(SaveSlotPaths source, SaveSlotPaths target)
+        private void CopySlotFiles(SaveSlotPaths source, SaveSlotPaths target)
         {
             DeleteIfExists(target.PrimaryPath);
             DeleteIfExists(target.BackupPath);
@@ -1707,7 +1799,7 @@ namespace UnityIsekaiGame.GameData.Persistence
             CopyEnvelopeFile(source.BackupPath, target.BackupPath, target.SlotId);
         }
 
-        private static void CopyEnvelopeFile(string sourcePath, string targetPath, string targetSlotId)
+        private void CopyEnvelopeFile(string sourcePath, string targetPath, string targetSlotId)
         {
             if (!File.Exists(sourcePath))
             {
@@ -1716,12 +1808,12 @@ namespace UnityIsekaiGame.GameData.Persistence
 
             try
             {
-                GameSaveEnvelope envelope = JsonUtility.FromJson<GameSaveEnvelope>(File.ReadAllText(sourcePath, Encoding.UTF8));
+                GameSaveEnvelope envelope = serializer.Deserialize<GameSaveEnvelope>(File.ReadAllText(sourcePath, Encoding.UTF8));
                 if (envelope != null && envelope.formatIdentifier == FormatIdentifier)
                 {
                     envelope.slotId = targetSlotId;
                     envelope.contentChecksum = ComputeChecksum(envelope);
-                    File.WriteAllText(targetPath, JsonUtility.ToJson(envelope, true), Encoding.UTF8);
+                    File.WriteAllText(targetPath, serializer.Serialize(envelope, true), Encoding.UTF8);
                     return;
                 }
             }

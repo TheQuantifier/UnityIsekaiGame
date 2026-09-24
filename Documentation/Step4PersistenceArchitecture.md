@@ -15,20 +15,19 @@ Runtime systems own gameplay state. They participate through `IPersistencePartic
 - `CommitPreparedPayload` mutates the owning runtime system only after all participants prepare.
 - `DiscardPreparedPayload` releases prepared data.
 
-`IPersistenceParticipantDependencies` is optional. Current player participant relationships are built into the service as ordering hints; explicit required dependencies can still block save/load before mutation.
+`IPersistenceParticipantDependencies` explicitly declares ordering and readiness requirements. Required dependencies block save/load before mutation; the service no longer contains a parallel hardcoded dependency table.
 
 ## Participant Inventory
 
 | Participant | Key | Schema | Scope | Owner | Required | Load Phase | Ordering Dependencies | Rollback | Runtime Owner | Payload |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- |
-| Prototype development state | `prototype.state` | 1 | Player | `local-player` | Yes | Prototype | None | Yes | `PrototypePersistenceState` | `PrototypePersistenceStateSaveData` |
 | Inventory/equipment | `player.inventory-equipment` | 1 | Player | `local-player` | Yes | Inventory | None | Yes | `PlayerInventory`, `PlayerEquipment` | `PlayerInventoryEquipmentSaveData` |
-| Stats/vitals/statuses | `player.stats-vitals-status` | 1 | Player | `local-player` | Yes | Statuses | `player.inventory-equipment` when present | Yes | `PlayerStats`, `PlayerHealth`, `PlayerMana`, `PlayerStamina`, `StatusEffectController` | `PlayerStatsVitalsStatusSaveData` |
-| Current resources | `player.resources` | 1 | Player | `local-player` | No | Vitals | stats/vitals/statuses when present | Yes | `CharacterResourceCollection` | `PlayerResourcesSaveData` |
-| Quests/contracts | `player.quests-contracts` | 2 | Player | `local-player` | Yes | QuestsAndContracts | inventory/equipment, stats/vitals/statuses, and resources when present | Yes | `PlayerQuestLog`, `PlayerContractJournal` | `PlayerQuestContractSaveData` |
+| Status effects | `player.status-effects` | 1 | Player | `local-player` | Yes | Statuses | `player.inventory-equipment` | Yes | `StatusEffectController` | `PlayerStatusEffectsSaveData` |
+| Current resources | `player.resources` | 1 | Player | `local-player` | Yes | Vitals | `player.attributes`, `player.status-effects` | Yes | `CharacterResourceCollection` | `PlayerResourcesSaveData` |
+| Quests/contracts | `player.quests-contracts` | 2 | Player | `local-player` | Yes | QuestsAndContracts | inventory/equipment, status effects, resources | Yes | `PlayerQuestLog`, `PlayerContractJournal` | `PlayerQuestContractSaveData` |
 | Location | `player.location` | 1 | Player | `local-player` | No | PositionAndPlace | `player.quests-contracts` when present | Same-scene only | `Transform`, `PlayerInputReader`, `CurrentPlaceTracker` | `PlayerLocationSaveData` |
 
-All implemented participants use player scope today. No shared-world, account, region-state, enemy-state, pickup-state, container-state, door-state, NPC-runtime, economy, or faction-state participant is implemented.
+Player and shared-world participants now run in separate persistence contexts and directories. World location/travel, economy, organizations, politics, social state, quests, dialogue, and narrative state continue independently of any one player session.
 
 ## Load Order
 

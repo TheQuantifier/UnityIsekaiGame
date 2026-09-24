@@ -54,14 +54,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             BusinessRuntimeSaveData saveData = runtime.CreateSaveData();
-            PersistenceParticipantPrepareResult prepared = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult prepared = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Business snapshot failed validation.");
             }
 
             DiscardPreparedPayload(prepared.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -79,7 +79,7 @@ namespace UnityIsekaiGame.Persistence
             BusinessRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<BusinessRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<BusinessRuntimeSaveData>(payloadJson);
             }
             catch
             {

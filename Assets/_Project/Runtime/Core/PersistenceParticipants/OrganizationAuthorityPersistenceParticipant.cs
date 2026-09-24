@@ -65,7 +65,7 @@ namespace UnityIsekaiGame.Persistence
             }
 
             OrganizationAuthorityRuntimeSaveData saveData = runtime.CreateSaveData();
-            string payload = JsonUtility.ToJson(saveData);
+            string payload = PersistenceSerialization.Serialize(saveData);
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
@@ -91,7 +91,7 @@ namespace UnityIsekaiGame.Persistence
             OrganizationAuthorityRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<OrganizationAuthorityRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<OrganizationAuthorityRuntimeSaveData>(payloadJson);
             }
             catch
             {

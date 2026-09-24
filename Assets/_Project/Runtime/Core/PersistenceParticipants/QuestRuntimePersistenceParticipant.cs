@@ -51,7 +51,7 @@ namespace UnityIsekaiGame.Persistence
             }
 
             QuestRuntimeSaveData saveData = runtime.CreateSaveData();
-            string payload = JsonUtility.ToJson(saveData);
+            string payload = PersistenceSerialization.Serialize(saveData);
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
@@ -77,7 +77,7 @@ namespace UnityIsekaiGame.Persistence
             QuestRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<QuestRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<QuestRuntimeSaveData>(payloadJson);
             }
             catch
             {

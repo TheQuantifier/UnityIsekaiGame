@@ -32,7 +32,7 @@ namespace UnityIsekaiGame.Persistence
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.IdentityAndProgression;
         public int LoadPriority => 100;
-        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { PlayerIdentityProgressionPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => Array.Empty<string>();
         public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => new[]
         {
             RelationshipPersistenceParticipant.Key,
@@ -59,14 +59,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             SocialNormRuntimeSaveData saveData = runtime.CreateSaveData();
-            PersistenceParticipantPrepareResult prepared = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult prepared = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Social Norm snapshot failed validation.");
             }
 
             DiscardPreparedPayload(prepared.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -84,7 +84,7 @@ namespace UnityIsekaiGame.Persistence
             SocialNormRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<SocialNormRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<SocialNormRuntimeSaveData>(payloadJson);
             }
             catch
             {

@@ -46,14 +46,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             CombatExecutionSaveData saveData = combatExecution.CreateSaveData(ownerId, ResolvePersonId());
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Combat execution snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -71,7 +71,7 @@ namespace UnityIsekaiGame.Persistence
             CombatExecutionSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<CombatExecutionSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<CombatExecutionSaveData>(payloadJson);
             }
             catch
             {

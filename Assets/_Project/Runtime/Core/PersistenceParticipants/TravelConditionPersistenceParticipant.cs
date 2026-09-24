@@ -54,7 +54,7 @@ namespace UnityIsekaiGame.Persistence
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Travel condition runtime is missing.");
             TravelConditionRuntimeSaveData saveData = runtime.CreateSaveData();
-            string payload = JsonUtility.ToJson(saveData);
+            string payload = PersistenceSerialization.Serialize(saveData);
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Travel condition snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -68,7 +68,7 @@ namespace UnityIsekaiGame.Persistence
             TravelConditionRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<TravelConditionRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<TravelConditionRuntimeSaveData>(payloadJson);
             }
             catch
             {

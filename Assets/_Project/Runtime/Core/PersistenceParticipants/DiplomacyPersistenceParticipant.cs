@@ -73,7 +73,7 @@ namespace UnityIsekaiGame.Persistence
         public PersistenceParticipantSaveResult CapturePayload()
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Diplomacy runtime is missing.");
-            string payload = JsonUtility.ToJson(runtime.CreateSaveData());
+            string payload = PersistenceSerialization.Serialize(runtime.CreateSaveData());
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Diplomacy snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -85,7 +85,7 @@ namespace UnityIsekaiGame.Persistence
             if (payloadSchemaVersion != CurrentParticipantSchemaVersion) return PersistenceParticipantPrepareResult.Failure($"Unsupported diplomacy participant schema version {payloadSchemaVersion}.");
             if (string.IsNullOrWhiteSpace(payloadJson)) return PersistenceParticipantPrepareResult.Failure("Diplomacy payload is empty.");
             DiplomacyRuntimeSaveData saveData;
-            try { saveData = JsonUtility.FromJson<DiplomacyRuntimeSaveData>(payloadJson); }
+            try { saveData = PersistenceSerialization.Deserialize<DiplomacyRuntimeSaveData>(payloadJson); }
             catch { return PersistenceParticipantPrepareResult.Failure("Diplomacy payload is malformed JSON."); }
             if (!DiplomacyRuntime.ValidateSaveData(saveData, registryProvider?.Invoke(), organizationProvider?.Invoke(), factionProvider?.Invoke(), ownerId, personProvider?.Invoke(), out string failure)) return PersistenceParticipantPrepareResult.Failure(failure);
             return PersistenceParticipantPrepareResult.Success(new PreparedPayload(saveData.Clone()));

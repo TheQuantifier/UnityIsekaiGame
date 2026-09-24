@@ -4,7 +4,7 @@ This is the authoritative Step 4 deferred persistence register.
 
 | Limitation | Current Behavior | Risk | Intended Future Milestone | Extension Support |
 | --- | --- | --- | --- | --- |
-| Full shared-world persistence | Not implemented. | Player save cannot restore public world changes. | Step 5+ world model/server work. | Scopes and owner IDs already separate player/world state. |
+| Complete shared-world coverage | Location/travel, economy, organizations, politics, social, quest, dialogue, and narrative runtimes use a separate world checkpoint. | Spawned actors, pickups, doors, and containers still reset unless covered by a domain participant. | Add focused world participants as those runtimes become authoritative. | Player and world services, directories, readiness, and audits are separate. |
 | Collected pickup state | Player inventory persists; world pickup removal does not. | Reset worlds can expose already-collected local pickups. | Region/world entity state participant. | World entity IDs exist. |
 | Enemy position/health/death | Not persisted. | Enemies reset with scene/runtime setup. | Actor/world-state persistence. | Being definitions and world IDs exist. |
 | NPC runtime state and schedules | Not persisted. | NPC conversations/schedules cannot resume dynamic runtime state. | People/NPC model expansion. | Person definitions and world IDs exist. |

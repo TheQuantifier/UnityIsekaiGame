@@ -47,14 +47,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             InterpersonalAttitudeRuntimeSaveData saveData = runtime.CreateSaveData();
-            PersistenceParticipantPrepareResult prepared = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult prepared = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Interpersonal attitude snapshot failed validation.");
             }
 
             DiscardPreparedPayload(prepared.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -72,7 +72,7 @@ namespace UnityIsekaiGame.Persistence
             InterpersonalAttitudeRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<InterpersonalAttitudeRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<InterpersonalAttitudeRuntimeSaveData>(payloadJson);
             }
             catch
             {

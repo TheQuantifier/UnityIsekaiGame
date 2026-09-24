@@ -52,14 +52,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             ActorLifecycleSaveData saveData = lifecycle.CreateSaveData(ownerId, identity == null ? string.Empty : identity.PersonId);
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Actor lifecycle snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -77,7 +77,7 @@ namespace UnityIsekaiGame.Persistence
             ActorLifecycleSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<ActorLifecycleSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<ActorLifecycleSaveData>(payloadJson);
             }
             catch
             {

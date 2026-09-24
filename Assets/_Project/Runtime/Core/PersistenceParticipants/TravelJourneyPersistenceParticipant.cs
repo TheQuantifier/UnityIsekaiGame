@@ -66,7 +66,7 @@ namespace UnityIsekaiGame.Persistence
             }
 
             TravelJourneyRuntimeSaveData saveData = runtime.CreateSaveData();
-            string payload = JsonUtility.ToJson(saveData);
+            string payload = PersistenceSerialization.Serialize(saveData);
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
@@ -92,7 +92,7 @@ namespace UnityIsekaiGame.Persistence
             TravelJourneyRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<TravelJourneyRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<TravelJourneyRuntimeSaveData>(payloadJson);
             }
             catch
             {

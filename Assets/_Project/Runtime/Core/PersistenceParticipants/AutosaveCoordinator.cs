@@ -41,7 +41,7 @@ namespace UnityIsekaiGame.Persistence
             float now = Time.unscaledTime;
             if (pendingReasons.Count > 0 && now >= pendingAutosaveAt)
             {
-                RunAutosave("Pending: " + string.Join(", ", pendingReasons));
+                RunAutosave("Pending: " + string.Join(", ", pendingReasons), force: false);
                 pendingReasons.Clear();
                 pendingAutosaveAt = -1f;
                 return;
@@ -49,7 +49,7 @@ namespace UnityIsekaiGame.Persistence
 
             if (now >= nextTimerAutosaveAt)
             {
-                RunAutosave("Timer");
+                RunAutosave("Timer", force: false);
             }
         }
 
@@ -65,7 +65,7 @@ namespace UnityIsekaiGame.Persistence
         {
             pendingReasons.Clear();
             pendingAutosaveAt = -1f;
-            return RunAutosave(reason);
+            return RunAutosave(reason, force: true);
         }
 
         public void SetIntervalForTesting(float seconds)
@@ -74,7 +74,7 @@ namespace UnityIsekaiGame.Persistence
             ResetTimer();
         }
 
-        private PersistenceSaveResult RunAutosave(string reason)
+        private PersistenceSaveResult RunAutosave(string reason, bool force)
         {
             if (persistence == null)
             {
@@ -82,7 +82,15 @@ namespace UnityIsekaiGame.Persistence
                 return PersistenceSaveResult.Failure(PersistenceSaveStatus.UnknownException, string.Empty, string.Empty, lastResult);
             }
 
-            SaveEligibilityResult eligibility = persistence.CheckSaveEligibility(showDetailedPlayerMessage: false);
+            if (!force && (persistence.DirtyTracker == null || !persistence.DirtyTracker.IsDirty))
+            {
+                lastTrigger = reason;
+                lastResult = "Autosave skipped: no persistent state has changed.";
+                nextTimerAutosaveAt = Time.unscaledTime + intervalSeconds;
+                return PersistenceSaveResult.Success(PrototypeSaveSlotCatalog.AutosaveSlotId(0), string.Empty, lastResult);
+            }
+
+            SaveEligibilityResult eligibility = persistence.CheckSaveEligibility(showDetailedPlayerMessage: false, allowOpenMenu: false);
             if (!eligibility.Allowed)
             {
                 lastTrigger = reason;

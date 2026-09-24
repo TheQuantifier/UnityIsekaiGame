@@ -55,14 +55,14 @@ namespace UnityIsekaiGame.Progression
             }
 
             PlayerIdentityProgressionSaveData saveData = progression.CreateSaveData();
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Identity/progression snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -80,7 +80,7 @@ namespace UnityIsekaiGame.Progression
             PlayerIdentityProgressionSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<PlayerIdentityProgressionSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<PlayerIdentityProgressionSaveData>(payloadJson);
             }
             catch
             {

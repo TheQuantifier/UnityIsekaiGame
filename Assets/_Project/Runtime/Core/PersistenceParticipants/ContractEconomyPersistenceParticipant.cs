@@ -54,14 +54,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             ContractRuntimeSaveData saveData = runtime.CreateSaveData();
-            PersistenceParticipantPrepareResult prepared = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult prepared = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Contract economy snapshot failed validation.");
             }
 
             DiscardPreparedPayload(prepared.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -79,7 +79,7 @@ namespace UnityIsekaiGame.Persistence
             ContractRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<ContractRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<ContractRuntimeSaveData>(payloadJson);
             }
             catch
             {

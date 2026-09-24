@@ -205,6 +205,8 @@ namespace UnityIsekaiGame.Tests
             PlayerCombatExecutionPersistenceParticipant participant = new PlayerCombatExecutionPersistenceParticipant(combatExecution);
             PersistenceService persistence = new PersistenceService();
 
+            persistence.RegisterParticipant(new DependencyParticipant(PlayerAttributesPersistenceParticipant.Key), out _);
+            persistence.RegisterParticipant(new DependencyParticipant(PlayerStatusEffectsPersistenceParticipant.Key), out _);
             Assert.That(persistence.RegisterParticipant(resources, out string resourceFailure), Is.True, resourceFailure);
             Assert.That(persistence.RegisterParticipant(lifecycle, out string lifecycleFailure), Is.True, lifecycleFailure);
             Assert.That(persistence.RegisterParticipant(participant, out string failureReason), Is.True, failureReason);
@@ -215,6 +217,22 @@ namespace UnityIsekaiGame.Tests
             Assert.That(report.orderedParticipantKeys, Does.Contain(PlayerCombatExecutionPersistenceParticipant.Key));
             Assert.That(Array.IndexOf(report.orderedParticipantKeys, PlayerResourcesPersistenceParticipant.Key), Is.LessThan(Array.IndexOf(report.orderedParticipantKeys, PlayerCombatExecutionPersistenceParticipant.Key)));
             Assert.That(Array.IndexOf(report.orderedParticipantKeys, PlayerActorLifecyclePersistenceParticipant.Key), Is.LessThan(Array.IndexOf(report.orderedParticipantKeys, PlayerCombatExecutionPersistenceParticipant.Key)));
+        }
+
+        private sealed class DependencyParticipant : IPersistenceParticipant
+        {
+            public DependencyParticipant(string key) => ParticipantKey = key;
+            public string ParticipantKey { get; }
+            public int ParticipantSchemaVersion => 1;
+            public bool IsRequired => true;
+            public PersistenceScope Scope => PersistenceScope.Player;
+            public string OwnerId => PersistenceService.LocalPlayerId;
+            public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Bootstrap;
+            public int LoadPriority => -100;
+            public PersistenceParticipantSaveResult CapturePayload() => PersistenceParticipantSaveResult.Success("{}");
+            public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion) => PersistenceParticipantPrepareResult.Success(new object());
+            public PersistenceParticipantCommitResult CommitPreparedPayload(object preparedPayload) => PersistenceParticipantCommitResult.Success();
+            public void DiscardPreparedPayload(object preparedPayload) { }
         }
 
         [Test]

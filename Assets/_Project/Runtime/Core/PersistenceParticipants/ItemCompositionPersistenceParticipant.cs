@@ -58,14 +58,14 @@ namespace UnityIsekaiGame.Persistence
                 return PersistenceParticipantSaveResult.Failure(failure);
             }
 
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Item composition snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -83,7 +83,7 @@ namespace UnityIsekaiGame.Persistence
             ItemCompositionRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<ItemCompositionRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<ItemCompositionRuntimeSaveData>(payloadJson);
             }
             catch (Exception)
             {

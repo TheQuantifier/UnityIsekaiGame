@@ -87,7 +87,7 @@ namespace UnityIsekaiGame.Persistence
         public PersistenceParticipantSaveResult CapturePayload()
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Government runtime is missing.");
-            string payload = JsonUtility.ToJson(runtime.CreateSaveData());
+            string payload = PersistenceSerialization.Serialize(runtime.CreateSaveData());
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Government snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -99,7 +99,7 @@ namespace UnityIsekaiGame.Persistence
             if (payloadSchemaVersion != CurrentParticipantSchemaVersion) return PersistenceParticipantPrepareResult.Failure($"Unsupported government participant schema version {payloadSchemaVersion}.");
             if (string.IsNullOrWhiteSpace(payloadJson)) return PersistenceParticipantPrepareResult.Failure("Government payload is empty.");
             GovernmentRuntimeSaveData saveData;
-            try { saveData = JsonUtility.FromJson<GovernmentRuntimeSaveData>(payloadJson); }
+            try { saveData = PersistenceSerialization.Deserialize<GovernmentRuntimeSaveData>(payloadJson); }
             catch { return PersistenceParticipantPrepareResult.Failure("Government payload is malformed JSON."); }
             if (!GovernmentRuntime.ValidateSaveData(saveData, registryProvider?.Invoke(), organizationProvider?.Invoke(), factionProvider?.Invoke(), diplomacyProvider?.Invoke(), propertyProvider?.Invoke(), ownerId, personProvider?.Invoke(), placeProvider?.Invoke(), out string failure)) return PersistenceParticipantPrepareResult.Failure(failure);
             return PersistenceParticipantPrepareResult.Success(new PreparedPayload(saveData.Clone()));

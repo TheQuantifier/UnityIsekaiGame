@@ -74,7 +74,7 @@ namespace UnityIsekaiGame.Persistence
         {
             if (runtime == null) return PersistenceParticipantSaveResult.Failure("Narrative event runtime is missing.");
             NarrativeEventRuntimeSaveData saveData = runtime.CreateSaveData();
-            string payload = JsonUtility.ToJson(saveData);
+            string payload = PersistenceSerialization.Serialize(saveData);
             PersistenceParticipantPrepareResult prepared = PreparePayload(payload, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Narrative event snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
@@ -89,7 +89,7 @@ namespace UnityIsekaiGame.Persistence
             NarrativeEventRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<NarrativeEventRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<NarrativeEventRuntimeSaveData>(payloadJson);
             }
             catch
             {

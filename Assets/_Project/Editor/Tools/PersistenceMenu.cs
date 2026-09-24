@@ -18,8 +18,8 @@ namespace UnityIsekaiGame.Editor
     {
         private const string PrototypeCatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
 
-        [MenuItem("Tools/Persistence/Save Prototype Slot")]
-        public static void SavePrototypeSlot()
+        [MenuItem("Tools/Persistence/Save Manual Slot 1")]
+        public static void SaveManualSlotOne()
         {
             PrototypePersistenceServiceBehaviour service = GetOrCreatePrototypeService();
             if (service == null)
@@ -27,12 +27,12 @@ namespace UnityIsekaiGame.Editor
                 return;
             }
 
-            PersistenceSaveResult result = service.SavePrototypeSlot();
+            PersistenceSaveResult result = service.SaveManualSlot(0);
             Debug.Log($"Persistence save result: {result.Status} - {result.Message}");
         }
 
-        [MenuItem("Tools/Persistence/Load Prototype Slot")]
-        public static void LoadPrototypeSlot()
+        [MenuItem("Tools/Persistence/Load Manual Slot 1")]
+        public static void LoadManualSlotOne()
         {
             PrototypePersistenceServiceBehaviour service = GetOrCreatePrototypeService();
             if (service == null)
@@ -40,12 +40,12 @@ namespace UnityIsekaiGame.Editor
                 return;
             }
 
-            PersistenceLoadResult result = service.LoadPrototypeSlot();
+            PersistenceLoadResult result = service.LoadSaveSlot(PrototypeSaveSlotCatalog.ManualSlotId(0));
             Debug.Log($"Persistence load result: {result.Status} - {result.Message}");
         }
 
-        [MenuItem("Tools/Persistence/Load Prototype Backup")]
-        public static void LoadPrototypeBackup()
+        [MenuItem("Tools/Persistence/Load Manual Slot 1 Backup")]
+        public static void LoadManualSlotOneBackup()
         {
             PrototypePersistenceServiceBehaviour service = GetOrCreatePrototypeService();
             if (service == null)
@@ -53,12 +53,12 @@ namespace UnityIsekaiGame.Editor
                 return;
             }
 
-            PersistenceLoadResult result = service.LoadPrototypeBackup();
+            PersistenceLoadResult result = service.LoadSaveSlot(PrototypeSaveSlotCatalog.ManualSlotId(0), loadBackup: true);
             Debug.Log($"Persistence backup load result: {result.Status} - {result.Message}");
         }
 
-        [MenuItem("Tools/Persistence/Validate Prototype Slot")]
-        public static void ValidatePrototypeSlot()
+        [MenuItem("Tools/Persistence/Validate Manual Slot 1")]
+        public static void ValidateManualSlotOne()
         {
             PrototypePersistenceServiceBehaviour service = GetOrCreatePrototypeService();
             if (service == null)
@@ -66,7 +66,7 @@ namespace UnityIsekaiGame.Editor
                 return;
             }
 
-            PersistenceValidationResult result = service.ValidatePrototypeSlot();
+            PersistenceValidationResult result = service.ValidateSaveSlot(PrototypeSaveSlotCatalog.ManualSlotId(0));
             Debug.Log($"Persistence validation result: {result.Status} - {result.Message} BackupAvailable={result.BackupAvailable}");
         }
 
@@ -151,8 +151,8 @@ namespace UnityIsekaiGame.Editor
             Debug.Log($"Promote backup result: {result.Status} - {result.Message}");
         }
 
-        [MenuItem("Tools/Persistence/Delete Prototype Slot")]
-        public static void DeletePrototypeSlot()
+        [MenuItem("Tools/Persistence/Delete Manual Slot 1")]
+        public static void DeleteManualSlotOne()
         {
             PrototypePersistenceServiceBehaviour service = GetOrCreatePrototypeService();
             if (service == null)
@@ -160,12 +160,12 @@ namespace UnityIsekaiGame.Editor
                 return;
             }
 
-            PersistenceDeleteResult result = service.DeletePrototypeSlot();
+            PersistenceDeleteResult result = service.DeleteSaveSlot(PrototypeSaveSlotCatalog.ManualSlotId(0));
             Debug.Log($"Persistence delete result: {result.Status} - {result.Message}");
         }
 
-        [MenuItem("Tools/Persistence/Increment Prototype Value")]
-        public static void IncrementPrototypeValue()
+        [MenuItem("Tools/Persistence/Corrupt Manual Slot 1 Primary File")]
+        public static void CorruptManualSlotOnePrimaryFile()
         {
             PrototypePersistenceServiceBehaviour service = GetOrCreatePrototypeService();
             if (service == null)
@@ -173,31 +173,7 @@ namespace UnityIsekaiGame.Editor
                 return;
             }
 
-            service.PrototypeState.IncrementValue();
-        }
-
-        [MenuItem("Tools/Persistence/Toggle Prototype Flag")]
-        public static void TogglePrototypeFlag()
-        {
-            PrototypePersistenceServiceBehaviour service = GetOrCreatePrototypeService();
-            if (service == null)
-            {
-                return;
-            }
-
-            service.PrototypeState.ToggleFlag();
-        }
-
-        [MenuItem("Tools/Persistence/Corrupt Prototype Primary File")]
-        public static void CorruptPrototypePrimaryFile()
-        {
-            PrototypePersistenceServiceBehaviour service = GetOrCreatePrototypeService();
-            if (service == null)
-            {
-                return;
-            }
-
-            if (!service.Service.PathProvider.TryGetPaths(service.PrototypeSlotId, out SaveSlotPaths paths, out string failureReason))
+            if (!service.PlayerService.PathProvider.TryGetPaths(PrototypeSaveSlotCatalog.ManualSlotId(0), out SaveSlotPaths paths, out string failureReason))
             {
                 Debug.LogWarning(failureReason);
                 return;
@@ -216,8 +192,8 @@ namespace UnityIsekaiGame.Editor
                 return;
             }
 
-            service.Service.PathProvider.EnsureDirectory();
-            EditorUtility.RevealInFinder(service.Service.PathProvider.RootDirectory);
+            service.PlayerService.PathProvider.EnsureDirectory();
+            EditorUtility.RevealInFinder(service.PlayerService.PathProvider.RootDirectory);
         }
 
         private static PrototypePersistenceServiceBehaviour GetOrCreatePrototypeService()
@@ -236,7 +212,7 @@ namespace UnityIsekaiGame.Editor
                 return null;
             }
 
-            GameObject root = new GameObject("Prototype Persistence");
+            GameObject root = new GameObject("Game Persistence");
             service = root.AddComponent<PrototypePersistenceServiceBehaviour>();
             ConfigurePrototypePlayerPersistence(service);
             service.EnsureInitialized();

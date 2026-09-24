@@ -69,7 +69,7 @@ namespace UnityIsekaiGame.Persistence
                 return PersistenceParticipantSaveResult.Failure(failure);
             }
 
-            string json = JsonUtility.ToJson(saveData);
+            string json = PersistenceSerialization.Serialize(saveData);
             PersistenceParticipantPrepareResult prepared = PreparePayload(json, CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
@@ -95,7 +95,7 @@ namespace UnityIsekaiGame.Persistence
             ExperimentationRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<ExperimentationRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<ExperimentationRuntimeSaveData>(payloadJson);
             }
             catch (Exception)
             {

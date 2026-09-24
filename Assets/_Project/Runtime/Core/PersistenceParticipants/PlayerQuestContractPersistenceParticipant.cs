@@ -8,7 +8,7 @@ using UnityIsekaiGame.Quests;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class PlayerQuestContractPersistenceParticipant : IPersistenceParticipant
+    public sealed class PlayerQuestContractPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const string Key = "player.quests-contracts";
         public const int CurrentParticipantSchemaVersion = 2;
@@ -40,6 +40,17 @@ namespace UnityIsekaiGame.Persistence
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.QuestsAndContracts;
         public int LoadPriority => 0;
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[]
+        {
+            PlayerInventoryEquipmentPersistenceParticipant.Key,
+            PlayerResourcesPersistenceParticipant.Key,
+            PlayerStatusEffectsPersistenceParticipant.Key
+        };
+        public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => Array.Empty<string>();
+        public bool SupportsRollback => true;
+        public bool RequiresSceneReadiness => false;
+        public bool RequiresDefinitionRegistry => true;
+        public bool RequiresWorldEntityRegistry => false;
 
         public PersistenceParticipantSaveResult CapturePayload()
         {
@@ -55,14 +66,14 @@ namespace UnityIsekaiGame.Persistence
                 contracts = contractJournal.CreateSaveData()
             };
 
-            PersistenceParticipantPrepareResult validation = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult validation = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (validation == null || !validation.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(validation?.Message ?? "Quest/contract snapshot failed validation.");
             }
 
             DiscardPreparedPayload(validation.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -80,7 +91,7 @@ namespace UnityIsekaiGame.Persistence
             PlayerQuestContractSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<PlayerQuestContractSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<PlayerQuestContractSaveData>(payloadJson);
             }
             catch
             {

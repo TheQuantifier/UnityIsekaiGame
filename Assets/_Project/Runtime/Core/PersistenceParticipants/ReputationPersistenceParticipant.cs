@@ -32,7 +32,7 @@ namespace UnityIsekaiGame.Persistence
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.IdentityAndProgression;
         public int LoadPriority => 97;
-        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { PlayerIdentityProgressionPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => Array.Empty<string>();
         public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => new[] { RelationshipPersistenceParticipant.Key, InterpersonalAttitudePersistenceParticipant.Key, AuthoritativeHistoryPersistenceParticipant.Key, InformationAccessPersistenceParticipant.Key };
         public bool SupportsRollback => true;
         public bool RequiresSceneReadiness => false;
@@ -47,14 +47,14 @@ namespace UnityIsekaiGame.Persistence
             }
 
             ReputationRuntimeSaveData saveData = runtime.CreateSaveData();
-            PersistenceParticipantPrepareResult prepared = PreparePayload(JsonUtility.ToJson(saveData), CurrentParticipantSchemaVersion);
+            PersistenceParticipantPrepareResult prepared = PreparePayload(PersistenceSerialization.Serialize(saveData), CurrentParticipantSchemaVersion);
             if (prepared == null || !prepared.Succeeded)
             {
                 return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Reputation snapshot failed validation.");
             }
 
             DiscardPreparedPayload(prepared.PreparedPayload);
-            return PersistenceParticipantSaveResult.Success(JsonUtility.ToJson(saveData));
+            return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -72,7 +72,7 @@ namespace UnityIsekaiGame.Persistence
             ReputationRuntimeSaveData saveData;
             try
             {
-                saveData = JsonUtility.FromJson<ReputationRuntimeSaveData>(payloadJson);
+                saveData = PersistenceSerialization.Deserialize<ReputationRuntimeSaveData>(payloadJson);
             }
             catch
             {
