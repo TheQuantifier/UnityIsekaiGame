@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Beings.Biology.Compatibility;
 using UnityIsekaiGame.Beings.Biology.VitalProcesses;
+using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.GameData;
 
 namespace UnityIsekaiGame.Beings.Biology.Recovery
@@ -14,7 +15,7 @@ namespace UnityIsekaiGame.Beings.Biology.Recovery
         [SerializeField] private string methodId;
         [SerializeField] private string displayName;
         [SerializeField, TextArea(2, 5)] private string description;
-        [SerializeField] private string biologicalInteractionDefinitionId;
+        [SerializeField] private BiologicalInteractionDefinition biologicalInteractionDefinition;
         [SerializeField] private RecoveryCategory category = RecoveryCategory.Unknown;
         [SerializeField] private RecoveryTargetCategory[] supportedTargets = Array.Empty<RecoveryTargetCategory>();
         [SerializeField, Min(0f)] private float baseProgressPerHour = 1f;
@@ -29,11 +30,11 @@ namespace UnityIsekaiGame.Beings.Biology.Recovery
         [SerializeField] private bool resolvesInjuryOnCompletion;
         [SerializeField] private bool requiresRestContext;
         [SerializeField] private RecoveryRestType[] allowedRestTypes = Array.Empty<RecoveryRestType>();
-        [SerializeField] private string[] requiredRuntimeCapabilityKeys = Array.Empty<string>();
-        [SerializeField] private string[] blockingRuntimeCapabilityKeys = Array.Empty<string>();
+        [SerializeField] private CapabilityDefinition[] requiredCapabilities = Array.Empty<CapabilityDefinition>();
+        [SerializeField] private CapabilityDefinition[] blockingCapabilities = Array.Empty<CapabilityDefinition>();
         [SerializeField] private string[] compatibleInjuryTypeIds = Array.Empty<string>();
         [SerializeField] private string[] compatibleAnatomyTagIds = Array.Empty<string>();
-        [SerializeField] private string[] restoredResourceIds = Array.Empty<string>();
+        [SerializeField] private BiologicalResourceDefinition[] restoredResources = Array.Empty<BiologicalResourceDefinition>();
         [SerializeField] private RecoveryPermanentOutcome permanentOutcome = RecoveryPermanentOutcome.None;
         [SerializeField] private RecoveryInterruptionPolicy interruptionPolicy = RecoveryInterruptionPolicy.PauseAndPreserveProgress;
         [SerializeField] private bool alphaExecutionEnabled = true;
@@ -43,7 +44,8 @@ namespace UnityIsekaiGame.Beings.Biology.Recovery
         public string Id => methodId ?? string.Empty;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public string Description => description ?? string.Empty;
-        public string BiologicalInteractionDefinitionId => biologicalInteractionDefinitionId ?? string.Empty;
+        public BiologicalInteractionDefinition BiologicalInteractionDefinition => biologicalInteractionDefinition;
+        public string BiologicalInteractionDefinitionId => biologicalInteractionDefinition == null ? string.Empty : biologicalInteractionDefinition.Id;
         public RecoveryCategory Category => category;
         public IReadOnlyList<RecoveryTargetCategory> SupportedTargets => supportedTargets ?? Array.Empty<RecoveryTargetCategory>();
         public float BaseProgressPerHour => Mathf.Max(0f, baseProgressPerHour);
@@ -58,11 +60,14 @@ namespace UnityIsekaiGame.Beings.Biology.Recovery
         public bool ResolvesInjuryOnCompletion => resolvesInjuryOnCompletion;
         public bool RequiresRestContext => requiresRestContext;
         public IReadOnlyList<RecoveryRestType> AllowedRestTypes => allowedRestTypes ?? Array.Empty<RecoveryRestType>();
-        public IReadOnlyList<string> RequiredRuntimeCapabilityKeys => requiredRuntimeCapabilityKeys ?? Array.Empty<string>();
-        public IReadOnlyList<string> BlockingRuntimeCapabilityKeys => blockingRuntimeCapabilityKeys ?? Array.Empty<string>();
+        public IReadOnlyList<CapabilityDefinition> RequiredCapabilities => requiredCapabilities ?? Array.Empty<CapabilityDefinition>();
+        public IReadOnlyList<CapabilityDefinition> BlockingCapabilities => blockingCapabilities ?? Array.Empty<CapabilityDefinition>();
+        public IReadOnlyList<string> RequiredRuntimeCapabilityKeys => RequiredCapabilities.Select(definition => definition.Id).ToArray();
+        public IReadOnlyList<string> BlockingRuntimeCapabilityKeys => BlockingCapabilities.Select(definition => definition.Id).ToArray();
         public IReadOnlyList<string> CompatibleInjuryTypeIds => compatibleInjuryTypeIds ?? Array.Empty<string>();
         public IReadOnlyList<string> CompatibleAnatomyTagIds => compatibleAnatomyTagIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> RestoredResourceIds => restoredResourceIds ?? Array.Empty<string>();
+        public IReadOnlyList<BiologicalResourceDefinition> RestoredResources => restoredResources ?? Array.Empty<BiologicalResourceDefinition>();
+        public IReadOnlyList<string> RestoredResourceIds => RestoredResources.Select(definition => definition.Id).ToArray();
         public RecoveryPermanentOutcome PermanentOutcome => permanentOutcome;
         public RecoveryInterruptionPolicy InterruptionPolicy => interruptionPolicy;
         public bool AlphaExecutionEnabled => alphaExecutionEnabled;
@@ -73,16 +78,15 @@ namespace UnityIsekaiGame.Beings.Biology.Recovery
         {
             methodId = methodId?.Trim();
             displayName = displayName?.Trim();
-            biologicalInteractionDefinitionId = biologicalInteractionDefinitionId?.Trim();
             baseProgressPerHour = Mathf.Max(0f, baseProgressPerHour);
             structuralIntegrityPerHour = Mathf.Max(0f, structuralIntegrityPerHour);
             vitalResourcePerHour = Mathf.Max(0f, vitalResourcePerHour);
             maximumRecoverableIntegrityPercent = Mathf.Clamp01(maximumRecoverableIntegrityPercent);
-            requiredRuntimeCapabilityKeys = Normalize(requiredRuntimeCapabilityKeys);
-            blockingRuntimeCapabilityKeys = Normalize(blockingRuntimeCapabilityKeys);
+            requiredCapabilities = Normalize(requiredCapabilities);
+            blockingCapabilities = Normalize(blockingCapabilities);
             compatibleInjuryTypeIds = Normalize(compatibleInjuryTypeIds);
             compatibleAnatomyTagIds = Normalize(compatibleAnatomyTagIds);
-            restoredResourceIds = Normalize(restoredResourceIds);
+            restoredResources = Normalize(restoredResources);
         }
 
         public bool SupportsTarget(RecoveryTargetCategory target)
@@ -121,27 +125,27 @@ namespace UnityIsekaiGame.Beings.Biology.Recovery
                 report.AddError($"RecoveryMethodDefinition '{DisplayName}' has an invalid category.");
             }
 
-            if (string.IsNullOrWhiteSpace(BiologicalInteractionDefinitionId)
+            if (biologicalInteractionDefinition == null
                 || definitionsById == null
                 || !definitionsById.TryGetValue(BiologicalInteractionDefinitionId, out IGameDefinition interaction)
-                || interaction is not BiologicalInteractionDefinition)
+                || !ReferenceEquals(interaction, biologicalInteractionDefinition))
             {
                 report.AddError($"RecoveryMethodDefinition '{DisplayName}' references missing Biological Interaction '{BiologicalInteractionDefinitionId}'.");
             }
 
-            foreach (string capabilityKey in RequiredRuntimeCapabilityKeys.Concat(BlockingRuntimeCapabilityKeys))
+            foreach (CapabilityDefinition capability in RequiredCapabilities.Concat(BlockingCapabilities))
             {
-                if (capabilityKey.StartsWith("capability.", StringComparison.Ordinal))
+                if (definitionsById == null || !definitionsById.TryGetValue(capability.Id, out IGameDefinition registered) || !ReferenceEquals(registered, capability))
                 {
-                    report.AddError($"RecoveryMethodDefinition '{DisplayName}' runtime capability key '{capabilityKey}' must use a runtime key, not a CapabilityDefinition ID.");
+                    report.AddError($"RecoveryMethodDefinition '{DisplayName}' references missing Capability '{capability.Id}'.");
                 }
             }
 
-            foreach (string resourceId in RestoredResourceIds)
+            foreach (BiologicalResourceDefinition resourceDefinition in RestoredResources)
             {
-                if (definitionsById == null || !definitionsById.TryGetValue(resourceId, out IGameDefinition resource) || resource is not BiologicalResourceDefinition)
+                if (definitionsById == null || !definitionsById.TryGetValue(resourceDefinition.Id, out IGameDefinition resource) || !ReferenceEquals(resource, resourceDefinition))
                 {
-                    report.AddError($"RecoveryMethodDefinition '{DisplayName}' references missing Biological Resource '{resourceId}'.");
+                    report.AddError($"RecoveryMethodDefinition '{DisplayName}' references missing Biological Resource '{resourceDefinition.Id}'.");
                 }
             }
 
@@ -154,6 +158,11 @@ namespace UnityIsekaiGame.Beings.Biology.Recovery
         private static string[] Normalize(string[] values)
         {
             return values == null ? Array.Empty<string>() : values.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim()).Distinct(StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        }
+
+        private static T[] Normalize<T>(T[] values) where T : UnityEngine.Object, IGameDefinition
+        {
+            return values == null ? Array.Empty<T>() : values.Where(value => value != null).Distinct().OrderBy(value => value.Id, StringComparer.Ordinal).ToArray();
         }
     }
 }

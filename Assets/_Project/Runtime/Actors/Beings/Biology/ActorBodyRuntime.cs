@@ -27,6 +27,7 @@ namespace UnityIsekaiGame.Beings.Biology
 
         private DefinitionRegistry registry;
         private CharacterTraitCollection traits;
+        private CharacterCapabilityCollection capabilities;
         private CalculatedStatCollection calculatedStats;
         private string actorBodyId;
         private string personId;
@@ -82,12 +83,14 @@ namespace UnityIsekaiGame.Beings.Biology
             string owningPersonId,
             CharacterTraitCollection traitCollection,
             CalculatedStatCollection statCollection,
-            bool restoring = false)
+            bool restoring = false,
+            CharacterCapabilityCollection capabilityCollection = null)
         {
             registry = definitionRegistry ?? registry;
             actorBodyId = string.IsNullOrWhiteSpace(exactActorBodyId) ? actorBodyId : exactActorBodyId;
             personId = owningPersonId ?? string.Empty;
             traits = traitCollection == null ? traits == null ? GetComponent<CharacterTraitCollection>() : traits : traitCollection;
+            capabilities = capabilityCollection == null ? capabilities == null ? GetComponent<CharacterCapabilityCollection>() : capabilities : capabilityCollection;
             calculatedStats = statCollection == null ? calculatedStats == null ? GetComponent<CalculatedStatCollection>() : calculatedStats : statCollection;
 
             if (string.IsNullOrWhiteSpace(SpeciesDefinitionId) && defaultSpecies != null)
@@ -579,7 +582,7 @@ namespace UnityIsekaiGame.Beings.Biology
                         node.MirrorGroup,
                         Array.Empty<string>(),
                         node.EquipmentTagIds,
-                        node.FutureDamageTagIds)).ToArray(),
+                        node.DamageTagIds)).ToArray(),
                     true,
                     Array.Empty<string>());
                 if (!BodyConditionRuntime.ValidateSaveData(saveData.condition, validationAnatomy, registry, out failureReason))
@@ -1245,7 +1248,7 @@ namespace UnityIsekaiGame.Beings.Biology
                     node.MirrorGroup,
                     Array.Empty<string>(),
                     node.EquipmentTagIds,
-                    node.FutureDamageTagIds)).ToArray(),
+                    node.DamageTagIds)).ToArray(),
                 true,
                 Array.Empty<string>());
         }
@@ -1314,24 +1317,8 @@ namespace UnityIsekaiGame.Beings.Biology
                     return BodyOperationResult.Failure(BodyOperationResultCode.CapabilityApplicationFailure, "Biological Capability grant is missing a Capability definition.");
                 }
 
-                if (string.IsNullOrWhiteSpace(grant.RuntimeCapabilityKey))
-                {
-                    return BodyOperationResult.Failure(BodyOperationResultCode.CapabilityApplicationFailure, $"Biological Capability grant '{grant.EntryId}' is missing a runtime Capability key.");
-                }
-
-                bool added = traits.Capabilities.Add(new RuntimeCapabilityContribution
-                {
-                    capabilityId = grant.RuntimeCapabilityKey,
-                    valueType = (int)grant.Capability.ValueType,
-                    boolValue = grant.BooleanValue,
-                    numericValue = grant.NumericValue,
-                    aggregationPolicy = (int)grant.Capability.AggregationPolicy,
-                    sourceCategory = (int)capabilitySourceCategory,
-                    sourceId = sourceId,
-                    entryId = grant.EntryId,
-                    priority = grant.Priority,
-                    blocker = grant.Blocker
-                });
+                bool added = capabilities != null && capabilities.Add(grant.Capability, capabilitySourceCategory, sourceId,
+                    grant.EntryId, grant.BooleanValue, grant.NumericValue, grant.Priority, grant.Blocker, restoring);
                 if (!added)
                 {
                     return BodyOperationResult.Failure(BodyOperationResultCode.CapabilityApplicationFailure, $"Capability '{grant.Capability.Id}' could not be applied.");
@@ -1401,13 +1388,13 @@ namespace UnityIsekaiGame.Beings.Biology
                 if (!string.IsNullOrWhiteSpace(speciesSourceId))
                 {
                     ClearTraitSources(TraitSourceCategory.Species, speciesSourceId);
-                    traits.Capabilities.ClearSource(CapabilitySourceCategory.Species, speciesSourceId);
+                    capabilities?.RemoveSource(CapabilitySourceCategory.Species, speciesSourceId, restoring);
                 }
 
                 if (!string.IsNullOrWhiteSpace(classificationSourceId))
                 {
                     ClearTraitSources(TraitSourceCategory.BiologicalClassification, classificationSourceId);
-                    traits.Capabilities.ClearSource(CapabilitySourceCategory.BiologicalClassification, classificationSourceId);
+                    capabilities?.RemoveSource(CapabilitySourceCategory.BiologicalClassification, classificationSourceId, restoring);
                 }
             }
 
@@ -1481,12 +1468,12 @@ namespace UnityIsekaiGame.Beings.Biology
 
         private bool EvaluateBoolean(string capabilityId)
         {
-            return traits != null && traits.Capabilities.Evaluate(capabilityId).BooleanValue;
+            return capabilities != null && capabilities.Evaluate(capabilityId).BooleanValue;
         }
 
         private List<BodyCapabilitySummary> BuildCapabilitySummaries()
         {
-            if (traits == null)
+            if (capabilities == null)
             {
                 return new List<BodyCapabilitySummary>();
             }
@@ -1512,7 +1499,7 @@ namespace UnityIsekaiGame.Beings.Biology
                 BiologyCapabilityIds.CanBleed
             };
 
-            return ids.Select(id => traits.Capabilities.Evaluate(id))
+            return ids.Select(id => capabilities.Evaluate(id))
                 .Select(snapshot => new BodyCapabilitySummary(snapshot.CapabilityId, snapshot.BooleanValue, snapshot.NumericValue, snapshot.Blocked))
                 .ToList();
         }

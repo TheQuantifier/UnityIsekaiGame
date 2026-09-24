@@ -15,7 +15,7 @@ MonoBehaviour:
   methodId: recovery.natural.hydration-recovery
   displayName: Natural Hydration Recovery Hook
   description: Canonical alpha recovery method for Feature 7.7.
-  biologicalInteractionDefinitionId: interaction.recovery.natural-healing
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000011c, type: 2}
   category: 6
   supportedTargets:
   - 4
@@ -31,12 +31,12 @@ MonoBehaviour:
   resolvesInjuryOnCompletion: 0
   requiresRestContext: 0
   allowedRestTypes: []
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   compatibleInjuryTypeIds: []
   compatibleAnatomyTagIds: []
-  restoredResourceIds:
-  - resource.biology.hydration
+  restoredResources:
+  - {fileID: 11400000, guid: 7a250000000000000000000000000014, type: 2}
   permanentOutcome: 0
   interruptionPolicy: 0
   alphaExecutionEnabled: 1

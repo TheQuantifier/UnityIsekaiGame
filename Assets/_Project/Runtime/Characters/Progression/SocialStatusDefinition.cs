@@ -31,7 +31,6 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private bool allowMultipleContexts = true;
         [SerializeField] private bool allowGlobalApplication = true;
         [SerializeField] private bool retainHistory = true;
-        [SerializeField] private string futureExpirationResolutionMetadata;
 
         public string SocialStatusId => socialStatusId;
         public string Id => socialStatusId;

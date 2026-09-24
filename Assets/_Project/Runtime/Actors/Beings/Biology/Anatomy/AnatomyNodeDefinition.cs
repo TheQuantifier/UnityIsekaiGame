@@ -25,8 +25,8 @@ namespace UnityIsekaiGame.Beings.Biology.Anatomy
         [SerializeField] private string repeatGroup;
         [SerializeField] private string mirrorGroup;
         [SerializeField] private string[] equipmentTagIds;
-        [SerializeField] private string[] futureDamageTagIds;
-        [SerializeField] private string[] futureBiologicalFunctionTags;
+        [SerializeField] private string[] damageTagIds;
+        [SerializeField] private string[] biologicalFunctionTags;
         [SerializeField] private TagDefinition[] tags;
         [SerializeField] private int order;
 
@@ -47,8 +47,8 @@ namespace UnityIsekaiGame.Beings.Biology.Anatomy
         public string RepeatGroup => repeatGroup ?? string.Empty;
         public string MirrorGroup => mirrorGroup ?? string.Empty;
         public IReadOnlyList<string> EquipmentTagIds => equipmentTagIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> FutureDamageTagIds => futureDamageTagIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> FutureBiologicalFunctionTags => futureBiologicalFunctionTags ?? Array.Empty<string>();
+        public IReadOnlyList<string> DamageTagIds => damageTagIds ?? Array.Empty<string>();
+        public IReadOnlyList<string> BiologicalFunctionTags => biologicalFunctionTags ?? Array.Empty<string>();
         public IReadOnlyList<TagDefinition> Tags => tags ?? Array.Empty<TagDefinition>();
         public int Order => order;
     }

@@ -66,7 +66,7 @@ namespace UnityIsekaiGame.Persistence
 
             if (!traits.IsConfigured)
             {
-                traits.Configure(registry, calculatedStats, skills, ownerId);
+                return PersistenceParticipantSaveResult.Failure("Character Traits are not initialized; persistence cannot bootstrap runtime systems.");
             }
 
             PlayerTraitsSaveData saveData = traits.CreateSaveData(ownerId, identity == null ? string.Empty : identity.PersonId);

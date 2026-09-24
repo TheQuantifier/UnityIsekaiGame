@@ -12,7 +12,6 @@ namespace UnityIsekaiGame.ResourceSystem
         public const float Epsilon = 0.0001f;
 
         [SerializeField] private CalculatedStatCollection calculatedStats;
-        [SerializeField] private List<ResourceDefinition> fallbackDefinitions = new List<ResourceDefinition>();
 
         private readonly Dictionary<string, ResourceDefinition> definitionsById = new Dictionary<string, ResourceDefinition>(StringComparer.Ordinal);
         private readonly Dictionary<string, RuntimeResourceRecord> recordsById = new Dictionary<string, RuntimeResourceRecord>(StringComparer.Ordinal);
@@ -42,10 +41,6 @@ namespace UnityIsekaiGame.ResourceSystem
                 calculatedStats = GetComponent<CalculatedStatCollection>();
             }
 
-            if (!IsConfigured && fallbackDefinitions.Count > 0)
-            {
-                Configure(fallbackDefinitions, calculatedStats, ownerId);
-            }
         }
 
         private void OnEnable()
@@ -62,11 +57,6 @@ namespace UnityIsekaiGame.ResourceSystem
             {
                 calculatedStats.CalculatedStatsChanged -= OnCalculatedStatsChanged;
             }
-        }
-
-        private void Update()
-        {
-            TickResources(Time.deltaTime, Time.time);
         }
 
         public void Configure(DefinitionRegistry registry, CalculatedStatCollection statCollection = null, string owner = "")
@@ -111,7 +101,6 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public bool HasResource(string resourceId)
         {
-            EnsureConfiguredFromFallback();
             return recordsById.ContainsKey(resourceId);
         }
 
@@ -139,7 +128,6 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public bool TryGetResource(string resourceId, out ResourceSnapshot snapshot)
         {
-            EnsureConfiguredFromFallback();
             if (!definitionsById.TryGetValue(resourceId, out ResourceDefinition definition) || !recordsById.TryGetValue(resourceId, out RuntimeResourceRecord record))
             {
                 snapshot = default;
@@ -152,7 +140,6 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public IReadOnlyList<ResourceSnapshot> GetSnapshots()
         {
-            EnsureConfiguredFromFallback();
             return definitionsById.Values
                 .OrderBy(definition => definition.DisplayName)
                 .Select(definition => recordsById.TryGetValue(definition.Id, out RuntimeResourceRecord record) ? CreateSnapshot(definition, record) : default)
@@ -217,7 +204,6 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public ResourceChangeResult ApplyChange(ResourceChangeRequest request)
         {
-            EnsureConfiguredFromFallback();
             if (!definitionsById.TryGetValue(request.ResourceId, out ResourceDefinition definition) || !recordsById.TryGetValue(request.ResourceId, out RuntimeResourceRecord record))
             {
                 return ResourceChangeResult.Failure(request, "UnknownResource", $"Resource '{request.ResourceId}' is not configured.");
@@ -307,7 +293,6 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public void InitializeMissingResources(ResourceInitializationPolicy policy, bool restoration, bool preserveExisting)
         {
-            EnsureConfiguredFromFallback();
             foreach (ResourceDefinition definition in definitionsById.Values.ToList())
             {
                 if (recordsById.ContainsKey(definition.Id))
@@ -336,7 +321,6 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public void ResetToDefinitionDefaults(string sourceId = "resource.reset", string reason = "Reset resources.", bool restoration = true)
         {
-            EnsureConfiguredFromFallback();
             processedEventIds.Clear();
             nextRegenerationTick.Clear();
             nextDegenerationTick.Clear();
@@ -427,7 +411,6 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public PlayerResourcesSaveData CreateSaveData(string playerId, string personId)
         {
-            EnsureConfiguredFromFallback();
             return new PlayerResourcesSaveData
             {
                 schemaVersion = PlayerResourcesSaveData.CurrentSchemaVersion,
@@ -440,7 +423,6 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public string BuildDiagnosticSummary()
         {
-            EnsureConfiguredFromFallback();
             List<string> lines = new List<string>
             {
                 "Feature 5.4b Current Resources",
@@ -468,7 +450,12 @@ namespace UnityIsekaiGame.ResourceSystem
         public bool RestoreFromSaveData(PlayerResourcesSaveData saveData, DefinitionRegistry registry, CalculatedStatCollection statCollection, string expectedPlayerId, out string failureReason, bool restoring)
         {
             failureReason = string.Empty;
-            Configure(registry, statCollection, expectedPlayerId);
+            if (!IsConfigured)
+            {
+                failureReason = "Character Resources must be initialized by CharacterSystemCoordinator before restore.";
+                return false;
+            }
+
             if (!ValidateSaveData(saveData, registry, statCollection, expectedPlayerId, out failureReason))
             {
                 return false;
@@ -557,7 +544,7 @@ namespace UnityIsekaiGame.ResourceSystem
 
                 float maximum = statCollection != null && statCollection.IsConfigured && statCollection.HasStat(definition.LinkedMaximumStatId)
                     ? statCollection.GetValue(definition.LinkedMaximumStatId)
-                    : definition.DevelopmentMaximumFallback;
+                    : definition.DefaultMaximum;
                 if (!IsFinite(record.currentValue) || record.currentValue < definition.MinimumValue - Epsilon || (!definition.OverfillAllowed && record.currentValue > maximum + Epsilon) || !IsFinite(record.lifetimeGained) || !IsFinite(record.lifetimeSpent) || !IsFinite(record.lifetimeDamaged) || !IsFinite(record.lifetimeHealed))
                 {
                     failureReason = $"Resource record '{record.resourceDefinitionId}' has invalid numeric values.";
@@ -585,7 +572,6 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public void TickResources(float deltaSeconds, float now)
         {
-            EnsureConfiguredFromFallback();
             if (deltaSeconds <= 0f)
             {
                 return;
@@ -644,7 +630,7 @@ namespace UnityIsekaiGame.ResourceSystem
 
             float maximum = calculatedStats != null && calculatedStats.IsConfigured && calculatedStats.HasStat(definition.LinkedMaximumStatId)
                 ? calculatedStats.GetValue(definition.LinkedMaximumStatId)
-                : definition.DevelopmentMaximumFallback;
+                : definition.DefaultMaximum;
             return Mathf.Max(definition.MinimumValue, maximum);
         }
 
@@ -831,14 +817,6 @@ namespace UnityIsekaiGame.ResourceSystem
             if (result.LeftFull)
             {
                 ResourceLeftFull?.Invoke(this, snapshot, restoring);
-            }
-        }
-
-        private void EnsureConfiguredFromFallback()
-        {
-            if (!IsConfigured && fallbackDefinitions.Count > 0)
-            {
-                Configure(fallbackDefinitions, calculatedStats, ownerId);
             }
         }
 

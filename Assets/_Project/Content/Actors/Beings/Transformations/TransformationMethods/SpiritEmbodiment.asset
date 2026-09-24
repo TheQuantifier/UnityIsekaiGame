@@ -15,18 +15,18 @@ MonoBehaviour:
   methodId: transformation.spirit-embodiment
   displayName: Spirit Embodiment
   description: Canonical alpha plan for giving an incorporeal being a target body.
-  biologicalInteractionDefinitionId: interaction.transformation.possession
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000012c, type: 2}
   category: 9
   temporary: 0
   defaultDurationSeconds: 0
-  allowedTargetSpeciesIds:
-  - species.human
-  - species.basic-construct
-  allowedTargetBodyFormIds:
-  - body-form.humanoid
-  - body-form.construct
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  allowedTargetSpecies:
+  - {fileID: 11400000, guid: 7a170000000000000000000000000001, type: 2}
+  - {fileID: 11400000, guid: 7a170000000000000000000000000003, type: 2}
+  allowedTargetBodyForms:
+  - {fileID: 11400000, guid: 7a160000000000000000000000000001, type: 2}
+  - {fileID: 11400000, guid: 7a160000000000000000000000000002, type: 2}
+  requiredCapabilities: []
+  blockingCapabilities: []
   transferPolicy: 2
   anatomyPolicy: 1
   conditionPolicy: 6

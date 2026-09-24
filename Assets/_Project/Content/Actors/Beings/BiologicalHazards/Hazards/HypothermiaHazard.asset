@@ -17,14 +17,13 @@ MonoBehaviour:
   description: Dangerous reduced body temperature.
   stackingPolicy: 4
   defaultSeverity: 3
-  targetResourceId: resource.biology.temperature
+  targetResource: {fileID: 11400000, guid: 7a250000000000000000000000000012, type: 2}
   resourceOperation: 2
   baseResourceRatePerHour: 0
   baseDamagePerHour: 0
   damageType: {fileID: 0}
   lifecycleRequest: 1
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   alphaEnabled: 1
-  futureResistanceMetadata: Deferred thermal resistance hooks. Cold exposure is represented as a source and currently evaluated as a lifecycle pressure plan.
   tags: []

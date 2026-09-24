@@ -12,7 +12,7 @@ namespace UnityIsekaiGame.Beings.Biology.Hazards
         [SerializeField] private string exposureId;
         [SerializeField] private string displayName;
         [SerializeField, TextArea(2, 5)] private string description;
-        [SerializeField] private string hazardDefinitionId;
+        [SerializeField] private BiologicalHazardDefinition hazardDefinition;
         [SerializeField] private BiologicalHazardSeverity defaultSeverity = BiologicalHazardSeverity.Minor;
         [SerializeField, Min(0f)] private float defaultRateMultiplier = 1f;
         [SerializeField] private bool alphaEnabled = true;
@@ -21,7 +21,8 @@ namespace UnityIsekaiGame.Beings.Biology.Hazards
         public string Id => exposureId ?? string.Empty;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public string Description => description ?? string.Empty;
-        public string HazardDefinitionId => hazardDefinitionId ?? string.Empty;
+        public BiologicalHazardDefinition HazardDefinition => hazardDefinition;
+        public string HazardDefinitionId => hazardDefinition == null ? string.Empty : hazardDefinition.Id;
         public BiologicalHazardSeverity DefaultSeverity => defaultSeverity;
         public float DefaultRateMultiplier => Mathf.Max(0f, defaultRateMultiplier);
         public bool AlphaEnabled => alphaEnabled;
@@ -31,7 +32,6 @@ namespace UnityIsekaiGame.Beings.Biology.Hazards
         {
             exposureId = exposureId?.Trim();
             displayName = displayName?.Trim();
-            hazardDefinitionId = hazardDefinitionId?.Trim();
             defaultRateMultiplier = Mathf.Max(0f, defaultRateMultiplier);
         }
 
@@ -51,11 +51,11 @@ namespace UnityIsekaiGame.Beings.Biology.Hazards
                 report.AddWarning($"EnvironmentalExposureDefinition '{Id}' should use the 'exposure.environment.' namespace prefix.");
             }
 
-            if (string.IsNullOrWhiteSpace(HazardDefinitionId))
+            if (hazardDefinition == null)
             {
                 report.AddError($"EnvironmentalExposureDefinition '{DisplayName}' is missing a hazard reference.");
             }
-            else if (definitionsById != null && (!definitionsById.TryGetValue(HazardDefinitionId, out IGameDefinition hazard) || hazard is not BiologicalHazardDefinition))
+            else if (definitionsById != null && (!definitionsById.TryGetValue(HazardDefinitionId, out IGameDefinition hazard) || !ReferenceEquals(hazard, hazardDefinition)))
             {
                 report.AddError($"EnvironmentalExposureDefinition '{DisplayName}' references unknown Biological Hazard '{HazardDefinitionId}'.");
             }

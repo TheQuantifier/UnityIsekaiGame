@@ -32,9 +32,6 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private string[] incompatibilityGroups;
         [SerializeField] private string suspensionConditionsMetadata;
         [SerializeField] private string revocationConditionsMetadata;
-        [SerializeField] private string futureAbandonmentPolicy;
-        [SerializeField] private string futureHiddenConflictPolicy;
-        [SerializeField] private string futureDiscoveryConsequences;
 
         public string RoleId => roleId;
         public string Id => roleId;

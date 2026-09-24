@@ -10,10 +10,12 @@ Lifecycle state belongs to the current Actor/body, not the Person identity. A sa
 
 - `Active`: the actor can act normally.
 - `Defeated`: the actor has been defeated but has not moved into unconsciousness or death.
-- `Unconscious`: default living-being zero-Health result. No automatic death occurs.
-- `Dead`: the body is dead and cannot act until revived.
+- `Unconscious`: default living-being zero-Health result. No automatic death occurs; normal recovery can return the actor to `Active`.
+- `Dead`: the body is dead and cannot act or revive until its policy-defined real-world wait has elapsed.
 
 `Recovered` and `Revived` are transition outcomes that return a body to `Active`; they are not stored states.
+
+Death is an explicit lifecycle transition for fatal circumstances such as fatal injuries, executions, catastrophic damage, or critical conditions. Ordinary Health depletion continues to use the defeat policy and does not silently promote a standard living actor from unconsciousness to death.
 
 ## Policies
 
@@ -23,6 +25,8 @@ Lifecycle state belongs to the current Actor/body, not the Person identity. A sa
 - `DieImmediately`
 - `RemainDefeated`
 - `IgnoreDefeat`
+
+It also defines `revivalWaitRealSeconds`. The standard living-being and immediate-death prototype policies use 3,600 seconds (one real-world hour). The deadline is fixed when death occurs, so changing a policy later does not retroactively change an existing death penalty.
 
 If no policy asset is assigned, `ActorLifecycleController` uses a local default equivalent to `defeat-policy.living-standard`: zero Health transitions to `Unconscious`, death is not automatic, and recovery/revival restore at least 1 Health.
 
@@ -56,7 +60,7 @@ Preview APIs do not mutate resources, change lifecycle state, emit execution eve
 
 ## Persistence
 
-`PlayerActorLifecyclePersistenceParticipant` saves only lifecycle state and loads after `player.resources`. Restore validates player owner and actor/body ID, then applies lifecycle state without replaying lifecycle events. The post-load coherence check rejects invalid pairings such as `Active` with zero Health or `Dead` with positive Health.
+`PlayerActorLifecyclePersistenceParticipant` saves lifecycle state plus ISO-8601 UTC death and revival-availability timestamps, and loads after `player.resources`. Restore validates player owner, actor/body ID, state/timestamp coherence, and timestamp ordering, then applies lifecycle state without replaying lifecycle events. The absolute UTC deadline continues while the game is closed. The runtime clock is injectable so a future persistent server can supply trusted authoritative UTC instead of client system time. The post-load coherence check rejects invalid pairings such as `Active` with zero Health or `Dead` with positive Health.
 
 ## Test Lab
 

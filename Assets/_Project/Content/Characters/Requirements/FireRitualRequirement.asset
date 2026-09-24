@@ -23,7 +23,7 @@ MonoBehaviour:
     - nodeId: mana-twenty
       nodeType: 2
       comparison: 3
-      targetId: resource.mana
+      targetDefinition: {fileID: 11400000, guid: 6caaee0c0ed1486fa56c9fee3523311e, type: 2}
       numericValue: 20
       integerValue: 0
       booleanValue: 1
@@ -35,7 +35,7 @@ MonoBehaviour:
     - nodeId: mana-sense
       nodeType: 18
       comparison: 0
-      targetId: capability.sense.mana
+      targetDefinition: {fileID: 11400000, guid: 55d30000000000000000000000000055, type: 2}
       numericValue: 0
       integerValue: 0
       booleanValue: 1

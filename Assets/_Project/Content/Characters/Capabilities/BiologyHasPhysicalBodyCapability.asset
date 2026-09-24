@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Capabilities.CapabilityDefinition
   capabilityId: capability.biology.has-physical-body
   displayName: Has Physical Body
-  description: Body has a physical body for future anatomy and equipment checks.
+  description: Body has a physical form for anatomy and equipment checks.
   primaryCategory: {fileID: 11400000, guid: 55cb0000000000000000000000000055, type: 2}
   tags: []
   valueType: 0
@@ -24,4 +24,3 @@ MonoBehaviour:
   minimumValue: 0
   maximumValue: 1
   alphaEnabled: 1
-  futureMetadata: Feature 7.1 biological capability.

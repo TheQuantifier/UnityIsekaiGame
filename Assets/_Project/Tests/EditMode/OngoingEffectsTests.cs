@@ -280,12 +280,13 @@ namespace UnityIsekaiGame.Tests
 
         private sealed class OngoingFixture : System.IDisposable
         {
-            private OngoingFixture(GameObject owner, DefinitionRegistry registry, CharacterResourceCollection resources, CharacterTraitCollection traits, ActorLifecycleController lifecycle, OngoingEffectService service)
+            private OngoingFixture(GameObject owner, DefinitionRegistry registry, CharacterResourceCollection resources, CharacterTraitCollection traits, CharacterCapabilityCollection capabilities, ActorLifecycleController lifecycle, OngoingEffectService service)
             {
                 Owner = owner;
                 Registry = registry;
                 Resources = resources;
                 Traits = traits;
+                Capabilities = capabilities;
                 Lifecycle = lifecycle;
                 Service = service;
             }
@@ -294,6 +295,7 @@ namespace UnityIsekaiGame.Tests
             public DefinitionRegistry Registry { get; }
             public CharacterResourceCollection Resources { get; }
             public CharacterTraitCollection Traits { get; }
+            public CharacterCapabilityCollection Capabilities { get; }
             public ActorLifecycleController Lifecycle { get; }
             public OngoingEffectService Service { get; }
             public string ActorId => Lifecycle.ActorId;
@@ -311,18 +313,20 @@ namespace UnityIsekaiGame.Tests
                 CharacterAttributes attributes = owner.AddComponent<CharacterAttributes>();
                 CalculatedStatCollection stats = owner.AddComponent<CalculatedStatCollection>();
                 CharacterTraitCollection traits = owner.AddComponent<CharacterTraitCollection>();
+                UnityIsekaiGame.Capabilities.CharacterCapabilityCollection capabilities = owner.AddComponent<UnityIsekaiGame.Capabilities.CharacterCapabilityCollection>();
                 CharacterResourceCollection resources = owner.AddComponent<CharacterResourceCollection>();
                 ActorLifecycleController lifecycle = owner.AddComponent<ActorLifecycleController>();
                 OngoingEffectService service = owner.AddComponent<OngoingEffectService>();
 
                 attributes.Configure(registry);
                 stats.Configure(registry, attributes);
-                traits.Configure(registry, stats, null, "player.local");
+                capabilities.Configure(registry);
+                traits.Configure(registry, stats, null, capabilities, "player.local");
                 resources.Configure(registry, stats, "player.local");
                 lifecycle.Configure(null, resources, null, traits);
                 service.Configure(null);
                 service.SetClock(0f);
-                return new OngoingFixture(owner, registry, resources, traits, lifecycle, service);
+                return new OngoingFixture(owner, registry, resources, traits, capabilities, lifecycle, service);
             }
 
             public TDefinition Get<TDefinition>(string id)
@@ -362,7 +366,7 @@ namespace UnityIsekaiGame.Tests
             {
                 TraitDefinition trait = CreateTemporaryResistanceTrait(damageType, resistance, immunity: false, traitId);
                 temporaryTraits.Add(trait);
-                Traits.Configure(temporaryTraits, Array.Empty<CapabilityDefinition>(), null, null, "player.local");
+                Traits.Configure(temporaryTraits, null, null, Capabilities, "player.local");
                 TraitOperationResult result = Traits.GrantTrait(new TraitGrantRequest
                 {
                     OwnerId = "player.local",
@@ -379,7 +383,7 @@ namespace UnityIsekaiGame.Tests
             {
                 TraitDefinition trait = CreateTemporaryResistanceTrait(damageType, 1f, immunity: true, traitId);
                 temporaryTraits.Add(trait);
-                Traits.Configure(temporaryTraits, Array.Empty<CapabilityDefinition>(), null, null, "player.local");
+                Traits.Configure(temporaryTraits, null, null, Capabilities, "player.local");
                 TraitOperationResult result = Traits.GrantTrait(new TraitGrantRequest
                 {
                     OwnerId = "player.local",

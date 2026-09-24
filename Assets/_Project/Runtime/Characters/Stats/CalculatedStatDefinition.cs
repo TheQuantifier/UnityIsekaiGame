@@ -19,7 +19,7 @@ namespace UnityIsekaiGame.Stats
         [SerializeField] private int sortOrder;
         [SerializeField] private float optionalPresentationMaximum;
         [SerializeField] private CalculatedStatPurpose purpose = CalculatedStatPurpose.General;
-        [SerializeField] private string linkedFutureResourceId;
+        [SerializeField] private string linkedResourceId;
 
         public string Id => statId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
@@ -32,15 +32,15 @@ namespace UnityIsekaiGame.Stats
         public int SortOrder => sortOrder;
         public float OptionalPresentationMaximum => Mathf.Max(0f, optionalPresentationMaximum);
         public CalculatedStatPurpose Purpose => purpose;
-        public string LinkedFutureResourceId => linkedFutureResourceId ?? string.Empty;
+        public string LinkedResourceId => linkedResourceId ?? string.Empty;
         public bool IsResourceMaximum => purpose == CalculatedStatPurpose.ResourceMaximum;
 
         private void OnValidate()
         {
             optionalPresentationMaximum = Mathf.Max(0f, optionalPresentationMaximum);
-            if (linkedFutureResourceId != null)
+            if (linkedResourceId != null)
             {
-                linkedFutureResourceId = linkedFutureResourceId.Trim();
+                linkedResourceId = linkedResourceId.Trim();
             }
         }
 
@@ -83,22 +83,22 @@ namespace UnityIsekaiGame.Stats
 
             if (IsResourceMaximum)
             {
-                if (string.IsNullOrWhiteSpace(LinkedFutureResourceId))
+                if (string.IsNullOrWhiteSpace(LinkedResourceId))
                 {
-                    report.AddError($"Calculated stat '{DisplayName}' is a resource maximum but does not declare a linked future resource ID.");
+                    report.AddError($"Calculated stat '{DisplayName}' is a resource maximum but does not declare a linked resource ID.");
                 }
-                else if (!LinkedFutureResourceId.StartsWith("resource."))
+                else if (!LinkedResourceId.StartsWith("resource."))
                 {
-                    report.AddError($"Calculated stat '{DisplayName}' resource link '{LinkedFutureResourceId}' must use the 'resource.' namespace prefix.");
+                    report.AddError($"Calculated stat '{DisplayName}' resource link '{LinkedResourceId}' must use the 'resource.' namespace prefix.");
                 }
-                else if (!CalculatedStatIds.IsReservedFutureResourceId(LinkedFutureResourceId))
+                else if (!CalculatedStatIds.IsCoreResourceId(LinkedResourceId))
                 {
-                    report.AddError($"Calculated stat '{DisplayName}' links unsupported future resource ID '{LinkedFutureResourceId}'.");
+                    report.AddError($"Calculated stat '{DisplayName}' links unsupported resource ID '{LinkedResourceId}'.");
                 }
             }
-            else if (!string.IsNullOrWhiteSpace(LinkedFutureResourceId))
+            else if (!string.IsNullOrWhiteSpace(LinkedResourceId))
             {
-                report.AddWarning($"Calculated stat '{DisplayName}' links resource '{LinkedFutureResourceId}' but is not marked as a resource maximum.");
+                report.AddWarning($"Calculated stat '{DisplayName}' links resource '{LinkedResourceId}' but is not marked as a resource maximum.");
             }
 
             if (definitionsById == null)
@@ -116,18 +116,18 @@ namespace UnityIsekaiGame.Stats
                 return;
             }
 
-            if (IsResourceMaximum && !string.IsNullOrWhiteSpace(LinkedFutureResourceId))
+            if (IsResourceMaximum && !string.IsNullOrWhiteSpace(LinkedResourceId))
             {
                 foreach (CalculatedStatDefinition duplicate in stats)
                 {
                     if (duplicate == this
                         || !duplicate.IsResourceMaximum
-                        || !string.Equals(duplicate.LinkedFutureResourceId, LinkedFutureResourceId, StringComparison.Ordinal))
+                        || !string.Equals(duplicate.LinkedResourceId, LinkedResourceId, StringComparison.Ordinal))
                     {
                         continue;
                     }
 
-                    report.AddError($"Calculated stat '{DisplayName}' duplicates resource-maximum mapping '{LinkedFutureResourceId}' already used by '{duplicate.Id}'.");
+                    report.AddError($"Calculated stat '{DisplayName}' duplicates resource-maximum mapping '{LinkedResourceId}' already used by '{duplicate.Id}'.");
                 }
             }
 
@@ -136,9 +136,9 @@ namespace UnityIsekaiGame.Stats
                 return;
             }
 
-            ValidateRequiredResourceMapping(stats, CalculatedStatIds.FutureResourceHealth, CalculatedStatIds.MaximumHealth, report);
-            ValidateRequiredResourceMapping(stats, CalculatedStatIds.FutureResourceStamina, CalculatedStatIds.MaximumStamina, report);
-            ValidateRequiredResourceMapping(stats, CalculatedStatIds.FutureResourceMana, CalculatedStatIds.MaximumMana, report);
+            ValidateRequiredResourceMapping(stats, CalculatedStatIds.ResourceHealth, CalculatedStatIds.MaximumHealth, report);
+            ValidateRequiredResourceMapping(stats, CalculatedStatIds.ResourceStamina, CalculatedStatIds.MaximumStamina, report);
+            ValidateRequiredResourceMapping(stats, CalculatedStatIds.ResourceMana, CalculatedStatIds.MaximumMana, report);
         }
 
         private static void ValidateRequiredResourceMapping(
@@ -148,23 +148,23 @@ namespace UnityIsekaiGame.Stats
             DefinitionValidationReport report)
         {
             List<CalculatedStatDefinition> mapped = stats
-                .Where(stat => stat.IsResourceMaximum && string.Equals(stat.LinkedFutureResourceId, resourceId, StringComparison.Ordinal))
+                .Where(stat => stat.IsResourceMaximum && string.Equals(stat.LinkedResourceId, resourceId, StringComparison.Ordinal))
                 .ToList();
             if (mapped.Count == 0)
             {
-                report.AddError($"No calculated stat maps the future resource maximum '{resourceId}'. Expected '{expectedStatId}'.");
+                report.AddError($"No calculated stat maps the resource maximum '{resourceId}'. Expected '{expectedStatId}'.");
                 return;
             }
 
             if (mapped.Count > 1)
             {
-                report.AddError($"Future resource maximum '{resourceId}' is mapped by multiple calculated stats: {string.Join(", ", mapped.Select(stat => stat.Id))}.");
+                report.AddError($"Resource maximum '{resourceId}' is mapped by multiple calculated stats: {string.Join(", ", mapped.Select(stat => stat.Id))}.");
                 return;
             }
 
             if (!string.Equals(mapped[0].Id, expectedStatId, StringComparison.Ordinal))
             {
-                report.AddError($"Future resource maximum '{resourceId}' must be mapped by '{expectedStatId}', but is mapped by '{mapped[0].Id}'.");
+                report.AddError($"Resource maximum '{resourceId}' must be mapped by '{expectedStatId}', but is mapped by '{mapped[0].Id}'.");
             }
         }
     }

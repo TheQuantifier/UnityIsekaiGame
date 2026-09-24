@@ -30,8 +30,8 @@ MonoBehaviour:
   canCauseStructuralFailure: 1
   canCauseRuntimeAbsence: 0
   canAffectVitalStructures: 1
-  futureBleedingMetadata: 0
-  futurePainMetadata: 0
-  futureHealingMetadata: 0
-  futureInfectionMetadata: 0
+  causesBleeding: 0
+  causesPain: 0
+  supportsHealing: 0
+  carriesInfectionRisk: 0
   tags: []

@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Fictional intoxication fixture for alcohol foundations.
   family: 11
   strainId: strain.prototype.alcohol-alpha
-  biologicalInteractionDefinitionId: interaction.condition.alcohol
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000129, type: 2}
   allowedRoutes: [3]
   targetAnatomyTagIds: []
   requiredAnatomyNodeId: 
@@ -28,9 +28,9 @@ MonoBehaviour:
   baseRegressionRate: 1.2
   immuneClearanceRate: 0.1
   symptomThreshold: 4
-  vitalResourceId: resource.biology.fatigue
+  vitalResource: {fileID: 11400000, guid: 7a250000000000000000000000000016, type: 2}
   vitalPressurePerTick: 0.5
-  hazardDefinitionId: 
+  hazardDefinition: {fileID: 0}
   hazardRateMultiplier: 1
   damageType: {fileID: 0}
   step6DamagePerTick: 0

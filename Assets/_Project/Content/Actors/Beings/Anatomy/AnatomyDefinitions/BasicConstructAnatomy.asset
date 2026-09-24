@@ -38,8 +38,8 @@ MonoBehaviour:
     repeatGroup: 
     mirrorGroup: 
     equipmentTagIds: []
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags: []
+    damageTagIds: []
+    biologicalFunctionTags: []
     tags: []
     order: 0
   - nodeId: region.chassis
@@ -60,9 +60,9 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.torso-compatible
-    futureDamageTagIds:
+    damageTagIds:
     - damage.region.chassis
-    futureBiologicalFunctionTags: []
+    biologicalFunctionTags: []
     tags: []
     order: 10
   - nodeId: region.sensor-housing
@@ -83,9 +83,9 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.head-compatible
-    futureDamageTagIds:
+    damageTagIds:
     - damage.region.sensor-housing
-    futureBiologicalFunctionTags: []
+    biologicalFunctionTags: []
     tags: []
     order: 20
   - nodeId: region.manipulator.left
@@ -106,8 +106,8 @@ MonoBehaviour:
     mirrorGroup: region.manipulator
     equipmentTagIds:
     - equipment.manipulator-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags: []
+    damageTagIds: []
+    biologicalFunctionTags: []
     tags: []
     order: 30
   - nodeId: region.manipulator.right
@@ -128,8 +128,8 @@ MonoBehaviour:
     mirrorGroup: region.manipulator
     equipmentTagIds:
     - equipment.manipulator-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags: []
+    damageTagIds: []
+    biologicalFunctionTags: []
     tags: []
     order: 40
   - nodeId: part.chassis
@@ -150,8 +150,8 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.torso-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - structure
     tags: []
     order: 50
@@ -173,8 +173,8 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.head-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - sensing
     tags: []
     order: 60
@@ -196,8 +196,8 @@ MonoBehaviour:
     mirrorGroup: part.manipulator
     equipmentTagIds:
     - equipment.manipulator-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - manipulation
     tags: []
     order: 70
@@ -219,8 +219,8 @@ MonoBehaviour:
     mirrorGroup: part.manipulator
     equipmentTagIds:
     - equipment.manipulator-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - manipulation
     tags: []
     order: 80
@@ -242,8 +242,8 @@ MonoBehaviour:
     mirrorGroup: 
     equipmentTagIds:
     - equipment.foot-compatible
-    futureDamageTagIds: []
-    futureBiologicalFunctionTags:
+    damageTagIds: []
+    biologicalFunctionTags:
     - locomotion
     tags: []
     order: 90
@@ -264,9 +264,9 @@ MonoBehaviour:
     repeatGroup: 
     mirrorGroup: 
     equipmentTagIds: []
-    futureDamageTagIds:
+    damageTagIds:
     - damage.core.power
-    futureBiologicalFunctionTags:
+    biologicalFunctionTags:
     - power
     tags: []
     order: 100

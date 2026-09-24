@@ -15,17 +15,17 @@ MonoBehaviour:
   profileId: transformation-profile.species.basic-spirit
   displayName: Basic Spirit Transformation Profile
   description: Alpha transformation profile for incorporeal spirit bodies.
-  speciesDefinitionIds:
-  - species.basic-spirit
-  bodyFormDefinitionIds:
-  - body-form.incorporeal
-  enabledMethodIds:
-  - transformation.body-replacement
-  - transformation.body-swap
-  - transformation.possession
-  - transformation.reincarnation
-  - transformation.spirit-embodiment
-  - transformation.species-change.permanent
+  speciesDefinitions:
+  - {fileID: 11400000, guid: 7a170000000000000000000000000004, type: 2}
+  bodyFormDefinitions:
+  - {fileID: 11400000, guid: 7a160000000000000000000000000003, type: 2}
+  enabledMethods:
+  - {fileID: 11400000, guid: 7a780000000000000000000000000113, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000114, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000115, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000116, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000118, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000111, type: 2}
   defaultTransferPolicy: 2
   defaultConditionPolicy: 4
   defaultVitalPolicy: 6

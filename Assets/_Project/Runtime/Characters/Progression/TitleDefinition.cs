@@ -12,7 +12,6 @@ namespace UnityIsekaiGame.Progression
         [SerializeField, TextArea] private string description;
         [SerializeField] private CategoryDefinition primaryCategory;
         [SerializeField] private TagDefinition[] tags;
-        [SerializeField] private string futureCultureReference;
 
         public string TitleId => titleId;
         public string Id => titleId;
@@ -21,6 +20,5 @@ namespace UnityIsekaiGame.Progression
         public CategoryDefinition PrimaryCategory => primaryCategory;
         public CategoryDomain ClassificationDomain => CategoryDomain.Title;
         public IReadOnlyList<TagDefinition> Tags => tags ?? System.Array.Empty<TagDefinition>();
-        public string FutureCultureReference => futureCultureReference ?? string.Empty;
     }
 }

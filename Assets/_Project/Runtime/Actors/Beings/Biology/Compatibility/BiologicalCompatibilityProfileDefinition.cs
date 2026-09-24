@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Beings.Biology;
+using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.GameData;
 
 namespace UnityIsekaiGame.Beings.Biology.Compatibility
@@ -13,27 +14,27 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
         [SerializeField] private string profileId;
         [SerializeField] private string displayName;
         [SerializeField, TextArea(2, 5)] private string description;
-        [SerializeField] private string speciesDefinitionId;
-        [SerializeField] private string bodyFormDefinitionId;
-        [SerializeField] private string biologicalClassificationId;
+        [SerializeField] private SpeciesDefinition speciesDefinition;
+        [SerializeField] private BodyFormDefinition bodyFormDefinition;
+        [SerializeField] private BiologicalClassificationDefinition biologicalClassification;
         [SerializeField] private BiologicalInteractionRuleDefinition[] rules;
         [SerializeField] private bool alphaEnabled = true;
 
         public string Id => profileId ?? string.Empty;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public string Description => description ?? string.Empty;
-        public string SpeciesDefinitionId => speciesDefinitionId ?? string.Empty;
-        public string BodyFormDefinitionId => bodyFormDefinitionId ?? string.Empty;
-        public string BiologicalClassificationId => biologicalClassificationId ?? string.Empty;
+        public SpeciesDefinition SpeciesDefinition => speciesDefinition;
+        public BodyFormDefinition BodyFormDefinition => bodyFormDefinition;
+        public BiologicalClassificationDefinition BiologicalClassification => biologicalClassification;
+        public string SpeciesDefinitionId => speciesDefinition == null ? string.Empty : speciesDefinition.Id;
+        public string BodyFormDefinitionId => bodyFormDefinition == null ? string.Empty : bodyFormDefinition.Id;
+        public string BiologicalClassificationId => biologicalClassification == null ? string.Empty : biologicalClassification.Id;
         public IReadOnlyList<BiologicalInteractionRuleDefinition> Rules => rules ?? Array.Empty<BiologicalInteractionRuleDefinition>();
         public bool AlphaEnabled => alphaEnabled;
 
         private void OnValidate()
         {
             profileId = profileId?.Trim();
-            speciesDefinitionId = speciesDefinitionId?.Trim();
-            bodyFormDefinitionId = bodyFormDefinitionId?.Trim();
-            biologicalClassificationId = biologicalClassificationId?.Trim();
         }
 
         public bool AppliesTo(BodySnapshot body)
@@ -95,9 +96,9 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
                 report.AddError($"BiologicalCompatibilityProfileDefinition '{DisplayName}' must target a Species, body form, or biological classification.");
             }
 
-            ValidateReference(definitionsById, SpeciesDefinitionId, typeof(SpeciesDefinition), "Species", report);
-            ValidateReference(definitionsById, BodyFormDefinitionId, typeof(BodyFormDefinition), "Body form", report);
-            ValidateReference(definitionsById, BiologicalClassificationId, typeof(BiologicalClassificationDefinition), "Biological classification", report);
+            ValidateReference(definitionsById, speciesDefinition, "Species", report);
+            ValidateReference(definitionsById, bodyFormDefinition, "Body form", report);
+            ValidateReference(definitionsById, biologicalClassification, "Biological classification", report);
             ValidateRules(definitionsById, report);
             ValidateCanonicalProfiles(definitionsById, report);
         }
@@ -130,8 +131,8 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
                 }
 
                 ValidateRuleOutcome(definitionsById, rule, conversionsByEntry, report);
-                ValidateRuntimeCapabilityKeys(rule.RequiredRuntimeCapabilityKeys, rule.EntryId, "required", report);
-                ValidateRuntimeCapabilityKeys(rule.BlockingRuntimeCapabilityKeys, rule.EntryId, "blocking", report);
+                ValidateCapabilities(definitionsById, rule.RequiredCapabilities, rule.EntryId, "required", report);
+                ValidateCapabilities(definitionsById, rule.BlockingCapabilities, rule.EntryId, "blocking", report);
             }
 
             ValidateConversionGraph(conversionsByEntry, report);
@@ -193,30 +194,27 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
             }
         }
 
-        private static void ValidateRuntimeCapabilityKeys(IEnumerable<string> keys, string entryId, string label, DefinitionValidationReport report)
+        private static void ValidateCapabilities(IReadOnlyDictionary<string, IGameDefinition> definitionsById, IEnumerable<CapabilityDefinition> capabilities, string entryId, string label, DefinitionValidationReport report)
         {
-            foreach (string key in keys ?? Array.Empty<string>())
+            foreach (CapabilityDefinition capability in capabilities ?? Array.Empty<CapabilityDefinition>())
             {
-                if (!string.IsNullOrWhiteSpace(key)
-                    && !key.StartsWith("capability.biology.", StringComparison.Ordinal)
-                    && !key.StartsWith("can.", StringComparison.Ordinal)
-                    && !key.StartsWith("immunity.", StringComparison.Ordinal))
+                if (capability == null || definitionsById == null || !definitionsById.TryGetValue(capability.Id, out IGameDefinition registered) || !ReferenceEquals(registered, capability))
                 {
-                    report.AddError($"Biological compatibility rule '{entryId}' has malformed {label} runtime Capability key '{key}'.");
+                    report.AddError($"Biological compatibility rule '{entryId}' references a missing {label} Capability '{capability?.Id ?? "<null>"}'.");
                 }
             }
         }
 
-        private static void ValidateReference(IReadOnlyDictionary<string, IGameDefinition> definitionsById, string id, Type expectedType, string label, DefinitionValidationReport report)
+        private static void ValidateReference<T>(IReadOnlyDictionary<string, IGameDefinition> definitionsById, T definition, string label, DefinitionValidationReport report) where T : UnityEngine.Object, IGameDefinition
         {
-            if (string.IsNullOrWhiteSpace(id) || definitionsById == null)
+            if (definition == null || definitionsById == null)
             {
                 return;
             }
 
-            if (!definitionsById.TryGetValue(id, out IGameDefinition definition) || !expectedType.IsInstanceOfType(definition))
+            if (!definitionsById.TryGetValue(definition.Id, out IGameDefinition registered) || !ReferenceEquals(registered, definition))
             {
-                report.AddError($"{label} reference '{id}' does not resolve for a Biological Compatibility Profile.");
+                report.AddError($"{label} reference '{definition.Id}' does not resolve for a Biological Compatibility Profile.");
             }
         }
 

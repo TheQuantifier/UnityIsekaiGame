@@ -15,14 +15,14 @@ MonoBehaviour:
   methodId: transformation.body-replacement
   displayName: Body Replacement
   description: Canonical alpha plan for moving identity context to an existing target body.
-  biologicalInteractionDefinitionId: interaction.transformation.body-replacement
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000012d, type: 2}
   category: 4
   temporary: 0
   defaultDurationSeconds: 0
-  allowedTargetSpeciesIds: []
-  allowedTargetBodyFormIds: []
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  allowedTargetSpecies: []
+  allowedTargetBodyForms: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   transferPolicy: 2
   anatomyPolicy: 2
   conditionPolicy: 2

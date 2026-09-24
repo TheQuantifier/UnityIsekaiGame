@@ -17,8 +17,6 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private OriginDefinition[] allowedOrigins;
         [SerializeField] private RarityWeightModifierDefinition[] giftRarityWeightModifiers;
         [SerializeField] private ProgressionCurrencyGrantDefinition defaultStartingMoney;
-        [SerializeField] private string futureSelectionMetadata;
-        [SerializeField] private string futureWorldCultureRestrictions;
 
         public string OriginFamilyId => originFamilyId;
         public string Id => originFamilyId;
@@ -32,8 +30,6 @@ namespace UnityIsekaiGame.Progression
         public IReadOnlyList<OriginDefinition> AllowedOrigins => allowedOrigins ?? System.Array.Empty<OriginDefinition>();
         public IReadOnlyList<RarityWeightModifierDefinition> GiftRarityWeightModifiers => giftRarityWeightModifiers ?? System.Array.Empty<RarityWeightModifierDefinition>();
         public ProgressionCurrencyGrantDefinition DefaultStartingMoney => defaultStartingMoney;
-        public string FutureSelectionMetadata => futureSelectionMetadata ?? string.Empty;
-        public string FutureWorldCultureRestrictions => futureWorldCultureRestrictions ?? string.Empty;
 
         private void OnValidate()
         {
@@ -93,6 +89,7 @@ namespace UnityIsekaiGame.Progression
                 report.AddError($"Origin family '{DisplayName}' is alpha-enabled but has no enabled origins.");
             }
 
+            HashSet<string> modifiedRarityIds = new HashSet<string>();
             foreach (RarityWeightModifierDefinition modifier in GiftRarityWeightModifiers)
             {
                 if (modifier == null || modifier.Rarity == null)
@@ -101,9 +98,14 @@ namespace UnityIsekaiGame.Progression
                     continue;
                 }
 
-                if (modifier.WeightMultiplier < 0f)
+                if (modifier.RawWeightMultiplier < 0f || float.IsNaN(modifier.RawWeightMultiplier) || float.IsInfinity(modifier.RawWeightMultiplier))
                 {
-                    report.AddError($"Origin family '{DisplayName}' has a negative rarity weight modifier.");
+                    report.AddError($"Origin family '{DisplayName}' has an invalid rarity weight modifier.");
+                }
+
+                if (!modifiedRarityIds.Add(modifier.Rarity.Id))
+                {
+                    report.AddError($"Origin family '{DisplayName}' has duplicate weight modifiers for rarity '{modifier.Rarity.Id}'.");
                 }
 
                 if (definitionsById == null || !definitionsById.TryGetValue(modifier.Rarity.Id, out IGameDefinition found) || found is not RarityDefinition)

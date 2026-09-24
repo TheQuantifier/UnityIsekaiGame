@@ -48,7 +48,7 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
         [SerializeField, TextArea(2, 5)] private string description;
         [SerializeField] private BiologicalConditionFamily family = BiologicalConditionFamily.Disease;
         [SerializeField] private string strainId = "strain.alpha.default";
-        [SerializeField] private string biologicalInteractionDefinitionId;
+        [SerializeField] private BiologicalInteractionDefinition biologicalInteractionDefinition;
         [SerializeField] private BiologicalExposureRoute[] allowedRoutes = Array.Empty<BiologicalExposureRoute>();
         [SerializeField] private string[] targetAnatomyTagIds = Array.Empty<string>();
         [SerializeField] private string requiredAnatomyNodeId;
@@ -59,9 +59,9 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
         [SerializeField] private float baseRegressionRate = 0.25f;
         [SerializeField] private float immuneClearanceRate = 0.5f;
         [SerializeField] private float symptomThreshold = 10f;
-        [SerializeField] private string vitalResourceId;
+        [SerializeField] private BiologicalResourceDefinition vitalResource;
         [SerializeField] private float vitalPressurePerTick;
-        [SerializeField] private string hazardDefinitionId;
+        [SerializeField] private BiologicalHazardDefinition hazardDefinition;
         [SerializeField] private float hazardRateMultiplier = 1f;
         [SerializeField] private DamageTypeDefinition damageType;
         [SerializeField] private float step6DamagePerTick;
@@ -82,7 +82,8 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
         public string Description => description ?? string.Empty;
         public BiologicalConditionFamily Family => family;
         public string StrainId => string.IsNullOrWhiteSpace(strainId) ? "strain.alpha.default" : strainId;
-        public string BiologicalInteractionDefinitionId => biologicalInteractionDefinitionId ?? string.Empty;
+        public BiologicalInteractionDefinition BiologicalInteractionDefinition => biologicalInteractionDefinition;
+        public string BiologicalInteractionDefinitionId => biologicalInteractionDefinition == null ? string.Empty : biologicalInteractionDefinition.Id;
         public IReadOnlyList<BiologicalExposureRoute> AllowedRoutes => allowedRoutes ?? Array.Empty<BiologicalExposureRoute>();
         public IReadOnlyList<string> TargetAnatomyTagIds => targetAnatomyTagIds ?? Array.Empty<string>();
         public string RequiredAnatomyNodeId => requiredAnatomyNodeId ?? string.Empty;
@@ -93,9 +94,11 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
         public float BaseRegressionRate => Mathf.Max(0f, baseRegressionRate);
         public float ImmuneClearanceRate => Mathf.Max(0f, immuneClearanceRate);
         public float SymptomThreshold => Mathf.Max(0f, symptomThreshold);
-        public string VitalResourceId => vitalResourceId ?? string.Empty;
+        public BiologicalResourceDefinition VitalResource => vitalResource;
+        public string VitalResourceId => vitalResource == null ? string.Empty : vitalResource.Id;
         public float VitalPressurePerTick => Mathf.Max(0f, vitalPressurePerTick);
-        public string HazardDefinitionId => hazardDefinitionId ?? string.Empty;
+        public BiologicalHazardDefinition HazardDefinition => hazardDefinition;
+        public string HazardDefinitionId => hazardDefinition == null ? string.Empty : hazardDefinition.Id;
         public float HazardRateMultiplier => Mathf.Max(0f, hazardRateMultiplier);
         public DamageTypeDefinition DamageType => damageType;
         public float Step6DamagePerTick => Mathf.Max(0f, step6DamagePerTick);
@@ -115,10 +118,7 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
         {
             conditionId = conditionId?.Trim();
             strainId = string.IsNullOrWhiteSpace(strainId) ? "strain.alpha.default" : strainId.Trim();
-            biologicalInteractionDefinitionId = biologicalInteractionDefinitionId?.Trim();
             requiredAnatomyNodeId = requiredAnatomyNodeId?.Trim();
-            vitalResourceId = vitalResourceId?.Trim();
-            hazardDefinitionId = hazardDefinitionId?.Trim();
             allowedRoutes = allowedRoutes == null ? Array.Empty<BiologicalExposureRoute>() : allowedRoutes.Distinct().OrderBy(route => route).ToArray();
             targetAnatomyTagIds = targetAnatomyTagIds == null ? Array.Empty<string>() : targetAnatomyTagIds.Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id.Trim()).Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToArray();
             tags = tags == null ? Array.Empty<TagDefinition>() : tags.Where(tag => tag != null).Distinct().OrderBy(tag => tag.Id, StringComparer.Ordinal).ToArray();
@@ -156,10 +156,10 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
                 report.AddError($"BiologicalConditionDefinition '{DisplayName}' has an Unknown family.");
             }
 
-            if (string.IsNullOrWhiteSpace(BiologicalInteractionDefinitionId)
+            if (biologicalInteractionDefinition == null
                 || definitionsById == null
                 || !definitionsById.TryGetValue(BiologicalInteractionDefinitionId, out IGameDefinition interaction)
-                || interaction is not BiologicalInteractionDefinition)
+                || !ReferenceEquals(interaction, biologicalInteractionDefinition))
             {
                 report.AddError($"BiologicalConditionDefinition '{DisplayName}' references missing Biological Interaction '{BiologicalInteractionDefinitionId}'.");
             }
@@ -169,14 +169,14 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
                 report.AddError($"BiologicalConditionDefinition '{DisplayName}' has an invalid establishment threshold.");
             }
 
-            if (!string.IsNullOrWhiteSpace(VitalResourceId)
-                && (definitionsById == null || !definitionsById.TryGetValue(VitalResourceId, out IGameDefinition resource) || resource is not BiologicalResourceDefinition))
+            if (vitalResource != null
+                && (definitionsById == null || !definitionsById.TryGetValue(VitalResourceId, out IGameDefinition resource) || !ReferenceEquals(resource, vitalResource)))
             {
                 report.AddError($"BiologicalConditionDefinition '{DisplayName}' references missing Biological Resource '{VitalResourceId}'.");
             }
 
-            if (!string.IsNullOrWhiteSpace(HazardDefinitionId)
-                && (definitionsById == null || !definitionsById.TryGetValue(HazardDefinitionId, out IGameDefinition hazard) || hazard is not BiologicalHazardDefinition))
+            if (hazardDefinition != null
+                && (definitionsById == null || !definitionsById.TryGetValue(HazardDefinitionId, out IGameDefinition hazard) || !ReferenceEquals(hazard, hazardDefinition)))
             {
                 report.AddError($"BiologicalConditionDefinition '{DisplayName}' references missing Biological Hazard '{HazardDefinitionId}'.");
             }

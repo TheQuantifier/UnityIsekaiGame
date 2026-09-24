@@ -15,7 +15,6 @@ namespace UnityIsekaiGame.Progression
     public sealed class PlayerIdentityProgression : MonoBehaviour
     {
         public const string DefaultOriginAssignmentSource = "local-alpha-origin-generation";
-        public const float DefaultOriginInfluenceChance = 0.5f;
         public const float DefaultDelayedBirthGiftSeconds = 300f;
 
         [SerializeField] private string accountId = PersistenceService.LocalAccountId;
@@ -29,7 +28,6 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private WorldEntityIdentity worldEntityIdentity;
         [SerializeField] private PlayTimeTracker playTimeTracker;
         [SerializeField] private OverallLevelConfiguration overallLevelConfiguration;
-        [SerializeField, Range(0f, 1f)] private float originInfluenceChance = DefaultOriginInfluenceChance;
         [SerializeField] private RuntimeOriginAssignmentRecord origin = new RuntimeOriginAssignmentRecord();
         [SerializeField] private RuntimeBirthGiftRecord birthGift = new RuntimeBirthGiftRecord();
         [SerializeField] private List<RuntimePermanentAttributeGrantRecord> permanentAttributeGrants = new List<RuntimePermanentAttributeGrantRecord>();
@@ -37,7 +35,6 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private List<RuntimeSocialStatusRecord> socialStatuses = new List<RuntimeSocialStatusRecord>();
         [SerializeField] private List<RuntimeTitleRecord> titles = new List<RuntimeTitleRecord>();
         [SerializeField] private List<WalletBalanceRecord> walletBalances = new List<WalletBalanceRecord>();
-        [SerializeField] private List<string> learnedCapabilityIds = new List<string>();
         [SerializeField] private List<ActivityOutcomeRecord> activityRecords = new List<ActivityOutcomeRecord>();
         [SerializeField] private List<ParticipationRecord> participationRecords = new List<ParticipationRecord>();
 
@@ -57,7 +54,6 @@ namespace UnityIsekaiGame.Progression
         public IReadOnlyList<RuntimeSocialStatusRecord> SocialStatuses => socialStatuses;
         public IReadOnlyList<RuntimeTitleRecord> Titles => titles;
         public IReadOnlyList<WalletBalanceRecord> WalletBalances => walletBalances;
-        public IReadOnlyList<string> LearnedCapabilityIds => learnedCapabilityIds;
         public IReadOnlyList<ActivityOutcomeRecord> ActivityRecords => activityRecords;
         public IReadOnlyList<ParticipationRecord> ParticipationRecords => participationRecords;
         public double CumulativeActivePlaytimeSeconds => playTimeTracker == null ? 0d : playTimeTracker.CumulativeSeconds;
@@ -163,7 +159,7 @@ namespace UnityIsekaiGame.Progression
                 return ProgressionOperationResult.Failure("OriginAlreadyAssigned", "Origin is already assigned.");
             }
 
-            CharacterOriginGenerator generator = new CharacterOriginGenerator(registry, new SeededProgressionRandomSource(seed), originInfluenceChance);
+            CharacterOriginGenerator generator = new CharacterOriginGenerator(registry, new SeededProgressionRandomSource(seed));
             CharacterOriginGenerationResult result = generator.Generate();
             if (!result.Succeeded)
             {
@@ -171,6 +167,29 @@ namespace UnityIsekaiGame.Progression
             }
 
             return AssignGeneratedOrigin(result, seed, DefaultOriginAssignmentSource, restoring);
+        }
+
+        public ProgressionOperationResult EnsureOriginAndBirthGiftAssigned(DefinitionRegistry registry, bool restoring = false)
+        {
+            ConfigureDefinitions(registry);
+            if (restoring)
+            {
+                return ProgressionOperationResult.Success("Origin generation is deferred while restoring a character.");
+            }
+
+            if (origin != null && origin.assigned)
+            {
+                return string.IsNullOrWhiteSpace(birthGift?.giftDefinitionId)
+                    ? ProgressionOperationResult.Failure("MissingBirthGift", "The assigned origin does not have a birth gift.")
+                    : ProgressionOperationResult.Success("Origin and birth gift are already assigned.");
+            }
+
+            if (registry == null)
+            {
+                return ProgressionOperationResult.Failure("MissingDefinitionRegistry", "A definition registry is required to generate an origin and birth gift.");
+            }
+
+            return AssignRandomOrigin(registry, CreateAutomaticOriginSeed(), restoring: false);
         }
 
         public ProgressionOperationResult AssignGeneratedOrigin(CharacterOriginGenerationResult generated, int seed, string source, bool restoring = false)
@@ -195,7 +214,6 @@ namespace UnityIsekaiGame.Progression
                 originFamilyId = generated.Family.Id,
                 originId = generated.Origin.Id,
                 randomSeed = seed,
-                originInfluencedGiftRoll = generated.OriginInfluencedGift,
                 startingGoldAmount = generated.StartingGold,
                 assignedAtUtc = now,
                 assignedAtPlaytimeSeconds = playtime,
@@ -205,7 +223,7 @@ namespace UnityIsekaiGame.Progression
             ApplyOriginStatGrants(generated.Origin, restoring);
             ApplyStartingGold(generated.Origin, generated.StartingGold, restoring);
             AssignStartingRoleStatusAndTitle(generated.Origin, restoring);
-            AssignBirthGift(generated.BirthGift, generated.Family.Id, generated.Origin.Id, generated.OriginInfluencedGift, origin.assignmentSource, restoring);
+            AssignBirthGift(generated.BirthGift, generated.Family.Id, generated.Origin.Id, origin.assignmentSource, restoring);
             RebuildActiveEffects(restoring);
             RaiseOriginAssigned(restoring);
             return ProgressionOperationResult.Success($"Assigned origin {generated.Origin.DisplayName}.");
@@ -223,7 +241,6 @@ namespace UnityIsekaiGame.Progression
             socialStatuses.Clear();
             titles.Clear();
             walletBalances.Clear();
-            learnedCapabilityIds.Clear();
             activityRecords.Clear();
             participationRecords.Clear();
             RaiseProgressionChanged(false);
@@ -588,7 +605,6 @@ namespace UnityIsekaiGame.Progression
                 socialStatuses = socialStatuses.Select(CloneSocialStatus).ToList(),
                 titles = titles.Select(CloneTitle).ToList(),
                 walletBalances = walletBalances.Select(CloneWallet).ToList(),
-                learnedCapabilityIds = learnedCapabilityIds.ToList(),
                 activityRecords = activityRecords.Select(CloneActivity).ToList(),
                 participationRecords = participationRecords.Select(CloneParticipation).ToList()
             };
@@ -601,7 +617,7 @@ namespace UnityIsekaiGame.Progression
                 return ProgressionOperationResult.Failure("MissingSaveData", "Identity/progression save data is missing.");
             }
 
-            RegisterDefinitionCache(registry);
+            ConfigureDefinitions(registry);
             ClearActiveEffectSources();
             notificationsSuppressed = true;
             try
@@ -618,7 +634,6 @@ namespace UnityIsekaiGame.Progression
                 socialStatuses = saveData.socialStatuses == null ? new List<RuntimeSocialStatusRecord>() : saveData.socialStatuses.Select(CloneSocialStatus).ToList();
                 titles = saveData.titles == null ? new List<RuntimeTitleRecord>() : saveData.titles.Select(CloneTitle).ToList();
                 walletBalances = saveData.walletBalances == null ? new List<WalletBalanceRecord>() : saveData.walletBalances.Select(CloneWallet).ToList();
-                learnedCapabilityIds = saveData.learnedCapabilityIds == null ? new List<string>() : saveData.learnedCapabilityIds.Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.Ordinal).ToList();
                 activityRecords = saveData.activityRecords == null ? new List<ActivityOutcomeRecord>() : saveData.activityRecords.Select(CloneActivity).ToList();
                 participationRecords = saveData.participationRecords == null ? new List<ParticipationRecord>() : saveData.participationRecords.Select(CloneParticipation).ToList();
                 EnsureIdentityInitialized();
@@ -651,13 +666,12 @@ namespace UnityIsekaiGame.Progression
                 $"Account Created UTC: {AccountCreatedAtUtc}",
                 $"Origin: {(origin != null && origin.assigned ? $"{origin.originFamilyId} / {origin.originId}" : "Unassigned")}",
                 $"Birth Gift: {(string.IsNullOrWhiteSpace(birthGift?.giftDefinitionId) ? "None" : $"{birthGift.giftDefinitionId} {birthGift.state} Progress={birthGift.currentProgressSeconds:0.#}/{birthGift.requiredActivePlaytimeSeconds:0.#}")}",
-                $"Origin Influenced Gift: {(birthGift != null && birthGift.originInfluencedRoll)}",
+                $"Birth Gift Roll Weights: {BuildBirthGiftWeightDiagnostic()}",
                 $"Permanent Attribute Grants: {permanentAttributeGrants.Count}",
                 $"Roles: {rolesLine}",
                 $"Social Statuses: {statusesLine}",
                 $"Titles: {titlesLine}",
                 $"Wallet: {walletLine}",
-                $"Learned Capability Placeholders: {(learnedCapabilityIds.Count == 0 ? "None" : string.Join(", ", learnedCapabilityIds))}",
                 $"Activities: {activityRecords.Count}",
                 $"Participation: {participationRecords.Count}",
                 $"Overall Level: {breakdown.OverallLevel} Raw={breakdown.RawTotalScore:0.###} Activity={breakdown.NormalizedActivityScore:0.###} Stats={breakdown.NormalizedStatScore:0.###} Success={breakdown.SuccessComponent:0.###}"
@@ -715,6 +729,12 @@ namespace UnityIsekaiGame.Progression
         private string CreatePersonId()
         {
             return $"person.{playerId}.runtime.{Guid.NewGuid():N}".ToLowerInvariant();
+        }
+
+        private static int CreateAutomaticOriginSeed()
+        {
+            byte[] bytes = Guid.NewGuid().ToByteArray();
+            return BitConverter.ToInt32(bytes, 0);
         }
 
         private void ApplyOriginStatGrants(OriginDefinition originDefinition, bool restoring)
@@ -782,7 +802,7 @@ namespace UnityIsekaiGame.Progression
             }
         }
 
-        private void AssignBirthGift(BirthGiftDefinition gift, string familyId, string originId, bool originInfluenced, string source, bool restoring)
+        private void AssignBirthGift(BirthGiftDefinition gift, string familyId, string originId, string source, bool restoring)
         {
             if (gift == null || !string.IsNullOrWhiteSpace(birthGift?.giftDefinitionId))
             {
@@ -799,7 +819,6 @@ namespace UnityIsekaiGame.Progression
                 giftType = gift.GiftType,
                 originFamilyId = familyId,
                 originId = originId,
-                originInfluencedRoll = originInfluenced,
                 awakeningMode = gift.AwakeningMode,
                 requiredActivePlaytimeSeconds = required,
                 currentProgressSeconds = 0f,
@@ -807,20 +826,19 @@ namespace UnityIsekaiGame.Progression
                 rewardApplied = false,
                 assignedAtUtc = DateTime.UtcNow.ToString("O"),
                 assignedAtPlaytimeSeconds = CumulativeActivePlaytimeSeconds,
-                assignmentSource = source ?? string.Empty,
-                futureConditionData = gift.FutureConditionData
+                assignmentSource = source ?? string.Empty
             };
 
             RaiseBirthGiftAssigned(restoring);
             if (birthGift.state == BirthGiftRuntimeState.Awakened)
             {
-                ApplyBirthGiftReward(gift, restoring);
+                AwakeBirthGift(gift, restoring);
             }
         }
 
         public ProgressionOperationResult ForceBirthGiftAwakening(DefinitionRegistry registry)
         {
-            RegisterDefinitionCache(registry);
+            ConfigureDefinitions(registry);
             BirthGiftDefinition gift = ResolveBirthGiftDefinition(registry);
             if (gift == null)
             {
@@ -839,7 +857,7 @@ namespace UnityIsekaiGame.Progression
 
         public ProgressionOperationResult AdvanceBirthGiftProgressForTesting(float seconds, DefinitionRegistry registry)
         {
-            RegisterDefinitionCache(registry);
+            ConfigureDefinitions(registry);
             if (birthGift == null || birthGift.state != BirthGiftRuntimeState.Dormant)
             {
                 return ProgressionOperationResult.Failure("GiftNotDormant", "Birth gift is not dormant.");
@@ -911,6 +929,13 @@ namespace UnityIsekaiGame.Progression
                 foreach (PermanentAttributeGrantDefinition grant in gift.PermanentAttributeGrants)
                 {
                     AddPermanentAttributeGrant($"birth-gift.{gift.Id}.{grant.Attribute.Id}", gift.Id, grant.Attribute.Id, grant.Amount);
+                }
+            }
+            else if (gift.GiftType == BirthGiftType.GrowthAffinity)
+            {
+                foreach (PermanentAttributeGrantDefinition grant in gift.GrowthAffinityGrants)
+                {
+                    AddPermanentAttributeGrant($"birth-gift-affinity.{gift.Id}.{grant.Attribute.Id}", gift.Id, grant.Attribute.Id, grant.Amount);
                 }
             }
             else if (gift.SkillGrants.Count > 0)
@@ -1122,12 +1147,12 @@ namespace UnityIsekaiGame.Progression
 
         private RoleDefinition ResolveRoleDefinition(string roleId)
         {
-            return DefinitionLookupCache.TryGet(roleId, out RoleDefinition role) ? role : null;
+            return definitionRegistry != null && definitionRegistry.TryGet(roleId, out RoleDefinition role) ? role : null;
         }
 
         private SocialStatusDefinition ResolveSocialStatusDefinition(string statusId)
         {
-            return DefinitionLookupCache.TryGet(statusId, out SocialStatusDefinition status) ? status : null;
+            return definitionRegistry != null && definitionRegistry.TryGet(statusId, out SocialStatusDefinition status) ? status : null;
         }
 
         private BirthGiftDefinition ResolveBirthGiftDefinition(DefinitionRegistry registry)
@@ -1141,10 +1166,25 @@ namespace UnityIsekaiGame.Progression
             return effectiveRegistry.TryGet(birthGift.giftDefinitionId, out BirthGiftDefinition gift) ? gift : null;
         }
 
-        public void RegisterDefinitionCache(DefinitionRegistry registry)
+        private string BuildBirthGiftWeightDiagnostic()
+        {
+            if (definitionRegistry == null || origin == null || !origin.assigned
+                || !definitionRegistry.TryGet(origin.originFamilyId, out OriginFamilyDefinition family)
+                || !definitionRegistry.TryGet(origin.originId, out OriginDefinition originDefinition))
+            {
+                return "Unavailable";
+            }
+
+            CharacterOriginGenerator generator = new CharacterOriginGenerator(definitionRegistry, new SeededProgressionRandomSource(origin.randomSeed));
+            IReadOnlyList<BirthGiftWeightEntry> weights = generator.BuildBirthGiftWeights(family, originDefinition, out string failureReason);
+            return weights.Count == 0
+                ? failureReason
+                : string.Join(", ", weights.Select(entry => $"{entry.Gift.Id}={entry.Probability:P1}"));
+        }
+
+        public void ConfigureDefinitions(DefinitionRegistry registry)
         {
             definitionRegistry = registry;
-            DefinitionLookupCache.SetRegistry(registry);
             if (skillCollection != null)
             {
                 skillCollection.Configure(registry, calculatedStats, GetComponent<UnityIsekaiGame.Magic.PlayerSpellLoadout>());
@@ -1418,7 +1458,6 @@ namespace UnityIsekaiGame.Progression
                 originFamilyId = value.originFamilyId,
                 originId = value.originId,
                 randomSeed = value.randomSeed,
-                originInfluencedGiftRoll = value.originInfluencedGiftRoll,
                 startingGoldAmount = value.startingGoldAmount,
                 originStatGrantsApplied = value.originStatGrantsApplied,
                 startingCurrencyApplied = value.startingCurrencyApplied,
@@ -1442,7 +1481,6 @@ namespace UnityIsekaiGame.Progression
                 giftType = value.giftType,
                 originFamilyId = value.originFamilyId,
                 originId = value.originId,
-                originInfluencedRoll = value.originInfluencedRoll,
                 awakeningMode = value.awakeningMode,
                 requiredActivePlaytimeSeconds = value.requiredActivePlaytimeSeconds,
                 currentProgressSeconds = value.currentProgressSeconds,
@@ -1452,8 +1490,7 @@ namespace UnityIsekaiGame.Progression
                 assignedAtPlaytimeSeconds = value.assignedAtPlaytimeSeconds,
                 awakenedAtUtc = value.awakenedAtUtc,
                 awakenedAtPlaytimeSeconds = value.awakenedAtPlaytimeSeconds,
-                assignmentSource = value.assignmentSource,
-                futureConditionData = value.futureConditionData
+                assignmentSource = value.assignmentSource
             };
         }
 
@@ -1543,21 +1580,5 @@ namespace UnityIsekaiGame.Progression
             recordedAtUtc = value.recordedAtUtc
         };
 
-        private static class DefinitionLookupCache
-        {
-            private static DefinitionRegistry registry;
-
-            public static void SetRegistry(DefinitionRegistry value)
-            {
-                registry = value;
-            }
-
-            public static bool TryGet<T>(string id, out T definition)
-                where T : class, IGameDefinition
-            {
-                definition = null;
-                return registry != null && registry.TryGet(id, out definition);
-            }
-        }
     }
 }

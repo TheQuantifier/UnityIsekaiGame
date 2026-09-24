@@ -15,14 +15,14 @@ MonoBehaviour:
   methodId: transformation.structure-replacement
   displayName: Structure Replacement
   description: Canonical alpha structural replacement plan keyed by stable anatomy node ID.
-  biologicalInteractionDefinitionId: interaction.recovery.regeneration
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000011d, type: 2}
   category: 11
   temporary: 0
   defaultDurationSeconds: 0
-  allowedTargetSpeciesIds: []
-  allowedTargetBodyFormIds: []
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  allowedTargetSpecies: []
+  allowedTargetBodyForms: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   transferPolicy: 1
   anatomyPolicy: 5
   conditionPolicy: 4

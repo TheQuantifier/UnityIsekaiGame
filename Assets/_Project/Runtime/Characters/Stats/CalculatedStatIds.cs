@@ -16,9 +16,9 @@ namespace UnityIsekaiGame.Stats
         public const string Accuracy = "calculated-stat.accuracy";
         public const string Evasion = "calculated-stat.evasion";
 
-        public const string FutureResourceHealth = "resource.health";
-        public const string FutureResourceStamina = "resource.stamina";
-        public const string FutureResourceMana = "resource.mana";
+        public const string ResourceHealth = "resource.health";
+        public const string ResourceStamina = "resource.stamina";
+        public const string ResourceMana = "resource.mana";
 
         public static readonly string[] AlphaCalculatedStatIds =
         {
@@ -37,23 +37,23 @@ namespace UnityIsekaiGame.Stats
             Evasion
         };
 
-        public static readonly string[] AlphaFutureResourceIds =
+        public static readonly string[] CoreResourceIds =
         {
-            FutureResourceHealth,
-            FutureResourceStamina,
-            FutureResourceMana
+            ResourceHealth,
+            ResourceStamina,
+            ResourceMana
         };
 
-        public static bool IsReservedFutureResourceId(string resourceId)
+        public static bool IsCoreResourceId(string resourceId)
         {
             if (string.IsNullOrWhiteSpace(resourceId))
             {
                 return false;
             }
 
-            for (int i = 0; i < AlphaFutureResourceIds.Length; i++)
+            for (int i = 0; i < CoreResourceIds.Length; i++)
             {
-                if (string.Equals(AlphaFutureResourceIds[i], resourceId, System.StringComparison.Ordinal))
+                if (string.Equals(CoreResourceIds[i], resourceId, System.StringComparison.Ordinal))
                 {
                     return true;
                 }

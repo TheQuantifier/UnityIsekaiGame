@@ -162,6 +162,9 @@ GameObject:
   - component: {fileID: 343134201}
   - component: {fileID: 343134200}
   - component: {fileID: 343134199}
+  - component: {fileID: 343134213}
+  - component: {fileID: 343134214}
+  - component: {fileID: 343134215}
   m_Layer: 0
   m_Name: Prototype Player
   m_TagString: Player
@@ -220,7 +223,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 84965edb733e42f7b1861c674782dd9d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: 
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   playerActionMap: Player
@@ -254,7 +257,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ecf701be4dd74672b375fbe7e127e0ce, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: 
   input: {fileID: 100003}
   movementSettings: {fileID: 11400000, guid: 1f044d40739746a58a2f50387891deac, type: 2}
@@ -291,7 +294,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d1557c9814764e4691dbb481f51daac7, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Inventory.PlayerInventory
   slotCapacity: 16
   slots:
@@ -3750,13 +3753,59 @@ MonoBehaviour:
   calculatedStats: {fileID: 343134211}
   resources: {fileID: 343134210}
   skills: {fileID: 343134207}
+  abilities: {fileID: 343134213}
+  capabilities: {fileID: 343134214}
   traits: {fileID: 343134206}
   body: {fileID: 343134205}
   statuses: {fileID: 343134196}
   inventory: {fileID: 100006}
   equipment: {fileID: 343134188}
   worldEntityIdentity: {fileID: 343134199}
+  simulation: {fileID: 343134215}
+  lifecycle: {fileID: 343134209}
   actorIdOverride: 
+--- !u!114 &343134213
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4739b0ff39294c539d61364c170e3f61, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Abilities.CharacterAbilityCollection
+--- !u!114 &343134214
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f43e563a4b84a57848bcd92b844f401, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Capabilities.CharacterCapabilityCollection
+--- !u!114 &343134215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48aa571eb15143aba20c77beef7356e3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.CharacterSystem.AuthoritativeCharacterSimulationDriver
+  character: {fileID: 343134200}
+  resources: {fileID: 343134210}
+  body: {fileID: 343134205}
+  advanceWithUnityTime: 1
+  fixedStepSeconds: 0.25
+  maximumStepsPerFrame: 8
 --- !u!114 &343134201
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3815,13 +3864,11 @@ MonoBehaviour:
   worldEntityIdentity: {fileID: 0}
   playTimeTracker: {fileID: 520862415}
   overallLevelConfiguration: {fileID: 0}
-  originInfluenceChance: 0.5
   origin:
     assigned: 0
     originFamilyId: 
     originId: 
     randomSeed: 0
-    originInfluencedGiftRoll: 0
     startingGoldAmount: 0
     originStatGrantsApplied: 0
     startingCurrencyApplied: 0
@@ -3834,7 +3881,6 @@ MonoBehaviour:
     giftType: 0
     originFamilyId: 
     originId: 
-    originInfluencedRoll: 0
     awakeningMode: 0
     requiredActivePlaytimeSeconds: 0
     currentProgressSeconds: 0
@@ -3845,13 +3891,11 @@ MonoBehaviour:
     awakenedAtUtc: 
     awakenedAtPlaytimeSeconds: 0
     assignmentSource: 
-    futureConditionData: 
   permanentAttributeGrants: []
   roles: []
   socialStatuses: []
   titles: []
   walletBalances: []
-  learnedCapabilityIds: []
   activityRecords: []
   participationRecords: []
 --- !u!114 &343134204
@@ -3898,7 +3942,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Traits.CharacterTraitCollection
   calculatedStats: {fileID: 343134211}
   skills: {fileID: 343134207}
-  fallbackDefinitions: []
+  abilities: {fileID: 343134213}
+  capabilities: {fileID: 343134214}
   ownerId: local-player
 --- !u!114 &343134207
 MonoBehaviour:
@@ -3914,7 +3959,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Skills.CharacterSkillCollection
   calculatedStats: {fileID: 343134211}
   spellLoadout: {fileID: 0}
-  fallbackDefinitions: []
+  abilities: {fileID: 343134213}
+  capabilities: {fileID: 343134214}
 --- !u!114 &343134208
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3946,6 +3992,7 @@ MonoBehaviour:
   character: {fileID: 343134200}
   resources: {fileID: 343134210}
   traits: {fileID: 343134206}
+  capabilities: {fileID: 343134214}
   worldEntityIdentity: {fileID: 343134199}
   lifecycleState: 0
 --- !u!114 &343134210
@@ -3961,7 +4008,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.ResourceSystem.CharacterResourceCollection
   calculatedStats: {fileID: 343134211}
-  fallbackDefinitions: []
 --- !u!114 &343134211
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3975,7 +4021,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Stats.CalculatedStatCollection
   attributes: {fileID: 343134212}
-  fallbackDefinitions: []
 --- !u!114 &343134212
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3988,7 +4033,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11053d09d0524f9fb31e3726ff9cc086, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Stats.CharacterAttributes
-  fallbackDefinitions: []
 --- !u!1 &352995387
 GameObject:
   m_ObjectHideFlags: 0
@@ -9615,6 +9659,12 @@ GameObject:
   - component: {fileID: 929592986}
   - component: {fileID: 929592987}
   - component: {fileID: 929592988}
+  - component: {fileID: 929592989}
+  - component: {fileID: 929592990}
+  - component: {fileID: 929592991}
+  - component: {fileID: 929592992}
+  - component: {fileID: 929592993}
+  - component: {fileID: 929592994}
   m_Layer: 0
   m_Name: Prototype Zombie Enemy
   m_TagString: Untagged
@@ -9745,7 +9795,8 @@ MonoBehaviour:
   defeatPolicy: {fileID: 0}
   character: {fileID: 929592987}
   resources: {fileID: 929592981}
-  traits: {fileID: 0}
+  traits: {fileID: 929592992}
+  capabilities: {fileID: 929592990}
   worldEntityIdentity: {fileID: 929592985}
   lifecycleState: 0
 --- !u!114 &929592981
@@ -9761,7 +9812,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.ResourceSystem.CharacterResourceCollection
   calculatedStats: {fileID: 929592983}
-  fallbackDefinitions: []
 --- !u!114 &929592982
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9790,7 +9840,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Stats.CalculatedStatCollection
   attributes: {fileID: 929592984}
-  fallbackDefinitions: []
 --- !u!114 &929592984
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9803,7 +9852,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11053d09d0524f9fb31e3726ff9cc086, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Stats.CharacterAttributes
-  fallbackDefinitions: []
 --- !u!114 &929592985
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9870,14 +9918,108 @@ MonoBehaviour:
   attributes: {fileID: 929592984}
   calculatedStats: {fileID: 929592983}
   resources: {fileID: 929592981}
-  skills: {fileID: 0}
-  traits: {fileID: 0}
-  body: {fileID: 0}
+  skills: {fileID: 929592991}
+  abilities: {fileID: 929592989}
+  capabilities: {fileID: 929592990}
+  traits: {fileID: 929592992}
+  body: {fileID: 929592993}
   statuses: {fileID: 929592979}
   inventory: {fileID: 0}
   equipment: {fileID: 0}
   worldEntityIdentity: {fileID: 929592985}
+  simulation: {fileID: 929592994}
+  lifecycle: {fileID: 929592980}
   actorIdOverride:
+--- !u!114 &929592989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 929592972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4739b0ff39294c539d61364c170e3f61, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Abilities.CharacterAbilityCollection
+--- !u!114 &929592990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 929592972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f43e563a4b84a57848bcd92b844f401, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Capabilities.CharacterCapabilityCollection
+--- !u!114 &929592991
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 929592972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53000000000000000000000000001053, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Skills.CharacterSkillCollection
+  calculatedStats: {fileID: 929592983}
+  spellLoadout: {fileID: 0}
+  abilities: {fileID: 929592989}
+  capabilities: {fileID: 929592990}
+--- !u!114 &929592992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 929592972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55000000000000000000000000003155, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Traits.CharacterTraitCollection
+  calculatedStats: {fileID: 929592983}
+  skills: {fileID: 929592991}
+  abilities: {fileID: 929592989}
+  capabilities: {fileID: 929592990}
+  ownerId: enemy.prototype-zombie
+--- !u!114 &929592993
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 929592972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a110000000000000000000000000013, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Beings.Biology.ActorBodyRuntime
+  defaultSpecies: {fileID: 11400000, guid: 7a170000000000000000000000000002, type: 2}
+  actorBodyIdOverride:
+  personIdOverride:
+--- !u!114 &929592994
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 929592972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48aa571eb15143aba20c77beef7356e3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.CharacterSystem.AuthoritativeCharacterSimulationDriver
+  character: {fileID: 929592987}
+  resources: {fileID: 929592981}
+  body: {fileID: 929592993}
+  advanceWithUnityTime: 1
+  fixedStepSeconds: 0.25
+  maximumStepsPerFrame: 8
 --- !u!114 &929592988
 MonoBehaviour:
   m_ObjectHideFlags: 0

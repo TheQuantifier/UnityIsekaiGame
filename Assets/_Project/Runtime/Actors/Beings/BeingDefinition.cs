@@ -20,7 +20,6 @@ namespace UnityIsekaiGame.Beings
         [SerializeField] private BeingLocomotionCapabilities locomotionCapabilities = BeingLocomotionCapabilities.Ground;
         [SerializeField] private BeingNatureFlags nature = BeingNatureFlags.Living;
         [SerializeField] private ActorProfileDefinition defaultActorProfile;
-        [SerializeField] private string futureSpeciesIdPlaceholder;
 
         public string BeingId => beingId;
         public string Id => beingId;
@@ -36,7 +35,6 @@ namespace UnityIsekaiGame.Beings
         public BeingLocomotionCapabilities LocomotionCapabilities => locomotionCapabilities;
         public BeingNatureFlags Nature => nature;
         public ActorProfileDefinition DefaultActorProfile => defaultActorProfile;
-        public string FutureSpeciesIdPlaceholder => futureSpeciesIdPlaceholder;
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {

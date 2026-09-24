@@ -7,6 +7,9 @@ using UnityIsekaiGame.Skills;
 using UnityIsekaiGame.Stats;
 using UnityIsekaiGame.StatusEffects;
 using UnityIsekaiGame.Traits;
+using UnityIsekaiGame.Capabilities;
+using UnityIsekaiGame.Beings.Biology;
+using UnityIsekaiGame.ActorLifecycle;
 
 namespace UnityIsekaiGame.Requirements
 {
@@ -17,6 +20,9 @@ namespace UnityIsekaiGame.Requirements
         public CharacterResourceCollection Resources { get; set; }
         public CharacterSkillCollection Skills { get; set; }
         public CharacterTraitCollection Traits { get; set; }
+        public CharacterCapabilityCollection Capabilities { get; set; }
+        public ActorBodyRuntime Body { get; set; }
+        public ActorLifecycleController Lifecycle { get; set; }
         public PlayerIdentityProgression Identity { get; set; }
         public PlayerInventory Inventory { get; set; }
         public PlayerEquipment Equipment { get; set; }

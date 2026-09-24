@@ -472,17 +472,20 @@ namespace UnityIsekaiGame.Tests
             owner.AddComponent<CharacterAttributes>();
             owner.AddComponent<CalculatedStatCollection>();
             owner.AddComponent<CharacterTraitCollection>();
+            owner.AddComponent<UnityIsekaiGame.Capabilities.CharacterCapabilityCollection>();
             owner.AddComponent<ActorBodyRuntime>();
 
             CharacterAttributes attributes = owner.GetComponent<CharacterAttributes>();
             CalculatedStatCollection stats = owner.GetComponent<CalculatedStatCollection>();
             CharacterTraitCollection traits = owner.GetComponent<CharacterTraitCollection>();
+            UnityIsekaiGame.Capabilities.CharacterCapabilityCollection capabilities = owner.GetComponent<UnityIsekaiGame.Capabilities.CharacterCapabilityCollection>();
             ActorBodyRuntime body = owner.GetComponent<ActorBodyRuntime>();
 
             attributes.Configure(registry);
             stats.Configure(registry, attributes);
-            traits.Configure(registry, stats, null, personId);
-            body.Configure(registry, actorBodyId, personId, traits, stats);
+            capabilities.Configure(registry);
+            traits.Configure(registry, stats, null, capabilities, personId);
+            body.Configure(registry, actorBodyId, personId, traits, stats, capabilityCollection: capabilities);
             return body;
         }
 

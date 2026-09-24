@@ -19,7 +19,6 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private string regionFactionMetadata;
         [SerializeField] private bool enabledForAlpha = true;
         [SerializeField] private string stackDisplayPolicy = "WholeUnits";
-        [SerializeField] private string futureExchangeSupport;
         [SerializeField] private bool abstractBalancesAllowed = true;
         [SerializeField] private bool physicalCurrencyAllowed = true;
         [SerializeField, Min(1)] private long unitsPerPhysicalItem = 1L;
@@ -39,7 +38,6 @@ namespace UnityIsekaiGame.Progression
         public string RegionFactionMetadata => regionFactionMetadata ?? string.Empty;
         public bool EnabledForAlpha => enabledForAlpha;
         public string StackDisplayPolicy => stackDisplayPolicy ?? string.Empty;
-        public string FutureExchangeSupport => futureExchangeSupport ?? string.Empty;
         public bool AbstractBalancesAllowed => abstractBalancesAllowed;
         public bool PhysicalCurrencyAllowed => physicalCurrencyAllowed;
         public long UnitsPerPhysicalItem => unitsPerPhysicalItem <= 0L ? 1L : unitsPerPhysicalItem;

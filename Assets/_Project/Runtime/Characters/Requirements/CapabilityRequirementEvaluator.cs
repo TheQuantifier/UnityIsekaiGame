@@ -151,13 +151,36 @@ namespace UnityIsekaiGame.Requirements
                     long balance = context.Identity == null ? 0L : context.Identity.GetBalance(node.TargetId);
                     return Compare(balance, node.IntegerValue, node.Comparison, out reason);
                 case RequirementNodeType.CapabilityBoolean:
-                    CapabilitySnapshot boolCapability = context.Traits == null ? null : context.Traits.Capabilities.Evaluate(node.TargetId);
+                    CapabilitySnapshot boolCapability = context.Capabilities == null ? null : context.Capabilities.Evaluate(node.TargetId);
                     bool boolValue = boolCapability != null && !boolCapability.Blocked && boolCapability.BooleanValue;
                     reason = boolValue ? string.Empty : $"Capability '{node.TargetId}' is false or blocked.";
                     return boolValue == node.BooleanValue;
                 case RequirementNodeType.CapabilityNumeric:
-                    CapabilitySnapshot numericCapability = context.Traits == null ? null : context.Traits.Capabilities.Evaluate(node.TargetId);
+                    CapabilitySnapshot numericCapability = context.Capabilities == null ? null : context.Capabilities.Evaluate(node.TargetId);
                     return Compare(numericCapability == null || numericCapability.Blocked ? 0f : numericCapability.NumericValue, node.NumericValue, node.Comparison, out reason);
+                case RequirementNodeType.Species:
+                    bool species = context.Body != null && string.Equals(context.Body.SpeciesDefinitionId, node.TargetId, StringComparison.Ordinal);
+                    reason = species ? string.Empty : $"Species '{node.TargetId}' is required.";
+                    return species == node.BooleanValue;
+                case RequirementNodeType.BiologicalClassification:
+                    bool classification = context.Body?.BiologicalClassification != null && string.Equals(context.Body.BiologicalClassification.Id, node.TargetId, StringComparison.Ordinal);
+                    reason = classification ? string.Empty : $"Biological classification '{node.TargetId}' is required.";
+                    return classification == node.BooleanValue;
+                case RequirementNodeType.BodyForm:
+                    bool bodyForm = context.Body?.BodyForm != null && string.Equals(context.Body.BodyForm.Id, node.TargetId, StringComparison.Ordinal);
+                    reason = bodyForm ? string.Empty : $"Body form '{node.TargetId}' is required.";
+                    return bodyForm == node.BooleanValue;
+                case RequirementNodeType.LifecycleState:
+                    int actorLifecycleValue = context.Lifecycle == null ? -1 : (int)context.Lifecycle.State;
+                    return Compare(actorLifecycleValue, node.IntegerValue, node.Comparison, out reason);
+                case RequirementNodeType.BiologicalConditionPresent:
+                    bool biologicalPresent = context.Body != null && context.Body.BiologicalConditions.CreateSnapshot().ActiveInstances.Any(value => string.Equals(value.ConditionDefinitionId, node.TargetId, StringComparison.Ordinal));
+                    reason = biologicalPresent ? string.Empty : $"Biological condition '{node.TargetId}' is missing.";
+                    return biologicalPresent == node.BooleanValue;
+                case RequirementNodeType.BiologicalConditionAbsent:
+                    bool biologicalAbsent = context.Body == null || context.Body.BiologicalConditions.CreateSnapshot().ActiveInstances.All(value => !string.Equals(value.ConditionDefinitionId, node.TargetId, StringComparison.Ordinal));
+                    reason = biologicalAbsent ? string.Empty : $"Biological condition '{node.TargetId}' is present.";
+                    return biologicalAbsent == node.BooleanValue;
                 default:
                     reason = $"Unsupported requirement node type '{node.NodeType}'.";
                     return false;

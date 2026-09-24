@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Fictional venom fixture requiring bite, sting, injection, or wound routes.
   family: 8
   strainId: strain.prototype.venom-alpha
-  biologicalInteractionDefinitionId: interaction.condition.venom
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000127, type: 2}
   allowedRoutes: [4, 5, 6, 7]
   targetAnatomyTagIds: []
   requiredAnatomyNodeId: 
@@ -28,9 +28,9 @@ MonoBehaviour:
   baseRegressionRate: 0.15
   immuneClearanceRate: 0
   symptomThreshold: 5
-  vitalResourceId: 
+  vitalResource: {fileID: 0}
   vitalPressurePerTick: 0
-  hazardDefinitionId: 
+  hazardDefinition: {fileID: 0}
   hazardRateMultiplier: 1
   damageType: {fileID: 11400000, guid: a916bba7f8eb452fa53e888295aa3cc8, type: 2}
   step6DamagePerTick: 3

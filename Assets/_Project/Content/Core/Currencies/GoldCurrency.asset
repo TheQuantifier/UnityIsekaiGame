@@ -24,4 +24,3 @@ MonoBehaviour:
   regionFactionMetadata: local-world
   enabledForAlpha: 1
   stackDisplayPolicy: WholeUnits
-  futureExchangeSupport: Exchange rates are intentionally not implemented yet.

@@ -15,7 +15,7 @@ MonoBehaviour:
   methodId: recovery.repair.construct
   displayName: Construct Repair
   description: Canonical alpha recovery method for Feature 7.7.
-  biologicalInteractionDefinitionId: interaction.recovery.construct-repair
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000011f, type: 2}
   category: 9
   supportedTargets:
   - 1
@@ -33,11 +33,11 @@ MonoBehaviour:
   requiresRestContext: 1
   allowedRestTypes:
   - 4
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   compatibleInjuryTypeIds: []
   compatibleAnatomyTagIds: []
-  restoredResourceIds: []
+  restoredResources: []
   permanentOutcome: 0
   interruptionPolicy: 0
   alphaExecutionEnabled: 1

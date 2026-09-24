@@ -24,7 +24,6 @@ namespace UnityIsekaiGame.Beings.Biology
     public sealed class BiologicalCapabilityGrantDefinition
     {
         [SerializeField] private string entryId;
-        [SerializeField] private string runtimeCapabilityKey;
         [SerializeField] private CapabilityDefinition capability;
         [SerializeField] private bool booleanValue = true;
         [SerializeField] private float numericValue;
@@ -33,7 +32,6 @@ namespace UnityIsekaiGame.Beings.Biology
         [SerializeField] private bool alphaEnabled = true;
 
         public string EntryId => string.IsNullOrWhiteSpace(entryId) ? capability == null ? string.Empty : capability.Id : entryId;
-        public string RuntimeCapabilityKey => runtimeCapabilityKey ?? string.Empty;
         public CapabilityDefinition Capability => capability;
         public bool BooleanValue => booleanValue;
         public float NumericValue => numericValue;

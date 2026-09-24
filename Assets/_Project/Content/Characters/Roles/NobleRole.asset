@@ -45,6 +45,3 @@ MonoBehaviour:
   - social-stratum
   suspensionConditionsMetadata: 
   revocationConditionsMetadata: 
-  futureAbandonmentPolicy: Manual abandonment keeps role history.
-  futureHiddenConflictPolicy: 
-  futureDiscoveryConsequences: 

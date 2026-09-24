@@ -15,7 +15,7 @@ MonoBehaviour:
   methodId: recovery.natural.sleep-need-reduction
   displayName: Natural Sleep Need Reduction
   description: Canonical alpha recovery method for Feature 7.7.
-  biologicalInteractionDefinitionId: interaction.recovery.natural-healing
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000011c, type: 2}
   category: 7
   supportedTargets:
   - 4
@@ -32,12 +32,12 @@ MonoBehaviour:
   requiresRestContext: 1
   allowedRestTypes:
   - 2
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   compatibleInjuryTypeIds: []
   compatibleAnatomyTagIds: []
-  restoredResourceIds:
-  - resource.biology.sleep-need
+  restoredResources:
+  - {fileID: 11400000, guid: 7a250000000000000000000000000015, type: 2}
   permanentOutcome: 0
   interruptionPolicy: 0
   alphaExecutionEnabled: 1

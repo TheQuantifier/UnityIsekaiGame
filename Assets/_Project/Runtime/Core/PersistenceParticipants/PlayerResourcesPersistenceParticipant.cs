@@ -62,7 +62,7 @@ namespace UnityIsekaiGame.Persistence
 
             if (!resources.IsConfigured)
             {
-                resources.Configure(registry, calculatedStats, ownerId);
+                return PersistenceParticipantSaveResult.Failure("Character Resources are not initialized; persistence cannot bootstrap runtime systems.");
             }
 
             string personId = identity == null ? string.Empty : identity.PersonId;

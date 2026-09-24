@@ -65,7 +65,7 @@ namespace UnityIsekaiGame.CharacterSystem
 
         public CapabilitySnapshot GetCapability(string capabilityId)
         {
-            return character?.Traits == null ? null : character.Traits.Capabilities.Evaluate(capabilityId);
+            return character?.Capabilities == null ? null : character.Capabilities.Evaluate(capabilityId);
         }
 
         public BodySnapshot GetBodySnapshot()

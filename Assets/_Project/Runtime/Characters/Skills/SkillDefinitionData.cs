@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityIsekaiGame.Abilities;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Stats;
+using UnityIsekaiGame.Capabilities;
 
 namespace UnityIsekaiGame.Skills
 {
@@ -81,14 +82,12 @@ namespace UnityIsekaiGame.Skills
         [SerializeField] private SkillGrade requiredGrade;
         [SerializeField] private string sourceIdentity;
         [SerializeField] private bool alphaAvailable = true;
-        [SerializeField] private string futureMetadata;
 
         public AbilityDefinition Ability => ability;
         public string AbilityId => ability == null ? string.Empty : ability.Id;
         public SkillGrade RequiredGrade => SkillGradeUtility.Clamp(requiredGrade);
         public string SourceIdentity => sourceIdentity ?? string.Empty;
         public bool AlphaAvailable => alphaAvailable;
-        public string FutureMetadata => futureMetadata ?? string.Empty;
 
         public void Validate()
         {
@@ -102,14 +101,12 @@ namespace UnityIsekaiGame.Skills
         [SerializeField] private SkillGrade grade;
         [SerializeField] private SkillCalculatedStatContributionDefinition[] calculatedStatContributions;
         [SerializeField] private SkillAbilityUnlockDefinition[] abilityUnlocks;
-        [SerializeField] private string[] capabilityUnlockIds;
-        [SerializeField] private string futureInteractionMetadata;
+        [SerializeField] private CapabilityDefinition[] capabilityUnlocks;
 
         public SkillGrade Grade => SkillGradeUtility.Clamp(grade);
         public IReadOnlyList<SkillCalculatedStatContributionDefinition> CalculatedStatContributions => calculatedStatContributions ?? Array.Empty<SkillCalculatedStatContributionDefinition>();
         public IReadOnlyList<SkillAbilityUnlockDefinition> AbilityUnlocks => abilityUnlocks ?? Array.Empty<SkillAbilityUnlockDefinition>();
-        public IReadOnlyList<string> CapabilityUnlockIds => capabilityUnlockIds ?? Array.Empty<string>();
-        public string FutureInteractionMetadata => futureInteractionMetadata ?? string.Empty;
+        public IReadOnlyList<CapabilityDefinition> CapabilityUnlocks => capabilityUnlocks ?? Array.Empty<CapabilityDefinition>();
 
         public void Validate()
         {

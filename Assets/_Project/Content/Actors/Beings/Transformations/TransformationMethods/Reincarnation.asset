@@ -15,17 +15,17 @@ MonoBehaviour:
   methodId: transformation.reincarnation
   displayName: Reincarnation
   description: Canonical alpha plan for rebinding identity to a clean biological body.
-  biologicalInteractionDefinitionId: interaction.transformation.reincarnation
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000012e, type: 2}
   category: 7
   temporary: 0
   defaultDurationSeconds: 0
-  allowedTargetSpeciesIds:
-  - species.human
-  - species.basic-construct
-  - species.basic-spirit
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
-  allowedTargetBodyFormIds: []
+  allowedTargetSpecies:
+  - {fileID: 11400000, guid: 7a170000000000000000000000000001, type: 2}
+  - {fileID: 11400000, guid: 7a170000000000000000000000000003, type: 2}
+  - {fileID: 11400000, guid: 7a170000000000000000000000000004, type: 2}
+  requiredCapabilities: []
+  blockingCapabilities: []
+  allowedTargetBodyForms: []
   transferPolicy: 2
   anatomyPolicy: 1
   conditionPolicy: 6

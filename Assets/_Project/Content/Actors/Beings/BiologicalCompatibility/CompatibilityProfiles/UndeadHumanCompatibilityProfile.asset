@@ -15,14 +15,14 @@ MonoBehaviour:
   profileId: compatibility-profile.species.undead-human
   displayName: UndeadHuman Compatibility Profile
   description: Canonical alpha compatibility profile for species.undead-human.
-  speciesDefinitionId: species.undead-human
-  bodyFormDefinitionId: 
-  biologicalClassificationId: 
+  speciesDefinition: {fileID: 11400000, guid: 7a170000000000000000000000000002, type: 2}
+  bodyFormDefinition: {fileID: 0}
+  biologicalClassification: {fileID: 0}
   rules:
   - entryId: profile.undead.disease-immunity
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.condition.disease
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000123, type: 2}
     category: 0
     ruleKind: 1
     compatibilityState: 0
@@ -32,9 +32,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 10
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -43,7 +43,7 @@ MonoBehaviour:
   - entryId: profile.undead.poison-resistance
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.condition.poison
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000126, type: 2}
     category: 0
     ruleKind: 2
     compatibilityState: 0
@@ -53,9 +53,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 20
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -64,7 +64,7 @@ MonoBehaviour:
   - entryId: profile.undead.necrotic-affinity
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.energy.necrotic
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000130, type: 2}
     category: 0
     ruleKind: 4
     compatibilityState: 0
@@ -74,9 +74,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 20
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -85,7 +85,7 @@ MonoBehaviour:
   - entryId: profile.undead.holy-vulnerability
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.energy.holy
+    interactionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000012f, type: 2}
     category: 0
     ruleKind: 3
     compatibilityState: 0
@@ -95,9 +95,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 20
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 

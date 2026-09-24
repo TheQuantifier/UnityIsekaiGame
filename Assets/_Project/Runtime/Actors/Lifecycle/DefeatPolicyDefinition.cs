@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Requirements;
+using UnityIsekaiGame.Capabilities;
 
 namespace UnityIsekaiGame.ActorLifecycle
 {
@@ -19,16 +20,17 @@ namespace UnityIsekaiGame.ActorLifecycle
         [SerializeField] private bool allowRevival = true;
         [SerializeField, Min(0f)] private float recoveryMinimumHealth = 1f;
         [SerializeField, Min(0f)] private float revivalMinimumHealth = 1f;
+        [SerializeField, Min(0f), Tooltip("Real-world seconds after death before revival is allowed. The deadline continues while the game is closed.")]
+        private float revivalWaitRealSeconds = 3600f;
         [SerializeField] private RequirementSetDefinition recoveryRequirements;
         [SerializeField] private RequirementSetDefinition revivalRequirements;
         [SerializeField] private RequirementSetDefinition deathRequirements;
-        [SerializeField] private string canBecomeUnconsciousCapabilityId = ActorLifecycleCapabilityIds.CanBecomeUnconscious;
-        [SerializeField] private string canDieCapabilityId = ActorLifecycleCapabilityIds.CanDie;
-        [SerializeField] private string canRecoverCapabilityId = ActorLifecycleCapabilityIds.CanRecover;
-        [SerializeField] private string canBeRevivedCapabilityId = ActorLifecycleCapabilityIds.CanBeRevived;
-        [SerializeField] private string deathImmunityCapabilityId = ActorLifecycleCapabilityIds.DeathImmunity;
+        [SerializeField] private CapabilityDefinition canBecomeUnconsciousCapability;
+        [SerializeField] private CapabilityDefinition canDieCapability;
+        [SerializeField] private CapabilityDefinition canRecoverCapability;
+        [SerializeField] private CapabilityDefinition canBeRevivedCapability;
+        [SerializeField] private CapabilityDefinition deathImmunityCapability;
         [SerializeField] private bool alphaEnabled = true;
-        [SerializeField, TextArea] private string futureMetadata;
 
         public string Id => policyId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
@@ -40,27 +42,25 @@ namespace UnityIsekaiGame.ActorLifecycle
         public bool AllowRevival => allowRevival;
         public float RecoveryMinimumHealth => Mathf.Max(0f, recoveryMinimumHealth);
         public float RevivalMinimumHealth => Mathf.Max(0f, revivalMinimumHealth);
+        public double RevivalWaitRealSeconds => Math.Max(0d, revivalWaitRealSeconds);
         public RequirementSetDefinition RecoveryRequirements => recoveryRequirements;
         public RequirementSetDefinition RevivalRequirements => revivalRequirements;
         public RequirementSetDefinition DeathRequirements => deathRequirements;
-        public string CanBecomeUnconsciousCapabilityId => string.IsNullOrWhiteSpace(canBecomeUnconsciousCapabilityId) ? ActorLifecycleCapabilityIds.CanBecomeUnconscious : canBecomeUnconsciousCapabilityId;
-        public string CanDieCapabilityId => string.IsNullOrWhiteSpace(canDieCapabilityId) ? ActorLifecycleCapabilityIds.CanDie : canDieCapabilityId;
-        public string CanRecoverCapabilityId => string.IsNullOrWhiteSpace(canRecoverCapabilityId) ? ActorLifecycleCapabilityIds.CanRecover : canRecoverCapabilityId;
-        public string CanBeRevivedCapabilityId => string.IsNullOrWhiteSpace(canBeRevivedCapabilityId) ? ActorLifecycleCapabilityIds.CanBeRevived : canBeRevivedCapabilityId;
-        public string DeathImmunityCapabilityId => string.IsNullOrWhiteSpace(deathImmunityCapabilityId) ? ActorLifecycleCapabilityIds.DeathImmunity : deathImmunityCapabilityId;
+        public string CanBecomeUnconsciousCapabilityId => canBecomeUnconsciousCapability == null ? ActorLifecycleCapabilityIds.CanBecomeUnconscious : canBecomeUnconsciousCapability.Id;
+        public string CanDieCapabilityId => canDieCapability == null ? ActorLifecycleCapabilityIds.CanDie : canDieCapability.Id;
+        public string CanRecoverCapabilityId => canRecoverCapability == null ? ActorLifecycleCapabilityIds.CanRecover : canRecoverCapability.Id;
+        public string CanBeRevivedCapabilityId => canBeRevivedCapability == null ? ActorLifecycleCapabilityIds.CanBeRevived : canBeRevivedCapability.Id;
+        public string DeathImmunityCapabilityId => deathImmunityCapability == null ? ActorLifecycleCapabilityIds.DeathImmunity : deathImmunityCapability.Id;
         public bool AlphaEnabled => alphaEnabled;
-        public string FutureMetadata => futureMetadata ?? string.Empty;
 
         private void OnValidate()
         {
             policyId = policyId?.Trim();
             recoveryMinimumHealth = Mathf.Max(0f, recoveryMinimumHealth);
             revivalMinimumHealth = Mathf.Max(0f, revivalMinimumHealth);
-            canBecomeUnconsciousCapabilityId = NormalizeCapabilityKey(canBecomeUnconsciousCapabilityId, ActorLifecycleCapabilityIds.CanBecomeUnconscious);
-            canDieCapabilityId = NormalizeCapabilityKey(canDieCapabilityId, ActorLifecycleCapabilityIds.CanDie);
-            canRecoverCapabilityId = NormalizeCapabilityKey(canRecoverCapabilityId, ActorLifecycleCapabilityIds.CanRecover);
-            canBeRevivedCapabilityId = NormalizeCapabilityKey(canBeRevivedCapabilityId, ActorLifecycleCapabilityIds.CanBeRevived);
-            deathImmunityCapabilityId = NormalizeCapabilityKey(deathImmunityCapabilityId, ActorLifecycleCapabilityIds.DeathImmunity);
+            revivalWaitRealSeconds = float.IsNaN(revivalWaitRealSeconds) || float.IsInfinity(revivalWaitRealSeconds)
+                ? 0f
+                : Mathf.Max(0f, revivalWaitRealSeconds);
         }
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
@@ -104,32 +104,35 @@ namespace UnityIsekaiGame.ActorLifecycle
                 report.AddWarning($"DefeatPolicy '{DisplayName}' allows revival but restores no Health by default.");
             }
 
-            ValidateCapabilityKey(CanBecomeUnconsciousCapabilityId, "become unconscious", report);
-            ValidateCapabilityKey(CanDieCapabilityId, "die", report);
-            ValidateCapabilityKey(CanRecoverCapabilityId, "recover", report);
-            ValidateCapabilityKey(CanBeRevivedCapabilityId, "be revived", report);
-            ValidateCapabilityKey(DeathImmunityCapabilityId, "death immunity", report);
+            if (float.IsNaN(revivalWaitRealSeconds) || float.IsInfinity(revivalWaitRealSeconds) || revivalWaitRealSeconds < 0f)
+            {
+                report.AddError($"DefeatPolicy '{DisplayName}' has an invalid real-world revival wait.");
+            }
+
+            ValidateCapabilityReference(canBecomeUnconsciousCapability, "become unconscious", definitionsById, report);
+            ValidateCapabilityReference(canDieCapability, "die", definitionsById, report);
+            ValidateCapabilityReference(canRecoverCapability, "recover", definitionsById, report);
+            ValidateCapabilityReference(canBeRevivedCapability, "be revived", definitionsById, report);
+            ValidateCapabilityReference(deathImmunityCapability, "death immunity", definitionsById, report);
             ValidateRequirementReference(recoveryRequirements, "recovery", definitionsById, report);
             ValidateRequirementReference(revivalRequirements, "revival", definitionsById, report);
             ValidateRequirementReference(deathRequirements, "death", definitionsById, report);
         }
 
-        private static string NormalizeCapabilityKey(string value, string fallback)
+        private static void ValidateCapabilityReference(CapabilityDefinition capability, string label, IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
-            return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
-        }
-
-        private static void ValidateCapabilityKey(string key, string label, DefinitionValidationReport report)
-        {
-            if (string.IsNullOrWhiteSpace(key))
+            if (capability == null)
             {
-                report.AddError($"DefeatPolicy capability key for {label} is missing.");
+                report.AddError($"DefeatPolicy capability for {label} is missing.");
                 return;
             }
-
-            if (!key.StartsWith("can.", StringComparison.Ordinal) && !key.StartsWith("immunity.", StringComparison.Ordinal))
+            if (capability.ValueType != CapabilityValueType.Boolean)
             {
-                report.AddWarning($"DefeatPolicy capability key '{key}' should use a lifecycle runtime namespace such as 'can.' or 'immunity.'.");
+                report.AddError($"DefeatPolicy capability '{capability.Id}' for {label} must be Boolean.");
+            }
+            if (definitionsById == null || !definitionsById.TryGetValue(capability.Id, out IGameDefinition found) || !ReferenceEquals(found, capability))
+            {
+                report.AddError($"DefeatPolicy capability '{capability.Id}' for {label} is not registered in the catalog.");
             }
         }
 

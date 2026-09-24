@@ -17,15 +17,14 @@ MonoBehaviour:
   description: Blood loss caused by injury sources.
   stackingPolicy: 2
   defaultSeverity: 1
-  targetResourceId: resource.biology.blood
+  targetResource: {fileID: 11400000, guid: 7a250000000000000000000000000010, type: 2}
   resourceOperation: 0
   baseResourceRatePerHour: 20
   baseDamagePerHour: 0
   damageType: {fileID: 0}
   lifecycleRequest: 1
-  requiredRuntimeCapabilityKeys:
-  - can.bleed
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities:
+  - {fileID: 11400000, guid: 7a120000000000000000000000000017, type: 2}
+  blockingCapabilities: []
   alphaEnabled: 1
-  futureResistanceMetadata: Deferred bleeding resistance and treatment hooks.
   tags: []

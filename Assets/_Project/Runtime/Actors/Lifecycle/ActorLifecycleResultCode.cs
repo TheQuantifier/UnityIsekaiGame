@@ -15,6 +15,7 @@ namespace UnityIsekaiGame.ActorLifecycle
         public const string CapabilityRejected = "CapabilityRejected";
         public const string RequirementRejected = "RequirementRejected";
         public const string DeathImmune = "DeathImmune";
+        public const string RevivalWaitActive = "RevivalWaitActive";
         public const string ResourceRejected = "ResourceRejected";
         public const string RollbackFailed = "RollbackFailed";
         public const string RestoreInvalid = "RestoreInvalid";

@@ -591,7 +591,7 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
         {
             List<BodyTransformationDecision> decisions = new List<BodyTransformationDecision>
             {
-                new BodyTransformationDecision("Person identity", TransformationStateOwnership.PersonOwned, TransformationReconciliationPolicy.PreserveIfCompatible, true, source.PersonId, "Person identity is preserved unless a future owning system explicitly changes it."),
+                new BodyTransformationDecision("Person identity", TransformationStateOwnership.PersonOwned, TransformationReconciliationPolicy.PreserveIfCompatible, true, source.PersonId, "Person identity remains owned by the person system and is preserved by body transformation."),
                 new BodyTransformationDecision("Anatomy", TransformationStateOwnership.BodyOwned, method.AnatomyPolicy, false, targetSpecies?.AnatomyDefinition?.Id ?? source.Anatomy?.AnatomyDefinitionId ?? string.Empty, "Anatomy is rebuilt or remapped by stable anatomy-node IDs."),
                 new BodyTransformationDecision("Body Condition", TransformationStateOwnership.BodyOwned, method.ConditionPolicy, false, source.ActorBodyId, "Injuries and structural integrity are body-owned and do not transfer by default."),
                 new BodyTransformationDecision("Vital Processes", TransformationStateOwnership.BodyOwned, method.VitalPolicy, false, source.ActorBodyId, "Biological resources are body-owned and are reinitialized or restored by policy."),

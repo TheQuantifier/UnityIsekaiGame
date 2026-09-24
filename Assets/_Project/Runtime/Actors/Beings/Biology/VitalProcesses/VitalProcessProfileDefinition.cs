@@ -9,7 +9,7 @@ namespace UnityIsekaiGame.Beings.Biology.VitalProcesses
     [Serializable]
     public sealed class VitalResourceProfileEntry
     {
-        [SerializeField] private string resourceDefinitionId;
+        [SerializeField] private BiologicalResourceDefinition resourceDefinition;
         [SerializeField] private bool active = true;
         [SerializeField] private float minimumValue;
         [SerializeField] private float maximumValue = 100f;
@@ -25,9 +25,9 @@ namespace UnityIsekaiGame.Beings.Biology.VitalProcesses
         [SerializeField] private float absoluteMaximum = 100f;
         [SerializeField] private float consumptionPerHour;
         [SerializeField] private float restorationPerHour;
-        [SerializeField] private bool futureHazardEvaluation;
 
-        public string ResourceDefinitionId => resourceDefinitionId ?? string.Empty;
+        public BiologicalResourceDefinition ResourceDefinition => resourceDefinition;
+        public string ResourceDefinitionId => resourceDefinition == null ? string.Empty : resourceDefinition.Id;
         public bool Active => active;
         public float MinimumValue => minimumValue;
         public float MaximumValue => maximumValue;
@@ -43,7 +43,6 @@ namespace UnityIsekaiGame.Beings.Biology.VitalProcesses
         public float AbsoluteMaximum => absoluteMaximum;
         public float ConsumptionPerHour => consumptionPerHour;
         public float RestorationPerHour => restorationPerHour;
-        public bool FutureHazardEvaluation => futureHazardEvaluation;
     }
 
     [CreateAssetMenu(fileName = "VitalProcessProfile", menuName = "Unity Isekai Game/Beings/Biology/Vital Process Profile")]
@@ -52,16 +51,18 @@ namespace UnityIsekaiGame.Beings.Biology.VitalProcesses
         [SerializeField] private string profileId;
         [SerializeField] private string displayName;
         [SerializeField, TextArea(2, 5)] private string description;
-        [SerializeField] private string[] compatibleSpeciesIds;
-        [SerializeField] private string[] compatibleClassificationIds;
+        [SerializeField] private SpeciesDefinition[] compatibleSpecies;
+        [SerializeField] private BiologicalClassificationDefinition[] compatibleClassifications;
         [SerializeField] private VitalResourceProfileEntry[] resources;
         [SerializeField] private TagDefinition[] tags;
 
         public string Id => profileId ?? string.Empty;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public string Description => description ?? string.Empty;
-        public IReadOnlyList<string> CompatibleSpeciesIds => compatibleSpeciesIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> CompatibleClassificationIds => compatibleClassificationIds ?? Array.Empty<string>();
+        public IReadOnlyList<SpeciesDefinition> CompatibleSpecies => compatibleSpecies ?? Array.Empty<SpeciesDefinition>();
+        public IReadOnlyList<BiologicalClassificationDefinition> CompatibleClassifications => compatibleClassifications ?? Array.Empty<BiologicalClassificationDefinition>();
+        public IReadOnlyList<string> CompatibleSpeciesIds => CompatibleSpecies.Select(definition => definition.Id).ToArray();
+        public IReadOnlyList<string> CompatibleClassificationIds => CompatibleClassifications.Select(definition => definition.Id).ToArray();
         public IReadOnlyList<VitalResourceProfileEntry> Resources => resources ?? Array.Empty<VitalResourceProfileEntry>();
         public IReadOnlyList<TagDefinition> Tags => tags ?? Array.Empty<TagDefinition>();
 
@@ -69,6 +70,8 @@ namespace UnityIsekaiGame.Beings.Biology.VitalProcesses
         {
             profileId = profileId?.Trim();
             displayName = displayName?.Trim();
+            compatibleSpecies = compatibleSpecies == null ? Array.Empty<SpeciesDefinition>() : compatibleSpecies.Where(definition => definition != null).Distinct().OrderBy(definition => definition.Id, StringComparer.Ordinal).ToArray();
+            compatibleClassifications = compatibleClassifications == null ? Array.Empty<BiologicalClassificationDefinition>() : compatibleClassifications.Where(definition => definition != null).Distinct().OrderBy(definition => definition.Id, StringComparer.Ordinal).ToArray();
         }
 
         public bool IsCompatibleWith(SpeciesDefinition species)
@@ -78,8 +81,8 @@ namespace UnityIsekaiGame.Beings.Biology.VitalProcesses
                 return false;
             }
 
-            bool speciesMatch = CompatibleSpeciesIds.Count == 0 || CompatibleSpeciesIds.Any(id => string.Equals(id, species.Id, StringComparison.Ordinal));
-            bool classificationMatch = CompatibleClassificationIds.Count == 0 || (species.BiologicalClassification != null && CompatibleClassificationIds.Any(id => string.Equals(id, species.BiologicalClassification.Id, StringComparison.Ordinal)));
+            bool speciesMatch = CompatibleSpecies.Count == 0 || CompatibleSpecies.Contains(species);
+            bool classificationMatch = CompatibleClassifications.Count == 0 || (species.BiologicalClassification != null && CompatibleClassifications.Contains(species.BiologicalClassification));
             return speciesMatch && classificationMatch;
         }
 
@@ -121,19 +124,19 @@ namespace UnityIsekaiGame.Beings.Biology.VitalProcesses
                 ValidateThresholds(entry, report);
             }
 
-            foreach (string speciesId in CompatibleSpeciesIds.Where(id => !string.IsNullOrWhiteSpace(id)))
+            foreach (SpeciesDefinition species in CompatibleSpecies)
             {
-                if (definitionsById != null && (!definitionsById.TryGetValue(speciesId, out IGameDefinition found) || found is not SpeciesDefinition))
+                if (definitionsById != null && (!definitionsById.TryGetValue(species.Id, out IGameDefinition found) || !ReferenceEquals(found, species)))
                 {
-                    report.AddError($"VitalProcessProfileDefinition '{DisplayName}' references unknown Species '{speciesId}'.");
+                    report.AddError($"VitalProcessProfileDefinition '{DisplayName}' references unknown Species '{species.Id}'.");
                 }
             }
 
-            foreach (string classificationId in CompatibleClassificationIds.Where(id => !string.IsNullOrWhiteSpace(id)))
+            foreach (BiologicalClassificationDefinition classification in CompatibleClassifications)
             {
-                if (definitionsById != null && (!definitionsById.TryGetValue(classificationId, out IGameDefinition found) || found is not BiologicalClassificationDefinition))
+                if (definitionsById != null && (!definitionsById.TryGetValue(classification.Id, out IGameDefinition found) || !ReferenceEquals(found, classification)))
                 {
-                    report.AddError($"VitalProcessProfileDefinition '{DisplayName}' references unknown biological classification '{classificationId}'.");
+                    report.AddError($"VitalProcessProfileDefinition '{DisplayName}' references unknown biological classification '{classification.Id}'.");
                 }
             }
 

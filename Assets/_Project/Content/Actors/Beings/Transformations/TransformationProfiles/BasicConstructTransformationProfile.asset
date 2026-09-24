@@ -15,18 +15,18 @@ MonoBehaviour:
   profileId: transformation-profile.species.basic-construct
   displayName: Basic Construct Transformation Profile
   description: Alpha transformation profile for construct bodies.
-  speciesDefinitionIds:
-  - species.basic-construct
-  bodyFormDefinitionIds:
-  - body-form.construct
-  enabledMethodIds:
-  - transformation.body-replacement
-  - transformation.body-swap
-  - transformation.construct-component-replacement
-  - transformation.possession
-  - transformation.reincarnation
-  - transformation.species-change.permanent
-  - transformation.structure-replacement
+  speciesDefinitions:
+  - {fileID: 11400000, guid: 7a170000000000000000000000000003, type: 2}
+  bodyFormDefinitions:
+  - {fileID: 11400000, guid: 7a160000000000000000000000000002, type: 2}
+  enabledMethods:
+  - {fileID: 11400000, guid: 7a780000000000000000000000000113, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000114, type: 2}
+  - {fileID: 11400000, guid: 7a78000000000000000000000000011c, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000115, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000116, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000111, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000119, type: 2}
   defaultTransferPolicy: 2
   defaultConditionPolicy: 4
   defaultVitalPolicy: 6

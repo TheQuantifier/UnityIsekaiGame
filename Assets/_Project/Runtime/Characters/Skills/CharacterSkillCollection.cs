@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Abilities;
+using UnityIsekaiGame.Capabilities;
 using UnityIsekaiGame.Magic;
 using UnityIsekaiGame.Stats;
 
@@ -14,7 +15,7 @@ namespace UnityIsekaiGame.Skills
         [SerializeField] private CalculatedStatCollection calculatedStats;
         [SerializeField] private PlayerSpellLoadout spellLoadout;
         [SerializeField] private CharacterAbilityCollection abilities;
-        [SerializeField] private List<SkillDefinition> fallbackDefinitions = new List<SkillDefinition>();
+        [SerializeField] private CharacterCapabilityCollection capabilities;
 
         private readonly Dictionary<string, SkillDefinition> definitionsById = new Dictionary<string, SkillDefinition>(StringComparer.Ordinal);
         private readonly List<SkillLearningProgressRecord> hiddenProgress = new List<SkillLearningProgressRecord>();
@@ -46,11 +47,8 @@ namespace UnityIsekaiGame.Skills
             }
 
             abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
+            capabilities = capabilities == null ? GetComponent<CharacterCapabilityCollection>() : capabilities;
 
-            if (!IsConfigured && fallbackDefinitions.Count > 0)
-            {
-                Configure(fallbackDefinitions, null, calculatedStats, spellLoadout);
-            }
         }
 
         public void Configure(DefinitionRegistry definitionRegistry, CalculatedStatCollection statCollection = null, PlayerSpellLoadout loadout = null)
@@ -69,6 +67,7 @@ namespace UnityIsekaiGame.Skills
             calculatedStats = statCollection == null ? calculatedStats == null ? GetComponent<CalculatedStatCollection>() : calculatedStats : statCollection;
             spellLoadout = loadout == null ? spellLoadout == null ? GetComponent<PlayerSpellLoadout>() : spellLoadout : loadout;
             abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
+            capabilities = capabilities == null ? GetComponent<CharacterCapabilityCollection>() : capabilities;
             definitionsById.Clear();
 
             foreach (SkillDefinition definition in definitions ?? Enumerable.Empty<SkillDefinition>())
@@ -105,7 +104,6 @@ namespace UnityIsekaiGame.Skills
 
         public SkillOperationResult RecordQualifyingAction(SkillActionExecutionEvent actionEvent)
         {
-            EnsureConfiguredFromFallback();
             if (actionEvent == null || actionEvent.Restoring)
             {
                 return SkillOperationResult.Failure("InvalidActionEvent", "Skill action event is missing or is a restoration event.");
@@ -168,7 +166,6 @@ namespace UnityIsekaiGame.Skills
 
         public SkillOperationResult GrantSkill(SkillDefinition definition, SkillGrade startingGrade, SkillAcquisitionSource source, string reason, string sourceDefinitionId = "", bool restoring = false)
         {
-            EnsureConfiguredFromFallback();
             if (definition == null)
             {
                 return SkillOperationResult.Failure("MissingSkill", "Skill definition is missing.");
@@ -205,7 +202,6 @@ namespace UnityIsekaiGame.Skills
 
         public SkillOperationResult AwardSkillUse(string skillId, string eventId = "", int amount = 1)
         {
-            EnsureConfiguredFromFallback();
             if (string.IsNullOrWhiteSpace(skillId) || !definitionsById.TryGetValue(skillId, out SkillDefinition definition))
             {
                 return SkillOperationResult.Failure("UnknownSkill", $"Skill '{skillId}' is not configured.");
@@ -227,7 +223,6 @@ namespace UnityIsekaiGame.Skills
 
         private SkillOperationResult RebuildSkillEffects(bool restoring, bool notify)
         {
-            EnsureConfiguredFromFallback();
             foreach (RuntimeSkillRecord record in learnedSkills)
             {
                 for (int gradeIndex = SkillGradeUtility.MinimumIndex; gradeIndex <= SkillGradeUtility.MaximumIndex; gradeIndex++)
@@ -235,6 +230,7 @@ namespace UnityIsekaiGame.Skills
                     string sourceId = GradeSourceId(record.skillDefinitionId, (SkillGrade)gradeIndex);
                     calculatedStats?.RemoveContributionsFromSource(CalculatedStatContributionSourceCategory.Skill, sourceId, restoring);
                     abilities?.RemoveSource(AbilityGrantSourceCategory.Skill, sourceId, restoring);
+                    capabilities?.RemoveSource(CapabilitySourceCategory.Skill, sourceId, restoring);
                 }
             }
 
@@ -300,7 +296,12 @@ namespace UnityIsekaiGame.Skills
         public bool RestoreFromSaveData(PlayerSkillsSaveData saveData, DefinitionRegistry definitionRegistry, out string failureReason, bool restoring)
         {
             failureReason = string.Empty;
-            Configure(definitionRegistry, calculatedStats, spellLoadout);
+            if (!IsConfigured)
+            {
+                failureReason = "Character Skills must be initialized by CharacterSystemCoordinator before restore.";
+                return false;
+            }
+
             if (!ValidateSaveData(saveData, definitionRegistry, out failureReason))
             {
                 return false;
@@ -445,7 +446,6 @@ namespace UnityIsekaiGame.Skills
 
         public string BuildDiagnosticSummary(bool includeHidden)
         {
-            EnsureConfiguredFromFallback();
             List<string> lines = new List<string> { "Feature 5.3 Skills" };
             if (learnedSkills.Count == 0)
             {
@@ -644,11 +644,12 @@ namespace UnityIsekaiGame.Skills
             }
 
             ApplyEligibleUnlocks(definition, record, package.AbilityUnlocks, package.Grade, sourceId);
-            foreach (string capabilityId in package.CapabilityUnlockIds)
+            foreach (CapabilityDefinition capability in package.CapabilityUnlocks)
             {
-                if (!string.IsNullOrWhiteSpace(capabilityId) && !record.unlockedCapabilityIds.Contains(capabilityId))
+                if (capability != null && !record.unlockedCapabilityIds.Contains(capability.Id))
                 {
-                    record.unlockedCapabilityIds.Add(capabilityId);
+                    record.unlockedCapabilityIds.Add(capability.Id);
+                    capabilities?.Add(capability, CapabilitySourceCategory.Skill, sourceId, $"{definition.Id}.{package.Grade}.{capability.Id}", restoring: restoring);
                 }
             }
         }
@@ -746,14 +747,6 @@ namespace UnityIsekaiGame.Skills
             return learnedSkills.FirstOrDefault(record => string.Equals(record.skillDefinitionId, skillId, StringComparison.Ordinal));
         }
 
-        private void EnsureConfiguredFromFallback()
-        {
-            if (!IsConfigured && fallbackDefinitions.Count > 0)
-            {
-                Configure(fallbackDefinitions, registry, calculatedStats, spellLoadout);
-            }
-        }
-
         private Scope SuppressNotifications()
         {
             notificationsSuppressed = true;
@@ -835,8 +828,7 @@ namespace UnityIsekaiGame.Skills
                     firstProgressAtPlaytimeSeconds = record.firstProgressAtPlaytimeSeconds,
                     latestProgressAtUtc = record.latestProgressAtUtc,
                     latestProgressAtPlaytimeSeconds = record.latestProgressAtPlaytimeSeconds,
-                    sourceSystem = record.sourceSystem,
-                    futureConditionData = record.futureConditionData
+                    sourceSystem = record.sourceSystem
                 };
         }
 

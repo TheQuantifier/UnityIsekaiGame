@@ -313,6 +313,7 @@ namespace UnityIsekaiGame.Tests
             public GameObject Owner { get; private set; }
             public CharacterResourceCollection Resources { get; private set; }
             public CharacterTraitCollection Traits { get; private set; }
+            public CharacterCapabilityCollection Capabilities { get; private set; }
             public DamageTypeDefinition DamageType => damageType;
             public string ActorId { get; private set; }
             public float Health => Resources.GetCurrent(ResourceIds.Health);
@@ -333,6 +334,7 @@ namespace UnityIsekaiGame.Tests
                 CalculatedStatCollection stats = fixture.Owner.AddComponent<CalculatedStatCollection>();
                 fixture.Resources = fixture.Owner.AddComponent<CharacterResourceCollection>();
                 fixture.Traits = fixture.Owner.AddComponent<CharacterTraitCollection>();
+                fixture.Capabilities = fixture.Owner.AddComponent<CharacterCapabilityCollection>();
                 WorldEntityIdentity identity = fixture.Owner.AddComponent<WorldEntityIdentity>();
                 string localId = $"damage-healing-{name}-{Guid.NewGuid():N}";
                 Assert.That(identity.TrySetAuthoredIdentity(localId, "scene.test", PersistenceScope.RegionOrScene, "test.damage-healing", out string identityFailure), Is.True, identityFailure);
@@ -341,7 +343,8 @@ namespace UnityIsekaiGame.Tests
                 attributes.Configure(registry);
                 stats.Configure(registry, attributes);
                 fixture.Resources.Configure(registry, stats, "player.local");
-                fixture.Traits.Configure(Array.Empty<TraitDefinition>(), new[] { fixture.resistanceCapability, fixture.immunityCapability }, stats, null, "player.local");
+                fixture.Capabilities.Configure(new[] { fixture.resistanceCapability, fixture.immunityCapability });
+                fixture.Traits.Configure(Array.Empty<TraitDefinition>(), stats, null, fixture.Capabilities, "player.local");
                 AddStat(stats, CalculatedStatIds.PhysicalDefense, physicalDefense, $"{name}.physical-defense");
                 AddStat(stats, CalculatedStatIds.MagicalDefense, magicalDefense, $"{name}.magical-defense");
                 return fixture;
@@ -359,7 +362,7 @@ namespace UnityIsekaiGame.Tests
 
             public void AddResistance(DamageTypeDefinition targetDamageType, float resistance)
             {
-                Traits.Capabilities.Add(new RuntimeCapabilityContribution
+                Capabilities.Add(new RuntimeCapabilityContribution
                 {
                     capabilityId = targetDamageType.ResistanceCapabilityId,
                     valueType = (int)CapabilityValueType.Numeric,
@@ -373,7 +376,7 @@ namespace UnityIsekaiGame.Tests
 
             public void AddImmunity(DamageTypeDefinition targetDamageType)
             {
-                Traits.Capabilities.Add(new RuntimeCapabilityContribution
+                Capabilities.Add(new RuntimeCapabilityContribution
                 {
                     capabilityId = targetDamageType.ImmunityCapabilityId,
                     valueType = (int)CapabilityValueType.Boolean,

@@ -25,7 +25,7 @@ MonoBehaviour:
   startingAttributeGrants:
   - attribute: {fileID: 11400000, guid: a9000000000000000000000000000052, type: 2}
     amount: 4
-  influencedGiftPool:
+  favoredGiftPool:
   - {fileID: 11400000, guid: 3ff07fc0b978464fba2c0941c1887703, type: 2}
   - {fileID: 11400000, guid: 3b607dff9a9c4f109cf9798f37ae830c, type: 2}
   giftWeightModifiers: []
@@ -58,7 +58,3 @@ MonoBehaviour:
     customContextTargetId: 
     acquisitionReason: Sponsored arrival record
   startingTitle: {fileID: 0}
-  futureHomeReference: mage-tower-guest-quarter
-  futureRelationshipReferences: mage-sponsor-placeholder
-  futureFactionObligations: mage-tower-study-placeholder
-  futureStartingLocationReference: place.prototype-town

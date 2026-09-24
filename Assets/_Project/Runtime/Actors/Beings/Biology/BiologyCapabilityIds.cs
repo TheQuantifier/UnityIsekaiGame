@@ -14,7 +14,7 @@ namespace UnityIsekaiGame.Beings.Biology
         public const string AcceptsRepair = "capability.biology.accepts-repair";
         public const string IsCorporeal = "capability.biology.is-corporeal";
         public const string HasPhysicalBody = "capability.biology.has-physical-body";
-        public const string CanBreathe = "can.breathe";
-        public const string CanBleed = "can.bleed";
+        public const string CanBreathe = "capability.can.breathe";
+        public const string CanBleed = "capability.can.bleed";
     }
 }

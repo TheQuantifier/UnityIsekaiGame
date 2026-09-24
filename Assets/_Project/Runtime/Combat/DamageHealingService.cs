@@ -235,6 +235,7 @@ namespace UnityIsekaiGame.Combat
                 resources,
                 character == null ? targetObject.GetComponentInParent<CalculatedStatCollection>() : character.CalculatedStats,
                 character == null ? targetObject.GetComponentInParent<CharacterTraitCollection>() : character.Traits,
+                character == null ? targetObject.GetComponentInParent<CharacterCapabilityCollection>() : character.Capabilities,
                 targetObject.GetComponentInParent<IDamageResistanceReceiver>(),
                 health);
             return true;
@@ -284,19 +285,14 @@ namespace UnityIsekaiGame.Combat
                     total += target.ResistanceReceiver.GetDirectResistance(candidate);
                 }
 
-                if (target.Traits == null)
-                {
-                    continue;
-                }
-
-                CapabilitySnapshot immunity = target.Traits.Capabilities.Evaluate(candidate.ImmunityCapabilityId);
-                if (immunity.BooleanValue || target.Traits.IsImmuneTo(candidate.Id))
+                CapabilitySnapshot immunity = target.Capabilities == null ? null : target.Capabilities.Evaluate(candidate.ImmunityCapabilityId);
+                if ((immunity != null && immunity.BooleanValue) || (target.Traits != null && target.Traits.IsImmuneTo(candidate.Id)))
                 {
                     return RuntimeResistanceCollection.MaximumResistance;
                 }
 
-                CapabilitySnapshot resistance = target.Traits.Capabilities.Evaluate(candidate.ResistanceCapabilityId);
-                total += resistance.NumericValue + target.Traits.GetResistance(candidate.Id);
+                CapabilitySnapshot resistance = target.Capabilities == null ? null : target.Capabilities.Evaluate(candidate.ResistanceCapabilityId);
+                total += (resistance?.NumericValue ?? 0f) + (target.Traits == null ? 0f : target.Traits.GetResistance(candidate.Id));
             }
 
             return Mathf.Clamp(total, RuntimeResistanceCollection.MinimumResistance, RuntimeResistanceCollection.MaximumResistance);
@@ -324,13 +320,14 @@ namespace UnityIsekaiGame.Combat
 
         private readonly struct TargetRuntime
         {
-            public TargetRuntime(GameObject gameObject, string actorId, CharacterResourceCollection resources, CalculatedStatCollection stats, CharacterTraitCollection traits, IDamageResistanceReceiver resistanceReceiver, ResourceSnapshot health)
+            public TargetRuntime(GameObject gameObject, string actorId, CharacterResourceCollection resources, CalculatedStatCollection stats, CharacterTraitCollection traits, CharacterCapabilityCollection capabilities, IDamageResistanceReceiver resistanceReceiver, ResourceSnapshot health)
             {
                 GameObject = gameObject;
                 ActorId = actorId ?? string.Empty;
                 Resources = resources;
                 Stats = stats;
                 Traits = traits;
+                Capabilities = capabilities;
                 ResistanceReceiver = resistanceReceiver;
                 Health = health;
             }
@@ -340,6 +337,7 @@ namespace UnityIsekaiGame.Combat
             public CharacterResourceCollection Resources { get; }
             public CalculatedStatCollection Stats { get; }
             public CharacterTraitCollection Traits { get; }
+            public CharacterCapabilityCollection Capabilities { get; }
             public IDamageResistanceReceiver ResistanceReceiver { get; }
             public ResourceSnapshot Health { get; }
         }

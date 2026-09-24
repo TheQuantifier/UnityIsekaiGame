@@ -15,11 +15,11 @@ MonoBehaviour:
   profileId: vital-profile.human
   displayName: Human Vital Processes
   description: Baseline active biological resources for ordinary living humanoids.
-  compatibleSpeciesIds:
-  - species.human
-  compatibleClassificationIds: []
+  compatibleSpecies:
+  - {fileID: 11400000, guid: 7a170000000000000000000000000001, type: 2}
+  compatibleClassifications: []
   resources:
-  - resourceDefinitionId: resource.biology.blood
+  - resourceDefinition: {fileID: 11400000, guid: 7a250000000000000000000000000010, type: 2}
     active: 1
     minimumValue: 0
     maximumValue: 100
@@ -35,8 +35,7 @@ MonoBehaviour:
     absoluteMaximum: 100
     consumptionPerHour: 0
     restorationPerHour: 0
-    futureHazardEvaluation: 1
-  - resourceDefinitionId: resource.biology.breath
+  - resourceDefinition: {fileID: 11400000, guid: 7a250000000000000000000000000011, type: 2}
     active: 1
     minimumValue: 0
     maximumValue: 100
@@ -52,8 +51,7 @@ MonoBehaviour:
     absoluteMaximum: 100
     consumptionPerHour: 0
     restorationPerHour: 120
-    futureHazardEvaluation: 1
-  - resourceDefinitionId: resource.biology.temperature
+  - resourceDefinition: {fileID: 11400000, guid: 7a250000000000000000000000000012, type: 2}
     active: 1
     minimumValue: 25
     maximumValue: 45
@@ -69,8 +67,7 @@ MonoBehaviour:
     absoluteMaximum: 45
     consumptionPerHour: 0
     restorationPerHour: 0
-    futureHazardEvaluation: 1
-  - resourceDefinitionId: resource.biology.nutrition
+  - resourceDefinition: {fileID: 11400000, guid: 7a250000000000000000000000000013, type: 2}
     active: 1
     minimumValue: 0
     maximumValue: 100
@@ -86,8 +83,7 @@ MonoBehaviour:
     absoluteMaximum: 100
     consumptionPerHour: 1
     restorationPerHour: 0
-    futureHazardEvaluation: 1
-  - resourceDefinitionId: resource.biology.hydration
+  - resourceDefinition: {fileID: 11400000, guid: 7a250000000000000000000000000014, type: 2}
     active: 1
     minimumValue: 0
     maximumValue: 100
@@ -103,8 +99,7 @@ MonoBehaviour:
     absoluteMaximum: 100
     consumptionPerHour: 2
     restorationPerHour: 0
-    futureHazardEvaluation: 1
-  - resourceDefinitionId: resource.biology.sleep-need
+  - resourceDefinition: {fileID: 11400000, guid: 7a250000000000000000000000000015, type: 2}
     active: 1
     minimumValue: 0
     maximumValue: 100
@@ -120,8 +115,7 @@ MonoBehaviour:
     absoluteMaximum: 100
     consumptionPerHour: 3
     restorationPerHour: 0
-    futureHazardEvaluation: 1
-  - resourceDefinitionId: resource.biology.fatigue
+  - resourceDefinition: {fileID: 11400000, guid: 7a250000000000000000000000000016, type: 2}
     active: 1
     minimumValue: 0
     maximumValue: 100
@@ -137,5 +131,4 @@ MonoBehaviour:
     absoluteMaximum: 100
     consumptionPerHour: 2
     restorationPerHour: 0
-    futureHazardEvaluation: 1
   tags: []

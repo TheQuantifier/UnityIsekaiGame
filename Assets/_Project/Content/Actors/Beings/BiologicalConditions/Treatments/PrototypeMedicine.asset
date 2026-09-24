@@ -16,8 +16,8 @@ MonoBehaviour:
   displayName: Prototype Medicine
   description: Fictional general treatment fixture.
   treatmentKind: 0
-  biologicalInteractionDefinitionId: interaction.condition.disease
-  compatibleConditionIds: []
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000123, type: 2}
+  compatibleConditions: []
   compatibleFamilies: [1, 2, 3, 4, 6, 13, 14, 17, 18]
   loadReduction: 8
   progressionMultiplier: 0.75

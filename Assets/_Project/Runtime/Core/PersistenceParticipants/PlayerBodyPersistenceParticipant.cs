@@ -131,6 +131,12 @@ namespace UnityIsekaiGame.Persistence
                 return false;
             }
 
+            if (!body.IsReady)
+            {
+                failureReason = "Player body is not initialized; persistence cannot bootstrap runtime systems.";
+                return false;
+            }
+
             if (registryProvider?.Invoke() == null)
             {
                 failureReason = "Definition registry is not available for player body persistence.";

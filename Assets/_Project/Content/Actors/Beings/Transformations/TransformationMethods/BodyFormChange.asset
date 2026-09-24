@@ -15,18 +15,18 @@ MonoBehaviour:
   methodId: transformation.body-form-change
   displayName: Body Form Change
   description: Canonical alpha body-form change resolved through the target Species anatomy.
-  biologicalInteractionDefinitionId: interaction.transformation.species-change
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000012b, type: 2}
   category: 3
   temporary: 0
   defaultDurationSeconds: 0
-  allowedTargetSpeciesIds:
-  - species.basic-construct
-  - species.basic-spirit
-  allowedTargetBodyFormIds:
-  - body-form.construct
-  - body-form.incorporeal
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  allowedTargetSpecies:
+  - {fileID: 11400000, guid: 7a170000000000000000000000000003, type: 2}
+  - {fileID: 11400000, guid: 7a170000000000000000000000000004, type: 2}
+  allowedTargetBodyForms:
+  - {fileID: 11400000, guid: 7a160000000000000000000000000002, type: 2}
+  - {fileID: 11400000, guid: 7a160000000000000000000000000003, type: 2}
+  requiredCapabilities: []
+  blockingCapabilities: []
   transferPolicy: 2
   anatomyPolicy: 1
   conditionPolicy: 4

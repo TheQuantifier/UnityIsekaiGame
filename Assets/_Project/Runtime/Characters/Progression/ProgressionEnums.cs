@@ -11,15 +11,7 @@ namespace UnityIsekaiGame.Progression
     {
         ImmediateAutomatic,
         DelayedActivePlaytime,
-        FutureAge,
-        FutureExperience,
-        FutureAppraisal,
-        FutureRitual,
-        FutureDanger,
-        FutureLocation,
-        FuturePersonEncounter,
-        FutureManualAcceptance,
-        FutureOriginSpecific
+        Manual
     }
 
     public enum BirthGiftRuntimeState

@@ -15,17 +15,17 @@ MonoBehaviour:
   methodId: transformation.resurrection-body
   displayName: Resurrection Body
   description: Canonical alpha plan for restoring identity into a resurrection body without implementing revival gameplay.
-  biologicalInteractionDefinitionId: interaction.transformation.reincarnation
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000012e, type: 2}
   category: 8
   temporary: 0
   defaultDurationSeconds: 0
-  allowedTargetSpeciesIds:
-  - species.human
-  - species.undead-human
-  allowedTargetBodyFormIds:
-  - body-form.humanoid
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  allowedTargetSpecies:
+  - {fileID: 11400000, guid: 7a170000000000000000000000000001, type: 2}
+  - {fileID: 11400000, guid: 7a170000000000000000000000000002, type: 2}
+  allowedTargetBodyForms:
+  - {fileID: 11400000, guid: 7a160000000000000000000000000001, type: 2}
+  requiredCapabilities: []
+  blockingCapabilities: []
   transferPolicy: 2
   anatomyPolicy: 1
   conditionPolicy: 6

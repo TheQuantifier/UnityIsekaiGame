@@ -11,7 +11,7 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
         [SerializeField] private string transmissionProfileId;
         [SerializeField] private string displayName;
         [SerializeField, TextArea(2, 5)] private string description;
-        [SerializeField] private string conditionDefinitionId;
+        [SerializeField] private BiologicalConditionDefinition conditionDefinition;
         [SerializeField] private BiologicalConditionTransmissionMode transmissionMode = BiologicalConditionTransmissionMode.Contact;
         [SerializeField] private BiologicalExposureRoute exposureRoute = BiologicalExposureRoute.Contact;
         [SerializeField] private float transferredDose = 1f;
@@ -21,7 +21,8 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
         public string Id => transmissionProfileId ?? string.Empty;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public string Description => description ?? string.Empty;
-        public string ConditionDefinitionId => conditionDefinitionId ?? string.Empty;
+        public BiologicalConditionDefinition ConditionDefinition => conditionDefinition;
+        public string ConditionDefinitionId => conditionDefinition == null ? string.Empty : conditionDefinition.Id;
         public BiologicalConditionTransmissionMode TransmissionMode => transmissionMode;
         public BiologicalExposureRoute ExposureRoute => exposureRoute;
         public float TransferredDose => Mathf.Max(0f, transferredDose);
@@ -31,7 +32,6 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
         private void OnValidate()
         {
             transmissionProfileId = transmissionProfileId?.Trim();
-            conditionDefinitionId = conditionDefinitionId?.Trim();
         }
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
@@ -50,10 +50,10 @@ namespace UnityIsekaiGame.Beings.Biology.BiologicalConditions
                 report.AddWarning($"BiologicalTransmissionProfileDefinition '{Id}' should use the 'transmission.biology.' namespace prefix.");
             }
 
-            if (string.IsNullOrWhiteSpace(ConditionDefinitionId)
+            if (conditionDefinition == null
                 || definitionsById == null
                 || !definitionsById.TryGetValue(ConditionDefinitionId, out IGameDefinition condition)
-                || condition is not BiologicalConditionDefinition)
+                || !ReferenceEquals(condition, conditionDefinition))
             {
                 report.AddError($"BiologicalTransmissionProfileDefinition '{DisplayName}' references missing Biological Condition '{ConditionDefinitionId}'.");
             }

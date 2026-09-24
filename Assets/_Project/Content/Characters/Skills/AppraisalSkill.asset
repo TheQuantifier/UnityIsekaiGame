@@ -44,9 +44,7 @@ MonoBehaviour:
       magnitude: 1
       priority: 10
     abilityUnlocks: []
-    capabilityUnlockIds:
-    - capability.utility.appraisal.basic
-    futureInteractionMetadata: 
+    capabilityUnlocks:
+    - {fileID: 11400000, guid: 6e100000000000000000000000000002, type: 2}
   abilityUnlocks: []
   directGrantDefaultGrade: 0
-  futureMetadata: 

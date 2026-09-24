@@ -12,9 +12,9 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
         [SerializeField] private string profileId;
         [SerializeField] private string displayName;
         [SerializeField, TextArea(2, 5)] private string description;
-        [SerializeField] private string[] speciesDefinitionIds = Array.Empty<string>();
-        [SerializeField] private string[] bodyFormDefinitionIds = Array.Empty<string>();
-        [SerializeField] private string[] enabledMethodIds = Array.Empty<string>();
+        [SerializeField] private SpeciesDefinition[] speciesDefinitions = Array.Empty<SpeciesDefinition>();
+        [SerializeField] private BodyFormDefinition[] bodyFormDefinitions = Array.Empty<BodyFormDefinition>();
+        [SerializeField] private TransformationMethodDefinition[] enabledMethods = Array.Empty<TransformationMethodDefinition>();
         [SerializeField] private TransformationTransferPolicy defaultTransferPolicy = TransformationTransferPolicy.TransferPersonOwnedOnly;
         [SerializeField] private TransformationReconciliationPolicy defaultConditionPolicy = TransformationReconciliationPolicy.Clear;
         [SerializeField] private TransformationReconciliationPolicy defaultVitalPolicy = TransformationReconciliationPolicy.InitializeClean;
@@ -25,9 +25,12 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
         public string Id => profileId ?? string.Empty;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public string Description => description ?? string.Empty;
-        public IReadOnlyList<string> SpeciesDefinitionIds => speciesDefinitionIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> BodyFormDefinitionIds => bodyFormDefinitionIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> EnabledMethodIds => enabledMethodIds ?? Array.Empty<string>();
+        public IReadOnlyList<SpeciesDefinition> SpeciesDefinitions => speciesDefinitions ?? Array.Empty<SpeciesDefinition>();
+        public IReadOnlyList<BodyFormDefinition> BodyFormDefinitions => bodyFormDefinitions ?? Array.Empty<BodyFormDefinition>();
+        public IReadOnlyList<TransformationMethodDefinition> EnabledMethods => enabledMethods ?? Array.Empty<TransformationMethodDefinition>();
+        public IReadOnlyList<string> SpeciesDefinitionIds => SpeciesDefinitions.Select(definition => definition.Id).ToArray();
+        public IReadOnlyList<string> BodyFormDefinitionIds => BodyFormDefinitions.Select(definition => definition.Id).ToArray();
+        public IReadOnlyList<string> EnabledMethodIds => EnabledMethods.Select(definition => definition.Id).ToArray();
         public TransformationTransferPolicy DefaultTransferPolicy => defaultTransferPolicy;
         public TransformationReconciliationPolicy DefaultConditionPolicy => defaultConditionPolicy;
         public TransformationReconciliationPolicy DefaultVitalPolicy => defaultVitalPolicy;
@@ -38,9 +41,9 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
         private void OnValidate()
         {
             profileId = profileId?.Trim();
-            speciesDefinitionIds = Normalize(speciesDefinitionIds);
-            bodyFormDefinitionIds = Normalize(bodyFormDefinitionIds);
-            enabledMethodIds = Normalize(enabledMethodIds);
+            speciesDefinitions = Normalize(speciesDefinitions);
+            bodyFormDefinitions = Normalize(bodyFormDefinitions);
+            enabledMethods = Normalize(enabledMethods);
         }
 
         public bool AppliesTo(BodySnapshot body)
@@ -125,9 +128,9 @@ namespace UnityIsekaiGame.Beings.Biology.Transformation
             }
         }
 
-        private static string[] Normalize(string[] values)
+        private static T[] Normalize<T>(T[] values) where T : UnityEngine.Object, IGameDefinition
         {
-            return values == null ? Array.Empty<string>() : values.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim()).Distinct(StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+            return values == null ? Array.Empty<T>() : values.Where(value => value != null).Distinct().OrderBy(value => value.Id, StringComparer.Ordinal).ToArray();
         }
     }
 }

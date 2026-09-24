@@ -58,7 +58,7 @@ namespace UnityIsekaiGame.Persistence
 
             if (!skills.IsConfigured)
             {
-                skills.Configure(registry);
+                return PersistenceParticipantSaveResult.Failure("Character Skills are not initialized; persistence cannot bootstrap runtime systems.");
             }
 
             PlayerSkillsSaveData saveData = skills.CreateSaveData(identity.PlayerId, identity.PersonId);

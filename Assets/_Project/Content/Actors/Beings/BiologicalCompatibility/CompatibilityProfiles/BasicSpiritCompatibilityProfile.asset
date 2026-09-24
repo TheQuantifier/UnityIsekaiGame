@@ -15,14 +15,14 @@ MonoBehaviour:
   profileId: compatibility-profile.species.basic-spirit
   displayName: BasicSpirit Compatibility Profile
   description: Canonical alpha compatibility profile for species.basic-spirit.
-  speciesDefinitionId: species.basic-spirit
-  bodyFormDefinitionId: 
-  biologicalClassificationId: 
+  speciesDefinition: {fileID: 11400000, guid: 7a170000000000000000000000000004, type: 2}
+  bodyFormDefinition: {fileID: 0}
+  biologicalClassification: {fileID: 0}
   rules:
   - entryId: profile.spirit.bleeding-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.biology.bleeding
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000101, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -32,9 +32,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -43,7 +43,7 @@ MonoBehaviour:
   - entryId: profile.spirit.suffocation-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.biology.suffocation
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000102, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -53,9 +53,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -64,7 +64,7 @@ MonoBehaviour:
   - entryId: profile.spirit.fracture-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.injury.fracture
+    interactionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000010c, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -74,9 +74,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -85,7 +85,7 @@ MonoBehaviour:
   - entryId: profile.spirit.laceration-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.injury.laceration
+    interactionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000010a, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -95,9 +95,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -106,7 +106,7 @@ MonoBehaviour:
   - entryId: profile.spirit.puncture-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.injury.puncture
+    interactionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000010b, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -116,9 +116,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -127,7 +127,7 @@ MonoBehaviour:
   - entryId: profile.spirit.disruption-compatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.injury.incorporeal-disruption
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000112, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 0
@@ -137,9 +137,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -148,7 +148,7 @@ MonoBehaviour:
   - entryId: profile.spirit.biological-healing-incompatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.recovery.biological-healing
+    interactionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000011e, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -158,9 +158,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -169,7 +169,7 @@ MonoBehaviour:
   - entryId: profile.spirit.disease-incompatible
     sourceKind: 1
     sourceId:
-    interactionDefinitionId: interaction.condition.disease
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000123, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -179,9 +179,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId:
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories:
     requiredNodeId:
@@ -190,7 +190,7 @@ MonoBehaviour:
   - entryId: profile.spirit.poison-incompatible
     sourceKind: 1
     sourceId:
-    interactionDefinitionId: interaction.condition.poison
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000126, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 1
@@ -200,9 +200,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId:
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories:
     requiredNodeId:
@@ -211,7 +211,7 @@ MonoBehaviour:
   - entryId: profile.spirit.restoration-affinity
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.recovery.spirit-restoration
+    interactionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000120, type: 2}
     category: 0
     ruleKind: 4
     compatibilityState: 0
@@ -221,9 +221,9 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 20
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
@@ -232,7 +232,7 @@ MonoBehaviour:
   - entryId: profile.spirit.possession-compatible
     sourceKind: 1
     sourceId: 
-    interactionDefinitionId: interaction.transformation.possession
+    interactionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000012c, type: 2}
     category: 0
     ruleKind: 0
     compatibilityState: 0
@@ -242,12 +242,12 @@ MonoBehaviour:
     minimumEffectFloor: 0
     maximumSeverity: 999
     priority: 0
-    convertedInteractionDefinitionId: 
-    requiredRuntimeCapabilityKeys: []
-    blockingRuntimeCapabilityKeys: []
+    convertedInteractionDefinition: {fileID: 0}
+    requiredCapabilities: []
+    blockingCapabilities: []
     requiredAnatomyTagIds: []
     requiredNodeCategories: 
     requiredNodeId: 
-    explanation: Possession compatibility is a future spirit contract.
+    explanation: Possession is compatible with spirit embodiment rules.
     alphaEnabled: 1
   alphaEnabled: 1

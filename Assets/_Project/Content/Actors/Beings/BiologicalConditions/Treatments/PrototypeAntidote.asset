@@ -16,8 +16,8 @@ MonoBehaviour:
   displayName: Prototype Antidote
   description: Fictional antidote fixture for poison, venom, and toxin load reduction.
   treatmentKind: 1
-  biologicalInteractionDefinitionId: interaction.condition.poison
-  compatibleConditionIds: []
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a760000000000000000000000000126, type: 2}
+  compatibleConditions: []
   compatibleFamilies: [7, 8, 9]
   loadReduction: 12
   progressionMultiplier: 0.5

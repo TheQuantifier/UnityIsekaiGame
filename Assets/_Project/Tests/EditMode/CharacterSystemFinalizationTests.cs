@@ -37,7 +37,7 @@ namespace UnityIsekaiGame.Tests
             Invoke(identity, "ConfigureIdentity", "account.test", "player.test", "person.test");
 
             Component coordinator = owner.GetComponent(RequiredType("UnityIsekaiGame.CharacterSystem.CharacterSystemCoordinator"));
-            Assert.That(Invoke<bool>(coordinator, "InitializeFromRegistry", registry, false, true), Is.True);
+            Assert.That(Invoke<bool>(coordinator, "InitializeFromRegistry", registry, false), Is.True);
             Assert.That(Property<object>(coordinator, "Readiness").ToString(), Is.EqualTo("Ready"));
             Assert.That(Property<bool>(coordinator, "IsReady"), Is.True);
 
@@ -47,6 +47,14 @@ namespace UnityIsekaiGame.Tests
             Assert.That(Property<string>(snapshotIdentity, "PersonId"), Is.EqualTo("person.test"));
             Assert.That(Property<string>(snapshotIdentity, "ActorId"), Is.Not.Empty);
             Assert.That(Property<string>(snapshotIdentity, "ActorId"), Is.Not.EqualTo("person.test"));
+
+            string identitySaveJson = JsonUtility.ToJson(Invoke(identity, "CreateSaveData"));
+            Assert.That(identitySaveJson, Does.Contain("\"assigned\":true"));
+            Assert.That(identitySaveJson, Does.Contain("\"originId\":\"origin."));
+            Assert.That(identitySaveJson, Does.Contain("\"giftDefinitionId\":\"birth-gift."));
+
+            Assert.That(Invoke<bool>(coordinator, "InitializeFromRegistry", registry, false), Is.True);
+            Assert.That(JsonUtility.ToJson(Invoke(identity, "CreateSaveData")), Is.EqualTo(identitySaveJson));
         }
 
         [Test]
@@ -56,7 +64,7 @@ namespace UnityIsekaiGame.Tests
             GameObject owner = CreateFullCharacterOwner("Character Coordinator Rebuild Test");
             Component coordinator = owner.GetComponent(RequiredType("UnityIsekaiGame.CharacterSystem.CharacterSystemCoordinator"));
 
-            Assert.That(Invoke<bool>(coordinator, "InitializeFromRegistry", registry, false, true), Is.True);
+            Assert.That(Invoke<bool>(coordinator, "InitializeFromRegistry", registry, false), Is.True);
             long firstRevision = Property<long>(coordinator, "Revision");
             int firstSkillCount = Count(Property<object>(Invoke(coordinator, "GetSnapshot", true), "Progression"), "LearnedSkills");
             int firstTraitCount = Count(Property<object>(Invoke(coordinator, "GetSnapshot", true), "Progression"), "Traits");
@@ -91,7 +99,7 @@ namespace UnityIsekaiGame.Tests
             GameObject owner = CreateFullCharacterOwner("Character Integrity Duplicate Test");
             Component first = owner.GetComponent(RequiredType("UnityIsekaiGame.CharacterSystem.CharacterSystemCoordinator"));
             owner.AddComponent(RequiredType("UnityIsekaiGame.CharacterSystem.CharacterSystemCoordinator"));
-            Invoke(first, "InitializeFromRegistry", registry, false, true);
+            Invoke(first, "InitializeFromRegistry", registry, false);
 
             object report = Invoke(first, "ValidateIntegrity");
             Assert.That(Property<bool>(report, "Passed"), Is.False);
@@ -110,7 +118,7 @@ namespace UnityIsekaiGame.Tests
             owner.AddComponent(RequiredType("UnityIsekaiGame.Traits.CharacterTraitCollection"));
             Component coordinator = owner.AddComponent(RequiredType("UnityIsekaiGame.CharacterSystem.CharacterSystemCoordinator"));
 
-            Assert.That(Invoke<bool>(coordinator, "InitializeFromRegistry", registry, false, true), Is.True);
+            Assert.That(Invoke<bool>(coordinator, "InitializeFromRegistry", registry, false), Is.True);
             Assert.That(Property<bool>(coordinator, "IsReady"), Is.True);
             Assert.That(Property<string>(coordinator, "AccountId"), Is.Empty);
             Assert.That(Property<string>(coordinator, "ActorId"), Does.StartWith("actor.runtime."));
@@ -128,7 +136,10 @@ namespace UnityIsekaiGame.Tests
             owner.AddComponent(RequiredType("UnityIsekaiGame.Stats.CalculatedStatCollection"));
             owner.AddComponent(RequiredType("UnityIsekaiGame.ResourceSystem.CharacterResourceCollection"));
             owner.AddComponent(RequiredType("UnityIsekaiGame.Skills.CharacterSkillCollection"));
+            owner.AddComponent(RequiredType("UnityIsekaiGame.Abilities.CharacterAbilityCollection"));
+            owner.AddComponent(RequiredType("UnityIsekaiGame.Capabilities.CharacterCapabilityCollection"));
             owner.AddComponent(RequiredType("UnityIsekaiGame.Traits.CharacterTraitCollection"));
+            owner.AddComponent(RequiredType("UnityIsekaiGame.CharacterSystem.AuthoritativeCharacterSimulationDriver"));
             owner.AddComponent(RequiredType("UnityIsekaiGame.CharacterSystem.CharacterSystemCoordinator"));
             return owner;
         }

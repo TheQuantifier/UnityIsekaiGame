@@ -25,7 +25,7 @@ MonoBehaviour:
   startingAttributeGrants:
   - attribute: {fileID: 11400000, guid: a1000000000000000000000000000052, type: 2}
     amount: 3
-  influencedGiftPool:
+  favoredGiftPool:
   - {fileID: 11400000, guid: 9886ab69802e43ebbaa24675354f2a01, type: 2}
   - {fileID: 11400000, guid: a7010ad03cea4e54b53500f538022681, type: 2}
   giftWeightModifiers: []
@@ -65,7 +65,3 @@ MonoBehaviour:
     customContextTargetId: 
     acquisitionReason: Adventurer guild registration
   startingTitle: {fileID: 0}
-  futureHomeReference: reincarnated-adventurer-home
-  futureRelationshipReferences: reincarnation-family-placeholder
-  futureFactionObligations: adventurer-guild-placeholder
-  futureStartingLocationReference: place.prototype-town

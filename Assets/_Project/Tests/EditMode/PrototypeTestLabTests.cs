@@ -143,6 +143,12 @@ namespace UnityIsekaiGame.Tests
             SetField(context, "PlayerStats", fixture?.Stats);
             SetField(context, "PlayerHealth", fixture?.Health);
             SetField(context, "PlayerStatuses", fixture?.Statuses);
+            SetField(context, "PlayerAttributes", fixture?.Attributes);
+            SetField(context, "PlayerCalculatedStats", fixture?.CalculatedStats);
+            SetField(context, "PlayerResources", fixture?.Resources);
+            SetField(context, "PlayerSkills", fixture?.Skills);
+            SetField(context, "PlayerTraits", fixture?.Traits);
+            SetField(context, "CharacterSystem", fixture?.CharacterSystem);
             SetField(context, "PlayerTransform", fixture?.Root.transform);
             Invoke(service, "Configure", context);
             return service;
@@ -262,6 +268,12 @@ namespace UnityIsekaiGame.Tests
             public Component Stats { get; private set; }
             public Component Health { get; private set; }
             public Component Statuses { get; private set; }
+            public Component Attributes { get; private set; }
+            public Component CalculatedStats { get; private set; }
+            public Component Resources { get; private set; }
+            public Component Skills { get; private set; }
+            public Component Traits { get; private set; }
+            public Component CharacterSystem { get; private set; }
 
             public static RuntimeFixture Create()
             {
@@ -272,8 +284,18 @@ namespace UnityIsekaiGame.Tests
                     Inventory = root.AddComponent(RequiredType("UnityIsekaiGame.Inventory.PlayerInventory")),
                     Stats = root.AddComponent(RequiredType("UnityIsekaiGame.Equipment.PlayerStats")),
                     Health = root.AddComponent(RequiredType("UnityIsekaiGame.Gameplay.PlayerHealth")),
-                    Statuses = root.AddComponent(RequiredType("UnityIsekaiGame.StatusEffects.StatusEffectController"))
+                    Statuses = root.AddComponent(RequiredType("UnityIsekaiGame.StatusEffects.StatusEffectController")),
+                    Attributes = root.AddComponent(RequiredType("UnityIsekaiGame.Stats.CharacterAttributes")),
+                    CalculatedStats = root.AddComponent(RequiredType("UnityIsekaiGame.Stats.CalculatedStatCollection")),
+                    Resources = root.AddComponent(RequiredType("UnityIsekaiGame.ResourceSystem.CharacterResourceCollection")),
+                    Skills = root.AddComponent(RequiredType("UnityIsekaiGame.Skills.CharacterSkillCollection")),
+                    Traits = root.AddComponent(RequiredType("UnityIsekaiGame.Traits.CharacterTraitCollection"))
                 };
+
+                root.AddComponent(RequiredType("UnityIsekaiGame.Abilities.CharacterAbilityCollection"));
+                root.AddComponent(RequiredType("UnityIsekaiGame.Capabilities.CharacterCapabilityCollection"));
+                root.AddComponent(RequiredType("UnityIsekaiGame.CharacterSystem.AuthoritativeCharacterSimulationDriver"));
+                fixture.CharacterSystem = root.AddComponent(RequiredType("UnityIsekaiGame.CharacterSystem.CharacterSystemCoordinator"));
 
                 InvokeAwake(fixture.Inventory);
                 InvokeAwake(fixture.Stats);

@@ -17,12 +17,11 @@ namespace UnityIsekaiGame.Traits
         [SerializeField] private CalculatedStatCollection calculatedStats;
         [SerializeField] private CharacterSkillCollection skills;
         [SerializeField] private CharacterAbilityCollection abilities;
-        [SerializeField] private List<TraitDefinition> fallbackDefinitions = new List<TraitDefinition>();
+        [SerializeField] private CharacterCapabilityCollection capabilities;
         [SerializeField] private string ownerId = PersistenceService.LocalPlayerId;
 
         private readonly Dictionary<string, TraitDefinition> definitionsById = new Dictionary<string, TraitDefinition>(StringComparer.Ordinal);
         private readonly Dictionary<string, RuntimeTraitRecord> recordsByTraitId = new Dictionary<string, RuntimeTraitRecord>(StringComparer.Ordinal);
-        private readonly RuntimeCapabilitySet capabilitySet = new RuntimeCapabilitySet();
         private DefinitionRegistry registry;
         private bool suppressEvents;
 
@@ -31,7 +30,6 @@ namespace UnityIsekaiGame.Traits
 
         public bool IsConfigured { get; private set; }
         public IReadOnlyList<RuntimeTraitRecord> TraitRecords => recordsByTraitId.Values.Select(TraitRuntimeCloner.Clone).ToList();
-        public RuntimeCapabilitySet Capabilities => capabilitySet;
 
         private void Awake()
         {
@@ -46,29 +44,27 @@ namespace UnityIsekaiGame.Traits
             }
 
             abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
+            capabilities = capabilities == null ? GetComponent<CharacterCapabilityCollection>() : capabilities;
 
-            if (!IsConfigured && fallbackDefinitions.Count > 0)
-            {
-                Configure(fallbackDefinitions, Enumerable.Empty<CapabilityDefinition>(), calculatedStats, skills, ownerId);
-            }
         }
 
-        public void Configure(DefinitionRegistry definitionRegistry, CalculatedStatCollection statCollection = null, CharacterSkillCollection skillCollection = null, string owner = "")
+        public void Configure(DefinitionRegistry definitionRegistry, CalculatedStatCollection statCollection = null, CharacterSkillCollection skillCollection = null, CharacterCapabilityCollection capabilityCollection = null, string owner = "")
         {
             registry = definitionRegistry;
             Configure(
                 definitionRegistry == null ? Enumerable.Empty<TraitDefinition>() : definitionRegistry.DefinitionsById.Values.OfType<TraitDefinition>(),
-                definitionRegistry == null ? Enumerable.Empty<CapabilityDefinition>() : definitionRegistry.DefinitionsById.Values.OfType<CapabilityDefinition>(),
                 statCollection,
                 skillCollection,
+                capabilityCollection,
                 owner);
         }
 
-        public void Configure(IEnumerable<TraitDefinition> definitions, IEnumerable<CapabilityDefinition> capabilityDefinitions, CalculatedStatCollection statCollection = null, CharacterSkillCollection skillCollection = null, string owner = "")
+        public void Configure(IEnumerable<TraitDefinition> definitions, CalculatedStatCollection statCollection = null, CharacterSkillCollection skillCollection = null, CharacterCapabilityCollection capabilityCollection = null, string owner = "")
         {
             calculatedStats = statCollection == null ? calculatedStats == null ? GetComponent<CalculatedStatCollection>() : calculatedStats : statCollection;
             skills = skillCollection == null ? skills == null ? GetComponent<CharacterSkillCollection>() : skills : skillCollection;
             abilities = abilities == null ? GetComponent<CharacterAbilityCollection>() : abilities;
+            capabilities = capabilityCollection == null ? capabilities == null ? GetComponent<CharacterCapabilityCollection>() : capabilities : capabilityCollection;
             if (!string.IsNullOrWhiteSpace(owner))
             {
                 ownerId = owner;
@@ -83,14 +79,12 @@ namespace UnityIsekaiGame.Traits
                 }
             }
 
-            capabilitySet.Configure(capabilityDefinitions);
             IsConfigured = definitionsById.Count > 0;
             RebuildTraitEffects(restoring: false, notify: false);
         }
 
         public TraitOperationResult GrantTrait(TraitGrantRequest request)
         {
-            EnsureConfiguredFromFallback();
             request ??= new TraitGrantRequest();
             if (string.IsNullOrWhiteSpace(request.TraitDefinitionId) || !definitionsById.TryGetValue(request.TraitDefinitionId, out TraitDefinition definition))
             {
@@ -174,7 +168,6 @@ namespace UnityIsekaiGame.Traits
 
         public TraitOperationResult RemoveTraitSource(string traitId, TraitSourceCategory category, string sourceId, TraitFinalSourcePolicy finalSourcePolicy = TraitFinalSourcePolicy.Remove)
         {
-            EnsureConfiguredFromFallback();
             if (!recordsByTraitId.TryGetValue(traitId, out RuntimeTraitRecord record))
             {
                 return TraitOperationResult.Failure("TraitNotFound", $"Trait '{traitId}' is not present.");
@@ -218,7 +211,6 @@ namespace UnityIsekaiGame.Traits
 
         public TraitOperationResult SetDiscoveryState(string traitId, TraitDiscoveryState discoveryState)
         {
-            EnsureConfiguredFromFallback();
             if (!recordsByTraitId.TryGetValue(traitId, out RuntimeTraitRecord record))
             {
                 return TraitOperationResult.Failure("TraitNotFound", $"Trait '{traitId}' is not present.");
@@ -293,7 +285,12 @@ namespace UnityIsekaiGame.Traits
         public bool RestoreFromSaveData(PlayerTraitsSaveData saveData, DefinitionRegistry definitionRegistry, CalculatedStatCollection statCollection, CharacterSkillCollection skillCollection, string expectedPlayerId, out string failureReason, bool restoring)
         {
             failureReason = string.Empty;
-            Configure(definitionRegistry, statCollection, skillCollection, expectedPlayerId);
+            if (!IsConfigured)
+            {
+                failureReason = "Character Traits must be initialized by CharacterSystemCoordinator before restore.";
+                return false;
+            }
+
             if (!ValidateSaveData(saveData, definitionRegistry, expectedPlayerId, out failureReason))
             {
                 return false;
@@ -388,7 +385,6 @@ namespace UnityIsekaiGame.Traits
 
         public string BuildDiagnosticSummary(bool includeHidden)
         {
-            EnsureConfiguredFromFallback();
             List<string> lines = new List<string>
             {
                 "Feature 5.5 Traits And Capabilities",
@@ -412,7 +408,7 @@ namespace UnityIsekaiGame.Traits
             }
 
             lines.Add("Capabilities:");
-            foreach (CapabilitySnapshot snapshot in capabilitySet.GetSnapshots())
+            foreach (CapabilitySnapshot snapshot in capabilities == null ? Array.Empty<CapabilitySnapshot>() : capabilities.GetSnapshots())
             {
                 string value = snapshot.ValueType == CapabilityValueType.Boolean ? snapshot.BooleanValue.ToString() : snapshot.NumericValue.ToString("0.###");
                 lines.Add($"{snapshot.CapabilityId}: {value} Blocked={snapshot.Blocked} Sources={snapshot.Sources.Count}");
@@ -436,7 +432,6 @@ namespace UnityIsekaiGame.Traits
 
         private TraitOperationResult ChangeLifecycle(string traitId, TraitLifecycleState target, string reason)
         {
-            EnsureConfiguredFromFallback();
             if (!recordsByTraitId.TryGetValue(traitId, out RuntimeTraitRecord record))
             {
                 return TraitOperationResult.Failure("TraitNotFound", $"Trait '{traitId}' is not present.");
@@ -457,11 +452,10 @@ namespace UnityIsekaiGame.Traits
 
         private TraitOperationResult RebuildTraitEffects(bool restoring, bool notify, TraitOperationResult passthrough = null)
         {
-            EnsureConfiguredFromFallback();
             foreach (TraitDefinition definition in definitionsById.Values.ToList())
             {
                 calculatedStats?.RemoveContributionsFromSource(CalculatedStatContributionSourceCategory.Trait, TraitSourceId(definition.Id), restoring);
-                capabilitySet.ClearSource(CapabilitySourceCategory.Trait, TraitSourceId(definition.Id));
+                capabilities?.RemoveSource(CapabilitySourceCategory.Trait, TraitSourceId(definition.Id), restoring);
                 abilities?.RemoveSource(AbilityGrantSourceCategory.Trait, TraitSourceId(definition.Id), restoring);
             }
 
@@ -515,19 +509,8 @@ namespace UnityIsekaiGame.Traits
                     continue;
                 }
 
-                capabilitySet.Add(new RuntimeCapabilityContribution
-                {
-                    capabilityId = grant.Capability.Id,
-                    valueType = (int)grant.Capability.ValueType,
-                    boolValue = grant.BooleanValue,
-                    numericValue = grant.NumericValue,
-                    aggregationPolicy = (int)grant.Capability.AggregationPolicy,
-                    sourceCategory = (int)CapabilitySourceCategory.Trait,
-                    sourceId = sourceId,
-                    entryId = grant.EntryId,
-                    priority = grant.Priority,
-                    blocker = grant.Blocker
-                });
+                capabilities?.Add(grant.Capability, CapabilitySourceCategory.Trait, sourceId, grant.EntryId,
+                    grant.BooleanValue, grant.NumericValue, grant.Priority, grant.Blocker, restoring);
             }
 
             foreach (TraitSkillGrantDefinition grant in definition.SkillGrants)
@@ -708,7 +691,6 @@ namespace UnityIsekaiGame.Traits
 
         private IReadOnlyList<TraitSnapshot> BuildSnapshots(Func<RuntimeTraitRecord, bool> filter, bool revealAll)
         {
-            EnsureConfiguredFromFallback();
             return recordsByTraitId.Values
                 .Where(record => filter == null || filter(record))
                 .OrderBy(record => record.traitDefinitionId, StringComparer.Ordinal)
@@ -781,14 +763,6 @@ namespace UnityIsekaiGame.Traits
         private Dictionary<string, RuntimeTraitRecord> CloneRecords()
         {
             return recordsByTraitId.ToDictionary(pair => pair.Key, pair => TraitRuntimeCloner.Clone(pair.Value), StringComparer.Ordinal);
-        }
-
-        private void EnsureConfiguredFromFallback()
-        {
-            if (!IsConfigured && fallbackDefinitions.Count > 0)
-            {
-                Configure(fallbackDefinitions, Enumerable.Empty<CapabilityDefinition>(), calculatedStats, skills, ownerId);
-            }
         }
 
         private void RaiseChanged(TraitOperationResult result, bool restoring)

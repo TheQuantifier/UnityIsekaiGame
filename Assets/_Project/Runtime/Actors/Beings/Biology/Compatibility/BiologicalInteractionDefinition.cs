@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityIsekaiGame.Beings.Biology.Condition;
+using UnityIsekaiGame.Beings.Biology.Hazards;
+using UnityIsekaiGame.Beings.Biology.VitalProcesses;
+using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.GameData;
 
 namespace UnityIsekaiGame.Beings.Biology.Compatibility
@@ -19,10 +23,10 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
         [SerializeField, Min(0f)] private float defaultSeverityMultiplier = 1f;
         [SerializeField, Min(0f)] private float defaultConsequenceMultiplier = 1f;
         [SerializeField, Min(0f)] private float defaultMaximumSeverity = float.PositiveInfinity;
-        [SerializeField] private string[] relatedHazardIds;
-        [SerializeField] private string[] relatedResourceIds;
-        [SerializeField] private string[] relatedInjuryTypeIds;
-        [SerializeField] private string[] relatedDamageTypeIds;
+        [SerializeField] private BiologicalHazardDefinition[] relatedHazards;
+        [SerializeField] private BiologicalResourceDefinition[] relatedResources;
+        [SerializeField] private InjuryTypeDefinition[] relatedInjuryTypes;
+        [SerializeField] private DamageTypeDefinition[] relatedDamageTypes;
         [SerializeField] private string[] supportedModifierChannels;
         [SerializeField] private string[] supportedSpecialOutcomes;
         [SerializeField] private TagDefinition[] tags;
@@ -39,10 +43,14 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
         public float DefaultSeverityMultiplier => Sanitize(defaultSeverityMultiplier, 1f);
         public float DefaultConsequenceMultiplier => Sanitize(defaultConsequenceMultiplier, 1f);
         public float DefaultMaximumSeverity => SanitizeMaximumSeverity(defaultMaximumSeverity);
-        public IReadOnlyList<string> RelatedHazardIds => relatedHazardIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> RelatedResourceIds => relatedResourceIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> RelatedInjuryTypeIds => relatedInjuryTypeIds ?? Array.Empty<string>();
-        public IReadOnlyList<string> RelatedDamageTypeIds => relatedDamageTypeIds ?? Array.Empty<string>();
+        public IReadOnlyList<BiologicalHazardDefinition> RelatedHazards => relatedHazards ?? Array.Empty<BiologicalHazardDefinition>();
+        public IReadOnlyList<BiologicalResourceDefinition> RelatedResources => relatedResources ?? Array.Empty<BiologicalResourceDefinition>();
+        public IReadOnlyList<InjuryTypeDefinition> RelatedInjuryTypes => relatedInjuryTypes ?? Array.Empty<InjuryTypeDefinition>();
+        public IReadOnlyList<DamageTypeDefinition> RelatedDamageTypes => relatedDamageTypes ?? Array.Empty<DamageTypeDefinition>();
+        public IReadOnlyList<string> RelatedHazardIds => RelatedHazards.Select(definition => definition.Id).ToArray();
+        public IReadOnlyList<string> RelatedResourceIds => RelatedResources.Select(definition => definition.Id).ToArray();
+        public IReadOnlyList<string> RelatedInjuryTypeIds => RelatedInjuryTypes.Select(definition => definition.Id).ToArray();
+        public IReadOnlyList<string> RelatedDamageTypeIds => RelatedDamageTypes.Select(definition => definition.Id).ToArray();
         public IReadOnlyList<string> SupportedModifierChannels => supportedModifierChannels ?? Array.Empty<string>();
         public IReadOnlyList<string> SupportedSpecialOutcomes => supportedSpecialOutcomes ?? Array.Empty<string>();
         public IReadOnlyList<TagDefinition> Tags => tags ?? Array.Empty<TagDefinition>();
@@ -57,6 +65,10 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
             defaultSeverityMultiplier = Sanitize(defaultSeverityMultiplier, 1f);
             defaultConsequenceMultiplier = Sanitize(defaultConsequenceMultiplier, 1f);
             defaultMaximumSeverity = SanitizeMaximumSeverity(defaultMaximumSeverity);
+            relatedHazards = Normalize(relatedHazards);
+            relatedResources = Normalize(relatedResources);
+            relatedInjuryTypes = Normalize(relatedInjuryTypes);
+            relatedDamageTypes = Normalize(relatedDamageTypes);
         }
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
@@ -108,6 +120,27 @@ namespace UnityIsekaiGame.Beings.Biology.Compatibility
                     report.AddError($"BiologicalInteractionDefinition '{DisplayName}' references a missing tag.");
                 }
             }
+
+            ValidateReferences(definitionsById, RelatedHazards, "hazard", report);
+            ValidateReferences(definitionsById, RelatedResources, "resource", report);
+            ValidateReferences(definitionsById, RelatedInjuryTypes, "injury type", report);
+            ValidateReferences(definitionsById, RelatedDamageTypes, "damage type", report);
+        }
+
+        private void ValidateReferences<T>(IReadOnlyDictionary<string, IGameDefinition> definitionsById, IEnumerable<T> definitions, string label, DefinitionValidationReport report) where T : UnityEngine.Object, IGameDefinition
+        {
+            foreach (T definition in definitions)
+            {
+                if (definition == null || !definitionsById.TryGetValue(definition.Id, out IGameDefinition registered) || !ReferenceEquals(registered, definition))
+                {
+                    report.AddError($"BiologicalInteractionDefinition '{DisplayName}' references a missing {label} '{definition?.Id ?? "<null>"}'.");
+                }
+            }
+        }
+
+        private static T[] Normalize<T>(T[] values) where T : UnityEngine.Object, IGameDefinition
+        {
+            return values == null ? Array.Empty<T>() : values.Where(value => value != null).Distinct().OrderBy(value => value.Id, StringComparer.Ordinal).ToArray();
         }
 
         private static void ValidateCanonicalAlphaSet(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)

@@ -22,10 +22,10 @@ MonoBehaviour:
   defaultSeverityMultiplier: 1
   defaultConsequenceMultiplier: 1
   defaultMaximumSeverity: 999
-  relatedHazardIds: []
-  relatedResourceIds: []
-  relatedInjuryTypeIds: []
-  relatedDamageTypeIds: []
+  relatedHazards: []
+  relatedResources: []
+  relatedInjuryTypes: []
+  relatedDamageTypes: []
   supportedModifierChannels:
   - rate
   - severity

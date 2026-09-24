@@ -28,12 +28,16 @@ namespace UnityIsekaiGame.ActorLifecycle
 
     public enum LifecycleTriggerKind
     {
-        HealthDepleted,
-        ExplicitDefeat,
-        ExplicitDeath,
-        Scripted,
-        Environmental,
-        Recovery,
-        Revival
+        HealthDepleted = 0,
+        ExplicitDefeat = 1,
+        ExplicitDeath = 2,
+        Scripted = 3,
+        Environmental = 4,
+        Recovery = 5,
+        Revival = 6,
+        FatalInjury = 7,
+        Execution = 8,
+        CatastrophicDamage = 9,
+        CriticalCondition = 10
     }
 }

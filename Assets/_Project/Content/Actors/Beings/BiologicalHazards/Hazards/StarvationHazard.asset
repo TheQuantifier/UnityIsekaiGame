@@ -17,14 +17,13 @@ MonoBehaviour:
   description: Critical nutrition deficit pressure.
   stackingPolicy: 7
   defaultSeverity: 3
-  targetResourceId: 
+  targetResource: {fileID: 0}
   resourceOperation: 0
   baseResourceRatePerHour: 0
   baseDamagePerHour: 2
   damageType: {fileID: 0}
   lifecycleRequest: 1
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   alphaEnabled: 1
-  futureResistanceMetadata: Deferred metabolism and starvation resistance hooks.
   tags: []

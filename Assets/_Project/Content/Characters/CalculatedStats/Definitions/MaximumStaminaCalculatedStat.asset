@@ -22,4 +22,4 @@ MonoBehaviour:
   sortOrder: 80
   optionalPresentationMaximum: 0
   purpose: 1
-  linkedFutureResourceId: resource.stamina
+  linkedResourceId: resource.stamina

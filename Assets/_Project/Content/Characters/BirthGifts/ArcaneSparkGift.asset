@@ -27,8 +27,7 @@ MonoBehaviour:
   permanentAttributeGrants:
   - attribute: {fileID: 11400000, guid: a9000000000000000000000000000052, type: 2}
     amount: 4
-  futureGrowthAffinityEntries: []
+  growthAffinityGrants: []
   awakeningMode: 0
   requiredActivePlaytimeSeconds: 0
   enabledForAlpha: 1
-  futureConditionData: 

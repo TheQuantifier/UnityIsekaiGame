@@ -42,14 +42,12 @@ MonoBehaviour:
     calculatedStatContributions:
     - {calculatedStat: {fileID: 11400000, guid: c1000000000000000000000000000052, type: 2}, kind: 0, direction: 0, magnitude: 1, priority: 10}
     abilityUnlocks: []
-    capabilityUnlockIds: [capability.combat.unarmed.basic]
-    futureInteractionMetadata: 
+    capabilityUnlocks:
+    - {fileID: 11400000, guid: 6e100000000000000000000000000001, type: 2}
   - grade: 1
     calculatedStatContributions:
     - {calculatedStat: {fileID: 11400000, guid: c5000000000000000000000000000052, type: 2}, kind: 0, direction: 0, magnitude: 1, priority: 10}
     abilityUnlocks: []
-    capabilityUnlockIds: []
-    futureInteractionMetadata: 
+    capabilityUnlocks: []
   abilityUnlocks: []
   directGrantDefaultGrade: 0
-  futureMetadata: 

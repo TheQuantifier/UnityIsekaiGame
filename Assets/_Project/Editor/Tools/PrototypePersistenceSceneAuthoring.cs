@@ -143,7 +143,7 @@ namespace UnityIsekaiGame.Editor
                 Wire(persistence, "inventoryScreenController", inventoryScreen);
             }
 
-            foreach (WorldSceneBindingBootstrap bootstrap in UnityEngine.Object.FindObjectsByType<WorldSceneBindingBootstrap>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (WorldSceneBindingBootstrap bootstrap in UnityEngine.Object.FindObjectsByType<WorldSceneBindingBootstrap>(FindObjectsInactive.Include))
             {
                 SetEnum(bootstrap, "bootstrapMode", (int)WorldSceneBindingBootstrapMode.ProductionBindOnly);
             }

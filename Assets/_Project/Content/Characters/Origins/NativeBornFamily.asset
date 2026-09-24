@@ -30,5 +30,3 @@ MonoBehaviour:
     currency: {fileID: 11400000, guid: 8d5f2bba9b8d4f56ad823790337abbad, type: 2}
     baseAmount: 25
     randomVariation: 10
-  futureSelectionMetadata: weighted-local-alpha-family
-  futureWorldCultureRestrictions: prototype-kingdom

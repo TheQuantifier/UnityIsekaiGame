@@ -15,14 +15,14 @@ MonoBehaviour:
   profileId: transformation-profile.alpha.default
   displayName: Alpha Default Transformation Profile
   description: Default alpha transformation profile. Specific Species profiles constrain individual body categories.
-  speciesDefinitionIds: []
-  bodyFormDefinitionIds: []
-  enabledMethodIds:
-  - transformation.body-replacement
-  - transformation.body-swap
-  - transformation.possession
-  - transformation.reincarnation
-  - transformation.resurrection-body
+  speciesDefinitions: []
+  bodyFormDefinitions: []
+  enabledMethods:
+  - {fileID: 11400000, guid: 7a780000000000000000000000000113, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000114, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000115, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000116, type: 2}
+  - {fileID: 11400000, guid: 7a780000000000000000000000000117, type: 2}
   defaultTransferPolicy: 2
   defaultConditionPolicy: 4
   defaultVitalPolicy: 6

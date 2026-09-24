@@ -39,14 +39,13 @@ namespace UnityIsekaiGame.Progression
 
     public sealed class CharacterOriginGenerationResult
     {
-        private CharacterOriginGenerationResult(bool succeeded, string message, OriginFamilyDefinition family, OriginDefinition origin, BirthGiftDefinition birthGift, bool originInfluencedGift, long startingGold)
+        private CharacterOriginGenerationResult(bool succeeded, string message, OriginFamilyDefinition family, OriginDefinition origin, BirthGiftDefinition birthGift, long startingGold)
         {
             Succeeded = succeeded;
             Message = message;
             Family = family;
             Origin = origin;
             BirthGift = birthGift;
-            OriginInfluencedGift = originInfluencedGift;
             StartingGold = startingGold;
         }
 
@@ -55,31 +54,60 @@ namespace UnityIsekaiGame.Progression
         public OriginFamilyDefinition Family { get; }
         public OriginDefinition Origin { get; }
         public BirthGiftDefinition BirthGift { get; }
-        public bool OriginInfluencedGift { get; }
         public long StartingGold { get; }
 
-        public static CharacterOriginGenerationResult Success(OriginFamilyDefinition family, OriginDefinition origin, BirthGiftDefinition birthGift, bool originInfluencedGift, long startingGold)
+        public static CharacterOriginGenerationResult Success(OriginFamilyDefinition family, OriginDefinition origin, BirthGiftDefinition birthGift, long startingGold)
         {
-            return new CharacterOriginGenerationResult(true, "Origin generated.", family, origin, birthGift, originInfluencedGift, startingGold);
+            return new CharacterOriginGenerationResult(true, "Origin generated.", family, origin, birthGift, startingGold);
         }
 
         public static CharacterOriginGenerationResult Failure(string message)
         {
-            return new CharacterOriginGenerationResult(false, message, null, null, null, false, 0L);
+            return new CharacterOriginGenerationResult(false, message, null, null, null, 0L);
         }
+    }
+
+    public sealed class BirthGiftWeightEntry
+    {
+        public BirthGiftWeightEntry(
+            BirthGiftDefinition gift,
+            float baseWeight,
+            float affinityMultiplier,
+            float giftMultiplier,
+            float familyRarityMultiplier,
+            float originRarityMultiplier,
+            float finalWeight,
+            float probability)
+        {
+            Gift = gift;
+            BaseWeight = baseWeight;
+            AffinityMultiplier = affinityMultiplier;
+            GiftMultiplier = giftMultiplier;
+            FamilyRarityMultiplier = familyRarityMultiplier;
+            OriginRarityMultiplier = originRarityMultiplier;
+            FinalWeight = finalWeight;
+            Probability = probability;
+        }
+
+        public BirthGiftDefinition Gift { get; }
+        public float BaseWeight { get; }
+        public float AffinityMultiplier { get; }
+        public float GiftMultiplier { get; }
+        public float FamilyRarityMultiplier { get; }
+        public float OriginRarityMultiplier { get; }
+        public float FinalWeight { get; }
+        public float Probability { get; }
     }
 
     public sealed class CharacterOriginGenerator
     {
         private readonly DefinitionRegistry registry;
         private readonly IProgressionRandomSource random;
-        private readonly float originInfluenceChance;
 
-        public CharacterOriginGenerator(DefinitionRegistry registry, IProgressionRandomSource random, float originInfluenceChance = 0.5f)
+        public CharacterOriginGenerator(DefinitionRegistry registry, IProgressionRandomSource random)
         {
             this.registry = registry;
             this.random = random;
-            this.originInfluenceChance = Mathf.Clamp01(originInfluenceChance);
         }
 
         public CharacterOriginGenerationResult Generate()
@@ -97,6 +125,7 @@ namespace UnityIsekaiGame.Progression
             List<OriginFamilyDefinition> families = registry.DefinitionsById.Values
                 .OfType<OriginFamilyDefinition>()
                 .Where(family => family.EnabledForAlpha && family.SelectionWeight > 0f)
+                .OrderBy(family => family.Id, StringComparer.Ordinal)
                 .ToList();
             OriginFamilyDefinition selectedFamily = SelectWeighted(families, family => family.SelectionWeight);
             if (selectedFamily == null)
@@ -104,9 +133,8 @@ namespace UnityIsekaiGame.Progression
                 return CharacterOriginGenerationResult.Failure("No enabled origin families are available.");
             }
 
-            List<OriginDefinition> origins = registry.DefinitionsById.Values
-                .OfType<OriginDefinition>()
-                .Where(origin => origin.EnabledForAlpha && origin.Family == selectedFamily && origin.SelectionWeight > 0f)
+            List<OriginDefinition> origins = selectedFamily.AllowedOrigins
+                .Where(origin => origin != null && origin.EnabledForAlpha && origin.Family == selectedFamily && origin.SelectionWeight > 0f)
                 .ToList();
             OriginDefinition selectedOrigin = SelectWeighted(origins, origin => origin.SelectionWeight);
             if (selectedOrigin == null)
@@ -114,54 +142,97 @@ namespace UnityIsekaiGame.Progression
                 return CharacterOriginGenerationResult.Failure($"No enabled origins are available for family '{selectedFamily.DisplayName}'.");
             }
 
-            bool originInfluenced = random.Next01() < originInfluenceChance;
-            BirthGiftDefinition gift = SelectBirthGift(selectedFamily, selectedOrigin, originInfluenced);
+            IReadOnlyList<BirthGiftWeightEntry> giftWeights = BuildBirthGiftWeights(selectedFamily, selectedOrigin, out string weightFailureReason);
+            BirthGiftDefinition gift = SelectWeighted(giftWeights, entry => entry.FinalWeight)?.Gift;
             if (gift == null)
             {
-                return CharacterOriginGenerationResult.Failure("No enabled birth gifts are available.");
+                return CharacterOriginGenerationResult.Failure(string.IsNullOrWhiteSpace(weightFailureReason) ? "No enabled birth gifts are available." : weightFailureReason);
             }
 
             long startingGold = RollStartingGold(selectedOrigin);
-            return CharacterOriginGenerationResult.Success(selectedFamily, selectedOrigin, gift, originInfluenced, startingGold);
+            return CharacterOriginGenerationResult.Success(selectedFamily, selectedOrigin, gift, startingGold);
         }
 
-        private BirthGiftDefinition SelectBirthGift(OriginFamilyDefinition family, OriginDefinition origin, bool originInfluenced)
+        public IReadOnlyList<BirthGiftWeightEntry> BuildBirthGiftWeights(OriginFamilyDefinition family, OriginDefinition origin, out string failureReason)
         {
+            failureReason = string.Empty;
+            if (registry == null || family == null || origin == null)
+            {
+                failureReason = "A registry, origin family, and origin are required to calculate birth-gift weights.";
+                return Array.Empty<BirthGiftWeightEntry>();
+            }
+
+            if (origin.Family != family || !family.AllowedOrigins.Contains(origin))
+            {
+                failureReason = $"Origin '{origin.Id}' is not an allowed member of family '{family.Id}'.";
+                return Array.Empty<BirthGiftWeightEntry>();
+            }
+
+            if (!registry.TryGet(OriginGenerationPolicyDefinition.DefaultPolicyId, out OriginGenerationPolicyDefinition policy))
+            {
+                failureReason = $"Origin generation policy '{OriginGenerationPolicyDefinition.DefaultPolicyId}' is missing.";
+                return Array.Empty<BirthGiftWeightEntry>();
+            }
+
             List<BirthGiftDefinition> gifts = registry.DefinitionsById.Values
                 .OfType<BirthGiftDefinition>()
                 .Where(gift => gift.EnabledForAlpha && gift.SelectionWeight > 0f)
+                .OrderBy(gift => gift.Id, StringComparer.Ordinal)
                 .ToList();
 
             if (gifts.Count == 0)
             {
-                return null;
+                failureReason = "No enabled birth gifts are available.";
+                return Array.Empty<BirthGiftWeightEntry>();
             }
 
-            HashSet<string> influencedPool = originInfluenced
-                ? new HashSet<string>(origin.InfluencedGiftPool.Where(gift => gift != null).Select(gift => gift.Id), StringComparer.Ordinal)
-                : new HashSet<string>(StringComparer.Ordinal);
-
-            return SelectWeighted(gifts, gift =>
+            HashSet<string> favoredGiftIds = new HashSet<string>(origin.FavoredGiftPool.Where(gift => gift != null).Select(gift => gift.Id), StringComparer.Ordinal);
+            List<BirthGiftWeightEntry> entries = new List<BirthGiftWeightEntry>(gifts.Count);
+            float totalWeight = 0f;
+            for (int i = 0; i < gifts.Count; i++)
             {
+                BirthGiftDefinition gift = gifts[i];
                 float weight = gift.SelectionWeight;
-                if (originInfluenced && influencedPool.Count > 0)
-                {
-                    weight *= influencedPool.Contains(gift.Id) ? 2f : 0.75f;
-                }
+                float affinityMultiplier = favoredGiftIds.Contains(gift.Id)
+                    ? policy.FavoredGiftWeightMultiplier
+                    : policy.UnfavoredGiftWeightMultiplier;
+                float giftMultiplier = ResolveGiftModifier(origin.GiftWeightModifiers, gift.Id);
+                float familyRarityMultiplier = gift.Rarity == null ? 1f : ResolveRarityModifier(family.GiftRarityWeightModifiers, gift.Rarity.Id);
+                float originRarityMultiplier = gift.Rarity == null ? 1f : ResolveRarityModifier(origin.GiftRarityWeightModifiers, gift.Rarity.Id);
+                weight *= affinityMultiplier;
+                weight *= giftMultiplier;
+                weight *= familyRarityMultiplier;
+                weight *= originRarityMultiplier;
+                weight = Mathf.Max(0f, weight);
+                totalWeight += weight;
+                entries.Add(new BirthGiftWeightEntry(
+                    gift,
+                    gift.SelectionWeight,
+                    affinityMultiplier,
+                    giftMultiplier,
+                    familyRarityMultiplier,
+                    originRarityMultiplier,
+                    weight,
+                    0f));
+            }
 
-                if (originInfluenced)
-                {
-                    weight *= ResolveGiftModifier(origin.GiftWeightModifiers, gift.Id);
-                }
+            if (totalWeight <= 0f || float.IsNaN(totalWeight) || float.IsInfinity(totalWeight))
+            {
+                failureReason = $"Birth-gift weights for origin '{origin.Id}' do not produce a finite positive total.";
+                return Array.Empty<BirthGiftWeightEntry>();
+            }
 
-                if (gift.Rarity != null)
-                {
-                    weight *= ResolveRarityModifier(family.GiftRarityWeightModifiers, gift.Rarity.Id);
-                    weight *= ResolveRarityModifier(origin.GiftRarityWeightModifiers, gift.Rarity.Id);
-                }
-
-                return Mathf.Max(0f, weight);
-            });
+            return entries
+                .Select(entry => new BirthGiftWeightEntry(
+                    entry.Gift,
+                    entry.BaseWeight,
+                    entry.AffinityMultiplier,
+                    entry.GiftMultiplier,
+                    entry.FamilyRarityMultiplier,
+                    entry.OriginRarityMultiplier,
+                    entry.FinalWeight,
+                    entry.FinalWeight / totalWeight))
+                .ToList();
         }
 
         private long RollStartingGold(OriginDefinition origin)
@@ -200,7 +271,7 @@ namespace UnityIsekaiGame.Progression
             for (int i = 0; i < values.Count; i++)
             {
                 cumulative += Mathf.Max(0f, weightProvider(values[i]));
-                if (roll <= cumulative)
+                if (roll < cumulative)
                 {
                     return values[i];
                 }

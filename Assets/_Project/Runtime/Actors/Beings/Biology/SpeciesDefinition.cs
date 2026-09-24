@@ -25,8 +25,6 @@ namespace UnityIsekaiGame.Beings.Biology
         [SerializeField] private DefeatPolicyDefinition defaultDefeatPolicy;
         [SerializeField] private AnatomyDefinition anatomyDefinition;
         [SerializeField] private string[] compatibleOriginIds;
-        [SerializeField] private string futureAnatomyDefinitionId;
-        [SerializeField, TextArea(1, 3)] private string futureBiologicalMetadata;
 
         public string Id => speciesId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
@@ -43,13 +41,10 @@ namespace UnityIsekaiGame.Beings.Biology
         public DefeatPolicyDefinition DefaultDefeatPolicy => defaultDefeatPolicy == null ? biologicalClassification == null ? null : biologicalClassification.DefaultDefeatPolicy : defaultDefeatPolicy;
         public AnatomyDefinition AnatomyDefinition => anatomyDefinition;
         public IReadOnlyList<string> CompatibleOriginIds => compatibleOriginIds ?? Array.Empty<string>();
-        public string FutureAnatomyDefinitionId => futureAnatomyDefinitionId ?? string.Empty;
-        public string FutureBiologicalMetadata => futureBiologicalMetadata ?? string.Empty;
 
         private void OnValidate()
         {
             speciesId = speciesId?.Trim();
-            futureAnatomyDefinitionId = futureAnatomyDefinitionId?.Trim();
         }
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
@@ -205,8 +200,6 @@ namespace UnityIsekaiGame.Beings.Biology
                 {
                     report.AddError($"Species '{DisplayName}' references Capability '{grant.Capability.Id}', which is not in the configured catalog.");
                 }
-
-                ValidateRuntimeCapabilityKey(grant, $"Species '{DisplayName}' Capability grant '{grant.EntryId}'", report);
             }
 
             foreach (BiologicalStatContributionDefinition contribution in CalculatedStatContributions.Where(contribution => contribution != null && contribution.AlphaEnabled))
@@ -222,40 +215,5 @@ namespace UnityIsekaiGame.Beings.Biology
             }
         }
 
-        private static void ValidateRuntimeCapabilityKey(BiologicalCapabilityGrantDefinition grant, string label, DefinitionValidationReport report)
-        {
-            string runtimeCapabilityKey = grant == null ? string.Empty : grant.RuntimeCapabilityKey;
-            if (string.IsNullOrWhiteSpace(runtimeCapabilityKey))
-            {
-                report.AddError($"{label} is missing a runtime Capability key.");
-            }
-            else if (!runtimeCapabilityKey.StartsWith("capability.", StringComparison.Ordinal)
-                     && !runtimeCapabilityKey.StartsWith("can.", StringComparison.Ordinal)
-                     && !runtimeCapabilityKey.StartsWith("immunity.", StringComparison.Ordinal))
-            {
-                report.AddWarning($"{label} runtime Capability key '{runtimeCapabilityKey}' should use 'capability.', 'can.', or 'immunity.'.");
-            }
-            else if (!RuntimeKeyMatchesDefinition(grant?.Capability?.Id, runtimeCapabilityKey))
-            {
-                report.AddError($"{label} runtime Capability key '{runtimeCapabilityKey}' does not match canonical Capability definition '{grant?.Capability?.Id ?? string.Empty}'.");
-            }
-            else if ((runtimeCapabilityKey.StartsWith("can.", StringComparison.Ordinal) || runtimeCapabilityKey.StartsWith("immunity.", StringComparison.Ordinal))
-                     && grant?.Capability != null
-                     && grant.Capability.ValueType != Capabilities.CapabilityValueType.Boolean)
-            {
-                report.AddError($"{label} runtime Capability key '{runtimeCapabilityKey}' is lifecycle-style and must reference a Boolean Capability definition.");
-            }
-        }
-
-        private static bool RuntimeKeyMatchesDefinition(string definitionId, string runtimeCapabilityKey)
-        {
-            if (string.IsNullOrWhiteSpace(definitionId) || string.IsNullOrWhiteSpace(runtimeCapabilityKey))
-            {
-                return false;
-            }
-
-            return string.Equals(definitionId, runtimeCapabilityKey, StringComparison.Ordinal)
-                || string.Equals(definitionId, $"capability.{runtimeCapabilityKey}", StringComparison.Ordinal);
-        }
     }
 }

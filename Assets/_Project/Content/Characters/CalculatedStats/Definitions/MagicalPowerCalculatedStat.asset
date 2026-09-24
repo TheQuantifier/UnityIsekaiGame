@@ -22,4 +22,4 @@ MonoBehaviour:
   sortOrder: 20
   optionalPresentationMaximum: 0
   purpose: 2
-  linkedFutureResourceId:
+  linkedResourceId:

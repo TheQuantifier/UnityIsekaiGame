@@ -25,7 +25,7 @@ MonoBehaviour:
   startingAttributeGrants:
   - attribute: {fileID: 11400000, guid: a4000000000000000000000000000052, type: 2}
     amount: 2
-  influencedGiftPool:
+  favoredGiftPool:
   - {fileID: 11400000, guid: 9886ab69802e43ebbaa24675354f2a01, type: 2}
   - {fileID: 11400000, guid: a7010ad03cea4e54b53500f538022681, type: 2}
   giftWeightModifiers: []
@@ -58,7 +58,3 @@ MonoBehaviour:
     customContextTargetId: 
     acquisitionReason: Origin assignment
   startingTitle: {fileID: 11400000, guid: ca4b21bdfcb64cbfab3abed51d2f7eca, type: 2}
-  futureHomeReference: reincarnated-noble-estate
-  futureRelationshipReferences: reincarnation-family-placeholder
-  futureFactionObligations: noble-obligation-placeholder
-  futureStartingLocationReference: place.prototype-town

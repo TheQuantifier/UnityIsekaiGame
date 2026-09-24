@@ -8,8 +8,6 @@ namespace UnityIsekaiGame.Stats
 {
     public sealed class CharacterAttributes : MonoBehaviour
     {
-        [SerializeField] private List<AttributeDefinition> fallbackDefinitions = new List<AttributeDefinition>();
-
         private readonly Dictionary<string, AttributeDefinition> definitionsById = new Dictionary<string, AttributeDefinition>(StringComparer.Ordinal);
         private readonly Dictionary<string, RuntimeAttributeValueRecord> valuesById = new Dictionary<string, RuntimeAttributeValueRecord>(StringComparer.Ordinal);
         private readonly List<RuntimeAttributeSourceContribution> permanentSourceContributions = new List<RuntimeAttributeSourceContribution>();
@@ -21,14 +19,6 @@ namespace UnityIsekaiGame.Stats
         public IReadOnlyList<AttributeTrainingEventRecord> TrainingEvents => trainingEvents;
         public IReadOnlyCollection<RuntimeAttributeValueRecord> AttributeValues => valuesById.Values;
         public bool IsConfigured { get; private set; }
-
-        private void Awake()
-        {
-            if (!IsConfigured && fallbackDefinitions.Count > 0)
-            {
-                Configure(fallbackDefinitions);
-            }
-        }
 
         public void Configure(DefinitionRegistry registry)
         {
@@ -54,13 +44,11 @@ namespace UnityIsekaiGame.Stats
 
         public bool HasAttribute(string attributeId)
         {
-            EnsureConfiguredFromFallback();
             return definitionsById.ContainsKey(attributeId);
         }
 
         public float GetValue(string attributeId)
         {
-            EnsureConfiguredFromFallback();
             return valuesById.TryGetValue(attributeId, out RuntimeAttributeValueRecord record) ? record.currentValue : 0f;
         }
 
@@ -71,7 +59,6 @@ namespace UnityIsekaiGame.Stats
 
         public IReadOnlyList<RuntimeAttributeValueRecord> GetOrderedValues()
         {
-            EnsureConfiguredFromFallback();
             return definitionsById.Values
                 .OrderBy(definition => definition.DisplayName)
                 .Select(definition => valuesById.TryGetValue(definition.Id, out RuntimeAttributeValueRecord record)
@@ -83,7 +70,6 @@ namespace UnityIsekaiGame.Stats
         public bool TryAddPermanentSource(string sourceId, CalculatedStatContributionSourceCategory sourceCategory, string attributeId, float amount, bool removable, out string failureReason, bool restoring = false)
         {
             failureReason = string.Empty;
-            EnsureConfiguredFromFallback();
 
             if (!ValidateContributionInput(sourceId, attributeId, amount, allowZero: false, out failureReason))
             {
@@ -141,7 +127,6 @@ namespace UnityIsekaiGame.Stats
         public bool TryRecordTrainingEvent(string eventId, AttributeGrowthEventCategory category, IReadOnlyList<RuntimeAttributeSourceContribution> contributions, string sourceSystem, out string failureReason, bool restoring = false)
         {
             failureReason = string.Empty;
-            EnsureConfiguredFromFallback();
 
             if (string.IsNullOrWhiteSpace(eventId))
             {
@@ -209,7 +194,12 @@ namespace UnityIsekaiGame.Stats
         public bool RestoreFromSaveData(PlayerAttributesSaveData saveData, DefinitionRegistry registry, out string failureReason, bool restoring)
         {
             failureReason = string.Empty;
-            Configure(registry);
+            if (!IsConfigured)
+            {
+                failureReason = "Character Attributes must be initialized by CharacterSystemCoordinator before restore.";
+                return false;
+            }
+
             if (!ValidateSaveData(saveData, registry, out failureReason))
             {
                 return false;
@@ -295,7 +285,6 @@ namespace UnityIsekaiGame.Stats
 
         public string BuildDiagnosticSummary()
         {
-            EnsureConfiguredFromFallback();
             List<string> lines = new List<string> { "Feature 5.4a Base Attributes" };
             foreach (RuntimeAttributeValueRecord record in GetOrderedValues())
             {
@@ -416,14 +405,6 @@ namespace UnityIsekaiGame.Stats
             }
 
             return true;
-        }
-
-        private void EnsureConfiguredFromFallback()
-        {
-            if (!IsConfigured && fallbackDefinitions.Count > 0)
-            {
-                Configure(fallbackDefinitions);
-            }
         }
 
         private static RuntimeAttributeSourceContribution CloneContribution(RuntimeAttributeSourceContribution contribution)

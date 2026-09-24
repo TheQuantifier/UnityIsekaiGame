@@ -45,9 +45,9 @@ namespace UnityIsekaiGame.Tests
         private const string MaximumHealthStatId = "calculated-stat.maximum-health";
         private const string MaximumStaminaStatId = "calculated-stat.maximum-stamina";
         private const string MaximumManaStatId = "calculated-stat.maximum-mana";
-        private const string FutureHealthResourceId = "resource.health";
-        private const string FutureStaminaResourceId = "resource.stamina";
-        private const string FutureManaResourceId = "resource.mana";
+        private const string HealthResourceId = "resource.health";
+        private const string StaminaResourceId = "resource.stamina";
+        private const string ManaResourceId = "resource.mana";
 
         [Test]
         public void PrototypeCatalog_ResolvesAlphaAttributesAndCalculatedStats()
@@ -106,9 +106,9 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionRegistry registry = LoadRegistry();
 
-            AssertResourceMaximum(registry, MaximumHealthStatId, FutureHealthResourceId);
-            AssertResourceMaximum(registry, MaximumStaminaStatId, FutureStaminaResourceId);
-            AssertResourceMaximum(registry, MaximumManaStatId, FutureManaResourceId);
+            AssertResourceMaximum(registry, MaximumHealthStatId, HealthResourceId);
+            AssertResourceMaximum(registry, MaximumStaminaStatId, StaminaResourceId);
+            AssertResourceMaximum(registry, MaximumManaStatId, ManaResourceId);
 
             foreach (string statId in AlphaCalculatedStatIds)
             {
@@ -117,7 +117,7 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(Enum.IsDefined(RequiredType("UnityIsekaiGame.Stats.CalculatedStatPurpose"), purpose), Is.True, statId);
                 if (!GetProperty<bool>(stat, "IsResourceMaximum"))
                 {
-                    Assert.That(GetProperty<string>(stat, "LinkedFutureResourceId"), Is.Empty, statId);
+                    Assert.That(GetProperty<string>(stat, "LinkedResourceId"), Is.Empty, statId);
                 }
             }
         }
@@ -142,7 +142,7 @@ namespace UnityIsekaiGame.Tests
                 SetField(duplicate, "displayName", "Test Duplicate Health");
                 SetField(duplicate, "formula", formula);
                 SetField(duplicate, "purpose", Enum.Parse(RequiredType("UnityIsekaiGame.Stats.CalculatedStatPurpose"), "ResourceMaximum"));
-                SetField(duplicate, "linkedFutureResourceId", FutureHealthResourceId);
+                SetField(duplicate, "linkedResourceId", HealthResourceId);
 
                 Dictionary<string, IGameDefinition> definitions = new Dictionary<string, IGameDefinition>(registry.DefinitionsById)
                 {
@@ -155,7 +155,7 @@ namespace UnityIsekaiGame.Tests
                 ((IDefinitionCatalogValidationParticipant)duplicate).ValidateCatalogDefinition(definitions, report);
 
                 Assert.That(report.ErrorCount, Is.GreaterThanOrEqualTo(2), report.GetSummary());
-                Assert.That(report.GetSummary(), Does.Contain("does not declare a linked future resource ID"));
+                Assert.That(report.GetSummary(), Does.Contain("does not declare a linked resource ID"));
                 Assert.That(report.GetSummary(), Does.Contain("duplicates resource-maximum mapping"));
             }
             finally
@@ -359,7 +359,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(registry.TryGet(statId, out IGameDefinition stat), Is.True, statId);
             Assert.That(GetProperty<object>(stat, "Purpose").ToString(), Is.EqualTo("ResourceMaximum"), statId);
             Assert.That(GetProperty<bool>(stat, "IsResourceMaximum"), Is.True, statId);
-            Assert.That(GetProperty<string>(stat, "LinkedFutureResourceId"), Is.EqualTo(expectedResourceId), statId);
+            Assert.That(GetProperty<string>(stat, "LinkedResourceId"), Is.EqualTo(expectedResourceId), statId);
         }
 
         private static object CreateAttributeContribution(string attributeId, string sourceId, float amount)

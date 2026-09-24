@@ -15,18 +15,18 @@ MonoBehaviour:
   methodId: transformation.species-change.permanent
   displayName: Permanent Species Change
   description: Canonical alpha permanent same-body Species change.
-  biologicalInteractionDefinitionId: interaction.transformation.species-change
+  biologicalInteractionDefinition: {fileID: 11400000, guid: 7a76000000000000000000000000012b, type: 2}
   category: 2
   temporary: 0
   defaultDurationSeconds: 0
-  allowedTargetSpeciesIds:
-  - species.human
-  - species.basic-construct
-  - species.basic-spirit
-  - species.undead-human
-  allowedTargetBodyFormIds: []
-  requiredRuntimeCapabilityKeys: []
-  blockingRuntimeCapabilityKeys: []
+  allowedTargetSpecies:
+  - {fileID: 11400000, guid: 7a170000000000000000000000000001, type: 2}
+  - {fileID: 11400000, guid: 7a170000000000000000000000000003, type: 2}
+  - {fileID: 11400000, guid: 7a170000000000000000000000000004, type: 2}
+  - {fileID: 11400000, guid: 7a170000000000000000000000000002, type: 2}
+  allowedTargetBodyForms: []
+  requiredCapabilities: []
+  blockingCapabilities: []
   transferPolicy: 2
   anatomyPolicy: 1
   conditionPolicy: 4

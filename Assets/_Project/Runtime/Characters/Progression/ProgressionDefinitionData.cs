@@ -41,6 +41,7 @@ namespace UnityIsekaiGame.Progression
 
         public RarityDefinition Rarity => rarity;
         public float WeightMultiplier => Mathf.Max(0f, weightMultiplier);
+        public float RawWeightMultiplier => weightMultiplier;
     }
 
     [Serializable]
@@ -51,6 +52,7 @@ namespace UnityIsekaiGame.Progression
 
         public BirthGiftDefinition Gift => gift;
         public float WeightMultiplier => Mathf.Max(0f, weightMultiplier);
+        public float RawWeightMultiplier => weightMultiplier;
     }
 
     [Serializable]

@@ -25,7 +25,7 @@ namespace UnityIsekaiGame.Beings.Biology.Anatomy
             string mirrorGroup,
             IReadOnlyList<string> childNodeIds,
             IReadOnlyList<string> equipmentTagIds,
-            IReadOnlyList<string> futureDamageTagIds)
+            IReadOnlyList<string> damageTagIds)
         {
             NodeId = nodeId ?? string.Empty;
             RuntimeNodeId = runtimeNodeId ?? string.Empty;
@@ -45,7 +45,7 @@ namespace UnityIsekaiGame.Beings.Biology.Anatomy
             MirrorGroup = mirrorGroup ?? string.Empty;
             ChildNodeIds = childNodeIds == null ? Array.Empty<string>() : childNodeIds.ToArray();
             EquipmentTagIds = equipmentTagIds == null ? Array.Empty<string>() : equipmentTagIds.ToArray();
-            FutureDamageTagIds = futureDamageTagIds == null ? Array.Empty<string>() : futureDamageTagIds.ToArray();
+            DamageTagIds = damageTagIds == null ? Array.Empty<string>() : damageTagIds.ToArray();
         }
 
         public string NodeId { get; }
@@ -66,7 +66,7 @@ namespace UnityIsekaiGame.Beings.Biology.Anatomy
         public string MirrorGroup { get; }
         public IReadOnlyList<string> ChildNodeIds { get; }
         public IReadOnlyList<string> EquipmentTagIds { get; }
-        public IReadOnlyList<string> FutureDamageTagIds { get; }
+        public IReadOnlyList<string> DamageTagIds { get; }
         public bool Present => Presence == AnatomyPresenceState.Present || Presence == AnatomyPresenceState.Optional;
     }
 

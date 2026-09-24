@@ -15,7 +15,7 @@ MonoBehaviour:
   exposureId: exposure.environment.heat
   displayName: Heat Exposure
   description: Environmental source that creates overheating pressure.
-  hazardDefinitionId: hazard.biology.overheating
+  hazardDefinition: {fileID: 11400000, guid: 7a750000000000000000000000000012, type: 2}
   defaultSeverity: 3
   defaultRateMultiplier: 1
   alphaEnabled: 1

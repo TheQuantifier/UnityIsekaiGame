@@ -17,15 +17,14 @@ MonoBehaviour:
   description: Breath loss caused by a lack of breathable air.
   stackingPolicy: 3
   defaultSeverity: 3
-  targetResourceId: resource.biology.breath
+  targetResource: {fileID: 11400000, guid: 7a250000000000000000000000000011, type: 2}
   resourceOperation: 0
   baseResourceRatePerHour: 120
   baseDamagePerHour: 0
   damageType: {fileID: 0}
   lifecycleRequest: 1
-  requiredRuntimeCapabilityKeys:
-  - can.breathe
-  blockingRuntimeCapabilityKeys: []
+  requiredCapabilities:
+  - {fileID: 11400000, guid: 7a120000000000000000000000000016, type: 2}
+  blockingCapabilities: []
   alphaEnabled: 1
-  futureResistanceMetadata: Deferred atmospheric and physiology resistance hooks.
   tags: []
