@@ -124,6 +124,25 @@ namespace UnityIsekaiGame.Tests
             Assert.That(live.amountDueUnits, Is.EqualTo(20L));
         }
 
+        [Test]
+        public void ActiveContractAndObligationsSurviveSaveRestore()
+        {
+            Fixture fixture = Fixture.Create();
+            fixture.CreateAccounts(borrowerBalance: 100L, lenderBalance: 0L);
+            fixture.ActivatePaymentContract("contract.persistence", 20L);
+            ContractRuntimeSaveData save = fixture.Contracts.CreateSaveData();
+            ContractEconomyRuntime restored = new ContractEconomyRuntime();
+            restored.Configure(fixture.Registry, PersistenceService.LocalWorldId);
+
+            ContractEconomyOperationResult result = restored.RestoreFromSaveData(save, fixture.Registry);
+
+            Assert.That(result.Succeeded, Is.True, result.Message);
+            Assert.That(restored.Contracts.Single().contractId, Is.EqualTo("contract.persistence"));
+            Assert.That(restored.Contracts.Single().state, Is.EqualTo(EconomicContractState.Active));
+            Assert.That(restored.Obligations.Single().amountDueUnits, Is.EqualTo(20L));
+            Assert.That(restored.Obligations.Single().amountSatisfiedUnits, Is.Zero);
+        }
+
         private sealed class Fixture
         {
             private Fixture(DefinitionRegistry registry, CurrencyDefinition gold, EconomyRuntime economy, ContractEconomyRuntime contracts)

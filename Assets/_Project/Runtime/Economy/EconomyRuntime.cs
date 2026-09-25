@@ -167,7 +167,7 @@ namespace UnityIsekaiGame.Economy
             return EconomyOperationResult.Success("Account state changed.", before, Revision, toAccount: Snapshot(account));
         }
 
-        public EconomyOperationResult Issue(string transactionId, string toAccountId, MoneyAmount amount, string actorId, string reason = "", bool preview = false)
+        public EconomyOperationResult Issue(string transactionId, string toAccountId, MoneyAmount amount, string actorId, string reason = "", bool preview = false, double worldTime = 0d)
         {
             long before = Revision;
             if (!PrepareCredit(toAccountId, amount, out EconomyAccountData to, out EconomyOperationResult failure, preview))
@@ -197,14 +197,15 @@ namespace UnityIsekaiGame.Economy
                 units = amount.Units,
                 toAccountId = to.accountId,
                 actorId = actorId ?? string.Empty,
-                reason = reason ?? string.Empty
+                reason = reason ?? string.Empty,
+                worldTime = Math.Max(0d, worldTime)
             }, mutateBalances: false);
             Revision++;
             Remember(transactionId, "issue", toAccountId);
             return EconomyOperationResult.Success("Currency issued.", before, Revision, toAccount: Snapshot(to), transaction: transaction);
         }
 
-        public EconomyOperationResult Destroy(string transactionId, string fromAccountId, MoneyAmount amount, string actorId, string reason = "", bool preview = false)
+        public EconomyOperationResult Destroy(string transactionId, string fromAccountId, MoneyAmount amount, string actorId, string reason = "", bool preview = false, double worldTime = 0d)
         {
             long before = Revision;
             if (!PrepareDebit(fromAccountId, amount, string.Empty, out EconomyAccountData from, out _, out EconomyOperationResult failure, preview, requireReservation: false))
@@ -234,7 +235,8 @@ namespace UnityIsekaiGame.Economy
                 units = amount.Units,
                 fromAccountId = from.accountId,
                 actorId = actorId ?? string.Empty,
-                reason = reason ?? string.Empty
+                reason = reason ?? string.Empty,
+                worldTime = Math.Max(0d, worldTime)
             });
             Revision++;
             Remember(transactionId, "destroy", fromAccountId);
@@ -354,7 +356,7 @@ namespace UnityIsekaiGame.Economy
             return EconomyOperationResult.Success("Reservation expired.", before, Revision, fromAccount: account == null ? null : Snapshot(account), reservation: reservation);
         }
 
-        public EconomyOperationResult Transfer(string transactionId, string fromAccountId, string toAccountId, MoneyAmount amount, EconomyTransactionKind kind = EconomyTransactionKind.Transfer, string reservationId = "", string actorId = "", string priceSnapshotId = "", bool preview = false)
+        public EconomyOperationResult Transfer(string transactionId, string fromAccountId, string toAccountId, MoneyAmount amount, EconomyTransactionKind kind = EconomyTransactionKind.Transfer, string reservationId = "", string actorId = "", string priceSnapshotId = "", bool preview = false, double worldTime = 0d)
         {
             long before = Revision;
             EconomyTransactionKind resolvedKind = kind == EconomyTransactionKind.Unknown ? EconomyTransactionKind.Transfer : kind;
@@ -409,7 +411,8 @@ namespace UnityIsekaiGame.Economy
                 toAccountId = to.accountId,
                 reservationId = reservationId ?? string.Empty,
                 actorId = actorId ?? string.Empty,
-                priceSnapshotId = priceSnapshotId ?? string.Empty
+                priceSnapshotId = priceSnapshotId ?? string.Empty,
+                worldTime = Math.Max(0d, worldTime)
             }, mutateBalances: false);
             Revision++;
             Remember(transactionId, resolvedKind.ToString(), transferSubject);

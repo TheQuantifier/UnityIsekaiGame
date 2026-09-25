@@ -133,8 +133,9 @@ namespace UnityIsekaiGame.Tests
             object saveData = Invoke(progression, "CreateSaveData");
             string saveJson = JsonUtility.ToJson(saveData);
             Assert.That(saveJson, Does.Contain("\"assigned\":true"));
-            Assert.That(saveJson, Does.Contain("\"currencyDefinitionId\":\"currency.gold\""));
-            Assert.That(saveJson, Does.Contain("\"amount\":33"));
+            Assert.That(saveJson, Does.Contain("\"startingGoldAmount\":33"));
+            Assert.That(saveJson, Does.Contain("\"startingCurrencyApplied\":false"));
+            Assert.That(saveJson, Does.Not.Contain("walletBalances"), "Currency balances are owned only by EconomyRuntime.");
             Assert.That(saveJson, Does.Contain("\"roleDefinitionId\":\"role.commoner\""));
             Assert.That(saveJson, Does.Contain("\"socialStatusDefinitionId\":\"social-status.citizen\""));
             Assert.That(saveJson, Does.Contain("\"definitionId\":\"origin.native-born.farmer-child\""));
@@ -147,7 +148,7 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(GetProperty<bool>(duplicate, "Succeeded"), Is.False);
             Assert.That(GetProperty<string>(duplicate, "Code"), Is.EqualTo("OriginAlreadyAssigned"));
-            Assert.That(JsonUtility.ToJson(Invoke(progression, "CreateSaveData")), Does.Contain("\"amount\":33"));
+            Assert.That(JsonUtility.ToJson(Invoke(progression, "CreateSaveData")), Does.Contain("\"startingGoldAmount\":33"));
             Assert.That(JsonUtility.ToJson(Invoke(progression, "CreateSaveData")), Does.Not.Contain("\"amount\":999"));
         }
 

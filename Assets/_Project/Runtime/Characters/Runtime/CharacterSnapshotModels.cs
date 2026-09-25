@@ -98,19 +98,16 @@ namespace UnityIsekaiGame.CharacterSystem
         public CharacterSocialSnapshot(
             IReadOnlyList<RuntimeRoleRecord> roles,
             IReadOnlyList<RuntimeSocialStatusRecord> socialStatuses,
-            IReadOnlyList<RuntimeTitleRecord> titles,
-            IReadOnlyList<WalletBalanceRecord> walletBalances)
+            IReadOnlyList<RuntimeTitleRecord> titles)
         {
             Roles = roles == null ? Array.Empty<RuntimeRoleRecord>() : roles.ToArray();
             SocialStatuses = socialStatuses == null ? Array.Empty<RuntimeSocialStatusRecord>() : socialStatuses.ToArray();
             Titles = titles == null ? Array.Empty<RuntimeTitleRecord>() : titles.ToArray();
-            WalletBalances = walletBalances == null ? Array.Empty<WalletBalanceRecord>() : walletBalances.ToArray();
         }
 
         public IReadOnlyList<RuntimeRoleRecord> Roles { get; }
         public IReadOnlyList<RuntimeSocialStatusRecord> SocialStatuses { get; }
         public IReadOnlyList<RuntimeTitleRecord> Titles { get; }
-        public IReadOnlyList<WalletBalanceRecord> WalletBalances { get; }
     }
 
     public sealed class CharacterCapabilitySnapshot

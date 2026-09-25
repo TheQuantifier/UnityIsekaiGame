@@ -30,6 +30,7 @@ namespace UnityIsekaiGame.Economy.Integration
         None,
         MissingRuntime,
         MissingDefinitionRegistry,
+        MissingDefinition,
         DuplicateAuthority,
         MissingAuthority,
         InvalidSaveGraph,

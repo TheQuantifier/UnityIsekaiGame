@@ -465,6 +465,71 @@ namespace UnityIsekaiGame.Economy.Businesses
             return BusinessOperationResult.Success("Stock classified.", before, Revision).With(stockClassification: stock);
         }
 
+        public BusinessOperationResult ReleaseExactStock(string stockClassificationId, string expectedItemInstanceId, bool preview = false)
+        {
+            long before = Revision;
+            if (string.IsNullOrWhiteSpace(stockClassificationId)
+                || !stockClassificationsById.TryGetValue(stockClassificationId, out BusinessStockClassificationData stock))
+            {
+                return Fail(BusinessOperationCode.InvalidRequest, $"Stock classification '{stockClassificationId}' was not found.");
+            }
+
+            if (string.IsNullOrWhiteSpace(stock.itemInstanceId)
+                || !string.Equals(stock.itemInstanceId, expectedItemInstanceId, StringComparison.Ordinal))
+            {
+                return Fail(BusinessOperationCode.InvalidRequest, "Only the exact classified item can be released from business stock.");
+            }
+
+            if (preview)
+            {
+                return BusinessOperationResult.PreviewResult("Exact business stock release preview succeeded.", before).With(stockClassification: stock);
+            }
+
+            stockClassificationsById.Remove(stockClassificationId);
+            Touch();
+            return BusinessOperationResult.Success("Exact business stock released.", before, Revision).With(stockClassification: stock);
+        }
+
+        public BusinessOperationResult ReclassifyExactStock(
+            string stockClassificationId,
+            string expectedItemInstanceId,
+            BusinessStockCategory category,
+            string intendedUse,
+            bool saleEligible,
+            bool productionEligible,
+            bool preview = false)
+        {
+            long before = Revision;
+            if (string.IsNullOrWhiteSpace(stockClassificationId)
+                || !stockClassificationsById.TryGetValue(stockClassificationId, out BusinessStockClassificationData stock))
+            {
+                return Fail(BusinessOperationCode.InvalidRequest, $"Stock classification '{stockClassificationId}' was not found.");
+            }
+
+            if (string.IsNullOrWhiteSpace(stock.itemInstanceId)
+                || !string.Equals(stock.itemInstanceId, expectedItemInstanceId, StringComparison.Ordinal))
+            {
+                return Fail(BusinessOperationCode.InvalidRequest, "Only the exact classified item can be reclassified.");
+            }
+
+            BusinessStockClassificationData updated = stock.Clone();
+            updated.category = category;
+            updated.intendedUse = intendedUse ?? string.Empty;
+            updated.saleEligible = saleEligible;
+            updated.productionEligible = productionEligible;
+            updated.revision = checked(updated.revision + 1L);
+            if (preview)
+            {
+                return BusinessOperationResult.PreviewResult("Exact business stock reclassification preview succeeded.", before)
+                    .With(stockClassification: updated);
+            }
+
+            stockClassificationsById[stockClassificationId] = updated;
+            Touch();
+            return BusinessOperationResult.Success("Exact business stock reclassified.", before, Revision)
+                .With(stockClassification: updated);
+        }
+
         public BusinessOperationResult SponsorProduction(BusinessProductionOwnershipData request, ProductionWorkflowRuntime production, EconomyRuntime economy, bool preview = false)
         {
             long before = Revision;

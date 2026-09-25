@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5466740ea1924afe86b7c744c06f7c9c, type: 3}
+  m_Name: WoodLogCommodity
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Economy.RegionalFlow.CommodityDefinitionAsset
+  commodityId: commodity.prototype-town.wood-log
+  displayName: Wood Log
+  itemDefinition: {fileID: 11400000, guid: 98e9081844e610a43a9bf3e5afe5673b, type: 2}
+  materialDefinition: {fileID: 0}
+  itemCategoryId: 
+  serviceCategoryId: 
+  laborCategory: 0
+  category: 6
+  unit: 1
+  fungibilityPolicy: 1
+  materializationPolicy: 2
+  aggregationPolicy: 1
+  qualityBandPolicyId: 
+  durabilityBandPolicyId: 
+  compositionPolicyId: 
+  spoilagePolicyId: 
+  minimumAggregateUnit: 1
+  permittedProducerCategories: []
+  permittedConsumerCategories: []
+  marketSubjectId: market-subject.prototype-town.wood-log
+  accessPolicyId: 
+  version: 1

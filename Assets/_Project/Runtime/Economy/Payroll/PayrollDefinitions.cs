@@ -25,7 +25,7 @@ namespace UnityIsekaiGame.Economy.Payroll
     }
 
     [CreateAssetMenu(fileName = "CompensationDefinition", menuName = "Unity Isekai Game/Economy/Compensation Definition")]
-    public sealed class CompensationDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class CompensationDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string compensationDefinitionId;
         [SerializeField] private string displayName;

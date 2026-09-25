@@ -64,7 +64,7 @@ namespace UnityIsekaiGame.Economy.RegionalFlow
     }
 
     [CreateAssetMenu(fileName = "Economic Region Definition", menuName = "Unity Isekai Game/Economy/Economic Region Definition")]
-    public sealed class EconomicRegionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class EconomicRegionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string definitionId;
         [SerializeField] private string displayName;
@@ -151,7 +151,7 @@ namespace UnityIsekaiGame.Economy.RegionalFlow
     }
 
     [CreateAssetMenu(fileName = "Commodity Definition", menuName = "Unity Isekai Game/Economy/Commodity Definition")]
-    public sealed class CommodityDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class CommodityDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string commodityId;
         [SerializeField] private string displayName;
@@ -247,7 +247,7 @@ namespace UnityIsekaiGame.Economy.RegionalFlow
     }
 
     [CreateAssetMenu(fileName = "Aggregate Production Profile", menuName = "Unity Isekai Game/Economy/Aggregate Production Profile")]
-    public sealed class AggregateProductionProfileDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class AggregateProductionProfileDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string profileId;
         [SerializeField] private string displayName;
@@ -332,7 +332,7 @@ namespace UnityIsekaiGame.Economy.RegionalFlow
     }
 
     [CreateAssetMenu(fileName = "Aggregate Consumption Profile", menuName = "Unity Isekai Game/Economy/Aggregate Consumption Profile")]
-    public sealed class AggregateConsumptionProfileDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class AggregateConsumptionProfileDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string profileId;
         [SerializeField] private string displayName;

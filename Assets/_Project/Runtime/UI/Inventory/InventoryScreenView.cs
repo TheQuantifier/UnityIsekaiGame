@@ -62,6 +62,7 @@ namespace UnityIsekaiGame.UI.Inventory
         private InventoryMenuSection activeSection = InventoryMenuSection.Inventory;
         private InventoryMenuExtensionBinding activeExtension;
         private readonly List<InventoryMenuExtensionBinding> menuExtensions = new List<InventoryMenuExtensionBinding>();
+        private PrototypePersistenceServiceBehaviour economyServices;
 
         private void Awake()
         {
@@ -486,7 +487,8 @@ namespace UnityIsekaiGame.UI.Inventory
                 AppendLine(builder, "Roles", FormatRecordIds(characterSnapshot.Social.Roles, role => role.roleDefinitionId));
                 AppendLine(builder, "Statuses", FormatRecordIds(characterSnapshot.Social.SocialStatuses, status => status.socialStatusDefinitionId));
                 AppendLine(builder, "Titles", FormatRecordIds(characterSnapshot.Social.Titles, title => title.titleDefinitionId));
-                AppendLine(builder, "Wallet", FormatWallet(characterSnapshot.Social.WalletBalances));
+                economyServices ??= FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+                AppendLine(builder, "Wallet", economyServices == null ? "Unavailable" : $"Gold {economyServices.GetPlayerBalance()}");
                 AppendLine(builder, "Capabilities", characterSnapshot.Capabilities.Capabilities.Count.ToString());
             }
 
@@ -502,16 +504,6 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             return string.Join(", ", records.Select(record => FormatDefinitionName(selector(record))).ToArray());
-        }
-
-        private static string FormatWallet(IReadOnlyList<UnityIsekaiGame.Progression.WalletBalanceRecord> balances)
-        {
-            if (balances == null || balances.Count == 0)
-            {
-                return "None";
-            }
-
-            return string.Join(", ", balances.Select(balance => $"{FormatDefinitionName(balance.currencyDefinitionId)} {balance.amount}").ToArray());
         }
 
         public void SetSelectedEquipmentSlot(EquipmentSlotType selectedSlot)

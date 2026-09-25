@@ -887,10 +887,11 @@ namespace UnityIsekaiGame.Gameplay
             EnsureExtendedItemState();
             playerStats?.RefreshEquipmentModifiers();
             RecordCraftingSkillUse(recipe, execution.Operation, personId);
-            ProfessionCoordinator.RecordCrafting(
+            IReadOnlyList<ProfessionalActivityOperationResult> professionalActivities = ProfessionCoordinator.RecordCrafting(
                 execution.Operation,
                 ResolveCraftingProfessionalQuality(execution.Operation, scaling.ExpectedQuality),
                 ResolveCraftingProfessionalDifficulty(execution.Operation));
+            RecordPrototypeCraftPayroll(execution.Operation, professionalActivities, out string payrollMessage);
             string outputSummary = string.Join(", ", execution.Operation.outputs
                 .Where(output => output.createdItemInstance)
                 .Select(output =>
@@ -907,7 +908,8 @@ namespace UnityIsekaiGame.Gameplay
                 }));
             string skillSummary = scaling.SkillUsed ? $" using {scaling.SkillId} {scaling.SkillGrade}" : " without a learned crafting Skill";
             string catalystSummary = DescribeCatalystResult(execution.Operation, registry);
-            return PrototypeCraftingResult.Success($"Crafted {outputSummary}{skillSummary} at {scaling.ExpectedQuality:P0} expected quality.{catalystSummary}", execution.Operation);
+            string payrollSummary = string.IsNullOrWhiteSpace(payrollMessage) ? string.Empty : $" {payrollMessage}";
+            return PrototypeCraftingResult.Success($"Crafted {outputSummary}{skillSummary} at {scaling.ExpectedQuality:P0} expected quality.{catalystSummary}{payrollSummary}", execution.Operation);
         }
 
         private int ResolveCraftingProfessionalQuality(CraftingOperationRecordData operation, float fallbackQuality)

@@ -162,6 +162,26 @@ namespace UnityIsekaiGame.Economy.Integration
             return new EconomicValidationResult(diagnostics.All(item => item.severity != EconomicIntegrationDiagnosticSeverity.Error), diagnostics);
         }
 
+        public EconomicValidationResult ValidateRequiredDefinitions(IEnumerable<string> requiredDefinitionIds)
+        {
+            List<EconomicIntegrationDiagnosticData> diagnostics = new List<EconomicIntegrationDiagnosticData>();
+            foreach (string id in (requiredDefinitionIds ?? Array.Empty<string>())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(value => value, StringComparer.Ordinal))
+            {
+                if (registry == null || !registry.DefinitionsById.ContainsKey(id))
+                {
+                    diagnostics.Add(Diagnostic(EconomicIntegrationDiagnosticSeverity.Error, EconomicIntegrationDiagnosticCode.MissingDefinition,
+                        $"definitions/{id}", nameof(DefinitionRegistry), $"Required economic definition '{id}' is missing.",
+                        "Author the definition in the active catalog; production bootstraps must not silently omit economic systems."));
+                }
+            }
+
+            return new EconomicValidationResult(diagnostics.Count == 0, diagnostics);
+        }
+
         public EconomicValidationResult ValidateEconomicGraph()
         {
             List<EconomicIntegrationDiagnosticData> diagnostics = new List<EconomicIntegrationDiagnosticData>();
@@ -198,7 +218,16 @@ namespace UnityIsekaiGame.Economy.Integration
 
         public EconomicConservationAuditResult AuditExactArithmeticAndConservation()
         {
-            long ledgerNet = economy?.LedgerEntries.Sum(entry => entry.units) ?? 0L;
+            Dictionary<string, EconomyTransactionKind> transactionKinds = economy?.Transactions
+                .ToDictionary(transaction => transaction.TransactionId, transaction => transaction.Kind, StringComparer.Ordinal)
+                ?? new Dictionary<string, EconomyTransactionKind>(StringComparer.Ordinal);
+            long ledgerNet = economy?.LedgerEntries
+                .Where(entry => transactionKinds.TryGetValue(entry.transactionId, out EconomyTransactionKind kind)
+                    && kind != EconomyTransactionKind.Issuance
+                    && kind != EconomyTransactionKind.Destruction
+                    && kind != EconomyTransactionKind.PhysicalToAbstract
+                    && kind != EconomyTransactionKind.AbstractToPhysical)
+                .Sum(entry => entry.kind == EconomyLedgerEntryKind.Debit ? -entry.units : entry.units) ?? 0L;
             long regionalUnits = regionalFlow?.Pools.Sum(pool => pool.totalQuantity + pool.inboundQuantity - pool.outboundQuantity - pool.consumedQuantity - pool.lostQuantity) ?? 0L;
             int checkedRuntimeCount = CreateRuntimeSummaries().Count(item => item.present);
             return new EconomicConservationAuditResult
@@ -267,12 +296,13 @@ namespace UnityIsekaiGame.Economy.Integration
             return new EconomicIntegrationSnapshot(summaries, signals ?? Array.Empty<EconomicSignalContractData>(), fingerprint);
         }
 
-        public EconomicValidationResult ValidateAll(bool sceneHostAvailable = false, bool sceneHostRequired = false)
+        public EconomicValidationResult ValidateAll(bool sceneHostAvailable = false, bool sceneHostRequired = false, IEnumerable<string> requiredDefinitionIds = null)
         {
             List<EconomicIntegrationDiagnosticData> diagnostics = new List<EconomicIntegrationDiagnosticData>();
             diagnostics.AddRange(EvaluateReadiness(sceneHostAvailable, sceneHostRequired).Diagnostics);
             diagnostics.AddRange(ValidateAuthorityMap().Diagnostics);
             diagnostics.AddRange(ValidateDefinitionSet().Diagnostics.Where(item => item.severity == EconomicIntegrationDiagnosticSeverity.Error));
+            diagnostics.AddRange(ValidateRequiredDefinitions(requiredDefinitionIds).Diagnostics);
             diagnostics.AddRange(ValidateEconomicGraph().Diagnostics);
             diagnostics.AddRange(BuildPersistenceDependencyMap().Diagnostics);
             diagnostics.AddRange(AuditAccessAndRedaction().Diagnostics);

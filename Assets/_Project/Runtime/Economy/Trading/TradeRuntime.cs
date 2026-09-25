@@ -561,7 +561,7 @@ namespace UnityIsekaiGame.Economy.Trading
                             throw new InvalidOperationException("Injected payment failure.");
                         }
 
-                        EconomyOperationResult payment = economy.Transfer($"{transactionId}.{asset.assetEntryId}", asset.sourceAccountId, asset.destinationAccountId, new MoneyAmount(asset.currencyId, asset.units), EconomyTransactionKind.Payment, asset.monetaryReservationId, actorId: asset.sourceParticipantId, priceSnapshotId: FirstNonEmpty(asset.quoteId, asset.marketPriceId));
+                        EconomyOperationResult payment = economy.Transfer($"{transactionId}.{asset.assetEntryId}", asset.sourceAccountId, asset.destinationAccountId, new MoneyAmount(asset.currencyId, asset.units), EconomyTransactionKind.Payment, asset.monetaryReservationId, actorId: asset.sourceParticipantId, priceSnapshotId: FirstNonEmpty(asset.quoteId, asset.marketPriceId), worldTime: worldTime);
                         if (!payment.Succeeded) throw new InvalidOperationException(payment.Message);
                         transactionIds.Add(payment.Transaction.TransactionId);
                         if (string.Equals(injectFailureStage, "after-money", StringComparison.Ordinal))
@@ -637,6 +637,105 @@ namespace UnityIsekaiGame.Economy.Trading
                 RestoreRuntimeState(tradeRollback);
                 return Fail(TradeOperationCode.ExecutionFailed, exception.Message, preview);
             }
+        }
+
+        /// <summary>
+        /// Commits the audit record for a deal whose assets were settled by another authoritative
+        /// coordinator. This is used for aggregate commodity pools and scene inventories that are
+        /// intentionally outside ItemInstanceIdentityRuntime, while preserving the normal
+        /// session/offer/policy lifecycle and replay protection.
+        /// </summary>
+        public TradeOperationResult RecordExternallySettledDeal(
+            string sessionId,
+            IReadOnlyList<string> economyTransactionIds,
+            IReadOnlyList<string> itemTransferReferences,
+            double worldTime,
+            string transactionId = "",
+            bool preview = false)
+        {
+            long before = Revision;
+            if (!TryGetSession(sessionId, out TradeSessionData session))
+            {
+                return Fail(TradeOperationCode.MissingSession, $"Trade session '{sessionId}' was not found.", preview);
+            }
+
+            if (session.state == TradeSessionState.Completed
+                && tradeRecordsById.Values.FirstOrDefault(record => string.Equals(record.tradeSessionId, sessionId, StringComparison.Ordinal)) is TradeRecordData completed)
+            {
+                return TradeOperationResult.Success("External trade settlement was already recorded.", before, before, duplicate: true,
+                    session: session, tradeRecord: completed,
+                    receipt: receiptsById.Values.FirstOrDefault(receipt => string.Equals(receipt.tradeRecordId, completed.tradeRecordId, StringComparison.Ordinal)));
+            }
+
+            if (!offersById.TryGetValue(session.acceptedOfferId ?? string.Empty, out TradeOfferData offer)
+                || offer.state != TradeOfferState.Accepted
+                || session.state != TradeSessionState.AcceptedPendingExecution)
+            {
+                return Fail(TradeOperationCode.InvalidState, "Trade must have an accepted offer before external settlement is recorded.", preview);
+            }
+
+            string replayId = string.IsNullOrWhiteSpace(transactionId) ? $"external-settlement.{sessionId}" : transactionId.Trim();
+            if (!preview && IsDuplicate(replayId, "external-settlement", sessionId, out TradeOperationResult duplicate))
+            {
+                return duplicate;
+            }
+
+            string[] transactionIds = CloneIds(economyTransactionIds?.ToArray());
+            string[] transferReferences = CloneIds(itemTransferReferences?.ToArray());
+            if (transactionIds.Length == 0 && transferReferences.Length == 0)
+            {
+                return Fail(TradeOperationCode.InvalidRequest, "External settlement requires a currency transaction or asset-transfer reference.", preview);
+            }
+
+            string recordId = StableId("trade-record", session.tradeSessionId, offer.offerId);
+            TradeRecordData record = new TradeRecordData
+            {
+                tradeRecordId = recordId,
+                tradeSessionId = session.tradeSessionId,
+                acceptedOfferId = offer.offerId,
+                participantIds = session.participants.Select(participant => participant.participantId).ToArray(),
+                exchangedBundles = offer.bundles.Select(bundle => bundle.Clone()).ToList(),
+                economyTransactionIds = transactionIds,
+                itemTransferReferences = transferReferences,
+                marketPriceIds = CloneIds(offer.marketPriceIds),
+                quoteIds = CloneIds(offer.merchantQuoteIds),
+                valuationIds = CloneIds(offer.valuationIds),
+                executionWorldTime = Math.Max(0d, worldTime),
+                accessPolicyId = offer.accessPolicyId,
+                provenance = $"external-settlement:{offer.offerId}",
+                revision = 1L
+            };
+            TradeReceiptData receipt = new TradeReceiptData
+            {
+                receiptId = StableId("trade-receipt", recordId),
+                tradeRecordId = recordId,
+                issuerParticipantId = offer.proposingParticipantId,
+                recipientParticipantId = offer.respondingParticipantIds.FirstOrDefault() ?? string.Empty,
+                receivedAssetEntryIds = offer.AllAssets.Select(asset => asset.assetEntryId).ToArray(),
+                currencyId = offer.AllAssets.FirstOrDefault(asset => asset.IsMoneyAsset)?.currencyId ?? string.Empty,
+                moneyPaidUnits = offer.AllAssets.Where(asset => asset.IsMoneyAsset).Sum(asset => asset.units),
+                quoteIds = CloneIds(offer.merchantQuoteIds),
+                worldTime = Math.Max(0d, worldTime),
+                accessPolicyId = offer.accessPolicyId,
+                provenance = $"trade:{recordId}",
+                revision = 1L
+            };
+
+            if (preview)
+            {
+                return TradeOperationResult.Success("External settlement preview succeeded.", before, before, preview: true,
+                    session: session, offer: offer, tradeRecord: record, receipt: receipt);
+            }
+
+            tradeRecordsById.Add(record.tradeRecordId, record);
+            receiptsById.Add(receipt.receiptId, receipt);
+            MarkOfferReservationsCommitted(offer.offerId);
+            session.state = TradeSessionState.Completed;
+            Touch(session, worldTime);
+            Revision++;
+            Remember(replayId, "external-settlement", sessionId);
+            return TradeOperationResult.Success("Externally settled trade recorded.", before, Revision,
+                session: session, offer: offer, tradeRecord: record, receipt: receipt);
         }
 
         public bool TryGetSession(string sessionId, out TradeSessionData session)
