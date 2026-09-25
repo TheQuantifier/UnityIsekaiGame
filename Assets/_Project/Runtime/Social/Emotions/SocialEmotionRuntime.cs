@@ -146,6 +146,20 @@ namespace UnityIsekaiGame.Social.Emotions
             };
         }
 
+        public int PruneHistory(int maximumEpisodesPerPerson)
+        {
+            string[] remove = episodesById.Values.GroupBy(item => item.personId, StringComparer.Ordinal)
+                .SelectMany(group => group.OrderByDescending(item => item.startWorldTime).ThenByDescending(item => item.revision).Skip(Math.Max(0, maximumEpisodesPerPerson)))
+                .Select(item => item.episodeId).ToArray();
+            foreach (string id in remove) episodesById.Remove(id);
+            HashSet<string> retained = new HashSet<string>(episodesById.Keys, StringComparer.Ordinal);
+            foreach (string tx in processedTransactions.Values.Where(item => !retained.Contains(item.episodeId)).Select(item => item.transactionId).ToArray()) processedTransactions.Remove(tx);
+            foreach (string id in decisionModifiersById.Values.Where(item => !retained.Contains(item.sourceEpisodeId)).Select(item => item.modifierId).ToArray()) decisionModifiersById.Remove(id);
+            foreach (SocialMoodStateData mood in moodsByKey.Values) mood.sourceEpisodeIds = (mood.sourceEpisodeIds ?? Array.Empty<string>()).Where(retained.Contains).ToArray();
+            if (remove.Length > 0) { Revision++; IsDirty = true; }
+            return remove.Length;
+        }
+
         public SocialEmotionResult RestoreFromSaveData(SocialEmotionRuntimeSaveData saveData, DefinitionRegistry definitionRegistry, IEnumerable<string> persons, bool restoringState = true)
         {
             long before = Revision;

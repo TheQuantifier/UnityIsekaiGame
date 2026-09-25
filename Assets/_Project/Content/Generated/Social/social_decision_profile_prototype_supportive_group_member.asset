@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 617580f09fc65234d8b63416620a9c17, type: 3}
+  m_Name: social_decision_profile_prototype_supportive_group_member
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Decisions.SocialDecisionProfileDefinition
+  profileId: social-decision-profile.prototype.supportive-group-member
+  displayName: Supportive Group Member
+  enabledIntentionIds:
+  - social-intention.prototype.maintain-positive-relationship
+  - social-intention.prototype.offer-help
+  - social-intention.prototype.support-isolated-group-member
+  - social-intention.prototype.warn-trusted-person
+  considerationIds:
+  - social-consideration.prototype.shared-group
+  - social-consideration.prototype.target-isolation
+  - social-consideration.prototype.trust
+  evaluationIntervalSeconds: 10
+  maximumTargets: 8
+  maximumIntentions: 6
+  maximumCandidates: 24
+  maximumDiagnostics: 24
+  scoreThreshold: 95
+  maximumActionsPerWindow: 1
+  actionWindowSeconds: 10
+  allowPlayerControlled: 0
+  defaultExecutionMode: 10
+  tags:
+  - decision
+  - prototype
+  - step12

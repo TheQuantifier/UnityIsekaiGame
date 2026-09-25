@@ -8,22 +8,30 @@ namespace UnityIsekaiGame.Dialogue
         private DialogueNodeDefinition currentNode;
         private string activeParticipantDisplayName;
         private Sprite activeParticipantPortrait;
+        private string activeParticipantPersonId;
         private bool isActive;
 
         public bool IsActive => isActive;
         public DialogueNodeDefinition CurrentNode => currentNode;
         public bool IsAwaitingChoice => isActive && currentNode != null && currentNode.HasChoices;
+        public string ActiveParticipantPersonId => activeParticipantPersonId ?? string.Empty;
 
         public event Action<DialogueNodeDefinition> DialogueStarted;
         public event Action<DialogueNodeDefinition> NodeChanged;
         public event Action DialogueEnded;
+        public event Action<DialogueChoice> ChoiceSelected;
 
         public DialogueOperationResult StartDialogue(DialogueNodeDefinition startingNode)
         {
-            return StartDialogue(startingNode, null, null);
+            return StartDialogue(startingNode, null, null, null);
         }
 
         public DialogueOperationResult StartDialogue(DialogueNodeDefinition startingNode, string participantDisplayName, Sprite participantPortrait)
+        {
+            return StartDialogue(startingNode, participantDisplayName, participantPortrait, null);
+        }
+
+        public DialogueOperationResult StartDialogue(DialogueNodeDefinition startingNode, string participantDisplayName, Sprite participantPortrait, string participantPersonId)
         {
             if (isActive)
             {
@@ -39,6 +47,7 @@ namespace UnityIsekaiGame.Dialogue
             currentNode = startingNode;
             activeParticipantDisplayName = participantDisplayName;
             activeParticipantPortrait = participantPortrait;
+            activeParticipantPersonId = participantPersonId;
             DialogueStarted?.Invoke(currentNode);
             NodeChanged?.Invoke(currentNode);
             return DialogueOperationResult.Success("Dialogue started.");
@@ -128,6 +137,7 @@ namespace UnityIsekaiGame.Dialogue
                 return DialogueOperationResult.Failure("Dialogue ended because the selected choice has no destination.");
             }
 
+            ChoiceSelected?.Invoke(choice);
             currentNode = choice.Destination;
             NodeChanged?.Invoke(currentNode);
             return DialogueOperationResult.Success("Dialogue choice selected.");
@@ -160,6 +170,7 @@ namespace UnityIsekaiGame.Dialogue
             currentNode = null;
             activeParticipantDisplayName = null;
             activeParticipantPortrait = null;
+            activeParticipantPersonId = null;
             DialogueEnded?.Invoke();
         }
     }

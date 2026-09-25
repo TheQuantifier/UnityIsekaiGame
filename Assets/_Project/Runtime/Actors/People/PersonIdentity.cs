@@ -19,6 +19,9 @@ namespace UnityIsekaiGame.People
         public string SettlementIdPlaceholder => definition == null ? string.Empty : definition.SettlementIdPlaceholder;
         public string HomePlaceId => definition == null || definition.HomePlace == null ? string.Empty : definition.HomePlace.Id;
         public PersonImportance Importance => definition == null ? PersonImportance.Background : definition.Importance;
+        public int ChronologicalAgeYears => definition == null ? 0 : definition.ChronologicalAgeYears;
+        public PersonLifeStage LifeStage => definition == null ? PersonLifeStage.Adult : definition.LifeStage;
+        public bool IsAdult => definition != null && definition.IsAdult;
         public bool HasValidIdentity => definition != null && definition.HasValidPersonId;
 
         private void OnEnable()

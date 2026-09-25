@@ -370,6 +370,21 @@ namespace UnityIsekaiGame.Social.Rumors
             };
         }
 
+        public int PruneHistory(int maximumTransmissions)
+        {
+            string[] remove = transmissionsById.Values
+                .OrderByDescending(item => item.transmissionWorldTime)
+                .ThenByDescending(item => item.revision)
+                .Skip(Math.Max(0, maximumTransmissions))
+                .Select(item => item.transmissionId)
+                .ToArray();
+            foreach (string id in remove) transmissionsById.Remove(id);
+            HashSet<string> retained = new HashSet<string>(transmissionsById.Keys, StringComparer.Ordinal);
+            foreach (string tx in processedTransactions.Values.Where(item => !string.IsNullOrWhiteSpace(item.transmissionId) && !retained.Contains(item.transmissionId)).Select(item => item.transactionId).ToArray()) processedTransactions.Remove(tx);
+            if (remove.Length > 0) { Revision++; IsDirty = true; RebuildIndexes(); }
+            return remove.Length;
+        }
+
         public RumorOperationResult RestoreFromSaveData(RumorRuntimeSaveData saveData, DefinitionRegistry definitionRegistry, IEnumerable<string> knownPersons, bool restoringState = false)
         {
             if (!ValidateSaveData(saveData, definitionRegistry, knownPersons, out string failure))
@@ -885,6 +900,21 @@ namespace UnityIsekaiGame.Social.Rumors
             transmissionIdsByListener.Clear();
             transmissionIdsByEvent.Clear();
             awareRumorIdsByPerson.Clear();
+        }
+
+        private void RebuildIndexes()
+        {
+            ClearIndexes();
+            foreach (RumorRecordData rumor in rumorsById.Values)
+            {
+                AddRumorIndexes(rumor);
+                RememberAwareness(rumor.originatorPersonId, rumor.rumorId);
+            }
+            foreach (RumorTransmissionRecordData transmission in transmissionsById.Values)
+            {
+                AddTransmissionIndexes(transmission);
+                RememberAwareness(transmission.listenerPersonId, transmission.resultingRumorVersionId);
+            }
         }
 
         private static string DeterministicToken(string seed)

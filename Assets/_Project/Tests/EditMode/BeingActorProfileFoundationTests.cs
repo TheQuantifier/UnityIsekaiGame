@@ -116,7 +116,7 @@ namespace UnityIsekaiGame.Tests
             {
                 actorProfileId = "actor-profile.player-prototype",
                 beingDefinitionId = "being.person",
-                personDefinitionId = "person.prototype-npc"
+                personDefinitionId = "person.prototype.npc"
             };
 
             Assert.That(saveData.actorProfileId, Is.EqualTo("actor-profile.player-prototype"));

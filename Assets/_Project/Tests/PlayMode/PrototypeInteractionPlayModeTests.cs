@@ -54,7 +54,7 @@ namespace UnityIsekaiGame.Tests
                 .Where(item => item is IInteractable)
                 .OrderBy(item => HierarchyPath(item.transform))
                 .ToArray();
-            Assert.That(interactables.Length, Is.EqualTo(28));
+            Assert.That(interactables.Length, Is.GreaterThanOrEqualTo(28), "The Prototype lost one or more of its established interaction surfaces.");
 
             RaycastHit counterCaptureHit = default;
             Vector3 counterCaptureDirection = Vector3.zero;

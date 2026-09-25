@@ -27,6 +27,8 @@ namespace UnityIsekaiGame.Social.Interactions
         public const string PublicPraiseId = "social-interaction.prototype.public-praise";
         public const string PublicCondemnationId = "social-interaction.prototype.public-condemnation";
         public const string PromiseId = "social-interaction.prototype.promise";
+        public const string TradeId = "social-interaction.prototype.trade";
+        public const string AttackId = "social-interaction.prototype.attack";
         public const string CustomActionId = "social-interaction.prototype.custom";
 
         public static DefinitionRegistry AddMissingPrototypeSocialInteractionDefinitions(DefinitionRegistry registry)
@@ -176,6 +178,21 @@ namespace UnityIsekaiGame.Social.Interactions
                         Promise("promise-record", outcomes: new[] { SocialInteractionOutcome.Accepted }),
                         Attitude("promise-trust", SocialInteractionRole.Target, SocialInteractionRole.Initiator, PrototypeAttitudeDefinitionFactory.TrustId, 6, required: false, outcomes: new[] { SocialInteractionOutcome.Accepted })
                     }),
+                Definition(TradeId, "Trade", SocialInteractionCategory.Custom, SocialInteractionOutcome.Success,
+                    consequences: new[]
+                    {
+                        Attitude("trade-trust", SocialInteractionRole.Target, SocialInteractionRole.Initiator, PrototypeAttitudeDefinitionFactory.TrustId, 1, required: false),
+                        Attitude("trade-respect", SocialInteractionRole.Target, SocialInteractionRole.Initiator, PrototypeAttitudeDefinitionFactory.RespectId, 1, required: false),
+                        Memory("trade-memory", required: false)
+                    }, repeatCooldownSeconds: 0.25d),
+                Definition(AttackId, "Attack", SocialInteractionCategory.NegativeExpression, SocialInteractionOutcome.Success,
+                    visibility: SocialInteractionVisibility.Witnessed,
+                    consequences: new[]
+                    {
+                        Attitude("attack-hostility", SocialInteractionRole.Target, SocialInteractionRole.Initiator, PrototypeAttitudeDefinitionFactory.HostilityId, 20),
+                        Attitude("attack-fear", SocialInteractionRole.Target, SocialInteractionRole.Initiator, PrototypeAttitudeDefinitionFactory.FearId, 10, required: false),
+                        Reputation("attack-danger", SocialInteractionRole.Initiator, PrototypeReputationDefinitionFactory.PerceivedDangerId, 4, required: false)
+                    }, repeatCooldownSeconds: 0.25d),
                 Definition(CustomActionId, "Custom Social Action", SocialInteractionCategory.Custom, SocialInteractionOutcome.Success,
                     consequences: new[]
                     {
@@ -194,7 +211,8 @@ namespace UnityIsekaiGame.Social.Interactions
             SocialInteractionOutcome acceptedOutcome = SocialInteractionOutcome.Accepted,
             SocialInteractionOutcome refusedOutcome = SocialInteractionOutcome.Refused,
             SocialInteractionVisibility visibility = SocialInteractionVisibility.Private,
-            SocialInteractionConsequenceDefinitionData[] consequences = null)
+            SocialInteractionConsequenceDefinitionData[] consequences = null,
+            double repeatCooldownSeconds = 2d)
         {
             SocialInteractionDefinition definition = ScriptableObject.CreateInstance<SocialInteractionDefinition>();
             definition.DevelopmentConfigure(
@@ -210,7 +228,7 @@ namespace UnityIsekaiGame.Social.Interactions
                 publicAudienceSupported: true,
                 visibility: visibility,
                 repeatScope: SocialInteractionCooldownScope.InitiatorTargetDefinition,
-                repeatCooldownSeconds: 2d,
+                repeatCooldownSeconds: repeatCooldownSeconds,
                 historyReference: true,
                 memoryReference: true,
                 requiredIds: Array.Empty<string>(),

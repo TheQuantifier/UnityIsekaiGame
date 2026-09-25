@@ -587,6 +587,21 @@ namespace UnityIsekaiGame.Narrative
                 case NarrativeActionCategory.RequestConnectionStateChange:
                     return ExecuteDelegate(integrations?.ConnectionChangeExecutor, target, "Connection change action recorded.", out externalId, out message);
                 case NarrativeActionCategory.TriggerSocialInteraction:
+                    if (integrations?.ContextualSocialActionExecutor != null)
+                    {
+                        externalId = target;
+                        bool socialSucceeded = integrations.ContextualSocialActionExecutor(new NarrativeSocialActionRequest
+                        {
+                            InteractionDefinitionId = target,
+                            ActorPersonId = record.actorPersonId,
+                            TargetPersonId = record.subjectId,
+                            NarrativeEventId = record.narrativeEventId,
+                            ActionDefinitionId = action.actionDefinitionId,
+                            WorldTime = record.triggerTime
+                        });
+                        message = socialSucceeded ? "Social action recorded." : "Social action was rejected by the social runtime.";
+                        return socialSucceeded;
+                    }
                     return ExecuteDelegate(integrations?.SocialActionExecutor, target, "Social action recorded.", out externalId, out message);
                 case NarrativeActionCategory.RequestOrganizationMembership:
                 case NarrativeActionCategory.RequestRankChange:

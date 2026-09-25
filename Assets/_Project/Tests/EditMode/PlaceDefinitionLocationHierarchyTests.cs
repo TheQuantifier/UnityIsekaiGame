@@ -139,7 +139,7 @@ namespace UnityIsekaiGame.Tests
         {
             ScriptableObject home = CreatePlace("place.settlement.prototype-town", "Prototype Town", "Settlement");
             ScriptableObject person = ScriptableObject.CreateInstance(RequiredType("UnityIsekaiGame.People.PersonDefinition"));
-            SetString(person, "personId", "person.prototype-npc");
+            SetString(person, "personId", "person.prototype.npc");
             SetString(person, "displayName", "Prototype NPC");
             SetObject(person, "homePlace", home);
 

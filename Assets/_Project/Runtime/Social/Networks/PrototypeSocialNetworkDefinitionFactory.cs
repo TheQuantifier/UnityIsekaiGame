@@ -19,11 +19,8 @@ namespace UnityIsekaiGame.Social.Networks
         public const string RumorReachProjectionId = "social-graph.projection.prototype.rumor-reach";
         public const string FriendCircleGroupId = "social-group.prototype.friend-circle";
         public const string AdventuringPartyGroupId = "social-group.prototype.adventuring-party";
-        public const string HouseholdCircleGroupId = "social-group.prototype.household-circle";
-        public const string CourtCircleGroupId = "social-group.prototype.court-circle";
         public const string LeaderRoleId = "leader";
         public const string MemberRoleId = "member";
-        public const string HostRoleId = "host";
         public const string CompanionRoleId = "companion";
 
         public static IReadOnlyList<object> CreateDefinitions()
@@ -35,9 +32,7 @@ namespace UnityIsekaiGame.Social.Networks
                 CompositeProjection(),
                 RumorReachProjection(),
                 FriendCircleGroup(),
-                AdventuringPartyGroup(),
-                HouseholdCircleGroup(),
-                CourtCircleGroup()
+                AdventuringPartyGroup()
             };
         }
 
@@ -185,46 +180,6 @@ namespace UnityIsekaiGame.Social.Networks
                 projectionIds: new[] { CompositeProjectionId },
                 text: "A temporary but persistent party identity for companions acting together.",
                 tagIds: new[] { "prototype", "party" });
-            return definition;
-        }
-
-        private static InformalSocialGroupDefinition HouseholdCircleGroup()
-        {
-            InformalSocialGroupDefinition definition = CreateGroup();
-            definition.DevelopmentConfigure(
-                HouseholdCircleGroupId,
-                "Prototype Household Circle",
-                InformalSocialGroupCategory.HouseholdCircle,
-                1,
-                16,
-                leaderRequired: false,
-                multipleLeaders: true,
-                InformalSocialGroupVisibility.MembersOnly,
-                Roles(MemberRoleId, "Resident", false),
-                projectionIds: new[] { RelationshipProjectionId },
-                text: "Informal household-level social circle without legal organization semantics.",
-                tagIds: new[] { "prototype", "household" });
-            return definition;
-        }
-
-        private static InformalSocialGroupDefinition CourtCircleGroup()
-        {
-            InformalSocialGroupDefinition definition = CreateGroup();
-            definition.DevelopmentConfigure(
-                CourtCircleGroupId,
-                "Prototype Court Circle",
-                InformalSocialGroupCategory.CourtCircle,
-                2,
-                24,
-                leaderRequired: true,
-                multipleLeaders: true,
-                InformalSocialGroupVisibility.Public,
-                Roles(HostRoleId, "Host", true, MemberRoleId, "Member", false),
-                audienceId: PrototypeReputationDefinitionFactory.RoyalJurisdictionAudienceId,
-                normIds: new[] { PrototypeSocialNormDefinitionFactory.HostGreetingNormId, PrototypeSocialNormDefinitionFactory.HospitalityOverrideNormId },
-                projectionIds: new[] { CompositeProjectionId },
-                text: "A courtly informal circle used for host and etiquette context.",
-                tagIds: new[] { "prototype", "court" });
             return definition;
         }
 

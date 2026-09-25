@@ -51,6 +51,7 @@ using UnityIsekaiGame.Magic;
 using UnityIsekaiGame.Narrative;
 using UnityIsekaiGame.Organizations;
 using UnityIsekaiGame.Persistence;
+using UnityIsekaiGame.People;
 using UnityIsekaiGame.Places;
 using UnityIsekaiGame.Professions;
 using UnityIsekaiGame.Progression;
@@ -62,6 +63,7 @@ using UnityIsekaiGame.Social.Attitudes;
 using UnityIsekaiGame.Social.Emotions;
 using UnityIsekaiGame.Social.Family;
 using UnityIsekaiGame.Social.Influence;
+using UnityIsekaiGame.Social.Integration;
 using UnityIsekaiGame.Social.Interactions;
 using UnityIsekaiGame.Social.Networks;
 using UnityIsekaiGame.Social.Norms;
@@ -159,8 +161,8 @@ namespace UnityIsekaiGame.Gameplay
         [SerializeField] private bool registerPlayerPositionEmployment = true;
         [SerializeField] private bool registerPlayerCareerHistory = true;
         [SerializeField] private bool registerPlayerLifePaths = true;
-        [SerializeField] private bool registerPlayerRelationships = true;
-        [SerializeField] private bool registerPlayerInterpersonalAttitudes = true;
+        [SerializeField] private bool registerWorldRelationships = true;
+        [SerializeField] private bool registerWorldInterpersonalAttitudes = true;
         [SerializeField] private bool registerWorldReputation = true;
         [SerializeField] private bool registerWorldRumors = true;
         [SerializeField] private bool registerWorldSocialInteractions = true;
@@ -214,8 +216,8 @@ namespace UnityIsekaiGame.Gameplay
         private PositionEmploymentPersistenceParticipant playerPositionEmploymentParticipant;
         private CareerHistoryPersistenceParticipant playerCareerHistoryParticipant;
         private LifePathPersistenceParticipant playerLifePathParticipant;
-        private RelationshipPersistenceParticipant playerRelationshipParticipant;
-        private InterpersonalAttitudePersistenceParticipant playerInterpersonalAttitudeParticipant;
+        private RelationshipPersistenceParticipant worldRelationshipParticipant;
+        private InterpersonalAttitudePersistenceParticipant worldInterpersonalAttitudeParticipant;
         private ReputationPersistenceParticipant worldReputationParticipant;
         private RumorPersistenceParticipant worldRumorParticipant;
         private SocialInteractionPersistenceParticipant worldSocialInteractionParticipant;
@@ -288,8 +290,8 @@ namespace UnityIsekaiGame.Gameplay
         private PositionEmploymentRuntime playerPositionEmployment;
         private CareerHistoryRuntime playerCareerHistory;
         private LifePathRuntime playerLifePaths;
-        private RelationshipRuntime playerRelationships;
-        private InterpersonalAttitudeRuntime playerInterpersonalAttitudes;
+        private RelationshipRuntime worldRelationships;
+        private InterpersonalAttitudeRuntime worldInterpersonalAttitudes;
         private ReputationRuntime worldReputation;
         private RumorRuntime worldRumors;
         private SocialInteractionRuntime worldSocialInteractions;
@@ -402,28 +404,28 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (playerRelationships == null)
+                if (worldRelationships == null)
                 {
                     string personId = playerIdentityProgression == null ? PersistenceService.LocalPlayerId : playerIdentityProgression.PersonId;
-                    playerRelationships = new RelationshipRuntime();
-                    playerRelationships.Configure(GetDefinitionRegistry(), new[] { personId, playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId });
+                    worldRelationships = new RelationshipRuntime();
+                    worldRelationships.Configure(GetDefinitionRegistry(), GetPrototypeSocialPersonIds(personId));
                 }
 
-                return playerRelationships;
+                return worldRelationships;
             }
         }
         public InterpersonalAttitudeRuntime InterpersonalAttitudes
         {
             get
             {
-                if (playerInterpersonalAttitudes == null)
+                if (worldInterpersonalAttitudes == null)
                 {
                     string personId = playerIdentityProgression == null ? PersistenceService.LocalPlayerId : playerIdentityProgression.PersonId;
-                    playerInterpersonalAttitudes = new InterpersonalAttitudeRuntime();
-                    playerInterpersonalAttitudes.Configure(GetDefinitionRegistry(), GetPrototypeSocialPersonIds(personId));
+                    worldInterpersonalAttitudes = new InterpersonalAttitudeRuntime();
+                    worldInterpersonalAttitudes.Configure(GetDefinitionRegistry(), GetPrototypeSocialPersonIds(personId));
                 }
 
-                return playerInterpersonalAttitudes;
+                return worldInterpersonalAttitudes;
             }
         }
         public ReputationRuntime Reputation
@@ -973,6 +975,7 @@ namespace UnityIsekaiGame.Gameplay
             AdvanceGroup6Crafting();
             SynchronizeProfessionLifecycle();
             AdvancePrototypeEconomy();
+            AdvanceGroup9SocialSimulation();
 
             if (memoryMaintenance == null || playTimeTracker == null)
             {
@@ -1294,16 +1297,16 @@ namespace UnityIsekaiGame.Gameplay
                 playerLifePathParticipant = null;
             }
 
-            if (playerService != null && playerRelationshipParticipant != null)
+            if (worldService != null && worldRelationshipParticipant != null)
             {
-                UnregisterParticipant(playerRelationshipParticipant);
-                playerRelationshipParticipant = null;
+                UnregisterParticipant(worldRelationshipParticipant);
+                worldRelationshipParticipant = null;
             }
 
-            if (playerService != null && playerInterpersonalAttitudeParticipant != null)
+            if (worldService != null && worldInterpersonalAttitudeParticipant != null)
             {
-                UnregisterParticipant(playerInterpersonalAttitudeParticipant);
-                playerInterpersonalAttitudeParticipant = null;
+                UnregisterParticipant(worldInterpersonalAttitudeParticipant);
+                worldInterpersonalAttitudeParticipant = null;
             }
 
             if (playerService != null && worldReputationParticipant != null)
@@ -1409,6 +1412,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             UnsubscribeDirtyEvents();
+            DisableGroup9SocialRuntime();
             UnregisterWorldLocationAndNarrativePersistence();
         }
 
@@ -1486,8 +1490,8 @@ namespace UnityIsekaiGame.Gameplay
             EnsurePlayerPositionEmploymentParticipant();
             EnsurePlayerCareerHistoryParticipant();
             EnsurePlayerLifePathParticipant();
-            EnsurePlayerRelationshipParticipant();
-            EnsurePlayerInterpersonalAttitudeParticipant();
+            EnsureWorldRelationshipParticipant();
+            EnsureWorldInterpersonalAttitudeParticipant();
             EnsureWorldReputationParticipant();
             EnsureWorldRumorParticipant();
             EnsureWorldSocialInteractionParticipant();
@@ -1496,6 +1500,7 @@ namespace UnityIsekaiGame.Gameplay
             EnsureWorldSocialInfluenceParticipant();
             EnsureWorldSocialEmotionParticipant();
             EnsureWorldFamilyRelationshipParticipant();
+            EnsureWorldSocialCognitionParticipant();
             EnsureWorldSocialDecisionParticipant();
             EnsurePlayerInformationAccessParticipant();
             EnsurePlayerKnowledgeRecordParticipant();
@@ -1543,6 +1548,7 @@ namespace UnityIsekaiGame.Gameplay
             InitializeSceneCharacters();
             EnsureProfessionLifePathFoundation(playerIdentityProgression);
             EnsurePrototypeEconomyInitialized();
+            EnsureGroup9SocialRuntime();
             PlayerReadiness = playerPersistenceContext.BuildReadiness(new[]
             {
                 PlayerIdentityProgressionPersistenceParticipant.Key,
@@ -1585,7 +1591,8 @@ namespace UnityIsekaiGame.Gameplay
                 DialogueFlowPersistenceParticipant.Key,
                 NarrativeEventPersistenceParticipant.Key,
                 NarrativeStatePersistenceParticipant.Key,
-                NarrativeArcPersistenceParticipant.Key
+                NarrativeArcPersistenceParticipant.Key,
+                WorldSocialCognitionPersistenceParticipant.Key
             });
             SubscribeDirtyEvents();
         }
@@ -3731,9 +3738,9 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
-        private void EnsurePlayerRelationshipParticipant()
+        private void EnsureWorldRelationshipParticipant()
         {
-            if (!registerPlayerRelationships || playerRelationshipParticipant != null)
+            if (!registerWorldRelationships || worldRelationshipParticipant != null)
             {
                 return;
             }
@@ -3750,23 +3757,23 @@ namespace UnityIsekaiGame.Gameplay
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             Relationships.Configure(GetDefinitionRegistry(), knownPersons);
-            playerRelationshipParticipant = new RelationshipPersistenceParticipant(
+            worldRelationshipParticipant = new RelationshipPersistenceParticipant(
                 Relationships,
                 GetDefinitionRegistry,
-                () => knownPersons,
-                playerService.PlayerId);
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
+                worldService.WorldId);
 
-            RegisterParticipant(playerRelationshipParticipant, out string failureReason);
+            RegisterParticipant(worldRelationshipParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
-                playerRelationshipParticipant = null;
+                worldRelationshipParticipant = null;
             }
         }
 
-        private void EnsurePlayerInterpersonalAttitudeParticipant()
+        private void EnsureWorldInterpersonalAttitudeParticipant()
         {
-            if (!registerPlayerInterpersonalAttitudes || playerInterpersonalAttitudeParticipant != null)
+            if (!registerWorldInterpersonalAttitudes || worldInterpersonalAttitudeParticipant != null)
             {
                 return;
             }
@@ -3783,17 +3790,17 @@ namespace UnityIsekaiGame.Gameplay
                 : playerIdentityProgression.PersonId;
             string[] knownPersons = GetPrototypeSocialPersonIds(personId);
             InterpersonalAttitudes.Configure(GetDefinitionRegistry(), knownPersons);
-            playerInterpersonalAttitudeParticipant = new InterpersonalAttitudePersistenceParticipant(
+            worldInterpersonalAttitudeParticipant = new InterpersonalAttitudePersistenceParticipant(
                 InterpersonalAttitudes,
                 GetDefinitionRegistry,
-                () => knownPersons,
-                playerService.PlayerId);
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
+                worldService.WorldId);
 
-            RegisterParticipant(playerInterpersonalAttitudeParticipant, out string failureReason);
+            RegisterParticipant(worldInterpersonalAttitudeParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
             {
                 Debug.LogWarning(failureReason);
-                playerInterpersonalAttitudeParticipant = null;
+                worldInterpersonalAttitudeParticipant = null;
             }
         }
 
@@ -3819,7 +3826,7 @@ namespace UnityIsekaiGame.Gameplay
             worldReputationParticipant = new ReputationPersistenceParticipant(
                 Reputation,
                 GetDefinitionRegistry,
-                () => knownPersons,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 playerService.WorldId);
 
             RegisterParticipant(worldReputationParticipant, out string failureReason);
@@ -3852,7 +3859,7 @@ namespace UnityIsekaiGame.Gameplay
             worldRumorParticipant = new RumorPersistenceParticipant(
                 Rumors,
                 GetDefinitionRegistry,
-                () => knownPersons,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 playerService.WorldId);
 
             RegisterParticipant(worldRumorParticipant, out string failureReason);
@@ -3885,7 +3892,7 @@ namespace UnityIsekaiGame.Gameplay
             worldSocialInteractionParticipant = new SocialInteractionPersistenceParticipant(
                 SocialInteractions,
                 GetDefinitionRegistry,
-                () => knownPersons,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 playerService.WorldId);
 
             RegisterParticipant(worldSocialInteractionParticipant, out string failureReason);
@@ -3918,7 +3925,7 @@ namespace UnityIsekaiGame.Gameplay
             worldSocialNormParticipant = new SocialNormPersistenceParticipant(
                 SocialNorms,
                 GetDefinitionRegistry,
-                () => knownPersons,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 playerService.WorldId);
 
             RegisterParticipant(worldSocialNormParticipant, out string failureReason);
@@ -3951,7 +3958,7 @@ namespace UnityIsekaiGame.Gameplay
             worldSocialNetworkParticipant = new SocialNetworkPersistenceParticipant(
                 SocialNetworks,
                 GetDefinitionRegistry,
-                () => knownPersons,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 playerService.WorldId);
 
             RegisterParticipant(worldSocialNetworkParticipant, out string failureReason);
@@ -3984,7 +3991,7 @@ namespace UnityIsekaiGame.Gameplay
             worldSocialDecisionParticipant = new SocialDecisionPersistenceParticipant(
                 SocialDecisions,
                 GetDefinitionRegistry,
-                () => knownPersons,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 playerService.WorldId);
 
             RegisterParticipant(worldSocialDecisionParticipant, out string failureReason);
@@ -4018,7 +4025,7 @@ namespace UnityIsekaiGame.Gameplay
             worldSocialInfluenceParticipant = new SocialInfluencePersistenceParticipant(
                 SocialInfluence,
                 GetDefinitionRegistry,
-                () => knownPersons,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 playerService.WorldId);
 
             RegisterParticipant(worldSocialInfluenceParticipant, out string failureReason);
@@ -4053,7 +4060,7 @@ namespace UnityIsekaiGame.Gameplay
             worldSocialEmotionParticipant = new SocialEmotionPersistenceParticipant(
                 SocialEmotions,
                 GetDefinitionRegistry,
-                () => knownPersons,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 playerService.WorldId);
 
             RegisterParticipant(worldSocialEmotionParticipant, out string failureReason);
@@ -4086,7 +4093,7 @@ namespace UnityIsekaiGame.Gameplay
             worldFamilyRelationshipParticipant = new FamilyRelationshipPersistenceParticipant(
                 FamilyRelationships,
                 GetDefinitionRegistry,
-                () => knownPersons,
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 playerService.WorldId);
 
             RegisterParticipant(worldFamilyRelationshipParticipant, out string failureReason);
@@ -5285,14 +5292,13 @@ namespace UnityIsekaiGame.Gameplay
 
         private PersonKnowledgeRuntime ResolveKnowledgeRuntimeForPerson(string personId)
         {
-            if (playerKnowledge == null || playerIdentityProgression == null)
+            if (string.Equals(ResolvePlayerPersonId(), personId, StringComparison.Ordinal))
             {
-                return null;
+                return playerKnowledge;
             }
 
-            return string.Equals(playerIdentityProgression.PersonId, personId, System.StringComparison.Ordinal)
-                ? playerKnowledge
-                : null;
+            npcKnowledgeByPerson.TryGetValue(personId ?? string.Empty, out PersonKnowledgeRuntime runtime);
+            return runtime;
         }
 
         private string ResolvePlayerPersonId()
@@ -5397,40 +5403,58 @@ namespace UnityIsekaiGame.Gameplay
 
         private PersonMemoryRuntime ResolveMemoryRuntimeForPerson(string personId)
         {
-            return string.Equals(ResolvePlayerPersonId(), personId, StringComparison.Ordinal)
-                ? PlayerMemory
-                : null;
+            if (string.Equals(ResolvePlayerPersonId(), personId, StringComparison.Ordinal))
+            {
+                return PlayerMemory;
+            }
+
+            npcMemoryByPerson.TryGetValue(personId ?? string.Empty, out PersonMemoryRuntime runtime);
+            return runtime;
         }
 
         private string[] GetPrototypeSocialPersonIds(string primaryPersonId)
         {
-            return new[]
-            {
-                primaryPersonId,
-                playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId,
-                "person.prototype.npc",
-                "person.prototype.friend",
-                "person.prototype.rival",
-                "person.prototype.parent",
-                "person.prototype.child",
-                "person.prototype.dependent",
-                "person.prototype.partner",
-                "person.prototype.spouse",
-                "person.prototype.sibling",
-                "person.prototype.cousin",
-                "person.prototype.mentor",
-                "person.prototype.student"
-            }
-            .Where(value => !string.IsNullOrWhiteSpace(value))
-            .Distinct(System.StringComparer.Ordinal)
+            IEnumerable<string> scenePeople = WorldSceneBindingRuntime.Default.GetBoundEntityReferences()
+                .Where(reference => reference.entityType == LocationOccupantEntityType.Person)
+                .Select(reference => reference.entityId);
+            IEnumerable<string> authoredPeople = PersonRegistry.Registered
+                .Where(identity => identity != null && identity.HasValidIdentity)
+                .Select(identity => identity.PersonId);
+            IEnumerable<string> persistentPeople = WorldEntityRegistry.RegisteredEntities
+                .Where(identity => identity != null
+                    && (string.Equals(identity.ExpectedEntityType, "Person", StringComparison.OrdinalIgnoreCase)
+                        || identity.EntityId.StartsWith("person.", StringComparison.Ordinal)))
+                .Select(identity => identity.EntityId);
+
+            return new[] { primaryPersonId, playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId }
+                .Concat(scenePeople)
+                .Concat(authoredPeople)
+                .Concat(persistentPeople)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(value => value, StringComparer.Ordinal)
                 .ToArray();
         }
 
         private string[] GetPrototypeAdultPersonIds(string primaryPersonId)
         {
             return GetPrototypeSocialPersonIds(primaryPersonId)
-                .Where(value => !value.Contains(".child", System.StringComparison.Ordinal) && !value.Contains(".dependent", System.StringComparison.Ordinal))
+                .Where(IsAdultPerson)
                 .ToArray();
+        }
+
+        private bool IsAdultPerson(string personId)
+        {
+            if (string.Equals(personId, ResolvePlayerPersonId(), StringComparison.Ordinal)
+                || string.Equals(personId, playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return PersonRegistry.TryGetIdentity(personId, out PersonIdentity identity)
+                ? identity.IsAdult
+                : GetDefinitionRegistry()?.TryGet(personId, out PersonDefinition definition) == true && definition.IsAdult;
         }
 
         private static string[] GetPrototypeCredentialAuthorities()

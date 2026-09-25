@@ -12,6 +12,7 @@ namespace UnityIsekaiGame.Social.Reputation
         public const string AdventurersGuildAudienceId = "reputation.audience.organization.adventurers-guild";
         public const string AdventurersGuildVeteransAudienceId = "reputation.audience.organization.adventurers-guild.veterans";
         public const string RoyalJurisdictionAudienceId = "reputation.audience.jurisdiction.prototype-kingdom";
+        public const string CityGuardAudienceId = "reputation.audience.organization.prototype-city-guard";
         public const string HiddenInvestigatorsAudienceId = "reputation.audience.custom.hidden-investigators";
 
         public const string RenownId = "reputation.renown";
@@ -30,6 +31,7 @@ namespace UnityIsekaiGame.Social.Reputation
                 Audience(AdventurersGuildAudienceId, "Adventurers Guild", ReputationAudienceCategory.Organization, ReputationAudienceScope.Contextual, "organization.prototype.adventurers-guild", GlobalPublicAudienceId, hierarchy: true, text: "Institutional guild reputation."),
                 Audience(AdventurersGuildVeteransAudienceId, "Adventurers Guild Veterans", ReputationAudienceCategory.Organization, ReputationAudienceScope.Contextual, "organization.prototype.adventurers-guild.veterans", AdventurersGuildAudienceId, hierarchy: true, text: "Child audience used to prove deterministic inheritance."),
                 Audience(RoyalJurisdictionAudienceId, "Prototype Kingdom Jurisdiction", ReputationAudienceCategory.Jurisdiction, ReputationAudienceScope.Contextual, "jurisdiction.prototype-kingdom", GlobalPublicAudienceId, hierarchy: true, text: "Jurisdictional reputation suitable for notoriety requirements."),
+                Audience(CityGuardAudienceId, "Prototype City Guard", ReputationAudienceCategory.Organization, ReputationAudienceScope.Contextual, "organization.prototype.city-guard", RoyalJurisdictionAudienceId, hierarchy: true, text: "Reputation with the prototype city's guard organization."),
                 Audience(HiddenInvestigatorsAudienceId, "Hidden Investigators", ReputationAudienceCategory.CustomGroup, ReputationAudienceScope.Contextual, "group.prototype.hidden-investigators", GlobalPublicAudienceId, hierarchy: true, restricted: true, text: "Restricted prototype audience for visibility boundary tests."),
                 Dimension(RenownId, "Renown", ReputationDimensionCategory.Recognition, 0, 100, 0, false, "How widely recognized the subject is within the audience."),
                 Dimension(EsteemId, "Esteem", ReputationDimensionCategory.Regard, -100, 100, 0, true, "General favorable or unfavorable public regard."),

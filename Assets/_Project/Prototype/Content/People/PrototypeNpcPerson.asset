@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5f4261908c34a88a510ef2977041e86, type: 3}
   m_Name: PrototypeNpcPerson
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.People.PersonDefinition
-  personId: person.prototype-npc
+  personId: person.prototype.npc
   displayName: Prototype NPC
   title: Quest Giver
   shortDescription: Prototype-only NPC used to verify person identity, dialogue, and quest flow.

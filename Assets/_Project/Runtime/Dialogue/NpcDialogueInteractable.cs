@@ -4,6 +4,7 @@ using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Interaction;
 using UnityIsekaiGame.People;
+using UnityIsekaiGame.Social.Interactions;
 
 namespace UnityIsekaiGame.Dialogue
 {
@@ -13,6 +14,7 @@ namespace UnityIsekaiGame.Dialogue
         [SerializeField] private PersonIdentity personIdentity;
         [SerializeField] private DialogueController dialogueController;
         [SerializeField] private DialogueNodeDefinition startingNode;
+        [SerializeField] private PrototypePersistenceServiceBehaviour services;
 
         public string InteractionPrompt => personIdentity != null && personIdentity.HasValidIdentity
             ? $"Talk to {personIdentity.DisplayName}"
@@ -31,6 +33,24 @@ namespace UnityIsekaiGame.Dialogue
             if (dialogueController == null)
             {
                 dialogueController = FindAnyObjectByType<DialogueController>();
+            }
+
+            if (services == null)
+            {
+                services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+            }
+
+            if (dialogueController != null)
+            {
+                dialogueController.ChoiceSelected += HandleChoiceSelected;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (dialogueController != null)
+            {
+                dialogueController.ChoiceSelected -= HandleChoiceSelected;
             }
         }
 
@@ -58,16 +78,47 @@ namespace UnityIsekaiGame.Dialogue
                 return;
             }
 
-            DialogueOperationResult result = dialogueController.StartDialogue(startingNode, DialogueDisplayName, personIdentity == null ? null : personIdentity.Portrait);
+            DialogueOperationResult result = dialogueController.StartDialogue(startingNode, DialogueDisplayName, personIdentity == null ? null : personIdentity.Portrait, personIdentity == null ? string.Empty : personIdentity.PersonId);
             Debug.Log(result.Message);
             if (result.Succeeded)
             {
+                RecordSocialInteraction(PrototypeSocialInteractionDefinitionFactory.GreetId, "dialogue.start");
                 DialogueStarted?.Invoke(this);
             }
 
             if (!result.Succeeded)
             {
                 PrototypeHudMessageBus.Show(result.Message);
+            }
+        }
+
+        private void HandleChoiceSelected(DialogueChoice choice)
+        {
+            if (choice == null || dialogueController == null || personIdentity == null
+                || !string.Equals(dialogueController.ActiveParticipantPersonId, personIdentity.PersonId, StringComparison.Ordinal)
+                || string.IsNullOrWhiteSpace(choice.SocialInteractionDefinitionId))
+            {
+                return;
+            }
+
+            RecordSocialInteraction(choice.SocialInteractionDefinitionId, "dialogue.choice");
+        }
+
+        private void RecordSocialInteraction(string definitionId, string source)
+        {
+            if (services == null || personIdentity == null || !personIdentity.HasValidIdentity)
+            {
+                return;
+            }
+
+            SocialInteractionResult result = services.RecordSocialInteraction(
+                definitionId,
+                services.PlayerPersonId,
+                personIdentity.PersonId,
+                source);
+            if (!result.Succeeded && result.Status != SocialInteractionStatus.CooldownActive)
+            {
+                Debug.LogWarning($"Dialogue social consequence was rejected: {result.Message}", this);
             }
         }
     }

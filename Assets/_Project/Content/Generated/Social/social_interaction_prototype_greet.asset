@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 179f5a5657b8ed64999dae4a2d7cd639, type: 3}
+  m_Name: social_interaction_prototype_greet
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Interactions.SocialInteractionDefinition
+  interactionDefinitionId: social-interaction.prototype.greet
+  displayName: Greet
+  description: 
+  category: 0
+  roles:
+  - role: 0
+    required: 1
+    allowDuplicates: 0
+  - role: 1
+    required: 1
+    allowDuplicates: 0
+  - role: 2
+    required: 0
+    allowDuplicates: 1
+  - role: 3
+    required: 0
+    allowDuplicates: 1
+  - role: 4
+    required: 0
+    allowDuplicates: 1
+  allowSelfTarget: 0
+  supportsWitnesses: 1
+  supportsPublicAudience: 1
+  requiresResponse: 0
+  allowedResponses: 
+  baseOutcome: 0
+  acceptedOutcome: 3
+  refusedOutcome: 4
+  cooldownScope: 2
+  cooldownSeconds: 2
+  defaultVisibility: 0
+  createsHistoryReference: 1
+  createsMemoryReference: 1
+  consequences:
+  - consequenceId: greet-memory
+    targetRuntime: 7
+    operation: 6
+    actorRole: 1
+    subjectRole: 0
+    dimensionId: 
+    audienceId: 
+    relationshipDefinitionId: 
+    rumorDefinitionId: 
+    rumorChannelId: 
+    amount: 0
+    required: 0
+    onlyWhenWitnessed: 0
+    onlyWhenPublic: 0
+    appliesToOutcomes: 
+    tags: []
+  - consequenceId: greet-trust
+    targetRuntime: 2
+    operation: 1
+    actorRole: 1
+    subjectRole: 0
+    dimensionId: attitude.trust
+    audienceId: 
+    relationshipDefinitionId: 
+    rumorDefinitionId: 
+    rumorChannelId: 
+    amount: 2
+    required: 0
+    onlyWhenWitnessed: 0
+    onlyWhenPublic: 0
+    appliesToOutcomes: 
+    tags: []
+  requirementIds: []
+  capabilityIds: []
+  tags:
+  - prototype
+  - step12
+  version: 1

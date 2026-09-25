@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffc9928a8a4f31b47bc46c8d6054d138, type: 3}
+  m_Name: social_group_prototype_adventuring_party
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Networks.InformalSocialGroupDefinition
+  groupDefinitionId: social-group.prototype.adventuring-party
+  displayName: Prototype Adventuring Party
+  description: A temporary but persistent party identity for companions acting together.
+  category: 1
+  minimumMembers: 2
+  maximumMembers: 8
+  requiresLeader: 1
+  allowsMultipleLeaders: 0
+  preserveMembershipHistory: 1
+  mayDissolve: 1
+  visibility: 0
+  associatedAudienceId: reputation.audience.organization.adventurers-guild
+  associatedNormDefinitionIds:
+  - social-norm.prototype.promise-keeping
+  - social-norm.prototype.witness-respect
+  associatedProjectionDefinitionIds:
+  - social-graph.projection.prototype.composite-social
+  roles:
+  - roleId: companion
+    displayName: Companion
+    leaderRole: 0
+  - roleId: leader
+    displayName: Leader
+    leaderRole: 1
+  tags:
+  - party
+  - prototype
+  version: 1

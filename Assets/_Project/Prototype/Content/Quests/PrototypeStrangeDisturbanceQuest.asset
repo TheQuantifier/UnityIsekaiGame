@@ -20,7 +20,7 @@ MonoBehaviour:
   questGiver: {fileID: 11400000, guid: d7045b9bbc0f4f2f8fc1a0fb254f0e55, type: 2}
   questSourceFaction: {fileID: 11400000, guid: 70bb165840944ae696f652b7a5f99744, type: 2}
   relatedFaction: {fileID: 11400000, guid: 70bb165840944ae696f652b7a5f99744, type: 2}
-  questGiverId: person.prototype-npc
+  questGiverId: person.prototype.npc
   questGiverDisplayName: Prototype NPC
   stages:
   - stageId: speak_with_npc

@@ -138,6 +138,20 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 .ToArray();
         }
 
+        public IReadOnlyList<EntityLocationReferenceData> GetBoundEntityReferences()
+        {
+            return bindingsByInstanceId.Values
+                .OfType<WorldEntitySceneBinding>()
+                .Where(value => value != null && value.isActiveAndEnabled)
+                .Select(value => value.EntityReference)
+                .Where(value => value != null && !string.IsNullOrWhiteSpace(value.entityId))
+                .GroupBy(value => $"{value.entityType}:{value.entityId}", StringComparer.Ordinal)
+                .Select(group => group.First().Clone())
+                .OrderBy(value => value.entityType)
+                .ThenBy(value => value.entityId, StringComparer.Ordinal)
+                .ToArray();
+        }
+
         public WorldSceneBindingValidationReport Validate()
         {
             foreach (WorldSceneBindingComponent binding in bindingsByInstanceId.Values.Where(value => value != null).ToArray())
