@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6212b9fd0b844bd5b0558eaed235ed8e, type: 3}
+  m_Name: PrototypeTownLoan
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Contracts.ContractFinanceDefinition
+  definitionId: contract-finance.prototype-town-loan
+  displayName: Prototype Town Loan
+  category: 600
+  requiredTerms:
+  - termId: term.contract-finance.prototype-town-loan.primary
+    category: 500
+    description: 
+    responsiblePartyId: 
+    beneficiaryPartyId: 
+    currencyId: currency.gold
+    amountUnits: 100
+    quantity: 0
+    dueWorldTime: -1
+    intervalWorldTime: -1
+    maxOccurrences: 1
+    externalReferenceId: 
+    evidenceRequirementIds: []
+  requiredPartyRoles: f401000058020000

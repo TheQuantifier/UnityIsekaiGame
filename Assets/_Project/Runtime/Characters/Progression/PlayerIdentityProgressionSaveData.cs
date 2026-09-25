@@ -18,7 +18,6 @@ namespace UnityIsekaiGame.Progression
         public List<RuntimeRoleRecord> roles = new List<RuntimeRoleRecord>();
         public List<RuntimeSocialStatusRecord> socialStatuses = new List<RuntimeSocialStatusRecord>();
         public List<RuntimeTitleRecord> titles = new List<RuntimeTitleRecord>();
-        public List<WalletBalanceRecord> walletBalances = new List<WalletBalanceRecord>();
         public List<ActivityOutcomeRecord> activityRecords = new List<ActivityOutcomeRecord>();
         public List<ParticipationRecord> participationRecords = new List<ParticipationRecord>();
     }

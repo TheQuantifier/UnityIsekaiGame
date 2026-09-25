@@ -13430,24 +13430,24 @@ namespace UnityIsekaiGame.Development
 
         public PrototypeTestLabOperation AddCurrency(CurrencyDefinition currency, long amount)
         {
-            if (!EnsureIdentityProgression(out PlayerIdentityProgression progression))
+            if (!EnsurePersistence(out PrototypePersistenceServiceBehaviour persistence))
             {
-                return RecordFailure("Add Currency", "Player identity/progression component is missing.", "MissingIdentityProgression");
+                return RecordFailure("Add Currency", "Prototype persistence/economy service is missing.", "MissingEconomyRuntime");
             }
 
-            ProgressionOperationResult result = progression.AddCurrency(currency, Math.Max(0L, amount));
-            return Record(result.Succeeded, "Add Currency", result.Code, result.Message);
+            PrototypeEconomyOperation result = persistence.AddDevelopmentCurrency(currency, Math.Max(0L, amount));
+            return Record(result.Succeeded, "Add Currency", result.Succeeded ? "Succeeded" : "EconomyRejected", result.Message);
         }
 
         public PrototypeTestLabOperation SpendCurrency(CurrencyDefinition currency, long amount)
         {
-            if (!EnsureIdentityProgression(out PlayerIdentityProgression progression))
+            if (!EnsurePersistence(out PrototypePersistenceServiceBehaviour persistence))
             {
-                return RecordFailure("Spend Currency", "Player identity/progression component is missing.", "MissingIdentityProgression");
+                return RecordFailure("Spend Currency", "Prototype persistence/economy service is missing.", "MissingEconomyRuntime");
             }
 
-            ProgressionOperationResult result = progression.SpendCurrency(currency, Math.Max(0L, amount));
-            return Record(result.Succeeded, "Spend Currency", result.Code, result.Message);
+            PrototypeEconomyOperation result = persistence.SpendDevelopmentCurrency(currency, Math.Max(0L, amount));
+            return Record(result.Succeeded, "Spend Currency", result.Succeeded ? "Succeeded" : "EconomyRejected", result.Message);
         }
 
         public PrototypeTestLabOperation RecordSuccessfulActivity(float difficulty)
@@ -14364,6 +14364,7 @@ namespace UnityIsekaiGame.Development
                 Inventory = context?.Inventory,
                 Equipment = context?.Equipment,
                 Statuses = context?.PlayerStatuses,
+                CurrencyBalanceProvider = context?.Persistence == null ? null : context.Persistence.GetPlayerBalance,
                 TestLabDiagnostics = testLab
             };
         }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.Inventory;
@@ -30,5 +31,6 @@ namespace UnityIsekaiGame.Requirements
         public HashSet<string> OwnedAbilityIds { get; } = new HashSet<string>();
         public Dictionary<string, string> ContextIds { get; } = new Dictionary<string, string>();
         public bool TestLabDiagnostics { get; set; }
+        public Func<string, long> CurrencyBalanceProvider { get; set; }
     }
 }

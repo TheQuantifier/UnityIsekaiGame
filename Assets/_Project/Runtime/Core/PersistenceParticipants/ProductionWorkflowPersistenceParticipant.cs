@@ -10,7 +10,7 @@ namespace UnityIsekaiGame.Persistence
     public sealed class ProductionWorkflowPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const string Key = "world.production-workflow";
-        public const int CurrentParticipantSchemaVersion = 1;
+        public const int CurrentParticipantSchemaVersion = 3;
 
         private readonly ProductionWorkflowRuntime runtime;
         private readonly Func<DefinitionRegistry> registryProvider;

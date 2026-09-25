@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 839d3e2ebf494c8e91b29e10a3c0f71c, type: 3}
+  m_Name: PrototypeTownSalesTax
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Economy.InstitutionalRevenue.InstitutionalRevenueDefinition
+  definitionId: revenue.prototype-town-sales-tax
+  displayName: Prototype Town Sales Tax
+  category: 11
+  chargingInstitutionKind: 50
+  requiredAuthorityCategory: 20
+  taxableSubjectKinds: 3300000034000000
+  taxableEventCategories: 0a000000
+  currency: {fileID: 11400000, guid: 8d5f2bba9b8d4f56ad823790337abbad, type: 2}
+  taxBaseKind: 20
+  ratePolicy:
+    ratePolicyId: revenue-rate.prototype-town.sales-tax
+    rateKind: 20
+    progressiveCalculation: 10
+    currencyOrUnitId: currency.gold
+    rate:
+      numerator: 5
+      denominator: 100
+    fixedUnits: 0
+    perUnitUnits: 0
+    thresholdUnits: 0
+    minimumUnits: 0
+    maximumUnits: -1
+    smallestChargeableUnit: 1
+    roundingMode: 0
+    brackets: []
+    effectiveStartWorldTime: 0
+    effectiveEndWorldTime: -1
+    accessPolicyId: 
+    version: 1
+  periodKind: 11
+  exemptionPolicyIds: []
+  deductionPolicyIds: []
+  creditPolicyIds: []
+  supportsWithholding: 0
+  collectionAccountPurpose: 20
+  allocationPolicyId: 
+  filingRequired: 0
+  dueDelayUnits: 0
+  gracePeriodUnits: 0
+  penaltyPolicyIds: []
+  refundsAllowed: 1
+  accessPolicyId: 
+  version: 1

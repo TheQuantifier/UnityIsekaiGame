@@ -148,7 +148,7 @@ namespace UnityIsekaiGame.Requirements
                     reason = absent ? string.Empty : $"Condition/status '{node.TargetId}' is present.";
                     return absent == node.BooleanValue;
                 case RequirementNodeType.Currency:
-                    long balance = context.Identity == null ? 0L : context.Identity.GetBalance(node.TargetId);
+                    long balance = context.CurrencyBalanceProvider == null ? 0L : context.CurrencyBalanceProvider(node.TargetId);
                     return Compare(balance, node.IntegerValue, node.Comparison, out reason);
                 case RequirementNodeType.CapabilityBoolean:
                     CapabilitySnapshot boolCapability = context.Capabilities == null ? null : context.Capabilities.Evaluate(node.TargetId);

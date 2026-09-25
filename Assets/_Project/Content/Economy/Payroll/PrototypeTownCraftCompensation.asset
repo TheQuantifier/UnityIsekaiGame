@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db865f8748f14b07a052397a39d10ca7, type: 3}
+  m_Name: PrototypeTownCraftCompensation
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Economy.Payroll.CompensationDefinitionAsset
+  compensationDefinitionId: compensation.prototype-town-craft
+  displayName: Prototype Town Craft Wage
+  category: 300
+  currency: {fileID: 11400000, guid: 8d5f2bba9b8d4f56ad823790337abbad, type: 2}
+  rateBasis: 300
+  rateUnits: 8
+  quantityUnit: 1
+  durationUnit: 500
+  scheduleKind: 600
+  roundingMode: 200
+  definitionVersion: 1
+  accessPolicyId: 

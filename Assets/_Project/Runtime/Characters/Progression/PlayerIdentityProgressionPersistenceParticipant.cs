@@ -10,7 +10,7 @@ namespace UnityIsekaiGame.Progression
     public sealed class PlayerIdentityProgressionPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const string Key = "player.identity-progression";
-        public const int CurrentParticipantSchemaVersion = 4;
+        public const int CurrentParticipantSchemaVersion = 5;
 
         private readonly PlayerIdentityProgression progression;
         private readonly Func<DefinitionRegistry> registryProvider;
@@ -202,7 +202,6 @@ namespace UnityIsekaiGame.Progression
                 && ValidateRoles(saveData.roles, registry, out failureReason)
                 && ValidateSocialStatuses(saveData.socialStatuses, registry, out failureReason)
                 && ValidateTitles(saveData.titles, registry, out failureReason)
-                && ValidateWallet(saveData.walletBalances, registry, out failureReason)
                 && ValidateActivityRecords(saveData.activityRecords, out failureReason)
                 && ValidateParticipationRecords(saveData.participationRecords, out failureReason);
         }
@@ -422,36 +421,6 @@ namespace UnityIsekaiGame.Progression
                 if (!IsValidUtc(title.assignedAtUtc))
                 {
                     failureReason = $"Title record '{title.titleDefinitionId}' has a malformed grant timestamp.";
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static bool ValidateWallet(IReadOnlyList<WalletBalanceRecord> balances, DefinitionRegistry registry, out string failureReason)
-        {
-            failureReason = string.Empty;
-            HashSet<string> currencyIds = new HashSet<string>(StringComparer.Ordinal);
-            IReadOnlyList<WalletBalanceRecord> entries = balances ?? Array.Empty<WalletBalanceRecord>();
-            for (int i = 0; i < entries.Count; i++)
-            {
-                WalletBalanceRecord balance = entries[i];
-                if (balance == null || string.IsNullOrWhiteSpace(balance.currencyDefinitionId) || !currencyIds.Add(balance.currencyDefinitionId))
-                {
-                    failureReason = "Saved wallet currency IDs must be present and unique.";
-                    return false;
-                }
-
-                if (!registry.TryGet(balance.currencyDefinitionId, out CurrencyDefinition _))
-                {
-                    failureReason = $"Currency definition '{balance.currencyDefinitionId}' was not found.";
-                    return false;
-                }
-
-                if (balance.amount < 0L)
-                {
-                    failureReason = $"Wallet balance for '{balance.currencyDefinitionId}' cannot be negative.";
                     return false;
                 }
             }

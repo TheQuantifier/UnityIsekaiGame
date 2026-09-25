@@ -37,6 +37,41 @@ namespace UnityIsekaiGame.Economy.Markets
         public IReadOnlyList<MarketPriceRecordData> PriceHistory => pricesById.Values.OrderBy(item => item.createdWorldTime).ThenBy(item => item.marketPriceId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<MerchantQuoteRecordData> Quotes => quotesById.Values.OrderBy(item => item.quoteId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
 
+        public int PruneExpiredSimulationHistory(double cutoffWorldTime)
+        {
+            cutoffWorldTime = Math.Max(0d, cutoffWorldTime);
+            string latestCheckpointId = demandById.Values
+                .Where(record => string.Equals(record.provenance, "prototype-market-boundary-complete", StringComparison.Ordinal))
+                .OrderByDescending(record => record.observedWorldTime)
+                .ThenByDescending(record => record.observationId, StringComparer.Ordinal)
+                .Select(record => record.observationId)
+                .FirstOrDefault();
+            int removed = RemoveWhere(supplyById, record => record.expiresWorldTime >= 0d && record.expiresWorldTime < cutoffWorldTime);
+            removed += RemoveWhere(demandById, record => record.expiresWorldTime >= 0d
+                && record.expiresWorldTime < cutoffWorldTime
+                && !string.Equals(record.observationId, latestCheckpointId, StringComparison.Ordinal));
+
+            HashSet<string> retainedPriceIds = currentPriceByMarketSubject.Values.ToHashSet(StringComparer.Ordinal);
+            removed += RemoveWhere(pricesById, record => record.createdWorldTime < cutoffWorldTime && !retainedPriceIds.Contains(record.marketPriceId));
+            HashSet<string> retainedScarcityIds = pricesById.Values
+                .Where(record => !string.IsNullOrWhiteSpace(record.scarcityId))
+                .Select(record => record.scarcityId)
+                .ToHashSet(StringComparer.Ordinal);
+            removed += RemoveWhere(scarcityById, record => record.evaluatedWorldTime < cutoffWorldTime && !retainedScarcityIds.Contains(record.scarcityId));
+            if (removed > 0)
+            {
+                Revision++;
+            }
+            return removed;
+        }
+
+        private static int RemoveWhere<T>(Dictionary<string, T> values, Func<T, bool> predicate)
+        {
+            string[] ids = values.Where(pair => predicate(pair.Value)).Select(pair => pair.Key).ToArray();
+            foreach (string id in ids) values.Remove(id);
+            return ids.Length;
+        }
+
         public void Configure(DefinitionRegistry definitionRegistry, string world)
         {
             registry = definitionRegistry ?? registry;
@@ -750,9 +785,11 @@ namespace UnityIsekaiGame.Economy.Markets
                 return Fail(MarketResultCode.ValidationFailed, failure, preview);
             }
 
-            if (target.ContainsKey(record.observationId))
+            if (target.TryGetValue(record.observationId, out MarketObservationRecordData existingObservation))
             {
-                return Fail(MarketResultCode.InvalidRequest, $"Observation '{record.observationId}' already exists.", preview);
+                return SameObservation(existingObservation, record)
+                    ? MarketOperationResult.Success("Market observation already recorded.", before, before, duplicate: true)
+                    : Fail(MarketResultCode.InvalidRequest, $"Observation '{record.observationId}' already exists with different data.", preview);
             }
 
             if (isSupply && supplyById.Values.Any(existing => string.Equals(existing.SourceKey, record.SourceKey, StringComparison.Ordinal)))
@@ -768,6 +805,24 @@ namespace UnityIsekaiGame.Economy.Markets
             target.Add(record.observationId, record);
             Revision++;
             return MarketOperationResult.Success(isSupply ? "Supply recorded." : "Demand recorded.", before, Revision);
+        }
+
+        private static bool SameObservation(MarketObservationRecordData first, MarketObservationRecordData second)
+        {
+            return first != null && second != null
+                && string.Equals(first.marketInstanceId, second.marketInstanceId, StringComparison.Ordinal)
+                && string.Equals(first.marketSubjectId, second.marketSubjectId, StringComparison.Ordinal)
+                && first.unit == second.unit
+                && first.quantity == second.quantity
+                && first.availableNowQuantity == second.availableNowQuantity
+                && first.reservedQuantity == second.reservedQuantity
+                && first.expectedFutureQuantity == second.expectedFutureQuantity
+                && first.supplySourceCategory == second.supplySourceCategory
+                && first.demandCategory == second.demandCategory
+                && string.Equals(first.sourceReferenceId, second.sourceReferenceId, StringComparison.Ordinal)
+                && first.observedWorldTime.Equals(second.observedWorldTime)
+                && first.expiresWorldTime.Equals(second.expiresWorldTime)
+                && string.Equals(first.provenance, second.provenance, StringComparison.Ordinal);
         }
 
         private IEnumerable<MarketObservationRecordData> ActiveSupply(string marketInstanceId, string marketSubjectId, double worldTime)

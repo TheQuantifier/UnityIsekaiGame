@@ -408,6 +408,28 @@ namespace UnityIsekaiGame.Inventory.Production
     }
 
     [Serializable]
+    public sealed class ProductionLotMaterialAssignmentData
+    {
+        public string recipeInputId;
+        public string componentRoleId;
+        public string itemDefinitionId;
+        public string materialDefinitionId;
+        public float quantity = 1f;
+
+        public ProductionLotMaterialAssignmentData Clone()
+        {
+            return new ProductionLotMaterialAssignmentData
+            {
+                recipeInputId = recipeInputId ?? string.Empty,
+                componentRoleId = componentRoleId ?? string.Empty,
+                itemDefinitionId = itemDefinitionId ?? string.Empty,
+                materialDefinitionId = materialDefinitionId ?? string.Empty,
+                quantity = Math.Max(0f, quantity)
+            };
+        }
+    }
+
+    [Serializable]
     public sealed class ProductionLotData
     {
         public string lotId;
@@ -417,6 +439,7 @@ namespace UnityIsekaiGame.Inventory.Production
         public string[] sourceItemIds = Array.Empty<string>();
         public string[] containedItemIds = Array.Empty<string>();
         public float quantity;
+        public long discreteQuantity = -1L;
         public ProductionQuantityUnit unit = ProductionQuantityUnit.Count;
         public string batchSourceId;
         public string[] parentLotIds = Array.Empty<string>();
@@ -426,9 +449,21 @@ namespace UnityIsekaiGame.Inventory.Production
         public string compositionSummary;
         public string qualitySummary;
         public string puritySummary;
+        public string recipeDefinitionId;
+        public string recipeVersionId;
+        public ProductionLotMaterialAssignmentData[] materialAssignments = Array.Empty<ProductionLotMaterialAssignmentData>();
+        public string deterministicSeed;
+        public double createdWorldTime;
+        public long nextMaterializationIndex;
+        public float baseQuality = 0.3f;
+        public float qualityVariation = 0.08f;
         public string provenance;
         public ProductionLotState state = ProductionLotState.Active;
         public long revision = 1L;
+
+        public long WholeQuantity => unit == ProductionQuantityUnit.Count
+            ? Math.Max(0L, discreteQuantity >= 0L ? discreteQuantity : (long)MathF.Round(quantity))
+            : Math.Max(0L, (long)Math.Floor(quantity));
 
         public ProductionLotData Clone()
         {
@@ -440,7 +475,8 @@ namespace UnityIsekaiGame.Inventory.Production
                 custodianId = custodianId ?? string.Empty,
                 sourceItemIds = ProductionStageDefinitionData.NormalizeIds(sourceItemIds),
                 containedItemIds = ProductionStageDefinitionData.NormalizeIds(containedItemIds),
-                quantity = Math.Max(0f, quantity),
+                quantity = unit == ProductionQuantityUnit.Count ? WholeQuantity : Math.Max(0f, quantity),
+                discreteQuantity = unit == ProductionQuantityUnit.Count ? WholeQuantity : -1L,
                 unit = unit,
                 batchSourceId = batchSourceId ?? string.Empty,
                 parentLotIds = ProductionStageDefinitionData.NormalizeIds(parentLotIds),
@@ -450,6 +486,14 @@ namespace UnityIsekaiGame.Inventory.Production
                 compositionSummary = compositionSummary ?? string.Empty,
                 qualitySummary = qualitySummary ?? string.Empty,
                 puritySummary = puritySummary ?? string.Empty,
+                recipeDefinitionId = recipeDefinitionId ?? string.Empty,
+                recipeVersionId = recipeVersionId ?? string.Empty,
+                materialAssignments = (materialAssignments ?? Array.Empty<ProductionLotMaterialAssignmentData>()).Select(entry => entry?.Clone()).Where(entry => entry != null).ToArray(),
+                deterministicSeed = deterministicSeed ?? string.Empty,
+                createdWorldTime = Math.Max(0d, createdWorldTime),
+                nextMaterializationIndex = Math.Max(0L, nextMaterializationIndex),
+                baseQuality = Math.Clamp(baseQuality, 0f, 1f),
+                qualityVariation = Math.Clamp(qualityVariation, 0f, 1f),
                 provenance = provenance ?? string.Empty,
                 state = state,
                 revision = Math.Max(1L, revision)
@@ -626,7 +670,7 @@ namespace UnityIsekaiGame.Inventory.Production
     [Serializable]
     public sealed class ProductionWorkflowRuntimeSaveData
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 3;
         public int schemaVersion = CurrentSchemaVersion;
         public long revision;
         public long nextEventSequence;

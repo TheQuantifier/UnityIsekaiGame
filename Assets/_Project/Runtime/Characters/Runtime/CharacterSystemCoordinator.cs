@@ -48,6 +48,7 @@ namespace UnityIsekaiGame.CharacterSystem
         private CharacterFullSnapshot cachedDevelopmentSnapshot;
         private CharacterQueryService query;
         private string runtimeActorFallbackId;
+        private Func<string, long> currencyBalanceProvider;
         private bool subscribed;
         private bool snapshotDirty = true;
 
@@ -82,6 +83,12 @@ namespace UnityIsekaiGame.CharacterSystem
         public string PlayerId => identity == null ? PersistenceService.LocalPlayerId : identity.PlayerId;
         public string PersonId => identity == null ? string.Empty : identity.PersonId;
         public string ActorId => ResolveActorId();
+
+        public void ConfigureCurrencyBalanceProvider(Func<string, long> provider)
+        {
+            currencyBalanceProvider = provider;
+            snapshotDirty = true;
+        }
 
         private void Awake()
         {
@@ -225,7 +232,8 @@ namespace UnityIsekaiGame.CharacterSystem
                 Statuses = statuses,
                 Inventory = inventory,
                 Body = body,
-                Lifecycle = lifecycle
+                Lifecycle = lifecycle,
+                CurrencyBalanceProvider = currencyBalanceProvider
             };
 
             if (abilities != null)
@@ -366,8 +374,7 @@ namespace UnityIsekaiGame.CharacterSystem
             CharacterSocialSnapshot social = new CharacterSocialSnapshot(
                 identity == null ? Array.Empty<RuntimeRoleRecord>() : identity.Roles,
                 identity == null ? Array.Empty<RuntimeSocialStatusRecord>() : identity.SocialStatuses,
-                identity == null ? Array.Empty<RuntimeTitleRecord>() : identity.Titles,
-                identity == null ? Array.Empty<WalletBalanceRecord>() : identity.WalletBalances);
+                identity == null ? Array.Empty<RuntimeTitleRecord>() : identity.Titles);
 
             CharacterCapabilitySnapshot capabilities = BuildCapabilitySnapshot();
 

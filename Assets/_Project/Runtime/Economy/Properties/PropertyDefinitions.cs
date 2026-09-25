@@ -71,7 +71,7 @@ namespace UnityIsekaiGame.Economy.Properties
     }
 
     [CreateAssetMenu(fileName = "PropertyDefinition", menuName = "Unity Isekai Game/Economy/Property Definition")]
-    public sealed class PropertyDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class PropertyDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string propertyDefinitionId;
         [SerializeField] private string displayName;

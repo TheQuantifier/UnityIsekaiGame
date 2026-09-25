@@ -34,7 +34,6 @@ namespace UnityIsekaiGame.Progression
         [SerializeField] private List<RuntimeRoleRecord> roles = new List<RuntimeRoleRecord>();
         [SerializeField] private List<RuntimeSocialStatusRecord> socialStatuses = new List<RuntimeSocialStatusRecord>();
         [SerializeField] private List<RuntimeTitleRecord> titles = new List<RuntimeTitleRecord>();
-        [SerializeField] private List<WalletBalanceRecord> walletBalances = new List<WalletBalanceRecord>();
         [SerializeField] private List<ActivityOutcomeRecord> activityRecords = new List<ActivityOutcomeRecord>();
         [SerializeField] private List<ParticipationRecord> participationRecords = new List<ParticipationRecord>();
 
@@ -53,7 +52,6 @@ namespace UnityIsekaiGame.Progression
         public IReadOnlyList<RuntimeRoleRecord> Roles => roles;
         public IReadOnlyList<RuntimeSocialStatusRecord> SocialStatuses => socialStatuses;
         public IReadOnlyList<RuntimeTitleRecord> Titles => titles;
-        public IReadOnlyList<WalletBalanceRecord> WalletBalances => walletBalances;
         public IReadOnlyList<ActivityOutcomeRecord> ActivityRecords => activityRecords;
         public IReadOnlyList<ParticipationRecord> ParticipationRecords => participationRecords;
         public double CumulativeActivePlaytimeSeconds => playTimeTracker == null ? 0d : playTimeTracker.CumulativeSeconds;
@@ -69,7 +67,6 @@ namespace UnityIsekaiGame.Progression
         public event Action<PlayerIdentityProgression, RuntimeRoleRecord, bool> RoleReplacementCompleted;
         public event Action<PlayerIdentityProgression, RuntimeSocialStatusRecord, bool> SocialStatusAdded;
         public event Action<PlayerIdentityProgression, RuntimeSocialStatusRecord, bool> SocialStatusResolved;
-        public event Action<PlayerIdentityProgression, string, long, bool> WalletChanged;
         public event Action<PlayerIdentityProgression, OverallLevelBreakdown, bool> OverallLevelChanged;
         public event Action<PlayerIdentityProgression, ActivityOutcomeRecord, bool> ActivityOutcomeRecorded;
         public event Action<PlayerIdentityProgression, ParticipationRecord, bool> ParticipationRecorded;
@@ -221,7 +218,6 @@ namespace UnityIsekaiGame.Progression
             };
 
             ApplyOriginStatGrants(generated.Origin, restoring);
-            ApplyStartingGold(generated.Origin, generated.StartingGold, restoring);
             AssignStartingRoleStatusAndTitle(generated.Origin, restoring);
             AssignBirthGift(generated.BirthGift, generated.Family.Id, generated.Origin.Id, origin.assignmentSource, restoring);
             RebuildActiveEffects(restoring);
@@ -240,63 +236,10 @@ namespace UnityIsekaiGame.Progression
             roles.Clear();
             socialStatuses.Clear();
             titles.Clear();
-            walletBalances.Clear();
             activityRecords.Clear();
             participationRecords.Clear();
             RaiseProgressionChanged(false);
             return ProgressionOperationResult.Success("Identity/progression state reset for development.");
-        }
-
-        public long GetBalance(string currencyId)
-        {
-            WalletBalanceRecord record = FindWalletRecord(currencyId);
-            return record == null ? 0L : record.amount;
-        }
-
-        public ProgressionOperationResult AddCurrency(CurrencyDefinition currency, long amount, bool restoring = false)
-        {
-            if (currency == null)
-            {
-                return ProgressionOperationResult.Failure("MissingCurrency", "Currency definition is missing.");
-            }
-
-            if (amount < 0L)
-            {
-                return ProgressionOperationResult.Failure("NegativeAmount", "Cannot add a negative currency amount.");
-            }
-
-            WalletBalanceRecord record = FindOrCreateWalletRecord(currency.Id);
-            if (long.MaxValue - record.amount < amount)
-            {
-                return ProgressionOperationResult.Failure("WalletOverflow", "Currency balance would overflow.");
-            }
-
-            record.amount += amount;
-            RaiseWalletChanged(currency.Id, record.amount, restoring);
-            return ProgressionOperationResult.Success($"Added {amount} {currency.DisplayName}.");
-        }
-
-        public ProgressionOperationResult SpendCurrency(CurrencyDefinition currency, long amount)
-        {
-            if (currency == null)
-            {
-                return ProgressionOperationResult.Failure("MissingCurrency", "Currency definition is missing.");
-            }
-
-            if (amount < 0L)
-            {
-                return ProgressionOperationResult.Failure("NegativeAmount", "Cannot spend a negative currency amount.");
-            }
-
-            WalletBalanceRecord record = FindOrCreateWalletRecord(currency.Id);
-            if (record.amount < amount)
-            {
-                return ProgressionOperationResult.Failure("InsufficientFunds", $"Insufficient {currency.DisplayName}.");
-            }
-
-            record.amount -= amount;
-            RaiseWalletChanged(currency.Id, record.amount, false);
-            return ProgressionOperationResult.Success($"Spent {amount} {currency.DisplayName}.");
         }
 
         public RoleConflictResult DetectRoleConflicts(RoleDefinition role)
@@ -604,7 +547,6 @@ namespace UnityIsekaiGame.Progression
                 roles = roles.Select(CloneRole).ToList(),
                 socialStatuses = socialStatuses.Select(CloneSocialStatus).ToList(),
                 titles = titles.Select(CloneTitle).ToList(),
-                walletBalances = walletBalances.Select(CloneWallet).ToList(),
                 activityRecords = activityRecords.Select(CloneActivity).ToList(),
                 participationRecords = participationRecords.Select(CloneParticipation).ToList()
             };
@@ -633,7 +575,6 @@ namespace UnityIsekaiGame.Progression
                 roles = saveData.roles == null ? new List<RuntimeRoleRecord>() : saveData.roles.Select(CloneRole).ToList();
                 socialStatuses = saveData.socialStatuses == null ? new List<RuntimeSocialStatusRecord>() : saveData.socialStatuses.Select(CloneSocialStatus).ToList();
                 titles = saveData.titles == null ? new List<RuntimeTitleRecord>() : saveData.titles.Select(CloneTitle).ToList();
-                walletBalances = saveData.walletBalances == null ? new List<WalletBalanceRecord>() : saveData.walletBalances.Select(CloneWallet).ToList();
                 activityRecords = saveData.activityRecords == null ? new List<ActivityOutcomeRecord>() : saveData.activityRecords.Select(CloneActivity).ToList();
                 participationRecords = saveData.participationRecords == null ? new List<ParticipationRecord>() : saveData.participationRecords.Select(CloneParticipation).ToList();
                 EnsureIdentityInitialized();
@@ -655,7 +596,6 @@ namespace UnityIsekaiGame.Progression
             string rolesLine = roles.Count == 0 ? "None" : string.Join(", ", roles.Select(role => $"{role.roleDefinitionId}:{role.lifecycleState}{(role.primary ? ":Primary" : string.Empty)}"));
             string statusesLine = socialStatuses.Count == 0 ? "None" : string.Join(", ", socialStatuses.Select(status => $"{status.socialStatusDefinitionId}:{status.contextKind}:{status.contextTargetId}:{status.lifecycleState}"));
             string titlesLine = titles.Count == 0 ? "None" : string.Join(", ", titles.Select(title => title.titleDefinitionId));
-            string walletLine = walletBalances.Count == 0 ? "None" : string.Join(", ", walletBalances.Select(balance => $"{balance.currencyDefinitionId}={balance.amount}"));
             return string.Join(Environment.NewLine, new[]
             {
                 "Feature 5.1 Identity / Progression",
@@ -671,7 +611,7 @@ namespace UnityIsekaiGame.Progression
                 $"Roles: {rolesLine}",
                 $"Social Statuses: {statusesLine}",
                 $"Titles: {titlesLine}",
-                $"Wallet: {walletLine}",
+                "Wallet: EconomyRuntime authoritative account",
                 $"Activities: {activityRecords.Count}",
                 $"Participation: {participationRecords.Count}",
                 $"Overall Level: {breakdown.OverallLevel} Raw={breakdown.RawTotalScore:0.###} Activity={breakdown.NormalizedActivityScore:0.###} Stats={breakdown.NormalizedStatScore:0.###} Success={breakdown.SuccessComponent:0.###}"
@@ -752,19 +692,15 @@ namespace UnityIsekaiGame.Progression
             origin.originStatGrantsApplied = true;
         }
 
-        private void ApplyStartingGold(OriginDefinition originDefinition, long startingGold, bool restoring)
+        public void MarkStartingCurrencyApplied(bool restoring = false)
         {
-            if (originDefinition == null || origin.startingCurrencyApplied || startingGold <= 0L)
+            if (origin == null || !origin.assigned || origin.startingCurrencyApplied)
             {
                 return;
             }
 
-            CurrencyDefinition currency = originDefinition.StartingGold?.Currency ?? originDefinition.Family?.DefaultStartingMoney?.Currency;
-            if (currency != null)
-            {
-                AddCurrency(currency, startingGold, restoring);
-                origin.startingCurrencyApplied = true;
-            }
+            origin.startingCurrencyApplied = true;
+            RaiseProgressionChanged(restoring);
         }
 
         private void AssignStartingRoleStatusAndTitle(OriginDefinition originDefinition, bool restoring)
@@ -1237,24 +1173,6 @@ namespace UnityIsekaiGame.Progression
             RaiseRoleStateChanged(record, restoring);
         }
 
-        private WalletBalanceRecord FindWalletRecord(string currencyId)
-        {
-            return walletBalances.FirstOrDefault(record => string.Equals(record.currencyDefinitionId, currencyId, StringComparison.Ordinal));
-        }
-
-        private WalletBalanceRecord FindOrCreateWalletRecord(string currencyId)
-        {
-            WalletBalanceRecord record = FindWalletRecord(currencyId);
-            if (record != null)
-            {
-                return record;
-            }
-
-            record = new WalletBalanceRecord { currencyDefinitionId = currencyId, amount = 0L };
-            walletBalances.Add(record);
-            return record;
-        }
-
         private float CalculateSuccessComponent(OverallLevelConfiguration config)
         {
             int total = activityRecords.Count;
@@ -1433,15 +1351,6 @@ namespace UnityIsekaiGame.Progression
             }
         }
 
-        private void RaiseWalletChanged(string currencyId, long balance, bool restoring)
-        {
-            if (!notificationsSuppressed)
-            {
-                WalletChanged?.Invoke(this, currencyId, balance, restoring);
-                RaiseProgressionChanged(restoring);
-            }
-        }
-
         private void RaiseOverallLevelChanged(bool restoring)
         {
             if (!notificationsSuppressed)
@@ -1552,12 +1461,6 @@ namespace UnityIsekaiGame.Progression
             assignedAtUtc = value.assignedAtUtc,
             assignedAtPlaytimeSeconds = value.assignedAtPlaytimeSeconds,
             active = value.active
-        };
-
-        private static WalletBalanceRecord CloneWallet(WalletBalanceRecord value) => new WalletBalanceRecord
-        {
-            currencyDefinitionId = value.currencyDefinitionId,
-            amount = value.amount
         };
 
         private static ActivityOutcomeRecord CloneActivity(ActivityOutcomeRecord value) => new ActivityOutcomeRecord

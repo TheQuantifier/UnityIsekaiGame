@@ -72,6 +72,18 @@ namespace UnityIsekaiGame.Inventory.Production
             return false;
         }
 
+        public bool TryGetLot(string lotId, out ProductionLotData lot)
+        {
+            if (!string.IsNullOrWhiteSpace(lotId) && lotsById.TryGetValue(lotId, out ProductionLotData found))
+            {
+                lot = found.Clone();
+                return true;
+            }
+
+            lot = null;
+            return false;
+        }
+
         public ProductionWorkflowResult CreateWorkOrder(ProductionWorkOrderData request, DefinitionRegistry registry, bool preview = false)
         {
             ProductionWorkOrderData workOrder = (request ?? new ProductionWorkOrderData()).Clone();
@@ -908,6 +920,12 @@ namespace UnityIsekaiGame.Inventory.Production
                 return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.InvalidRequest, "Lot quantity must be positive.");
             }
 
+            if (lot.unit == ProductionQuantityUnit.Count)
+            {
+                lot.discreteQuantity = lot.WholeQuantity;
+                lot.quantity = lot.discreteQuantity;
+            }
+
             if (lotsById.ContainsKey(lot.lotId))
             {
                 return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.InvalidRequest, $"Lot '{lot.lotId}' already exists.");
@@ -916,6 +934,72 @@ namespace UnityIsekaiGame.Inventory.Production
             lotsById.Add(lot.lotId, lot);
             Touch($"lot-created.{lot.lotId}", "LotCreated", string.Empty, string.Empty, string.Empty, lot.batchSourceId, lot.lotId, string.Empty, "Production lot created.");
             return ProductionWorkflowResult.Success("Production lot created.", lot: lot);
+        }
+
+        public ProductionWorkflowResult AddLotQuantity(string lotId, float quantity, string eventId)
+        {
+            if (!lotsById.TryGetValue(lotId ?? string.Empty, out ProductionLotData lot))
+            {
+                return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.InvalidRequest, $"Lot '{lotId}' was not found.");
+            }
+
+            if (quantity <= 0f || lot.unit == ProductionQuantityUnit.Count && Math.Abs(quantity - MathF.Round(quantity)) > 0.0001f)
+            {
+                return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.InvalidRequest, "Added lot quantity must be positive and use whole units for count-based lots.");
+            }
+
+            string resolvedEventId = string.IsNullOrWhiteSpace(eventId) ? $"lot-quantity-added.{lotId}.{lot.revision + 1}" : eventId.Trim();
+            if (events.Any(entry => string.Equals(entry.eventId, resolvedEventId, StringComparison.Ordinal)))
+            {
+                return ProductionWorkflowResult.Success("Lot quantity addition already applied.", lot: lot, duplicate: true);
+            }
+
+            float updatedQuantity = lot.quantity + quantity;
+            if (float.IsNaN(updatedQuantity) || float.IsInfinity(updatedQuantity))
+            {
+                return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.InvalidRequest, "Added lot quantity would exceed the supported range.");
+            }
+
+            if (lot.unit == ProductionQuantityUnit.Count)
+            {
+                lot.discreteQuantity = checked(lot.WholeQuantity + (long)MathF.Round(quantity));
+                lot.quantity = lot.discreteQuantity;
+            }
+            else
+            {
+                lot.quantity = updatedQuantity;
+            }
+            lot.state = ProductionLotState.Active;
+            lot.revision++;
+            Touch(resolvedEventId, "LotQuantityAdded", string.Empty, string.Empty, string.Empty, lot.batchSourceId, lot.lotId, string.Empty, $"Added {quantity:0.###} units to production lot.");
+            return ProductionWorkflowResult.Success("Production lot quantity increased.", lot: lot);
+        }
+
+        public ProductionWorkflowResult ConsumeLotQuantity(string lotId, int quantity, string eventId)
+        {
+            if (!lotsById.TryGetValue(lotId ?? string.Empty, out ProductionLotData lot))
+            {
+                return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.InvalidRequest, $"Lot '{lotId}' was not found.");
+            }
+
+            if (quantity <= 0 || lot.unit != ProductionQuantityUnit.Count || lot.state != ProductionLotState.Active || lot.WholeQuantity < quantity)
+            {
+                return ProductionWorkflowResult.Failure(ProductionWorkflowStatus.InvalidRequest, "The active production lot does not contain the requested whole-unit quantity.");
+            }
+
+            string resolvedEventId = string.IsNullOrWhiteSpace(eventId) ? $"lot-quantity-consumed.{lotId}.{lot.nextMaterializationIndex}" : eventId.Trim();
+            if (events.Any(entry => string.Equals(entry.eventId, resolvedEventId, StringComparison.Ordinal)))
+            {
+                return ProductionWorkflowResult.Success("Lot quantity consumption already applied.", lot: lot, duplicate: true);
+            }
+
+            lot.discreteQuantity = checked(lot.WholeQuantity - quantity);
+            lot.quantity = lot.discreteQuantity;
+            lot.nextMaterializationIndex = checked(lot.nextMaterializationIndex + quantity);
+            lot.state = lot.quantity <= 0.0001f ? ProductionLotState.Consumed : ProductionLotState.Active;
+            lot.revision++;
+            Touch(resolvedEventId, "LotQuantityConsumed", string.Empty, string.Empty, string.Empty, lot.batchSourceId, lot.lotId, string.Empty, $"Consumed {quantity} units from production lot.");
+            return ProductionWorkflowResult.Success("Production lot quantity consumed.", lot: lot);
         }
 
         public ProductionWorkflowResult SplitLot(string sourceLotId, string childLotId, float quantity)
@@ -938,10 +1022,16 @@ namespace UnityIsekaiGame.Inventory.Production
             ProductionLotData child = source.Clone();
             child.lotId = childLotId;
             child.quantity = quantity;
+            child.discreteQuantity = child.unit == ProductionQuantityUnit.Count ? (long)MathF.Round(quantity) : -1L;
             child.parentLotIds = Append(child.parentLotIds, source.lotId);
             child.childLotIds = Array.Empty<string>();
             child.revision = 1L;
             source.quantity -= quantity;
+            if (source.unit == ProductionQuantityUnit.Count)
+            {
+                source.discreteQuantity = checked(source.WholeQuantity - (long)MathF.Round(quantity));
+                source.quantity = source.discreteQuantity;
+            }
             source.childLotIds = Append(source.childLotIds, child.lotId);
             source.revision++;
             lotsById.Add(child.lotId, child);
@@ -988,7 +1078,8 @@ namespace UnityIsekaiGame.Inventory.Production
                 custodianId = sources[0].custodianId,
                 sourceItemIds = ProductionStageDefinitionData.NormalizeIds(sources.SelectMany(source => source.sourceItemIds)),
                 containedItemIds = ProductionStageDefinitionData.NormalizeIds(sources.SelectMany(source => source.containedItemIds)),
-                quantity = sources.Sum(source => source.quantity),
+                quantity = sources[0].unit == ProductionQuantityUnit.Count ? sources.Sum(source => source.WholeQuantity) : sources.Sum(source => source.quantity),
+                discreteQuantity = sources[0].unit == ProductionQuantityUnit.Count ? sources.Sum(source => source.WholeQuantity) : -1L,
                 unit = unit,
                 batchSourceId = sources[0].batchSourceId,
                 parentLotIds = ids,
@@ -1144,6 +1235,64 @@ namespace UnityIsekaiGame.Inventory.Production
             HashSet<string> intermediates = new HashSet<string>((saveData.intermediates ?? new List<ProductionIntermediateData>()).Select(entry => entry.intermediateId), StringComparer.Ordinal);
             HashSet<string> occupancies = new HashSet<string>((saveData.occupancies ?? new List<ProductionStationOccupancyData>()).Select(entry => entry.occupancyId), StringComparer.Ordinal);
             HashSet<string> assignments = new HashSet<string>((saveData.assignments ?? new List<ProductionWorkerAssignmentData>()).Select(entry => entry.assignmentId), StringComparer.Ordinal);
+
+            foreach (ProductionLotData lot in saveData.lots ?? new List<ProductionLotData>())
+            {
+                if (float.IsNaN(lot.quantity) || float.IsInfinity(lot.quantity)
+                    || double.IsNaN(lot.createdWorldTime) || double.IsInfinity(lot.createdWorldTime)
+                    || float.IsNaN(lot.baseQuality) || float.IsInfinity(lot.baseQuality)
+                    || float.IsNaN(lot.qualityVariation) || float.IsInfinity(lot.qualityVariation)
+                    || lot.quantity < 0f || lot.createdWorldTime < 0d || lot.nextMaterializationIndex < 0L
+                    || lot.baseQuality is < 0f or > 1f || lot.qualityVariation is < 0f or > 1f)
+                {
+                    failure = $"Production lot '{lot.lotId}' contains invalid quantity, materialization, or quality values.";
+                    return false;
+                }
+
+                if (lot.unit == ProductionQuantityUnit.Count && Math.Abs(lot.quantity - MathF.Round(lot.quantity)) > 0.0001f)
+                {
+                    failure = $"Count-based production lot '{lot.lotId}' must contain a whole-unit quantity.";
+                    return false;
+                }
+
+                if (!string.IsNullOrWhiteSpace(lot.recipeDefinitionId) && registry != null)
+                {
+                    if (!registry.TryGet(lot.recipeDefinitionId, out RecipeDefinition recipe))
+                    {
+                        failure = $"Production lot '{lot.lotId}' references missing recipe '{lot.recipeDefinitionId}'.";
+                        return false;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(lot.recipeVersionId)
+                        && !recipe.Versions.Any(version => string.Equals(version.versionId, lot.recipeVersionId, StringComparison.Ordinal)))
+                    {
+                        failure = $"Production lot '{lot.lotId}' references missing recipe version '{lot.recipeVersionId}'.";
+                        return false;
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(lot.recipeVersionId))
+                {
+                    failure = $"Production lot '{lot.lotId}' references a recipe version without a recipe definition.";
+                    return false;
+                }
+
+                foreach (ProductionLotMaterialAssignmentData material in lot.materialAssignments ?? Array.Empty<ProductionLotMaterialAssignmentData>())
+                {
+                    if (material == null || string.IsNullOrWhiteSpace(material.recipeInputId)
+                        || string.IsNullOrWhiteSpace(material.materialDefinitionId)
+                        || float.IsNaN(material.quantity) || float.IsInfinity(material.quantity) || material.quantity <= 0f)
+                    {
+                        failure = $"Production lot '{lot.lotId}' contains an invalid material assignment.";
+                        return false;
+                    }
+
+                    if (registry != null && !registry.TryGet(material.materialDefinitionId, out MaterialDefinition _))
+                    {
+                        failure = $"Production lot '{lot.lotId}' references missing material '{material.materialDefinitionId}'.";
+                        return false;
+                    }
+                }
+            }
 
             foreach (ProductionJobData job in saveData.jobs ?? new List<ProductionJobData>())
             {

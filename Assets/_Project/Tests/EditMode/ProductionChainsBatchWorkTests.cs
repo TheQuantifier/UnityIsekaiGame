@@ -122,6 +122,79 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void CountLotsPersistRecipeMaterialsAndConsumeWithoutReplayDuplication()
+        {
+            Fixture fixture = Fixture.Create();
+            ProductionWorkflowResult created = fixture.Workflow.CreateLot(new ProductionLotData
+            {
+                lotId = "lot.finished-swords",
+                definitionOrMaterialId = fixture.Sword.Id,
+                quantity = 4f,
+                unit = ProductionQuantityUnit.Count,
+                recipeDefinitionId = fixture.Recipe.Id,
+                recipeVersionId = fixture.Recipe.CurrentVersionId,
+                deterministicSeed = "town-batch-17",
+                baseQuality = 0.3f,
+                qualityVariation = 0.05f,
+                materialAssignments = new[]
+                {
+                    new ProductionLotMaterialAssignmentData
+                    {
+                        recipeInputId = "input.iron",
+                        componentRoleId = "component.blade",
+                        itemDefinitionId = fixture.Sword.Id,
+                        materialDefinitionId = fixture.Iron.Id,
+                        quantity = 1f
+                    }
+                }
+            });
+            ProductionWorkflowResult consumed = fixture.Workflow.ConsumeLotQuantity("lot.finished-swords", 1, "sale.1");
+            ProductionWorkflowResult replay = fixture.Workflow.ConsumeLotQuantity("lot.finished-swords", 1, "sale.1");
+            ProductionWorkflowResult replenished = fixture.Workflow.AddLotQuantity("lot.finished-swords", 2f, "production.18");
+            ProductionWorkflowRuntimeSaveData save = fixture.Workflow.CreateSaveData();
+            ProductionWorkflowRuntime restored = new ProductionWorkflowRuntime();
+            ProductionWorkflowResult restore = restored.RestoreFromSaveData(save, fixture.Registry);
+            restored.TryGetLot("lot.finished-swords", out ProductionLotData lot);
+
+            Assert.That(created.Succeeded, Is.True, created.Message);
+            Assert.That(consumed.Succeeded, Is.True, consumed.Message);
+            Assert.That(replay.Duplicate, Is.True);
+            Assert.That(replenished.Succeeded, Is.True, replenished.Message);
+            Assert.That(restore.Succeeded, Is.True, restore.Message);
+            Assert.That(lot.quantity, Is.EqualTo(5f));
+            Assert.That(lot.nextMaterializationIndex, Is.EqualTo(1L));
+            Assert.That(lot.recipeDefinitionId, Is.EqualTo(fixture.Recipe.Id));
+            Assert.That(lot.recipeVersionId, Is.EqualTo(fixture.Recipe.CurrentVersionId));
+            Assert.That(lot.materialAssignments.Single().componentRoleId, Is.EqualTo("component.blade"));
+            Assert.That(lot.deterministicSeed, Is.EqualTo("town-batch-17"));
+        }
+
+        [Test]
+        public void CountLotsKeepExactQuantitiesBeyondFloatIntegerPrecision()
+        {
+            Fixture fixture = Fixture.Create();
+            const long startingQuantity = 16777219L;
+            ProductionWorkflowResult created = fixture.Workflow.CreateLot(new ProductionLotData
+            {
+                lotId = "lot.large-count",
+                definitionOrMaterialId = fixture.Sword.Id,
+                unit = ProductionQuantityUnit.Count,
+                quantity = startingQuantity,
+                discreteQuantity = startingQuantity
+            });
+            ProductionWorkflowResult consumed = fixture.Workflow.ConsumeLotQuantity("lot.large-count", 2, "sale.large-count");
+            ProductionWorkflowRuntime restored = new ProductionWorkflowRuntime();
+            ProductionWorkflowResult restore = restored.RestoreFromSaveData(fixture.Workflow.CreateSaveData(), fixture.Registry);
+            restored.TryGetLot("lot.large-count", out ProductionLotData lot);
+
+            Assert.That(created.Succeeded, Is.True, created.Message);
+            Assert.That(consumed.Succeeded, Is.True, consumed.Message);
+            Assert.That(restore.Succeeded, Is.True, restore.Message);
+            Assert.That(lot.WholeQuantity, Is.EqualTo(startingQuantity - 2L));
+            Assert.That(lot.discreteQuantity, Is.EqualTo(startingQuantity - 2L));
+        }
+
+        [Test]
         public void PersistenceParticipantRejectsCorruptReferencesWithoutMutatingLiveRuntime()
         {
             Fixture fixture = Fixture.CreateStartedJob();

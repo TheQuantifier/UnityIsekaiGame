@@ -100,13 +100,6 @@ namespace UnityIsekaiGame.Progression
     }
 
     [Serializable]
-    public sealed class WalletBalanceRecord
-    {
-        public string currencyDefinitionId;
-        public long amount;
-    }
-
-    [Serializable]
     public sealed class ActivityOutcomeRecord
     {
         public string activityId;

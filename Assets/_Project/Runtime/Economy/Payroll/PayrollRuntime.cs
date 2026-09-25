@@ -38,6 +38,7 @@ namespace UnityIsekaiGame.Economy.Payroll
         public IReadOnlyList<TimesheetData> Timesheets => Ordered(timesheetsById.Values, item => item.timesheetId).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<PayrollCalculationData> Calculations => Ordered(calculationsById.Values, item => item.calculationId).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<PayrollObligationData> Obligations => Ordered(obligationsById.Values, item => item.obligationId).Select(item => item.Clone()).ToArray();
+        public IReadOnlyList<PayrollPaymentRecordData> Payments => Ordered(paymentRecordsById.Values, item => item.paymentRecordId).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<PayStatementData> Statements => Ordered(statementsById.Values, item => item.statementId).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<WageDebtData> WageDebts => Ordered(wageDebtsById.Values, item => item.wageDebtId).Select(item => item.Clone()).ToArray();
 
@@ -712,7 +713,7 @@ namespace UnityIsekaiGame.Economy.Payroll
                     if (employeePay > 0L)
                     {
                         string tx = $"{transactionId}.{obligation.obligationId}.net";
-                        EconomyOperationResult pay = economy.Transfer(tx, obligation.employerFundingAccountId, obligation.employeeAccountId, new MoneyAmount(obligation.currencyId, employeePay), EconomyTransactionKind.Payment, reservationId: run.reservationId, actorId: run.employerSubjectId);
+                        EconomyOperationResult pay = economy.Transfer(tx, obligation.employerFundingAccountId, obligation.employeeAccountId, new MoneyAmount(obligation.currencyId, employeePay), EconomyTransactionKind.Payment, reservationId: run.reservationId, actorId: run.employerSubjectId, worldTime: run.runWorldTime);
                         if (!pay.Succeeded)
                         {
                             throw new InvalidOperationException(pay.Message);
@@ -733,7 +734,7 @@ namespace UnityIsekaiGame.Economy.Payroll
 
                         long deductionPay = Math.Min(deduction.units, remainingForDeductions);
                         if (FailAt(injectFailureStage, "before-deduction-transfer")) throw new InvalidOperationException("Injected payroll failure before deduction transfer.");
-                        EconomyOperationResult pay = economy.Transfer($"{transactionId}.{obligation.obligationId}.{deduction.deductionDefinitionId}", obligation.employerFundingAccountId, deduction.recipientAccountId, new MoneyAmount(obligation.currencyId, deductionPay), EconomyTransactionKind.Payment, reservationId: string.Empty, actorId: run.employerSubjectId);
+                        EconomyOperationResult pay = economy.Transfer($"{transactionId}.{obligation.obligationId}.{deduction.deductionDefinitionId}", obligation.employerFundingAccountId, deduction.recipientAccountId, new MoneyAmount(obligation.currencyId, deductionPay), EconomyTransactionKind.Payment, reservationId: string.Empty, actorId: run.employerSubjectId, worldTime: run.runWorldTime);
                         if (!pay.Succeeded)
                         {
                             throw new InvalidOperationException(pay.Message);

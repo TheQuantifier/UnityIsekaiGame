@@ -150,7 +150,7 @@ namespace UnityIsekaiGame.Economy.Markets
     }
 
     [CreateAssetMenu(fileName = "NewMarketDefinition", menuName = "Unity Isekai Game/Economy/Market Definition")]
-    public sealed class MarketDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class MarketDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string marketDefinitionId;
         [SerializeField] private string displayName;
@@ -251,7 +251,7 @@ namespace UnityIsekaiGame.Economy.Markets
     }
 
     [CreateAssetMenu(fileName = "NewMarketSubjectDefinition", menuName = "Unity Isekai Game/Economy/Market Subject Definition")]
-    public sealed class MarketSubjectDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class MarketSubjectDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string marketSubjectId;
         [SerializeField] private string displayName;

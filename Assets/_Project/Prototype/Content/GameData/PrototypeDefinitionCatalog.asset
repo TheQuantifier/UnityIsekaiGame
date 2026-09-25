@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: PrototypeDefinitionCatalog
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.GameData.DefinitionCatalog
   catalogId: catalog.prototype
-  contentVersion: phase-3.group-7.professions-careers-employment
-  contentHash: b2c78721a46e012ad1d654aba63f8b24c0152c33b5e364328f43f5a2b35171ba
+  contentVersion: phase-3.group-8
+  contentHash: 940df324adfc96a280f10113d7d4d3a3a4ac2ddc48b8da6493123bb165731473
   defaults: {fileID: 11400000, guid: 4853c1eba0d3bd44c949551fd9b873d7, type: 2}
   sections:
   - domainId: domain.ability
@@ -944,3 +944,28 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 7a250000000000000000000000000023, type: 2}
     - {fileID: 11400000, guid: 7a250000000000000000000000000020, type: 2}
     - {fileID: 11400000, guid: 7a250000000000000000000000000021, type: 2}
+  - domainId: domain.economy
+    definitions:
+    - {fileID: 11400000, guid: 5d019bd41a80f7c489e2fc4274f25e66, type: 2}
+    - {fileID: 11400000, guid: 501f430700ddf1a48a9112137962db66, type: 2}
+    - {fileID: 11400000, guid: e8c756db16742ae488c5beac1dd90f6c, type: 2}
+    - {fileID: 11400000, guid: e67aafa7ea0976c4b9c94539a98add7f, type: 2}
+    - {fileID: 11400000, guid: f84b3f17718f4c344b100a5e9e459f29, type: 2}
+    - {fileID: 11400000, guid: 840a3377e003461469bda50fe589bd6a, type: 2}
+    - {fileID: 11400000, guid: 77f5d5f260ea2d049a31013ff0ed7dea, type: 2}
+    - {fileID: 11400000, guid: 35090c4ac2d358c44bfaeb419b7ab588, type: 2}
+    - {fileID: 11400000, guid: 68e7f864912bb4d46ab80c8a06bc2cd5, type: 2}
+    - {fileID: 11400000, guid: 3860dd6d5b3f3ca4a94783c1801f9265, type: 2}
+    - {fileID: 11400000, guid: d890dd553aa40f14cbd79cfdcf65c72e, type: 2}
+    - {fileID: 11400000, guid: de3733c5ed0cf2845afbc4c38bd1379c, type: 2}
+    - {fileID: 11400000, guid: f047123ad8594bb4aa48b7aa42b68394, type: 2}
+    - {fileID: 11400000, guid: d1f34c4e5c8c9244f8a0aab42b947a89, type: 2}
+    - {fileID: 11400000, guid: 68d99dc2873d55a42945b73abbf9cea1, type: 2}
+    - {fileID: 11400000, guid: efa67bac4ab15a042a543c5a270e7ad0, type: 2}
+    - {fileID: 11400000, guid: d3e3e99e134f338409e230a415e7326e, type: 2}
+    - {fileID: 11400000, guid: 40fdf9cfed949a845b37bddc7176e97f, type: 2}
+    - {fileID: 11400000, guid: 87b244b948dda4942b1c211bbfe4b8d6, type: 2}
+    - {fileID: 11400000, guid: 8947594ec1cb7cd41baa3a3f22709e28, type: 2}
+    - {fileID: 11400000, guid: 2c992b4a70824ca44a9f41f42801ee2e, type: 2}
+    - {fileID: 11400000, guid: 6dc17b49cf16e79428ad6037125697bf, type: 2}
+    - {fileID: 11400000, guid: bebce13d571fc45428c6049e294c3a46, type: 2}

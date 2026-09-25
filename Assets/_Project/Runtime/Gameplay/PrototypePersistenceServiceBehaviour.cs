@@ -972,6 +972,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             AdvanceGroup6Crafting();
             SynchronizeProfessionLifecycle();
+            AdvancePrototypeEconomy();
 
             if (memoryMaintenance == null || playTimeTracker == null)
             {
@@ -1541,6 +1542,7 @@ namespace UnityIsekaiGame.Gameplay
             EnsurePersistenceConsistencyValidators();
             InitializeSceneCharacters();
             EnsureProfessionLifePathFoundation(playerIdentityProgression);
+            EnsurePrototypeEconomyInitialized();
             PlayerReadiness = playerPersistenceContext.BuildReadiness(new[]
             {
                 PlayerIdentityProgressionPersistenceParticipant.Key,
