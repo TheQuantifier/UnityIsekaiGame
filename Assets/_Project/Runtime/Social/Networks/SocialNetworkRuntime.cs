@@ -29,6 +29,7 @@ namespace UnityIsekaiGame.Social.Networks
         private bool disposed;
 
         public long Revision { get; private set; }
+        public bool IsDirty { get; private set; }
         public int GroupCount => groupsById.Count;
         public int MembershipCount => membershipsById.Count;
 
@@ -112,6 +113,7 @@ namespace UnityIsekaiGame.Social.Networks
             }
 
             Revision++;
+            IsDirty = true;
             StampResult(result, Revision);
             processedTransactions[transactionId] = new SocialNetworkProcessedTransactionData { transactionId = transactionId, status = SocialNetworkOperationStatus.Succeeded, groupId = result.Group?.GroupId ?? string.Empty, membershipId = result.Membership?.MembershipId ?? string.Empty, revision = Revision };
             graphCache.Clear();
@@ -367,6 +369,7 @@ namespace UnityIsekaiGame.Social.Networks
                 return SocialNetworkMutationResult.Failure(SocialNetworkOperationStatus.RestoreFailed, failure, revision: Revision);
             }
             RestoreInternal(saveData);
+            IsDirty = !restoringState;
             registry = definitionRegistry ?? registry;
             knownPersonIds.Clear();
             foreach (string person in Clean(persons)) knownPersonIds.Add(person);
@@ -408,6 +411,7 @@ namespace UnityIsekaiGame.Social.Networks
             processedTransactions.Clear();
             graphCache.Clear();
             Revision = 0L;
+            IsDirty = false;
         }
 
         public void Dispose()

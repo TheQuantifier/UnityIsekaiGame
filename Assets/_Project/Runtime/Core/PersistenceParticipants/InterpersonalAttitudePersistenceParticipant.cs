@@ -9,7 +9,7 @@ namespace UnityIsekaiGame.Persistence
 {
     public sealed class InterpersonalAttitudePersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
-        public const string Key = "person.interpersonal-attitudes";
+        public const string Key = "world.interpersonal-attitudes";
         public const int CurrentParticipantSchemaVersion = 1;
 
         private readonly InterpersonalAttitudeRuntime runtime;
@@ -17,22 +17,22 @@ namespace UnityIsekaiGame.Persistence
         private readonly Func<string[]> knownPersonProvider;
         private readonly string ownerId;
 
-        public InterpersonalAttitudePersistenceParticipant(InterpersonalAttitudeRuntime runtime, Func<DefinitionRegistry> registryProvider, Func<string[]> knownPersonProvider, string ownerId = PersistenceService.LocalPlayerId)
+        public InterpersonalAttitudePersistenceParticipant(InterpersonalAttitudeRuntime runtime, Func<DefinitionRegistry> registryProvider, Func<string[]> knownPersonProvider, string ownerId = PersistenceService.LocalWorldId)
         {
             this.runtime = runtime;
             this.registryProvider = registryProvider;
             this.knownPersonProvider = knownPersonProvider;
-            this.ownerId = string.IsNullOrWhiteSpace(ownerId) ? PersistenceService.LocalPlayerId : ownerId;
+            this.ownerId = string.IsNullOrWhiteSpace(ownerId) ? PersistenceService.LocalWorldId : ownerId;
         }
 
         public string ParticipantKey => Key;
         public int ParticipantSchemaVersion => CurrentParticipantSchemaVersion;
         public bool IsRequired => false;
-        public PersistenceScope Scope => PersistenceScope.Player;
+        public PersistenceScope Scope => PersistenceScope.SharedWorld;
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.IdentityAndProgression;
         public int LoadPriority => 96;
-        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { PlayerIdentityProgressionPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { RelationshipPersistenceParticipant.Key };
         public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => new[] { RelationshipPersistenceParticipant.Key, AuthoritativeHistoryPersistenceParticipant.Key, InformationAccessPersistenceParticipant.Key };
         public bool SupportsRollback => true;
         public bool RequiresSceneReadiness => false;

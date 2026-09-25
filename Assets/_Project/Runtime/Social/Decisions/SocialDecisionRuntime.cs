@@ -239,6 +239,38 @@ CandidateGenerationFinished:
             };
         }
 
+        public int PruneHistory(int maximumEntriesPerPerson)
+        {
+            int maximum = Math.Max(0, maximumEntriesPerPerson);
+            int removed = 0;
+            foreach (SocialDecisionPersonStateData state in statesByPerson.Values)
+            {
+                if (state.recentHistory == null || state.recentHistory.Count <= maximum)
+                {
+                    continue;
+                }
+
+                int removeCount = state.recentHistory.Count - maximum;
+                state.recentHistory = state.recentHistory
+                    .OrderByDescending(item => item.evaluationWorldTime)
+                    .ThenByDescending(item => item.revision)
+                    .Take(maximum)
+                    .OrderBy(item => item.evaluationWorldTime)
+                    .ThenBy(item => item.revision)
+                    .ToList();
+                removed += removeCount;
+                state.revision++;
+            }
+
+            if (removed > 0)
+            {
+                Revision++;
+                IsDirty = true;
+            }
+
+            return removed;
+        }
+
         public SocialDecisionResult RestoreFromSaveData(SocialDecisionRuntimeSaveData saveData, DefinitionRegistry definitionRegistry, IEnumerable<string> persons, bool restoringState = true)
         {
             long before = Revision;

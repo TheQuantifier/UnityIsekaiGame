@@ -38,6 +38,7 @@ namespace UnityIsekaiGame.Social.Interactions
         public int PendingCount => pendingById.Count;
         public int PromiseCount => promisesById.Count;
         public IReadOnlyList<SocialInteractionSnapshot> Snapshots => Ordered(recordsById.Values).Select(record => new SocialInteractionSnapshot(record)).ToArray();
+        public bool KnowsPerson(string personId) => !string.IsNullOrWhiteSpace(personId) && knownPersonIds.Contains(personId.Trim());
 
         public void Configure(
             DefinitionRegistry definitionRegistry,
@@ -124,10 +125,10 @@ namespace UnityIsekaiGame.Social.Interactions
             }
 
             SocialInteractionRuntimeSaveData rollback = CreateSaveData();
-            RelationshipRuntimeSaveData relationshipRollback = relationships?.CreateSaveData();
-            InterpersonalAttitudeRuntimeSaveData attitudeRollback = attitudes?.CreateSaveData();
-            ReputationRuntimeSaveData reputationRollback = reputation?.CreateSaveData();
-            RumorRuntimeSaveData rumorRollback = rumors?.CreateSaveData();
+            RelationshipRuntimeSaveData relationshipRollback = plan.Any(item => item.targetRuntime == SocialConsequenceTargetRuntime.Relationship) ? relationships?.CreateSaveData() : null;
+            InterpersonalAttitudeRuntimeSaveData attitudeRollback = plan.Any(item => item.targetRuntime == SocialConsequenceTargetRuntime.Attitude) ? attitudes?.CreateSaveData() : null;
+            ReputationRuntimeSaveData reputationRollback = plan.Any(item => item.targetRuntime == SocialConsequenceTargetRuntime.Reputation) ? reputation?.CreateSaveData() : null;
+            RumorRuntimeSaveData rumorRollback = plan.Any(item => item.targetRuntime == SocialConsequenceTargetRuntime.Rumor) ? rumors?.CreateSaveData() : null;
 
             if (pending == null && !CommitConsequences(record, request, out promise, out SocialInteractionStatus consequenceStatus, out string consequenceFailure))
             {
@@ -328,6 +329,55 @@ namespace UnityIsekaiGame.Social.Interactions
                 processedTransactions = processedTransactions.Values.OrderBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
                 cooldowns = cooldownsByKey.Values.OrderBy(item => item.cooldownKey, StringComparer.Ordinal).Select(item => item.Clone()).ToList()
             };
+        }
+
+        public int PruneHistory(int maximumRecords, int maximumTransactions)
+        {
+            maximumRecords = Math.Max(0, maximumRecords);
+            maximumTransactions = Math.Max(maximumRecords, maximumTransactions);
+            HashSet<string> protectedRecordIds = new HashSet<string>(
+                pendingById.Values.Where(item => item.status == SocialInteractionStatus.Pending).Select(item => item.interactionRecordId)
+                    .Concat(promisesById.Values.Where(item => item.status == SocialPromiseStatus.Proposed).Select(item => item.sourceInteractionRecordId)),
+                StringComparer.Ordinal);
+            string[] removable = recordsById.Values
+                .Where(item => !protectedRecordIds.Contains(item.interactionRecordId))
+                .OrderByDescending(item => item.worldTime)
+                .ThenByDescending(item => item.revision)
+                .Skip(Math.Max(0, maximumRecords - protectedRecordIds.Count))
+                .Select(item => item.interactionRecordId)
+                .ToArray();
+            foreach (string recordId in removable)
+            {
+                recordsById.Remove(recordId);
+            }
+
+            HashSet<string> retainedRecordIds = new HashSet<string>(recordsById.Keys, StringComparer.Ordinal);
+            foreach (string transactionId in processedTransactions.Values
+                .Where(item => !retainedRecordIds.Contains(item.interactionRecordId))
+                .OrderByDescending(item => item.revision)
+                .Skip(maximumTransactions)
+                .Select(item => item.transactionId)
+                .ToArray())
+            {
+                processedTransactions.Remove(transactionId);
+            }
+
+            foreach (string cooldownKey in cooldownsByKey.Values
+                .Where(item => !retainedRecordIds.Contains(item.sourceInteractionRecordId))
+                .Select(item => item.cooldownKey)
+                .ToArray())
+            {
+                cooldownsByKey.Remove(cooldownKey);
+            }
+
+            if (removable.Length > 0)
+            {
+                Revision++;
+                IsDirty = true;
+                RebuildIndexes();
+            }
+
+            return removable.Length;
         }
 
         public SocialInteractionResult RestoreFromSaveData(SocialInteractionRuntimeSaveData saveData, DefinitionRegistry definitionRegistry, IEnumerable<string> persons, bool restoringState = true)

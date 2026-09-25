@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6bc5f1605f6f1142be034bdf1028706, type: 3}
+  m_Name: relationship_family_courtship_partner
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Relationships.RelationshipDefinition
+  relationshipDefinitionId: relationship.family.courtship-partner
+  displayName: Courtship Partner
+  description: 
+  category: 2
+  directionality: 0
+  duplicatePolicy: 1
+  roles:
+  - roleId: partner
+    displayName: Courtship Partner
+    required: 1
+  mayEnd: 1
+  allowSelfRelationship: 0
+  canonicalizeSymmetricParticipants: 1
+  defaultAccessPolicyId: 
+  tags:
+  - courtship
+  - family
+  - romantic
+  - visibility:ParticipantKnown
+  version: 1

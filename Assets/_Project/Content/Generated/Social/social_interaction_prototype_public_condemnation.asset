@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 179f5a5657b8ed64999dae4a2d7cd639, type: 3}
+  m_Name: social_interaction_prototype_public_condemnation
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Interactions.SocialInteractionDefinition
+  interactionDefinitionId: social-interaction.prototype.public-condemnation
+  displayName: Public Condemnation
+  description: 
+  category: 16
+  roles:
+  - role: 0
+    required: 1
+    allowDuplicates: 0
+  - role: 1
+    required: 1
+    allowDuplicates: 0
+  - role: 2
+    required: 0
+    allowDuplicates: 1
+  - role: 3
+    required: 0
+    allowDuplicates: 1
+  - role: 4
+    required: 0
+    allowDuplicates: 1
+  allowSelfTarget: 0
+  supportsWitnesses: 1
+  supportsPublicAudience: 1
+  requiresResponse: 0
+  allowedResponses: 
+  baseOutcome: 0
+  acceptedOutcome: 3
+  refusedOutcome: 4
+  cooldownScope: 2
+  cooldownSeconds: 2
+  defaultVisibility: 2
+  createsHistoryReference: 1
+  createsMemoryReference: 1
+  consequences:
+  - consequenceId: condemn-esteem
+    targetRuntime: 4
+    operation: 4
+    actorRole: 0
+    subjectRole: 1
+    dimensionId: reputation.esteem
+    audienceId: reputation.audience.global-public
+    relationshipDefinitionId: 
+    rumorDefinitionId: 
+    rumorChannelId: 
+    amount: -12
+    required: 1
+    onlyWhenWitnessed: 0
+    onlyWhenPublic: 1
+    appliesToOutcomes: 
+    tags:
+    - verified
+  - consequenceId: condemn-notoriety
+    targetRuntime: 4
+    operation: 4
+    actorRole: 0
+    subjectRole: 1
+    dimensionId: reputation.notoriety
+    audienceId: reputation.audience.global-public
+    relationshipDefinitionId: 
+    rumorDefinitionId: 
+    rumorChannelId: 
+    amount: 10
+    required: 1
+    onlyWhenWitnessed: 0
+    onlyWhenPublic: 1
+    appliesToOutcomes: 
+    tags:
+    - verified
+  requirementIds: []
+  capabilityIds: []
+  tags:
+  - prototype
+  - step12
+  version: 1

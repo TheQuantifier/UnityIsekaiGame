@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18d53f6134f51a444ad55eb98475a8f6, type: 3}
+  m_Name: social_norm_prototype_ignorance_mitigated_etiquette
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Norms.SocialNormDefinition
+  normId: social-norm.prototype.ignorance-mitigated-etiquette
+  displayName: Prototype Ignorance Mitigated Etiquette
+  description: Ignorance can reduce blame without erasing objective applicability.
+  category: 10
+  scope: 1
+  strength: 0
+  satisfiedClassification: 2
+  violatedClassification: 5
+  baseSeverity: 14
+  priority: 35
+  specificity: 35
+  requiresTarget: 1
+  requiresWitness: 0
+  requiresPublic: 0
+  expectedInteractionDefinitionId: social-interaction.prototype.custom
+  expectedPromiseState: 
+  overrideNormIds: []
+  applicabilityConditions:
+  - conditionId: culture-tag
+    actorRoleId: 
+    targetRoleId: 
+    relationshipDefinitionId: 
+    placeId: 
+    audienceId: 
+    requiredTag: culture.prototype.formal
+    hasVisibility: 0
+    visibility: 0
+    hasChannel: 0
+    channel: 0
+    requiresWitness: 0
+    optional: 0
+  exceptions:
+  - exceptionId: ignorance
+    kind: 7
+    effect: 2
+    severityDelta: -8
+    requiredTag: actor-unaware
+    redirectNormId: 
+    suppressConsequences: 0
+  consequences:
+  - consequenceId: respect-loss
+    targetRuntime: 1
+    operation: 1
+    policy: 0
+    dimensionId: attitude.respect
+    audienceId: 
+    relationshipDefinitionId: 
+    rumorDefinitionId: 
+    rumorChannelId: 
+    amount: -6
+    appliesToClassifications: 0500000004000000
+    observersOnly: 0
+    publicOnly: 0
+  tags:
+  - alpha
+  - norm
+  - prototype
+  - social
+  version: 1

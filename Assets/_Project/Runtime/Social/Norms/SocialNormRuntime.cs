@@ -117,10 +117,11 @@ namespace UnityIsekaiGame.Social.Norms
             }
 
             SocialNormRuntimeSaveData rollback = CreateSaveData();
-            InterpersonalAttitudeRuntimeSaveData attitudeRollback = attitudes?.CreateSaveData();
-            ReputationRuntimeSaveData reputationRollback = reputation?.CreateSaveData();
-            RelationshipRuntimeSaveData relationshipRollback = relationships?.CreateSaveData();
-            RumorRuntimeSaveData rumorRollback = rumors?.CreateSaveData();
+            SocialNormConsequenceRecordData[] consequences = plan.SelectMany(item => item.consequences ?? Array.Empty<SocialNormConsequenceRecordData>()).ToArray();
+            InterpersonalAttitudeRuntimeSaveData attitudeRollback = consequences.Any(item => item.targetRuntime == SocialNormConsequenceTargetRuntime.InterpersonalAttitude) ? attitudes?.CreateSaveData() : null;
+            ReputationRuntimeSaveData reputationRollback = consequences.Any(item => item.targetRuntime == SocialNormConsequenceTargetRuntime.Reputation) ? reputation?.CreateSaveData() : null;
+            RelationshipRuntimeSaveData relationshipRollback = consequences.Any(item => item.targetRuntime == SocialNormConsequenceTargetRuntime.Relationship) ? relationships?.CreateSaveData() : null;
+            RumorRuntimeSaveData rumorRollback = consequences.Any(item => item.targetRuntime == SocialNormConsequenceTargetRuntime.Rumor) ? rumors?.CreateSaveData() : null;
 
             if (!CommitConsequences(plan, request, out SocialNormOperationStatus consequenceStatus, out string consequenceFailure))
             {
@@ -194,6 +195,21 @@ namespace UnityIsekaiGame.Social.Norms
                 assessments = Ordered(assessmentsById.Values).Select(record => record.Clone()).ToList(),
                 processedTransactions = processedTransactions.Values.OrderBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToList()
             };
+        }
+
+        public int PruneHistory(int maximumAssessments)
+        {
+            string[] remove = assessmentsById.Values
+                .OrderByDescending(item => item.occurrenceWorldTime)
+                .ThenByDescending(item => item.revision)
+                .Skip(Math.Max(0, maximumAssessments))
+                .Select(item => item.assessmentRecordId)
+                .ToArray();
+            foreach (string id in remove) assessmentsById.Remove(id);
+            HashSet<string> retained = new HashSet<string>(assessmentsById.Keys, StringComparer.Ordinal);
+            foreach (string tx in processedTransactions.Values.Where(item => !(item.assessmentRecordIds ?? Array.Empty<string>()).Any(retained.Contains)).Select(item => item.transactionId).ToArray()) processedTransactions.Remove(tx);
+            if (remove.Length > 0) { Revision++; IsDirty = true; RebuildIndexes(); }
+            return remove.Length;
         }
 
         public SocialNormEvaluationResult RestoreFromSaveData(SocialNormRuntimeSaveData saveData, DefinitionRegistry definitionRegistry, IEnumerable<string> persons, bool restoringState = true)

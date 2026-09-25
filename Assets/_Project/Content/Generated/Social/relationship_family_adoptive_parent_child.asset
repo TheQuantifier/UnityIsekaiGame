@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6bc5f1605f6f1142be034bdf1028706, type: 3}
+  m_Name: relationship_family_adoptive_parent_child
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Relationships.RelationshipDefinition
+  relationshipDefinitionId: relationship.family.adoptive-parent-child
+  displayName: Adoptive Parent Child
+  description: 
+  category: 1
+  directionality: 1
+  duplicatePolicy: 2
+  roles:
+  - roleId: child
+    displayName: Child
+    required: 1
+  - roleId: parent
+    displayName: Adoptive Parent
+    required: 1
+  mayEnd: 0
+  allowSelfRelationship: 0
+  canonicalizeSymmetricParticipants: 0
+  defaultAccessPolicyId: 
+  tags:
+  - family
+  - parentage
+  - parentage:Adoptive
+  - visibility:FamilyKnown
+  version: 1

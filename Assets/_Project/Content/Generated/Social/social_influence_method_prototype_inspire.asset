@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c569409cb1d64945b50c7753584c99cb, type: 3}
+  m_Name: social_influence_method_prototype_inspire
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Influence.SocialInfluenceMethodDefinition
+  methodId: social-influence-method.prototype.inspire
+  displayName: Inspire
+  description: 
+  category: 8
+  supportedIntents: 0a00000005000000
+  supportedSubjectKinds: 000000000c0000000b00000002000000010000000500000004000000
+  baseInfluence: 540
+  baseResistance: 420
+  evidenceWeight: 60
+  relationshipWeight: 90
+  reputationWeight: 100
+  deceptionDetectionBase: 110
+  maximumDecisionModifier: 110
+  cooldownSeconds: 8
+  modifierDurationSeconds: 90
+  deceptionAllowed: 0
+  createsBeliefEvidence: 1
+  allowsCompliance: 1
+  allowsDecisionModifier: 1
+  tags:
+  - influence
+  - prototype
+  - step12

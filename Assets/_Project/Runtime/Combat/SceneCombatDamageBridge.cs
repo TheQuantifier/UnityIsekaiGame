@@ -9,6 +9,7 @@ namespace UnityIsekaiGame.Combat
     public static class SceneCombatDamageBridge
     {
         private static readonly DamageHealingService DamageHealing = new DamageHealingService();
+        public static event Action<GameObject, GameObject, DamageApplicationResult> DamageApplied;
 
         public static bool CanUseCurrentResourcePipeline(GameObject target, in DamageInfo damageInfo)
         {
@@ -29,6 +30,10 @@ namespace UnityIsekaiGame.Combat
             }
 
             DamageApplicationResult application = DamageHealing.ApplyDamage(request);
+            if (application != null && application.Succeeded)
+            {
+                DamageApplied?.Invoke(damageInfo.Source, target, application);
+            }
             result = ToDamageResult(application);
             return true;
         }

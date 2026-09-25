@@ -6667,8 +6667,8 @@ MonoBehaviour:
   registerPlayerPositionEmployment: 1
   registerPlayerCareerHistory: 1
   registerPlayerLifePaths: 1
-  registerPlayerRelationships: 1
-  registerPlayerInterpersonalAttitudes: 1
+  registerWorldRelationships: 1
+  registerWorldInterpersonalAttitudes: 1
   registerWorldReputation: 1
   registerWorldRumors: 1
   registerWorldSocialInteractions: 1

@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6283ef43d5fcbd4599c4f46bd281715, type: 3}
+  m_Name: emotion_appraisal_prototype_self_caused_harm
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Emotions.SocialEmotionAppraisalRuleDefinition
+  appraisalRuleId: emotion-appraisal.prototype.self-caused-harm
+  displayName: Self Caused Harm
+  description: 
+  emotionDefinitionId: emotion.prototype.guilt
+  causeCategory: 0
+  responsibility: 1
+  requiredBeliefTruthStatus: 0
+  minimumDetectionOutcome: 0
+  priority: 105
+  baseIntensity: 50
+  durationSeconds: 240
+  targetMoodDimensionId: mood.prototype.valence
+  moodContributionOverride: -30
+  decisionModifierOverride: -10
+  requiredTags:
+  - harm
+  tags:
+  - emotion
+  - prototype
+  - step12

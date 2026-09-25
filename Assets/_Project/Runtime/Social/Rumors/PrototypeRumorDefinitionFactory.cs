@@ -7,16 +7,16 @@ namespace UnityIsekaiGame.Social.Rumors
 {
     public static class PrototypeRumorDefinitionFactory
     {
-        public const string PersonalConductRumorId = "rumor.personal-conduct.prototype";
-        public const string PublicNewsRumorId = "rumor.public-news.prototype";
-        public const string FabricatedAccusationRumorId = "rumor.accusation.fabricated.prototype";
-        public const string SecretLeakRumorId = "rumor.secret-leak.prototype";
-        public const string ReputationRumorId = "rumor.reputation.prototype";
+        public const string PersonalConductRumorId = "rumor.prototype.personal-conduct";
+        public const string PublicNewsRumorId = "rumor.prototype.public-news";
+        public const string FabricatedAccusationRumorId = "rumor.prototype.fabricated-accusation";
+        public const string SecretLeakRumorId = "rumor.prototype.secret-leak";
+        public const string ReputationRumorId = "rumor.prototype.reputation";
 
-        public const string ConversationChannelId = "rumor.channel.conversation.prototype";
-        public const string TavernGossipChannelId = "rumor.channel.tavern-gossip.prototype";
-        public const string PublicSpeechChannelId = "rumor.channel.public-speech.prototype";
-        public const string DevelopmentFixtureChannelId = "rumor.channel.development-fixture";
+        public const string ConversationChannelId = "rumor.channel.prototype.conversation";
+        public const string TavernGossipChannelId = "rumor.channel.prototype.tavern-gossip";
+        public const string PublicSpeechChannelId = "rumor.channel.prototype.public-speech";
+        public const string DevelopmentFixtureChannelId = "rumor.channel.prototype.development-fixture";
 
         public static IReadOnlyList<ScriptableObject> CreateDefinitions()
         {

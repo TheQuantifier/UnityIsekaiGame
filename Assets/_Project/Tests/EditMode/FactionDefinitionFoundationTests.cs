@@ -66,7 +66,7 @@ namespace UnityIsekaiGame.Tests
         public void CatalogValidation_AcceptsPersonPlaceQuestAndContractFactionReferences()
         {
             ScriptableObject town = CreatePlace("place.settlement.prototype-town", "Prototype Town", "Settlement");
-            ScriptableObject person = CreatePerson("person.prototype-npc", "Prototype NPC");
+            ScriptableObject person = CreatePerson("person.prototype.npc", "Prototype NPC");
             ScriptableObject guild = CreateFaction("faction.guild.adventurers", "Adventurer's Guild", "Guild");
             SetObject(guild, "homePlace", town);
             SetObject(guild, "defaultLeader", person);
@@ -99,7 +99,7 @@ namespace UnityIsekaiGame.Tests
             Type membershipType = RequiredType("UnityIsekaiGame.Factions.FactionMembershipSaveData");
             object membership = Activator.CreateInstance(membershipType);
             membershipType.GetField("factionId").SetValue(membership, "faction.guild.adventurers");
-            membershipType.GetField("personId").SetValue(membership, "person.prototype-npc");
+            membershipType.GetField("personId").SetValue(membership, "person.prototype.npc");
             membershipType.GetField("rankId").SetValue(membership, "rank.prototype");
 
             Assert.That(Get<bool>(reference, "HasValidId"), Is.True);

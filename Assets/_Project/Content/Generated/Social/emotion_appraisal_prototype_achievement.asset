@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6283ef43d5fcbd4599c4f46bd281715, type: 3}
+  m_Name: emotion_appraisal_prototype_achievement
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Emotions.SocialEmotionAppraisalRuleDefinition
+  appraisalRuleId: emotion-appraisal.prototype.achievement
+  displayName: Achievement
+  description: 
+  emotionDefinitionId: emotion.prototype.pride
+  causeCategory: 11
+  responsibility: 1
+  requiredBeliefTruthStatus: 1
+  minimumDetectionOutcome: 0
+  priority: 100
+  baseIntensity: 60
+  durationSeconds: 240
+  targetMoodDimensionId: mood.prototype.morale
+  moodContributionOverride: 42
+  decisionModifierOverride: 18
+  requiredTags:
+  - achievement
+  tags:
+  - emotion
+  - prototype
+  - step12

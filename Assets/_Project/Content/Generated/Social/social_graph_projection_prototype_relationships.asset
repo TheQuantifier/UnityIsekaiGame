@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a7506a3e06a6534b9664e36afeb9dcd, type: 3}
+  m_Name: social_graph_projection_prototype_relationships
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Networks.SocialGraphProjectionDefinition
+  projectionId: social-graph.projection.prototype.relationships
+  displayName: Prototype Relationship Network
+  description: Stable relationship and group-membership graph for local social neighborhood
+    analysis.
+  includedEdgeKinds: 0000000005000000
+  directionPolicy: 6
+  weightPolicy: 1
+  minimumEdgeWeight: 1
+  maximumNodes: 96
+  maximumEdges: 384
+  maximumTraversalDepth: 4
+  maximumAnalysisNodes: 64
+  maximumCliqueSize: 5
+  maximumAnalysisResults: 16
+  timeWindow: -1
+  visibility: 0
+  relationshipDefinitionFilters: []
+  attitudeDimensionFilters: []
+  interactionDefinitionFilters: []
+  tags:
+  - prototype
+  - relationship
+  edgeWeights:
+  - edgeKind: 0
+    authoredWeight: 60
+    positiveThreshold: 1
+    negativeThreshold: -1
+    includeHistorical: 0
+  - edgeKind: 5
+    authoredWeight: 45
+    positiveThreshold: 1
+    negativeThreshold: -1
+    includeHistorical: 0
+  version: 1

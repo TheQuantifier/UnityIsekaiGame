@@ -122,6 +122,19 @@ namespace UnityIsekaiGame.Social.Influence
             };
         }
 
+        public int PruneHistory(int maximumAttempts)
+        {
+            string[] remove = attemptsById.Values.OrderByDescending(item => item.worldTime).ThenByDescending(item => item.revision)
+                .Skip(Math.Max(0, maximumAttempts)).Select(item => item.attemptId).ToArray();
+            foreach (string id in remove) attemptsById.Remove(id);
+            HashSet<string> retained = new HashSet<string>(attemptsById.Keys, StringComparer.Ordinal);
+            foreach (string tx in processedTransactions.Values.Where(item => !retained.Contains(item.attemptId)).Select(item => item.transactionId).ToArray()) processedTransactions.Remove(tx);
+            foreach (string key in cooldownsByKey.Values.Where(item => !retained.Contains(item.sourceAttemptId)).Select(item => item.cooldownKey).ToArray()) cooldownsByKey.Remove(key);
+            foreach (string id in decisionModifiersById.Values.Where(item => !retained.Contains(item.sourceAttemptId)).Select(item => item.modifierId).ToArray()) decisionModifiersById.Remove(id);
+            if (remove.Length > 0) { Revision++; IsDirty = true; }
+            return remove.Length;
+        }
+
         public SocialInfluenceResult RestoreFromSaveData(SocialInfluenceRuntimeSaveData saveData, DefinitionRegistry definitionRegistry, IEnumerable<string> persons, bool restoringState = true)
         {
             long before = Revision;

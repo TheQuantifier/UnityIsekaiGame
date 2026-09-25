@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 617580f09fc65234d8b63416620a9c17, type: 3}
+  m_Name: social_decision_profile_prototype_reconciliation_focused_npc
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Decisions.SocialDecisionProfileDefinition
+  profileId: social-decision-profile.prototype.reconciliation-focused-npc
+  displayName: Reconciliation Focused NPC
+  enabledIntentionIds:
+  - social-intention.prototype.apologize-for-recent-offense
+  - social-intention.prototype.attempt-reconciliation
+  - social-intention.prototype.respond-to-apology
+  - social-intention.prototype.thank-recent-helper
+  considerationIds:
+  - social-consideration.prototype.hostility
+  - social-consideration.prototype.relationship-exists
+  - social-consideration.prototype.trust
+  evaluationIntervalSeconds: 12
+  maximumTargets: 6
+  maximumIntentions: 5
+  maximumCandidates: 20
+  maximumDiagnostics: 20
+  scoreThreshold: 95
+  maximumActionsPerWindow: 1
+  actionWindowSeconds: 12
+  allowPlayerControlled: 0
+  defaultExecutionMode: 10
+  tags:
+  - decision
+  - prototype
+  - step12

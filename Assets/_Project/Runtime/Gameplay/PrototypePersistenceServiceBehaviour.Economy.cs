@@ -250,6 +250,12 @@ namespace UnityIsekaiGame.Gameplay
             Markets.AddTransactionObservation($"market-observation.{operationId}", payment.Transaction, PrototypeEconomyContentIds.MarketInstanceTown,
                 PrototypeEconomyContentIds.SubjectForItem(itemDefinitionId), MarketTransactionObservationPolicy.IncludeCommitted, true, worldTime);
             dirtyTracker?.MarkDirty("Prototype market purchase committed.");
+            RecordSocialInteraction(
+                UnityIsekaiGame.Social.Interactions.PrototypeSocialInteractionDefinitionFactory.TradeId,
+                ResolvePlayerPersonId(),
+                UnityIsekaiGame.WorldLocations.PrototypeEntityLocationFactory.MerchantPersonId,
+                operationId,
+                $"social.trade.{operationId}");
             long totalPaid = checked(quotedAmount + taxUnits);
             string taxSummary = taxUnits > 0L ? $" plus {taxUnits} Gold sales tax" : string.Empty;
             return PrototypeEconomyOperation.Success($"Bought {quantity} {item.DisplayName} for {quotedAmount} Gold{taxSummary}.", totalPaid, purchasedItemInstanceIds);
@@ -352,6 +358,12 @@ namespace UnityIsekaiGame.Gameplay
             Markets.AddTransactionObservation($"market-observation.{operationId}", payment.Transaction, PrototypeEconomyContentIds.MarketInstanceTown,
                 PrototypeEconomyContentIds.SubjectForItem(soldItem.Id), MarketTransactionObservationPolicy.IncludeCommitted, true, worldTime);
             dirtyTracker?.MarkDirty("Prototype market export sale committed.");
+            RecordSocialInteraction(
+                UnityIsekaiGame.Social.Interactions.PrototypeSocialInteractionDefinitionFactory.TradeId,
+                ResolvePlayerPersonId(),
+                UnityIsekaiGame.WorldLocations.PrototypeEntityLocationFactory.MerchantPersonId,
+                operationId,
+                $"social.trade.{operationId}");
             return PrototypeEconomyOperation.Success($"Sold {soldItem.DisplayName} for {quote.Quote.finalAmountUnits} Gold.", quote.Quote.finalAmountUnits);
         }
 

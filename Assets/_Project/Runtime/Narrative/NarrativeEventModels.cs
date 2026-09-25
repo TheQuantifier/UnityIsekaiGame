@@ -585,12 +585,23 @@ namespace UnityIsekaiGame.Narrative
         public Func<string, bool> TravelConditionExecutor { get; set; }
         public Func<string, bool> ConnectionChangeExecutor { get; set; }
         public Func<string, bool> SocialActionExecutor { get; set; }
+        public Func<NarrativeSocialActionRequest, bool> ContextualSocialActionExecutor { get; set; }
         public Func<string, bool> OrganizationActionExecutor { get; set; }
         public Func<string, bool> LegalActionExecutor { get; set; }
         public Func<NarrativeStateTransitionRequest, NarrativeStateTransitionResult> NarrativeStateTransitionExecutor { get; set; }
         public Func<NarrativeConditionDefinitionData, NarrativeConditionContextData, bool> NarrativeStateConditionEvaluator { get; set; }
         public Func<NarrativeArcSignalRequest, NarrativeArcOperationResult> NarrativeArcSignalExecutor { get; set; }
         public Func<NarrativeConditionDefinitionData, NarrativeConditionContextData, bool> NarrativeArcConditionEvaluator { get; set; }
+    }
+
+    public sealed class NarrativeSocialActionRequest
+    {
+        public string InteractionDefinitionId { get; set; }
+        public string ActorPersonId { get; set; }
+        public string TargetPersonId { get; set; }
+        public string NarrativeEventId { get; set; }
+        public string ActionDefinitionId { get; set; }
+        public double WorldTime { get; set; }
     }
 
     public static class NarrativeModelUtility

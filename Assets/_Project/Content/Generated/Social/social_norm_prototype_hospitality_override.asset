@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18d53f6134f51a444ad55eb98475a8f6, type: 3}
+  m_Name: social_norm_prototype_hospitality_override
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Norms.SocialNormDefinition
+  normId: social-norm.prototype.hospitality-override
+  displayName: Prototype Hospitality Override
+  description: Hospitality can outrank lower-priority audience discomfort in deterministic
+    conflict checks.
+  category: 3
+  scope: 1
+  strength: 0
+  satisfiedClassification: 2
+  violatedClassification: 5
+  baseSeverity: 8
+  priority: 80
+  specificity: 60
+  requiresTarget: 0
+  requiresWitness: 0
+  requiresPublic: 0
+  expectedInteractionDefinitionId: 
+  expectedPromiseState: 
+  overrideNormIds:
+  - social-norm.prototype.praise-enemy-conflict
+  applicabilityConditions:
+  - conditionId: hospitality-duty
+    actorRoleId: 
+    targetRoleId: 
+    relationshipDefinitionId: 
+    placeId: 
+    audienceId: 
+    requiredTag: hospitality-duty
+    hasVisibility: 0
+    visibility: 0
+    hasChannel: 0
+    channel: 0
+    requiresWitness: 0
+    optional: 0
+  exceptions: []
+  consequences: []
+  tags:
+  - alpha
+  - norm
+  - prototype
+  - social
+  version: 1

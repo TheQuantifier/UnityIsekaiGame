@@ -8,6 +8,15 @@ using UnityIsekaiGame.Places;
 
 namespace UnityIsekaiGame.People
 {
+    public enum PersonLifeStage
+    {
+        Infant = 0,
+        Child = 1,
+        Adolescent = 2,
+        Adult = 3,
+        Elder = 4
+    }
+
     [CreateAssetMenu(fileName = "Person", menuName = "Unity Isekai Game/People/Person")]
     public sealed class PersonDefinition : ScriptableObject, IGameDefinition, ICategorizableDefinition, ITaggedDefinition, IDefinitionCatalogValidationParticipant
     {
@@ -27,6 +36,8 @@ namespace UnityIsekaiGame.People
         [SerializeField] private string factionIdPlaceholder;
         [SerializeField] private string settlementIdPlaceholder;
         [SerializeField] private PersonImportance importance = PersonImportance.Standard;
+        [SerializeField, Min(0)] private int chronologicalAgeYears = 18;
+        [SerializeField] private PersonLifeStage lifeStage = PersonLifeStage.Adult;
 
         public string PersonId => personId;
         public string Id => personId;
@@ -46,7 +57,20 @@ namespace UnityIsekaiGame.People
         public string FactionIdPlaceholder => factionIdPlaceholder;
         public string SettlementIdPlaceholder => settlementIdPlaceholder;
         public PersonImportance Importance => importance;
+        public int ChronologicalAgeYears => Mathf.Max(0, chronologicalAgeYears);
+        public PersonLifeStage LifeStage => lifeStage;
+        public bool IsAdult => lifeStage == PersonLifeStage.Adult || lifeStage == PersonLifeStage.Elder;
         public bool HasValidPersonId => !string.IsNullOrWhiteSpace(personId);
+
+        public void DevelopmentConfigure(string id, string name, int ageYears, PersonLifeStage stage, PersonImportance personImportance = PersonImportance.Standard, string roleTitle = "")
+        {
+            personId = id?.Trim() ?? string.Empty;
+            displayName = name?.Trim() ?? string.Empty;
+            chronologicalAgeYears = Mathf.Max(0, ageYears);
+            lifeStage = stage;
+            importance = personImportance;
+            publicRoleTitle = roleTitle?.Trim() ?? string.Empty;
+        }
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {

@@ -1,0 +1,120 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 179f5a5657b8ed64999dae4a2d7cd639, type: 3}
+  m_Name: social_interaction_prototype_threaten
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Interactions.SocialInteractionDefinition
+  interactionDefinitionId: social-interaction.prototype.threaten
+  displayName: Threaten
+  description: 
+  category: 10
+  roles:
+  - role: 0
+    required: 1
+    allowDuplicates: 0
+  - role: 1
+    required: 1
+    allowDuplicates: 0
+  - role: 2
+    required: 0
+    allowDuplicates: 1
+  - role: 3
+    required: 0
+    allowDuplicates: 1
+  - role: 4
+    required: 0
+    allowDuplicates: 1
+  allowSelfTarget: 0
+  supportsWitnesses: 1
+  supportsPublicAudience: 1
+  requiresResponse: 0
+  allowedResponses: 
+  baseOutcome: 0
+  acceptedOutcome: 3
+  refusedOutcome: 4
+  cooldownScope: 2
+  cooldownSeconds: 2
+  defaultVisibility: 1
+  createsHistoryReference: 1
+  createsMemoryReference: 1
+  consequences:
+  - consequenceId: threat-danger
+    targetRuntime: 4
+    operation: 4
+    actorRole: 0
+    subjectRole: 0
+    dimensionId: reputation.perceived-danger
+    audienceId: reputation.audience.global-public
+    relationshipDefinitionId: 
+    rumorDefinitionId: 
+    rumorChannelId: 
+    amount: 15
+    required: 1
+    onlyWhenWitnessed: 1
+    onlyWhenPublic: 0
+    appliesToOutcomes: 
+    tags:
+    - verified
+  - consequenceId: threat-fear
+    targetRuntime: 2
+    operation: 1
+    actorRole: 1
+    subjectRole: 0
+    dimensionId: attitude.fear
+    audienceId: 
+    relationshipDefinitionId: 
+    rumorDefinitionId: 
+    rumorChannelId: 
+    amount: 20
+    required: 1
+    onlyWhenWitnessed: 0
+    onlyWhenPublic: 0
+    appliesToOutcomes: 
+    tags: []
+  - consequenceId: threat-honor
+    targetRuntime: 4
+    operation: 4
+    actorRole: 0
+    subjectRole: 0
+    dimensionId: reputation.honor
+    audienceId: reputation.audience.global-public
+    relationshipDefinitionId: 
+    rumorDefinitionId: 
+    rumorChannelId: 
+    amount: -5
+    required: 1
+    onlyWhenWitnessed: 1
+    onlyWhenPublic: 0
+    appliesToOutcomes: 
+    tags:
+    - verified
+  - consequenceId: threat-hostility
+    targetRuntime: 2
+    operation: 1
+    actorRole: 1
+    subjectRole: 0
+    dimensionId: attitude.hostility
+    audienceId: 
+    relationshipDefinitionId: 
+    rumorDefinitionId: 
+    rumorChannelId: 
+    amount: 10
+    required: 1
+    onlyWhenWitnessed: 0
+    onlyWhenPublic: 0
+    appliesToOutcomes: 
+    tags: []
+  requirementIds: []
+  capabilityIds: []
+  tags:
+  - prototype
+  - step12
+  version: 1
