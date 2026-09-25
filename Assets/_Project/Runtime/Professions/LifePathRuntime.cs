@@ -466,7 +466,7 @@ namespace UnityIsekaiGame.Professions
             IEnumerable<PersonAspirationData> aspirations = result.Snapshot.Aspirations.Where(item => privileged || !item.Secret).Select(item => RedactAspiration(item, privileged));
             IEnumerable<PersonGoalData> goals = result.Snapshot.Goals.Where(item => privileged || !item.Secret).Select(item => RedactGoal(item, privileged));
             IEnumerable<ProfessionalIdentityData> identities = result.Snapshot.Identities.Where(item => privileged || !item.Secret).Select(item => RedactIdentity(item, privileged));
-            IEnumerable<IdentityConflictData> conflicts = result.Snapshot.Conflicts.Where(item => privileged || !string.Equals(item.accessPolicyId, PrototypeProfessionDefinitionFactory.AccessSecretId, StringComparison.Ordinal)).Select(item => item.Clone());
+            IEnumerable<IdentityConflictData> conflicts = result.Snapshot.Conflicts.Where(item => privileged || !string.Equals(item.accessPolicyId, ProfessionContentIds.AccessSecretId, StringComparison.Ordinal)).Select(item => item.Clone());
             IEnumerable<LifePathAchievementSetbackReferenceData> achievements = result.Snapshot.AchievementSetbacks.Where(item => privileged || !item.secret).Select(item => item.Clone());
             bool redacted = !privileged && (result.Snapshot.Aspirations.Any(item => item.Secret) || result.Snapshot.Goals.Any(item => item.Secret) || result.Snapshot.Identities.Any(item => item.Secret) || result.Snapshot.AchievementSetbacks.Any(item => item.secret));
             LifePathSnapshot projection = new LifePathSnapshot(personId, result.Snapshot.LifePaths, aspirations, goals, identities, conflicts, achievements, revision);
@@ -802,7 +802,7 @@ namespace UnityIsekaiGame.Professions
                 return LifePathOperationStatus.MissingDefinition;
             }
 
-            if (aspiration.Secret && !definition.SecretAllowed && string.Equals(aspiration.accessPolicyId, PrototypeProfessionDefinitionFactory.AccessSecretId, StringComparison.Ordinal))
+            if (aspiration.Secret && !definition.SecretAllowed && string.Equals(aspiration.accessPolicyId, ProfessionContentIds.AccessSecretId, StringComparison.Ordinal))
             {
                 failure = "Aspiration definition does not allow secret records.";
                 return LifePathOperationStatus.InvalidRequest;
@@ -1225,7 +1225,59 @@ namespace UnityIsekaiGame.Professions
         private string BuildProgressHash(PersonGoalData goal, bool targetSatisfied, IEnumerable<string> satisfied, IEnumerable<string> remaining, IEnumerable<string> blocking) => $"{goal.goalId}|{goal.goalDefinitionId}|{targetSatisfied}|{string.Join(",", LifePathRecordData.Clean(satisfied))}|{string.Join(",", LifePathRecordData.Clean(remaining))}|{string.Join(",", LifePathRecordData.Clean(blocking))}|{revision}|{ExternalRevision()}";
         private void MarkMutated() { revision++; dirty = true; }
         private void AddHook(LifePathHookKind kind, string personId, string lifePathId, string aspirationId, string goalId, string identityId, string conflictId, string recordId, string worldTime, string transactionId) => historyHooks.Add(new LifePathHookData { kind = kind, personId = personId ?? string.Empty, lifePathId = lifePathId ?? string.Empty, aspirationId = aspirationId ?? string.Empty, goalId = goalId ?? string.Empty, identityId = identityId ?? string.Empty, conflictId = conflictId ?? string.Empty, recordId = recordId ?? string.Empty, worldTime = worldTime ?? string.Empty, transactionId = transactionId ?? string.Empty });
-        private static bool LifePathEquals(LifePathRecordData a, LifePathRecordData b) => a != null && b != null && Same(a.lifePathId, b.lifePathId) && Same(a.personId, b.personId) && a.state == b.state;
+        private static bool LifePathEquals(LifePathRecordData a, LifePathRecordData b)
+        {
+            return a != null && b != null
+                && Same(a.lifePathId, b.lifePathId)
+                && Same(a.personId, b.personId)
+                && a.state == b.state
+                && FormativeReferencesEqual(a.formativeReferences, b.formativeReferences)
+                && SourceReferencesEqual(a.educationAndTrainingReferences, b.educationAndTrainingReferences)
+                && StringArraysEqual(a.professionRelationshipIds, b.professionRelationshipIds)
+                && StringArraysEqual(a.professionIds, b.professionIds)
+                && StringArraysEqual(a.specializationIds, b.specializationIds)
+                && StringArraysEqual(a.careerEpisodeIds, b.careerEpisodeIds)
+                && StringArraysEqual(a.credentialIds, b.credentialIds)
+                && StringArraysEqual(a.rankRecordIds, b.rankRecordIds)
+                && StringArraysEqual(a.positionInstanceIds, b.positionInstanceIds)
+                && StringArraysEqual(a.employmentIds, b.employmentIds)
+                && StringArraysEqual(a.achievementAndSetbackIds, b.achievementAndSetbackIds)
+                && StringArraysEqual(a.activeAspirationIds, b.activeAspirationIds)
+                && StringArraysEqual(a.activeGoalIds, b.activeGoalIds)
+                && Same(a.primaryProfessionalIdentityId, b.primaryProfessionalIdentityId)
+                && StringArraysEqual(a.secondaryProfessionalIdentityIds, b.secondaryProfessionalIdentityIds)
+                && Same(a.startWorldTime, b.startWorldTime)
+                && Same(a.lastRevisionWorldTime, b.lastRevisionWorldTime)
+                && Same(a.accessPolicyId, b.accessPolicyId)
+                && Same(a.provenance, b.provenance)
+                && StringArraysEqual(a.revisionHistory, b.revisionHistory);
+        }
+
+        private static bool StringArraysEqual(IEnumerable<string> left, IEnumerable<string> right)
+        {
+            return LifePathRecordData.Clean(left).SequenceEqual(LifePathRecordData.Clean(right), StringComparer.Ordinal);
+        }
+
+        private static bool SourceReferencesEqual(IEnumerable<LifePathSourceReferenceData> left, IEnumerable<LifePathSourceReferenceData> right)
+        {
+            return LifePathRecordData.CleanSources(left).Select(item => item.Signature)
+                .SequenceEqual(LifePathRecordData.CleanSources(right).Select(item => item.Signature), StringComparer.Ordinal);
+        }
+
+        private static bool FormativeReferencesEqual(IEnumerable<FormativeReferenceData> left, IEnumerable<FormativeReferenceData> right)
+        {
+            FormativeReferenceData[] leftItems = LifePathRecordData.CleanFormative(left);
+            FormativeReferenceData[] rightItems = LifePathRecordData.CleanFormative(right);
+            return leftItems.Length == rightItems.Length
+                && leftItems.Zip(rightItems, (a, b) => Same(a.referenceId, b.referenceId)
+                    && a.kind == b.kind
+                    && Same(a.subjectId, b.subjectId)
+                    && Same(a.description, b.description)
+                    && Same(a.worldTime, b.worldTime)
+                    && a.weight == b.weight
+                    && Same(a.accessPolicyId, b.accessPolicyId)
+                    && Same(a.provenance, b.provenance)).All(equal => equal);
+        }
         private static bool AspirationEquals(PersonAspirationData a, PersonAspirationData b) => a != null && b != null && Same(a.aspirationId, b.aspirationId) && Same(a.personId, b.personId) && Same(a.aspirationDefinitionId, b.aspirationDefinitionId) && a.state == b.state && Same(a.targetProfessionId, b.targetProfessionId);
         private static bool GoalEquals(PersonGoalData a, PersonGoalData b) => a != null && b != null && Same(a.goalId, b.goalId) && Same(a.personId, b.personId) && Same(a.goalDefinitionId, b.goalDefinitionId) && a.state == b.state && Same(a.parentAspirationId, b.parentAspirationId);
         private static bool IdentityEquals(ProfessionalIdentityData a, ProfessionalIdentityData b) => a != null && b != null && Same(a.identityId, b.identityId) && Same(a.personId, b.personId) && a.kind == b.kind && Same(a.professionId, b.professionId) && a.alignment == b.alignment;

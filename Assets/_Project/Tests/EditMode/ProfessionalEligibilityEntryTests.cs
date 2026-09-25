@@ -22,7 +22,7 @@ namespace UnityIsekaiGame.Tests
             DefinitionRegistry registry = CreateRegistry();
             DefinitionValidationReport report = new DefinitionValidationReport();
 
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(registry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -32,7 +32,7 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
             Assert.That(report.WarningCount, Is.Zero, report.GetSummary());
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.FieldMedicRecognitionEntryPathId, out ProfessionEntryPathDefinition medic), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.FieldMedicRecognitionEntryPathId, out ProfessionEntryPathDefinition medic), Is.True);
             Assert.That(medic.RequiresRecognizingAuthority, Is.True);
             Assert.That(medic.RecognizingAuthorityIds, Does.Contain("authority.medical.prototype"));
         }
@@ -47,7 +47,7 @@ namespace UnityIsekaiGame.Tests
             {
                 relationshipId = "profession-relationship.mutation.after-preview",
                 personId = PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
+                professionId = ProfessionContentIds.FieldMedicProfessionId,
                 informalPractice = true,
                 startWorldTime = "1"
             });
@@ -80,12 +80,12 @@ namespace UnityIsekaiGame.Tests
             RuntimeFixture fixture = CreateFixture();
             ProfessionEntryOperationResult submit = fixture.Entry.SubmitFormalRequest(MedicContext(preview: false), "tx.entry.medic.submit", "profession-entry-request.medic");
             Assert.That(submit.Succeeded, Is.True, submit.Message);
-            Assert.That(fixture.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.FieldMedicProfessionId), Is.Empty);
+            Assert.That(fixture.Professions.QueryByProfession(ProfessionContentIds.FieldMedicProfessionId), Is.Empty);
             ProfessionOperationResult unrelatedMutation = fixture.Professions.AddRelationship(new AddProfessionRelationshipRequest
             {
                 relationshipId = "profession-relationship.unrelated.before-approval",
                 personId = PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 informalPractice = true,
                 selfDeclared = true,
                 startWorldTime = "2.5",
@@ -109,8 +109,8 @@ namespace UnityIsekaiGame.Tests
             ProfessionEligibilityResult evaluated = fixture.Entry.Evaluate(BlacksmithContext(preview: true));
             ProfessionEligibilityResult invalidAuthority = fixture.Entry.Evaluate(new ProfessionEligibilityContext(
                 PersonId,
-                PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
-                PrototypeProfessionDefinitionFactory.FieldMedicRecognitionEntryPathId,
+                ProfessionContentIds.FieldMedicProfessionId,
+                ProfessionContentIds.FieldMedicRecognitionEntryPathId,
                 formal: true,
                 authorityId: "authority.guild.prototype",
                 skills: new[] { Skill("skill.healing-magic", 1) },
@@ -120,15 +120,15 @@ namespace UnityIsekaiGame.Tests
             {
                 relationshipId = "profession-relationship.stale.other",
                 personId = PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
+                professionId = ProfessionContentIds.FieldMedicProfessionId,
                 informalPractice = true,
                 startWorldTime = "2"
             });
 
             ProfessionEntryOperationResult stale = fixture.Entry.EnterInformal(new ProfessionEligibilityContext(
                 PersonId,
-                PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                PrototypeProfessionDefinitionFactory.BlacksmithSelfDeclaredEntryPathId,
+                ProfessionContentIds.BlacksmithProfessionId,
+                ProfessionContentIds.BlacksmithSelfDeclaredEntryPathId,
                 selfDeclared: true,
                 expectedRuntimeToken: evaluated.RuntimeToken,
                 preview: false), "tx.entry.stale");
@@ -137,7 +137,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(invalidAuthority.Status, Is.EqualTo(ProfessionEligibilityStatus.InvalidAuthority));
             Assert.That(stale.Succeeded, Is.False);
             Assert.That(stale.Status, Is.EqualTo(ProfessionEntryOperationStatus.EligibilityFailed));
-            Assert.That(fixture.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId), Is.Empty);
+            Assert.That(fixture.Professions.QueryByProfession(ProfessionContentIds.BlacksmithProfessionId), Is.Empty);
         }
 
         [Test]
@@ -147,16 +147,16 @@ namespace UnityIsekaiGame.Tests
             ProfessionEntryOperationResult parent = fixture.Entry.EnterInformal(BlacksmithContext(preview: false), "tx.entry.parent", "profession-relationship.parent");
             ProfessionEntryOperationResult specialization = fixture.Entry.EnterSpecialization(new ProfessionEligibilityContext(
                 PersonId,
-                PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationEntryPathId,
-                PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
+                ProfessionContentIds.BlacksmithProfessionId,
+                ProfessionContentIds.WeaponsmithSpecializationEntryPathId,
+                ProfessionContentIds.WeaponsmithSpecializationId,
                 skills: new[] { Skill("skill.smithing", 1) },
                 preview: false), "profession-relationship.parent", "tx.entry.spec");
             ProfessionOperationResult inactive = fixture.Professions.Activate("profession-relationship.parent", false);
             ProfessionEntryOperationResult resume = fixture.Entry.ResumeInactive(new ProfessionEligibilityContext(
                 PersonId,
-                PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                PrototypeProfessionDefinitionFactory.BlacksmithReentryPathId,
+                ProfessionContentIds.BlacksmithProfessionId,
+                ProfessionContentIds.BlacksmithReentryPathId,
                 preview: false), "profession-relationship.parent", "tx.entry.resume");
 
             Assert.That(parent.Succeeded, Is.True, parent.Message);
@@ -165,7 +165,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(resume.Succeeded, Is.True, resume.Message);
             Assert.That(fixture.Professions.TryGetSnapshot("profession-relationship.parent", out PersonProfessionSnapshot final), Is.True);
             Assert.That(final.Active, Is.True);
-            Assert.That(final.SpecializationIds, Does.Contain(PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId));
+            Assert.That(final.SpecializationIds, Does.Contain(ProfessionContentIds.WeaponsmithSpecializationId));
         }
 
         [Test]
@@ -179,7 +179,7 @@ namespace UnityIsekaiGame.Tests
             ProfessionEntryRuntime restored = new ProfessionEntryRuntime();
             ProfessionEntryOperationResult restore = restored.RestoreFromSaveData(save, fixture.Registry, fixture.Professions, new[] { PersonId }, restoring: true);
             ProfessionEntryRuntimeSaveData corrupt = save.Clone();
-            corrupt.requests[0].professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId;
+            corrupt.requests[0].professionId = ProfessionContentIds.BlacksmithProfessionId;
             ProfessionEntryOperationResult rejected = restored.RestoreFromSaveData(corrupt, fixture.Registry, fixture.Professions, new[] { PersonId }, restoring: true);
 
             Assert.That(submit.Succeeded, Is.True, submit.Message);
@@ -226,15 +226,15 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
             Assert.That(catalog, Is.Not.Null);
-            return PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(catalog.CreateRegistry());
+            return catalog.CreateRegistry();
         }
 
         private static ProfessionEligibilityContext BlacksmithContext(bool preview)
         {
             return new ProfessionEligibilityContext(
                 PersonId,
-                PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                PrototypeProfessionDefinitionFactory.BlacksmithSelfDeclaredEntryPathId,
+                ProfessionContentIds.BlacksmithProfessionId,
+                ProfessionContentIds.BlacksmithSelfDeclaredEntryPathId,
                 selfDeclared: true,
                 worldTime: 1d,
                 correlationId: "edit.blacksmith",
@@ -245,8 +245,8 @@ namespace UnityIsekaiGame.Tests
         {
             return new ProfessionEligibilityContext(
                 PersonId,
-                PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
-                PrototypeProfessionDefinitionFactory.FieldMedicRecognitionEntryPathId,
+                ProfessionContentIds.FieldMedicProfessionId,
+                ProfessionContentIds.FieldMedicRecognitionEntryPathId,
                 formal: true,
                 authorityId: "authority.medical.prototype",
                 worldTime: 2d,
@@ -265,7 +265,7 @@ namespace UnityIsekaiGame.Tests
         {
             return new InformationAccessDecision(
                 "person.observer",
-                ProfessionEntryInformationSubject.Request("profession-entry-request.persist", PersonId, PrototypeProfessionDefinitionFactory.FieldMedicProfessionId),
+                ProfessionEntryInformationSubject.Request("profession-entry-request.persist", PersonId, ProfessionContentIds.FieldMedicProfessionId),
                 InformationAccessMode.Inspect,
                 InformationAccessDecisionKind.RedactedAccess,
                 InformationAccessDenialCode.DetailRestriction,
@@ -274,7 +274,7 @@ namespace UnityIsekaiGame.Tests
                 new[] { "profession-id", "entry-path-id", "state" },
                 ProfessionEntryInformationSubject.ProtectedFields,
                 Array.Empty<string>(),
-                new[] { PrototypeProfessionDefinitionFactory.AccessPublicId },
+                new[] { ProfessionContentIds.AccessPublicId },
                 2d,
                 "Redacted profession entry request.",
                 "Entry request hides applicant and authority details.",

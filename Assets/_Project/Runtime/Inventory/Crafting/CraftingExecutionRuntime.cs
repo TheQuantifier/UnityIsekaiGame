@@ -679,7 +679,6 @@ namespace UnityIsekaiGame.Inventory.Crafting
                         {
                             ItemDurabilityRecordData durabilityRecord = durabilitySnapshot.Data.Clone();
                             durabilityRecord.currentDurability = durabilityRecord.maximumDurability * durabilityPolicy.InitialDurabilityNormalized;
-                            durabilityRecord.policyId = durabilityPolicy.Id;
                             durabilityRecord.source = ItemDurabilityRecordSource.Generated;
                             durabilityRecord.provenanceId = operation.operationId;
                             foreach (ItemComponentDurabilityData component in durabilityRecord.components)

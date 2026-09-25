@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: PrototypeDefinitionCatalog
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.GameData.DefinitionCatalog
   catalogId: catalog.prototype
-  contentVersion: phase-3.group-6.items-crafting-production
-  contentHash: 2fd7b2952d31bf2b750345f7848a82af8038a5dcb4a6ed00dafeddcaa595250e
+  contentVersion: phase-3.group-7.professions-careers-employment
+  contentHash: b2c78721a46e012ad1d654aba63f8b24c0152c33b5e364328f43f5a2b35171ba
   defaults: {fileID: 11400000, guid: 4853c1eba0d3bd44c949551fd9b873d7, type: 2}
   sections:
   - domainId: domain.ability
@@ -44,6 +44,16 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 7a190000000000000000000000000002, type: 2}
     - {fileID: 11400000, guid: 7a190000000000000000000000000003, type: 2}
     - {fileID: 11400000, guid: 7a190000000000000000000000000001, type: 2}
+  - domainId: domain.aspiration
+    definitions:
+    - {fileID: 11400000, guid: 8c7f5de2e5502ac4387a5e63f6b7be31, type: 2}
+    - {fileID: 11400000, guid: 68f2c629335ef6648ba990cd15f2d1d0, type: 2}
+    - {fileID: 11400000, guid: f2ff6f068eca9ea4ca9704db0ff96c47, type: 2}
+    - {fileID: 11400000, guid: aef53964a0c7c8f42801a9fea463cf3f, type: 2}
+    - {fileID: 11400000, guid: 2a930aaca60bbf3438f3a3293265bc23, type: 2}
+    - {fileID: 11400000, guid: a8834a4799b07214fa679a00afd8835d, type: 2}
+    - {fileID: 11400000, guid: 9e8fec259d76e5c4aab30dc8967f2c9b, type: 2}
+    - {fileID: 11400000, guid: c1b120e852c10f548ae0c990146bf532, type: 2}
   - domainId: domain.attribute
     definitions:
     - {fileID: 11400000, guid: a2000000000000000000000000000052, type: 2}
@@ -143,6 +153,23 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 6e100000000000000000000000000002, type: 2}
     - {fileID: 11400000, guid: 55d20000000000000000000000000055, type: 2}
     - {fileID: 11400000, guid: 6e100000000000000000000000000006, type: 2}
+  - domainId: domain.career
+    definitions:
+    - {fileID: 11400000, guid: 27fd553fb9b2bbb4b9019e594e0ca473, type: 2}
+    - {fileID: 11400000, guid: 5a933288f8c31964fa54f1190afe3b0b, type: 2}
+    - {fileID: 11400000, guid: 203cf809d3433cc4f8cedf46f00ebcf0, type: 2}
+    - {fileID: 11400000, guid: 69c9435d1e1a52d4d845d920b8cb1acc, type: 2}
+    - {fileID: 11400000, guid: 178a0dc50e45c384ababd7e082641321, type: 2}
+    - {fileID: 11400000, guid: 80ea1cfdf87e06044918f996a52fdf71, type: 2}
+    - {fileID: 11400000, guid: 2f2c75a8aafbb2443ac0f1711d4e0bba, type: 2}
+    - {fileID: 11400000, guid: dd267f1613a93b943b95cf9374c42912, type: 2}
+    - {fileID: 11400000, guid: a0667e04473d7c4439bac7d2d5256890, type: 2}
+    - {fileID: 11400000, guid: 5e6cb86a7721f6c4cb70db704ffc2489, type: 2}
+    - {fileID: 11400000, guid: 7575b47ea7098af47b93269b4ca925e1, type: 2}
+    - {fileID: 11400000, guid: e1650fbc5b8f26e41a3cb0a61b36699b, type: 2}
+    - {fileID: 11400000, guid: 845a8104e3c39954fab138a4ec208c62, type: 2}
+    - {fileID: 11400000, guid: fc69caa61fdc17b48bc0334cd0cb0961, type: 2}
+    - {fileID: 11400000, guid: 820b01b0016f636458e64e30d99ed4a5, type: 2}
   - domainId: domain.category
     definitions:
     - {fileID: 11400000, guid: 8e018dcbe98745a7b8f2bce9e939cfb0, type: 2}
@@ -263,6 +290,11 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 6b0d29fb44bb3f8418c44eb2fd8dc27b, type: 2}
     - {fileID: 11400000, guid: 7e99f3b978188934d8a2e5d7890f8998, type: 2}
     - {fileID: 11400000, guid: d74ab9e659b5a1945b98da84f18bf86e, type: 2}
+  - domainId: domain.credential
+    definitions:
+    - {fileID: 11400000, guid: 123738a7fb5e58b46aebef5af0d04053, type: 2}
+    - {fileID: 11400000, guid: e05e930e47cd4e44a8b54d5ebab4db77, type: 2}
+    - {fileID: 11400000, guid: 6d722c3c39fe66d46ade31941534ba26, type: 2}
   - domainId: domain.currency
     definitions:
     - {fileID: 11400000, guid: 8d5f2bba9b8d4f56ad823790337abbad, type: 2}
@@ -305,6 +337,16 @@ MonoBehaviour:
     definitions:
     - {fileID: 11400000, guid: 1db055d282e03e34eacfa227d96d1a8a, type: 2}
     - {fileID: 11400000, guid: 1846d485654041941961dbfcc1d7a26c, type: 2}
+  - domainId: domain.duty
+    definitions:
+    - {fileID: 11400000, guid: 935401362fc04d0498a6343763b63371, type: 2}
+    - {fileID: 11400000, guid: 7a17cecd844b77a4aacbf8bdd84aff3a, type: 2}
+    - {fileID: 11400000, guid: b8314b05a5ba2a74fb416629537a9f7a, type: 2}
+    - {fileID: 11400000, guid: b1ed1dcc11a65a44fb21ba7f1704acdb, type: 2}
+    - {fileID: 11400000, guid: 3590a88a8c2c67944b3ed45f95888339, type: 2}
+    - {fileID: 11400000, guid: faee91aa7190b1f4ea8930b1d8a0e71f, type: 2}
+    - {fileID: 11400000, guid: 56fedcc4f81efc84784230b51511e07d, type: 2}
+    - {fileID: 11400000, guid: 9b4b567c35ba2f948b370b58f0015749, type: 2}
   - domainId: domain.effect
     definitions:
     - {fileID: 11400000, guid: 042229a544464822b36268e56dc9ed42, type: 2}
@@ -314,6 +356,10 @@ MonoBehaviour:
     - {fileID: 11400000, guid: f62676e5766148c5b5839004aaef9e4f, type: 2}
     - {fileID: 11400000, guid: 91f4c64c533145dd9ad7358af3d08b10, type: 2}
     - {fileID: 11400000, guid: a6b2f08fd77248ac9391e1596de30241, type: 2}
+  - domainId: domain.examination
+    definitions:
+    - {fileID: 11400000, guid: 9c94c0d98e92b4347be47d4c9625cffb, type: 2}
+    - {fileID: 11400000, guid: 4f78b726eca435048a13d1a5addc586e, type: 2}
   - domainId: domain.examination-method
     definitions:
     - {fileID: 11400000, guid: 9efa18b939d7488898d291dbcd9d9575, type: 2}
@@ -353,6 +399,18 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 70bb165840944ae696f652b7a5f99744, type: 2}
     - {fileID: 11400000, guid: 7e01f3a42a04430c94c818e54228d964, type: 2}
     - {fileID: 11400000, guid: 6cd6bc56f8184f45802e6ce0bc9a722c, type: 2}
+  - domainId: domain.goal
+    definitions:
+    - {fileID: 11400000, guid: d894ab0288ea254468b06a6ca1f62234, type: 2}
+    - {fileID: 11400000, guid: 1c4bf7d9149c0b04492640568bf4d79c, type: 2}
+    - {fileID: 11400000, guid: 07c0b89119b936a46b994b1c99b151fe, type: 2}
+    - {fileID: 11400000, guid: 48189eb76c7e9024bbdac140f1e6d32e, type: 2}
+    - {fileID: 11400000, guid: 56e6a47a0124bc24b81ed44db6aa052c, type: 2}
+    - {fileID: 11400000, guid: 7737d43b5e4131841855e21c97e62da7, type: 2}
+    - {fileID: 11400000, guid: b6e4c8236544922458f32ac6825167f9, type: 2}
+    - {fileID: 11400000, guid: 0c9dc9db30af8ae4895b9fc09bcf9e5e, type: 2}
+    - {fileID: 11400000, guid: 72aad0fdd6ec85740bd69b22dc9d560b, type: 2}
+    - {fileID: 11400000, guid: 801a8d3924b34124abc001a8c84ce686, type: 2}
   - domainId: domain.hazard
     definitions:
     - {fileID: 11400000, guid: 7a750000000000000000000000000010, type: 2}
@@ -580,6 +638,14 @@ MonoBehaviour:
     - {fileID: 11400000, guid: f1cccd051a484f3c85af0dcb2be313ff, type: 2}
     - {fileID: 11400000, guid: c67f143c04714aa5b83246d52f264b97, type: 2}
     - {fileID: 11400000, guid: 4819e29845be4c3182c93abbd1130f0f, type: 2}
+  - domainId: domain.position
+    definitions:
+    - {fileID: 11400000, guid: 330c6f36dfac56c4bb425275ccdf39c9, type: 2}
+    - {fileID: 11400000, guid: 1d586144b434de2469c4affe46241076, type: 2}
+    - {fileID: 11400000, guid: d2b2f720556ce9b408e337525059c7e0, type: 2}
+    - {fileID: 11400000, guid: fcfc75ec5bd6d584faf819aec0cf4033, type: 2}
+    - {fileID: 11400000, guid: 08cb712f542bc964eb363a946d5c5f40, type: 2}
+    - {fileID: 11400000, guid: 53cd2b2c7fd29a04299516b3bac8241e, type: 2}
   - domainId: domain.production-chain
     definitions:
     - {fileID: 11400000, guid: f80684e400c6b984b85cf93084191775, type: 2}
@@ -592,6 +658,54 @@ MonoBehaviour:
   - domainId: domain.production-tool
     definitions:
     - {fileID: 11400000, guid: d3005260ace18754883fbd42fcd5bbab, type: 2}
+  - domainId: domain.profession
+    definitions:
+    - {fileID: 11400000, guid: 72b3b5f7686c70845bfc3c0de3b17494, type: 2}
+    - {fileID: 11400000, guid: 7a5f4680b62065e43a3542961362343f, type: 2}
+    - {fileID: 11400000, guid: fb8e28f851943c3418a7ebcc054aa5db, type: 2}
+    - {fileID: 11400000, guid: db0261793f03ad24ca1b47d5b493989e, type: 2}
+    - {fileID: 11400000, guid: d987f341fc9a0f9428c3f4775109d7c0, type: 2}
+    - {fileID: 11400000, guid: ae82b9a21cc1e4f448bdf1a57937efdf, type: 2}
+    - {fileID: 11400000, guid: 7526416be9878f549baa002acd291997, type: 2}
+    - {fileID: 11400000, guid: 94ce13880297ee34ebac7e2b8f4d2574, type: 2}
+    - {fileID: 11400000, guid: 5712cdf2e81fa0041954dd75c22e1069, type: 2}
+    - {fileID: 11400000, guid: 65a9b29c41e2c6f498572c71f4edb6c5, type: 2}
+    - {fileID: 11400000, guid: 9a34a61bcbc3261468aaacb0299bcc55, type: 2}
+    - {fileID: 11400000, guid: 728989d63392c8a4aa7808eebc845006, type: 2}
+    - {fileID: 11400000, guid: f204348d57949d241a6aa05cb56e0e8b, type: 2}
+    - {fileID: 11400000, guid: c2c02cb428ec12c4e80446ad43b2379f, type: 2}
+    - {fileID: 11400000, guid: 82dd3c4706ba6b0418cfbf5e414d5189, type: 2}
+    - {fileID: 11400000, guid: e2e5ca38fe8d5e74ab1c00cebf558bdb, type: 2}
+    - {fileID: 11400000, guid: 4a0d5c3aaa3582a4d88150ef470d6bce, type: 2}
+    - {fileID: 11400000, guid: 4d48ff0a6b8713c4e804f96f6f90e485, type: 2}
+    - {fileID: 11400000, guid: 930a13efbffedce47aa87120b36b1797, type: 2}
+    - {fileID: 11400000, guid: 6fbc36a0af4e2b94685839967cb96a3e, type: 2}
+    - {fileID: 11400000, guid: e424985fb1377d348b61f367293697f1, type: 2}
+    - {fileID: 11400000, guid: 6057ed56508b8c24488ecfb785b9ca00, type: 2}
+    - {fileID: 11400000, guid: facac21b9363486419fb3e50a0babe6b, type: 2}
+    - {fileID: 11400000, guid: ee3e82f0fb4044343b08736b9db780bd, type: 2}
+    - {fileID: 11400000, guid: dfaa6efc041f14041bf0122c4d214bb6, type: 2}
+    - {fileID: 11400000, guid: b10dc6eb467e80e4cb827c411d59ca2e, type: 2}
+    - {fileID: 11400000, guid: 48fb920501fa9bb429bf644e9941438f, type: 2}
+    - {fileID: 11400000, guid: b01f7fe9c2d668f47b66cde7f35e1bff, type: 2}
+    - {fileID: 11400000, guid: 960d941c15e6dae41890c6efa06eb5d4, type: 2}
+    - {fileID: 11400000, guid: 5dbc7792b1f196e4d98ce0126eda202b, type: 2}
+    - {fileID: 11400000, guid: 281194c2da9dedd459946b1a954fc379, type: 2}
+    - {fileID: 11400000, guid: b16937d2f4b6f1f43997e97b3e7756f1, type: 2}
+    - {fileID: 11400000, guid: 2dca6e4bdc73d394789da958af126167, type: 2}
+    - {fileID: 11400000, guid: 5deff742bdaf1a24ea9c97867dbc4e92, type: 2}
+    - {fileID: 11400000, guid: 585953bede697344f83e3d195d39a32c, type: 2}
+    - {fileID: 11400000, guid: 28a453f6dc0c0d4409ba5243fa0476df, type: 2}
+    - {fileID: 11400000, guid: c444a2d6abfd6354c88fb9df85eb9fce, type: 2}
+    - {fileID: 11400000, guid: 055be35a3fc42a54aa7eaa6831f45bd6, type: 2}
+    - {fileID: 11400000, guid: fd99b0efd0e60384786e24d42e14f815, type: 2}
+    - {fileID: 11400000, guid: 4bc7496b47cf71742b1ae572f9d29298, type: 2}
+    - {fileID: 11400000, guid: 83147284086ecfd4eb632b6ccbc3558a, type: 2}
+    - {fileID: 11400000, guid: 8f7e301246581e349a23d6d8cda56cc9, type: 2}
+    - {fileID: 11400000, guid: d17a7c56c59ac4e4a80bc34496110fa0, type: 2}
+    - {fileID: 11400000, guid: 9d44e07f0716f8e4ab4871fe1d2611a8, type: 2}
+    - {fileID: 11400000, guid: 6833a88fe08d37b46a910ecefb1d0307, type: 2}
+    - {fileID: 11400000, guid: 9e108d03e22dedc4e97bb1684b8d8ab0, type: 2}
   - domainId: domain.quality
     definitions:
     - {fileID: 11400000, guid: f0534e4e838451c45951f4d39d3c7dd0, type: 2}
@@ -770,6 +884,12 @@ MonoBehaviour:
     definitions:
     - {fileID: 11400000, guid: 2bc965f2d5734a0783d0c76d4129014f, type: 2}
     - {fileID: 11400000, guid: ca4b21bdfcb64cbfab3abed51d2f7eca, type: 2}
+  - domainId: domain.training
+    definitions:
+    - {fileID: 11400000, guid: c7238cb8e63390741a17a6d0ddd38a70, type: 2}
+    - {fileID: 11400000, guid: c32d857850ba0b246af8d4479ed62e9a, type: 2}
+    - {fileID: 11400000, guid: d77441d95e7bc42439f49bd6ed98eb58, type: 2}
+    - {fileID: 11400000, guid: 4767361baa1b0604fa61c514bc127f7e, type: 2}
   - domainId: domain.trait
     definitions:
     - {fileID: 11400000, guid: 55f10000000000000000000000000055, type: 2}

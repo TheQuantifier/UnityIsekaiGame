@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09f53f5880954082a09f7dd1d419b386, type: 3}
+  m_Name: position_prototype_royal_forge_senior_smith
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.PositionDefinition
+  id: position.prototype.royal-forge.senior-smith
+  displayName: Royal Forge Senior Smith
+  debugName: Royal Forge Senior Smith
+  category: 2
+  relatedProfessionIds:
+  - profession.blacksmith
+  relatedSpecializationIds:
+  - profession.specialization.blacksmith.weaponsmith
+  requiredOrganizationTypeId: organization-type.forge
+  requiredRankDefinitionIds:
+  - profession.rank.blacksmith.journeyman
+  requiredCredentialDefinitionIds:
+  - credential.blacksmith.guild-license
+  requiredTrainingProgramIds:
+  - training.program.blacksmith.apprenticeship
+  - training.program.blacksmith.safety
+  experienceRequirement:
+    professionId: profession.blacksmith
+    specializationId: profession.specialization.blacksmith.weaponsmith
+    requiredCategory: 0
+    minimumValidatedActivities: 2
+    minimumIndependentActivities: 1
+    minimumSupervisedActivities: 0
+    minimumDifficulty: 2
+    minimumQuality: 600
+    requireRecentActivity: 0
+  requiredSkillIds: []
+  requiredKnowledgeFactIds: []
+  requiredCapabilityIds: []
+  requiredOrganizationMembershipIds: []
+  requiredRoleIds: []
+  requiredTitleIds: []
+  dutyDefinitionIds:
+  - duty.prototype.royal-forge.senior-smith.craft
+  - duty.prototype.royal-forge.senior-smith.supervise
+  authorityGrantIds:
+  - authority.position.assign-duty
+  - authority.position.supervise
+  - permission.station.forge.restricted
+  reportingRelationshipFoundationId: 
+  supervisionCapacity: 0
+  defaultClassification: 5
+  maximumSimultaneousHolders: 1
+  vacanciesAllowed: 1
+  sharedPositionAllowed: 0
+  exclusiveFullTime: 1
+  secret: 0
+  compensationPolicyId: compensation-policy.foundation.royal-forge.senior-smith
+  paymentScheduleFoundationId: 
+  wageOrSalaryFoundationId: 
+  benefitsFoundationId: 
+  employerCostCenterFoundationId: cost-center.foundation.royal-forge
+  contractTermsFoundationId: 
+  commissionOrProfitShareFoundationId: 
+  visibility: 1
+  accessPolicyId: information-access.profession.public
+  version: 1

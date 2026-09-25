@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e933c88b44845f08b7279c8be96e7a1, type: 3}
+  m_Name: profession_entry_blacksmith_weaponsmith
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.ProfessionEntryPathDefinition
+  entryPathId: profession.entry.blacksmith.weaponsmith
+  professionId: profession.blacksmith
+  specializationId: profession.specialization.blacksmith.weaponsmith
+  displayName: Weaponsmith Specialization Entry
+  debugName: Weaponsmith Specialization Entry
+  description: 
+  entryType: 7
+  formality: 0
+  selfDeclarationPolicy: 0
+  recognizingAuthorityIds: []
+  requirementSet: {fileID: 0}
+  minimumAge: 0
+  allowedLifeStageIds: []
+  requiredSkillIds:
+  - skill.smithing
+  requiredKnowledgeSubjectIds: []
+  requiredCapabilityIds: []
+  requiredTraitIds: []
+  requiredStatusIds: []
+  requiredOrganizationIds: []
+  requiredAccessKeys: []
+  requiredActiveProfessionIds:
+  - profession.blacksmith
+  prohibitedActiveProfessionIds: []
+  exclusiveProfessionIds: []
+  allowSecretEntry: 0
+  allowDisputedEntry: 0
+  allowRestrictedEntry: 0
+  allowIllegalEntry: 0
+  requiresRecognizingAuthority: 0
+  immediateApprovalAllowed: 1
+  specializationRequiresParentActive: 1
+  reentryPolicy: 0
+  defaultAccessPolicyId: information-access.profession.public
+  version: 1
+  validationMetadata: 

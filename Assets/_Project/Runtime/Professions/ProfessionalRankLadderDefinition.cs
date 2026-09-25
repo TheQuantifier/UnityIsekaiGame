@@ -95,9 +95,9 @@ namespace UnityIsekaiGame.Professions
             {
                 report.AddError("Professional Rank Ladder definition has no stable ID.");
             }
-            else if (!Id.StartsWith("profession-rank-ladder.", StringComparison.Ordinal))
+            else if (!Id.StartsWith("profession.rank-ladder.", StringComparison.Ordinal))
             {
-                report.AddWarning($"Professional Rank Ladder definition '{DisplayName}' should use the 'profession-rank-ladder.' namespace prefix.");
+                report.AddWarning($"Professional Rank Ladder definition '{DisplayName}' should use the 'profession.rank-ladder.' namespace prefix.");
             }
 
             if (definitionsById == null || !definitionsById.TryGetValue(ProfessionId, out IGameDefinition professionDefinition) || professionDefinition is not ProfessionDefinition)

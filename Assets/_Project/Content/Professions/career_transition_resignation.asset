@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d291a03b5d94a0ab60ca810efd620bb, type: 3}
+  m_Name: career_transition_resignation
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.CareerTransitionDefinition
+  id: career.transition.resignation
+  displayName: Resignation
+  category: 12
+  allowedSourceStates: 0100000002000000
+  allowedDestinationStates: 
+  requiredSourceRecordTypes: 02000000
+  requiredProfessionIds: []
+  requiredRankDefinitionIds: []
+  requiredCredentialDefinitionIds: []
+  voluntary: 1
+  authorityApprovalRequired: 0
+  mayBeDisputed: 0
+  secretAllowed: 0
+  historySignificancePolicyId: history-significance.profession.prototype
+  accessPolicyId: information-access.profession.public
+  version: 1

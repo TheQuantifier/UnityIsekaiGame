@@ -171,9 +171,9 @@ namespace UnityIsekaiGame.Professions
             {
                 report.AddError($"Profession Entry Path '{name}' is missing a stable ID.");
             }
-            else if (!Id.StartsWith("profession-entry.", StringComparison.Ordinal))
+            else if (!Id.StartsWith("profession.entry.", StringComparison.Ordinal))
             {
-                report.AddWarning($"Profession Entry Path '{Id}' should use the 'profession-entry.' namespace prefix.");
+                report.AddWarning($"Profession Entry Path '{Id}' should use the 'profession.entry.' namespace prefix.");
             }
 
             if (!Enum.IsDefined(typeof(ProfessionEntryType), entryType)

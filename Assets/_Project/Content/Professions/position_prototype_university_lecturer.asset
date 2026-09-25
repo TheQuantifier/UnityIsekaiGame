@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09f53f5880954082a09f7dd1d419b386, type: 3}
+  m_Name: position_prototype_university_lecturer
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.PositionDefinition
+  id: position.prototype.university.lecturer
+  displayName: University Lecturer
+  debugName: University Lecturer
+  category: 8
+  relatedProfessionIds:
+  - profession.blacksmith
+  relatedSpecializationIds: []
+  requiredOrganizationTypeId: organization-type.university
+  requiredRankDefinitionIds:
+  - profession.rank.blacksmith.master
+  requiredCredentialDefinitionIds: []
+  requiredTrainingProgramIds: []
+  experienceRequirement:
+    professionId: 
+    specializationId: 
+    requiredCategory: 0
+    minimumValidatedActivities: 0
+    minimumIndependentActivities: 0
+    minimumSupervisedActivities: 0
+    minimumDifficulty: 0
+    minimumQuality: 0
+    requireRecentActivity: 0
+  requiredSkillIds: []
+  requiredKnowledgeFactIds: []
+  requiredCapabilityIds: []
+  requiredOrganizationMembershipIds: []
+  requiredRoleIds: []
+  requiredTitleIds: []
+  dutyDefinitionIds:
+  - duty.prototype.university.lecturer.teaching
+  authorityGrantIds:
+  - permission.profession.blacksmith.teach
+  reportingRelationshipFoundationId: 
+  supervisionCapacity: 0
+  defaultClassification: 3
+  maximumSimultaneousHolders: 1
+  vacanciesAllowed: 1
+  sharedPositionAllowed: 0
+  exclusiveFullTime: 0
+  secret: 0
+  compensationPolicyId: 
+  paymentScheduleFoundationId: 
+  wageOrSalaryFoundationId: 
+  benefitsFoundationId: 
+  employerCostCenterFoundationId: 
+  contractTermsFoundationId: 
+  commissionOrProfitShareFoundationId: 
+  visibility: 1
+  accessPolicyId: information-access.profession.public
+  version: 1

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 577da6f2a7f9465fa63fbefee6b028be, type: 3}
+  m_Name: duty_prototype_guild_clerk_records
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.DutyDefinition
+  id: duty.prototype.guild.clerk.records
+  positionDefinitionId: position.prototype.guild.clerk
+  displayName: Maintain Guild Records
+  debugName: Maintain Guild Records
+  category: 13
+  required: 1
+  priority: 100
+  activityOrServiceCategoryId: 
+  requiredProfessionId: 
+  requiredAuthorityId: authority.position.restricted-records
+  requiredAccessPolicyId: 
+  targetFoundationId: 
+  expectedFrequencyFoundationId: 
+  delegationAllowed: 0
+  supervisionRequired: 0
+  completionEvidenceRequired: 1
+  failureNeglectPolicyFoundationId: 
+  secret: 1
+  visibility: 1
+  accessPolicyId: information-access.profession.secret
+  version: 1

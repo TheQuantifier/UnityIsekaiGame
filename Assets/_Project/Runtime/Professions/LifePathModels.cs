@@ -215,7 +215,7 @@ namespace UnityIsekaiGame.Professions
         }
 
         public bool ActiveLike => state == PersonAspirationState.Desired || state == PersonAspirationState.Considering || state == PersonAspirationState.Active || state == PersonAspirationState.Paused || state == PersonAspirationState.Blocked || state == PersonAspirationState.Conflicted || state == PersonAspirationState.Secret || state == PersonAspirationState.Disputed;
-        public bool Secret => state == PersonAspirationState.Secret || MotivationTagsContainSecret || string.Equals(accessPolicyId, PrototypeProfessionDefinitionFactory.AccessSecretId, StringComparison.Ordinal);
+        public bool Secret => state == PersonAspirationState.Secret || MotivationTagsContainSecret || string.Equals(accessPolicyId, ProfessionContentIds.AccessSecretId, StringComparison.Ordinal);
         private bool MotivationTagsContainSecret => motivationTags != null && motivationTags.Any(tag => tag.IndexOf("secret", StringComparison.OrdinalIgnoreCase) >= 0 || tag.IndexOf("private", StringComparison.OrdinalIgnoreCase) >= 0);
 
         public InformationSubjectReferenceData CreateInformationSubject()
@@ -308,7 +308,7 @@ namespace UnityIsekaiGame.Professions
         }
 
         public bool Terminal => state == PersonGoalState.Completed || state == PersonGoalState.Failed || state == PersonGoalState.Abandoned || state == PersonGoalState.Replaced || state == PersonGoalState.Cancelled || state == PersonGoalState.Expired;
-        public bool Secret => state == PersonGoalState.Secret || string.Equals(accessPolicyId, PrototypeProfessionDefinitionFactory.AccessSecretId, StringComparison.Ordinal);
+        public bool Secret => state == PersonGoalState.Secret || string.Equals(accessPolicyId, ProfessionContentIds.AccessSecretId, StringComparison.Ordinal);
 
         public InformationSubjectReferenceData CreateInformationSubject()
         {
@@ -375,7 +375,7 @@ namespace UnityIsekaiGame.Professions
             };
         }
 
-        public bool Secret => secret || kind == ProfessionalIdentityKind.Secret || alignment == ProfessionalIdentityAlignmentState.Secret || string.Equals(accessPolicyId, PrototypeProfessionDefinitionFactory.AccessSecretId, StringComparison.Ordinal);
+        public bool Secret => secret || kind == ProfessionalIdentityKind.Secret || alignment == ProfessionalIdentityAlignmentState.Secret || string.Equals(accessPolicyId, ProfessionContentIds.AccessSecretId, StringComparison.Ordinal);
     }
 
     [Serializable]

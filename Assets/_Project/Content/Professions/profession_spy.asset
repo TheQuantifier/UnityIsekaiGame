@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c3f3108552d4fb6b64bb91cfe90f393, type: 3}
+  m_Name: profession_spy
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.ProfessionDefinition
+  professionId: profession.spy
+  displayName: Spy
+  debugName: Spy
+  description: 
+  category: 13
+  recognitionForm: 2
+  primaryCategory: {fileID: 0}
+  tags: []
+  relatedSkillIds:
+  - skill.appraisal
+  knowledgeSubjectIds:
+  - knowledge.subject.secrets
+  relatedCapabilityIds: []
+  productionActivityCategoryIds:
+  - production.activity.infiltration
+  allowedSpecializationIds: []
+  recognizingOrganizationTypeIds: []
+  recognizingAuthorityIds: []
+  selfDeclarationAllowed: 1
+  formalRecognitionPossible: 0
+  secretAllowed: 1
+  illegal: 0
+  restricted: 1
+  defaultAccessPolicyId: information-access.profession.secret
+  version: 1
+  validationMetadata: 

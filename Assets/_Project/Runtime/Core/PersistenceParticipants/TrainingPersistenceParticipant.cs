@@ -10,7 +10,7 @@ namespace UnityIsekaiGame.Persistence
 {
     public sealed class TrainingPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
-        public const string Key = "person.training";
+        public const string Key = "world.profession-training";
         public const int CurrentParticipantSchemaVersion = 1;
 
         private readonly TrainingRuntime runtime;
@@ -39,11 +39,11 @@ namespace UnityIsekaiGame.Persistence
         public string ParticipantKey => Key;
         public int ParticipantSchemaVersion => CurrentParticipantSchemaVersion;
         public bool IsRequired => false;
-        public PersistenceScope Scope => PersistenceScope.Player;
+        public PersistenceScope Scope => PersistenceScope.SharedWorld;
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.IdentityAndProgression;
         public int LoadPriority => 84;
-        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { PlayerIdentityProgressionPersistenceParticipant.Key, PersonProfessionPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => Array.Empty<string>();
         public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => new[] { InformationTransferPersistenceParticipant.Key, ProfessionEntryPersistenceParticipant.Key };
         public bool SupportsRollback => true;
         public bool RequiresSceneReadiness => false;

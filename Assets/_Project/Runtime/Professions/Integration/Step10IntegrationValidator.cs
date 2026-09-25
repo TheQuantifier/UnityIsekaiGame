@@ -1003,7 +1003,7 @@ namespace UnityIsekaiGame.Professions.Integration
 
         private static bool IsSecret(string accessPolicyId, IEnumerable<string> tags)
         {
-            return Same(accessPolicyId, PrototypeProfessionDefinitionFactory.AccessSecretId)
+            return Same(accessPolicyId, ProfessionContentIds.AccessSecretId)
                 || (tags ?? Array.Empty<string>()).Any(tag => tag.IndexOf("secret", StringComparison.OrdinalIgnoreCase) >= 0);
         }
     }

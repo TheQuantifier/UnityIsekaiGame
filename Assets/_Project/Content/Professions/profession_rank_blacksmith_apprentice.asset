@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b71b8f190b8149028cd7fd0d0642635c, type: 3}
+  m_Name: profession_rank_blacksmith_apprentice
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.ProfessionalRankDefinition
+  id: profession.rank.blacksmith.apprentice
+  displayName: Apprentice Blacksmith
+  debugName: Apprentice Blacksmith
+  professionId: profession.blacksmith
+  specializationId: 
+  rankOrder: 10
+  category: 3
+  priorRankDefinitionIds: []
+  allowRankSkipping: 0
+  requiredCredentialDefinitionIds: []
+  requiredTrainingProgramIds:
+  - training.program.blacksmith.apprenticeship
+  experienceRequirement:
+    professionId: 
+    specializationId: 
+    requiredCategory: 0
+    minimumValidatedActivities: 0
+    minimumIndependentActivities: 0
+    minimumSupervisedActivities: 0
+    minimumDifficulty: 0
+    minimumQuality: 0
+    requireRecentActivity: 0
+  requiredExaminationDefinitionIds: []
+  requiredAuthorityIds:
+  - authority.guild.prototype
+  selfClaimAllowed: 0
+  trackKind: 0
+  grantedPermissionFoundationIds:
+  - permission.profession.blacksmith.practice
+  titleEligibilityFoundationIds: []
+  teachingEligibility: 0
+  supervisionEligibility: 0
+  maximumApprenticeCapacity: 0
+  suspensionAllowed: 1
+  revocationAllowed: 1
+  secret: 0
+  visibility: 1
+  accessPolicyId: information-access.profession.public
+  version: 1

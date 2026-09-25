@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b106e2fd6a169084bbb4f082065b3a5f, type: 3}
+  m_Name: goal_blacksmith_earn_guild_license
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.LifeGoalDefinition
+  id: goal.blacksmith.earn-guild-license
+  displayName: Earn Blacksmith Guild License
+  debugName: Earn Blacksmith Guild License
+  category: 5
+  targetSubjectType: 4
+  requiredProfessionIds: []
+  requiredTrainingProgramIds: []
+  requiredCredentialDefinitionIds:
+  - credential.blacksmith.guild-license
+  requiredRankDefinitionIds: []
+  requiredPositionDefinitionIds: []
+  requiredActivityDefinitionIds: []
+  requirementIds: []
+  completionPolicy: 3
+  failurePolicy: 0
+  deadlineFoundationId: 
+  compatibleAspirationDefinitionIds:
+  - aspiration.blacksmith.guild-license
+  - aspiration.blacksmith.weaponsmith-mastery
+  dependencyGoalDefinitionIds:
+  - goal.blacksmith.complete-apprenticeship
+  alternativeGoalDefinitionIds: []
+  conflictTags: []
+  accessPolicyId: information-access.profession.public
+  version: 1

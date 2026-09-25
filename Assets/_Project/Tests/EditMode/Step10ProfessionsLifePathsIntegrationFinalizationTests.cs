@@ -140,15 +140,15 @@ namespace UnityIsekaiGame.Tests
                     {
                         relationshipId = "profession.step10.blacksmith",
                         personId = PersonId,
-                        professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                        specializationIds = new[] { PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId },
+                        professionId = ProfessionContentIds.BlacksmithProfessionId,
+                        specializationIds = new[] { ProfessionContentIds.WeaponsmithSpecializationId },
                         state = ProfessionRelationshipState.RecognizedPractitioner,
                         active = true,
                         primary = true,
                         formalPractice = true,
                         recognized = true,
                         recognizingAuthorityId = GuildAuthorityId,
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 }
             };
@@ -164,17 +164,17 @@ namespace UnityIsekaiGame.Tests
                     {
                         enrollmentId = "training.step10.apprenticeship",
                         personId = PersonId,
-                        programId = PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId,
-                        relatedProfessionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                        relatedSpecializationId = PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
+                        programId = ProfessionContentIds.BlacksmithApprenticeshipProgramId,
+                        relatedProfessionId = ProfessionContentIds.BlacksmithProfessionId,
+                        relatedSpecializationId = ProfessionContentIds.WeaponsmithSpecializationId,
                         state = TrainingEnrollmentState.Completed,
                         completedModuleIds = new[]
                         {
-                            PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId,
-                            PrototypeProfessionDefinitionFactory.BlacksmithPracticeModuleId,
-                            PrototypeProfessionDefinitionFactory.BlacksmithHiddenAssessmentModuleId
+                            ProfessionContentIds.BlacksmithBasicsModuleId,
+                            ProfessionContentIds.BlacksmithPracticeModuleId,
+                            ProfessionContentIds.BlacksmithHiddenAssessmentModuleId
                         },
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 }
             };
@@ -190,9 +190,9 @@ namespace UnityIsekaiGame.Tests
                     {
                         activityId = "activity.step10.crafting",
                         personId = PersonId,
-                        professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                        specializationId = PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
-                        activityDefinitionId = PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId,
+                        professionId = ProfessionContentIds.BlacksmithProfessionId,
+                        specializationId = ProfessionContentIds.WeaponsmithSpecializationId,
+                        activityDefinitionId = ProfessionContentIds.BlacksmithCraftingActivityDefinitionId,
                         source = new ProfessionalActivitySourceReferenceData
                         {
                             sourceType = ProfessionalActivitySourceType.CraftingOperation,
@@ -203,7 +203,7 @@ namespace UnityIsekaiGame.Tests
                         state = ProfessionalActivityState.Validated,
                         outcome = ProfessionalActivityOutcomeState.Successful,
                         quality = 800,
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 },
                 evidence =
@@ -213,7 +213,7 @@ namespace UnityIsekaiGame.Tests
                         evidenceId = "evidence.step10.crafting",
                         activityId = "activity.step10.crafting",
                         personId = PersonId,
-                        professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                        professionId = ProfessionContentIds.BlacksmithProfessionId,
                         category = ProfessionalExperienceCategory.IndependentWork,
                         outcome = ProfessionalActivityOutcomeState.Successful,
                         source = new ProfessionalActivitySourceReferenceData
@@ -222,7 +222,7 @@ namespace UnityIsekaiGame.Tests
                             sourceId = "craft.step10.sword",
                             sourceRevision = 1L
                         },
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 }
             };
@@ -237,7 +237,7 @@ namespace UnityIsekaiGame.Tests
                     new CredentialRecordData
                     {
                         credentialId = "credential.step10.guild-license",
-                        credentialDefinitionId = PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId,
+                        credentialDefinitionId = ProfessionContentIds.BlacksmithGuildLicenseCredentialId,
                         recipientPersonId = PersonId,
                         state = CredentialState.Active,
                         authenticityState = CredentialAuthenticityState.Authoritative,
@@ -248,7 +248,7 @@ namespace UnityIsekaiGame.Tests
                         },
                         supportingTrainingRecordIds = new[] { "training.step10.apprenticeship" },
                         supportingExperienceEvidenceIds = new[] { "evidence.step10.crafting" },
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 }
             };
@@ -264,15 +264,15 @@ namespace UnityIsekaiGame.Tests
                     {
                         rankRecordId = "rank.step10.journeyman",
                         personId = PersonId,
-                        professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                        specializationId = PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
-                        ladderDefinitionId = PrototypeProfessionDefinitionFactory.BlacksmithRankLadderId,
-                        rankDefinitionId = PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId,
+                        professionId = ProfessionContentIds.BlacksmithProfessionId,
+                        specializationId = ProfessionContentIds.WeaponsmithSpecializationId,
+                        ladderDefinitionId = ProfessionContentIds.BlacksmithRankLadderId,
+                        rankDefinitionId = ProfessionContentIds.BlacksmithRankJourneymanId,
                         state = ProfessionalRankState.Active,
                         recognizingAuthorityId = GuildAuthorityId,
                         supportingCredentialIds = new[] { "credential.step10.guild-license" },
                         supportingExperienceEvidenceIds = new[] { "evidence.step10.crafting" },
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 }
             };
@@ -287,12 +287,12 @@ namespace UnityIsekaiGame.Tests
                     new PositionInstanceData
                     {
                         positionInstanceId = "position.step10.guild-clerk",
-                        positionDefinitionId = PrototypeProfessionDefinitionFactory.GuildClerkPositionId,
+                        positionDefinitionId = ProfessionContentIds.GuildClerkPositionId,
                         organizationId = GuildOrganizationId,
-                        organizationTypeId = PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId,
+                        organizationTypeId = ProfessionContentIds.GuildOrganizationTypeId,
                         state = PositionInstanceState.Filled,
                         holderPersonIds = new[] { PersonId },
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 },
                 employments =
@@ -303,12 +303,12 @@ namespace UnityIsekaiGame.Tests
                         personId = PersonId,
                         employerOrganizationId = GuildOrganizationId,
                         positionInstanceId = "position.step10.guild-clerk",
-                        positionDefinitionId = PrototypeProfessionDefinitionFactory.GuildClerkPositionId,
+                        positionDefinitionId = ProfessionContentIds.GuildClerkPositionId,
                         classification = EmploymentClassification.Permanent,
                         state = EmploymentState.Active,
-                        appointmentAuthorityId = PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId,
+                        appointmentAuthorityId = ProfessionContentIds.PositionAppointAuthorityId,
                         dutyAssignmentIds = new[] { "duty.step10.records" },
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 },
                 duties =
@@ -318,11 +318,11 @@ namespace UnityIsekaiGame.Tests
                         assignmentId = "duty.step10.records",
                         employmentId = "employment.step10.guild-clerk",
                         positionInstanceId = "position.step10.guild-clerk",
-                        dutyDefinitionId = PrototypeProfessionDefinitionFactory.GuildClerkRecordDutyId,
+                        dutyDefinitionId = ProfessionContentIds.GuildClerkRecordDutyId,
                         assignedPersonId = PersonId,
                         state = DutyAssignmentState.Active,
                         completionEvidenceReferenceIds = new[] { "activity.step10.crafting" },
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 }
             };
@@ -339,7 +339,7 @@ namespace UnityIsekaiGame.Tests
                         episodeId = "career.step10.guild",
                         personId = PersonId,
                         category = CareerEpisodeCategory.Employment,
-                        professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                        professionId = ProfessionContentIds.BlacksmithProfessionId,
                         employmentId = "employment.step10.guild-clerk",
                         positionInstanceId = "position.step10.guild-clerk",
                         organizationId = GuildOrganizationId,
@@ -347,7 +347,7 @@ namespace UnityIsekaiGame.Tests
                         credentialId = "credential.step10.guild-license",
                         state = CareerEpisodeState.Active,
                         primaryCareer = true,
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 }
             };
@@ -373,7 +373,7 @@ namespace UnityIsekaiGame.Tests
                         activeAspirationIds = new[] { "aspiration.step10.guild-license" },
                         activeGoalIds = new[] { "goal.step10.credential" },
                         primaryProfessionalIdentityId = "identity.step10.blacksmith",
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 },
                 aspirations =
@@ -382,13 +382,13 @@ namespace UnityIsekaiGame.Tests
                     {
                         aspirationId = "aspiration.step10.guild-license",
                         personId = PersonId,
-                        aspirationDefinitionId = PrototypeProfessionDefinitionFactory.AspirationEarnGuildLicenseId,
+                        aspirationDefinitionId = ProfessionContentIds.AspirationEarnGuildLicenseId,
                         targetSubjectType = LifePathTargetSubjectType.Credential,
-                        targetProfessionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                        targetCredentialDefinitionId = PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId,
+                        targetProfessionId = ProfessionContentIds.BlacksmithProfessionId,
+                        targetCredentialDefinitionId = ProfessionContentIds.BlacksmithGuildLicenseCredentialId,
                         state = PersonAspirationState.Active,
                         relatedGoalIds = new[] { "goal.step10.credential" },
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 },
                 goals =
@@ -397,15 +397,15 @@ namespace UnityIsekaiGame.Tests
                     {
                         goalId = "goal.step10.credential",
                         personId = PersonId,
-                        goalDefinitionId = PrototypeProfessionDefinitionFactory.GoalEarnBlacksmithGuildLicenseId,
+                        goalDefinitionId = ProfessionContentIds.GoalEarnBlacksmithGuildLicenseId,
                         parentAspirationId = "aspiration.step10.guild-license",
                         targetSubjectType = LifePathTargetSubjectType.Credential,
-                        targetProfessionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                        targetCredentialDefinitionId = PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId,
+                        targetProfessionId = ProfessionContentIds.BlacksmithProfessionId,
+                        targetCredentialDefinitionId = ProfessionContentIds.BlacksmithGuildLicenseCredentialId,
                         state = PersonGoalState.Completed,
                         progressState = LifeGoalProgressState.Satisfied,
                         completedRequirementIds = new[] { "credential.step10.guild-license" },
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 },
                 identities =
@@ -416,11 +416,11 @@ namespace UnityIsekaiGame.Tests
                         personId = PersonId,
                         kind = ProfessionalIdentityKind.Primary,
                         alignment = ProfessionalIdentityAlignmentState.Aligned,
-                        professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                        professionId = ProfessionContentIds.BlacksmithProfessionId,
                         professionRelationshipId = "profession.step10.blacksmith",
                         careerEpisodeId = "career.step10.guild",
                         active = true,
-                        accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                        accessPolicyId = ProfessionContentIds.AccessPublicId
                     }
                 }
             };
@@ -431,10 +431,10 @@ namespace UnityIsekaiGame.Tests
             return new[]
             {
                 GuildAuthorityId,
-                PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId,
-                PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId,
-                PrototypeProfessionDefinitionFactory.PositionSuperviseAuthorityId,
-                PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId
+                ProfessionContentIds.PositionAppointAuthorityId,
+                ProfessionContentIds.PositionDutyAssignAuthorityId,
+                ProfessionContentIds.PositionSuperviseAuthorityId,
+                ProfessionContentIds.PositionRestrictedRecordsAuthorityId
             };
         }
 
@@ -442,7 +442,7 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
             Assert.That(catalog, Is.Not.Null, $"Prototype catalog is missing at {CatalogPath}.");
-            return PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(catalog.CreateRegistry());
+            return catalog.CreateRegistry();
         }
     }
 }

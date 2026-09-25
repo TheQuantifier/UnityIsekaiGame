@@ -24,8 +24,8 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
             Assert.That(report.WarningCount, Is.Zero, report.GetSummary());
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, out ProfessionDefinition blacksmith), Is.True);
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId, out ProfessionSpecializationDefinition weaponsmith), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.BlacksmithProfessionId, out ProfessionDefinition blacksmith), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.WeaponsmithSpecializationId, out ProfessionSpecializationDefinition weaponsmith), Is.True);
             Assert.That(blacksmith.Category, Is.EqualTo(ProfessionCategory.Craft));
             Assert.That(weaponsmith.ParentProfessionId, Is.EqualTo(blacksmith.Id));
             Assert.That(blacksmith.RelatedSkillIds, Does.Contain("skill.smithing"));
@@ -37,11 +37,11 @@ namespace UnityIsekaiGame.Tests
         {
             PersonProfessionRuntime runtime = CreateRuntime();
 
-            ProfessionOperationResult blacksmith = runtime.AddRelationship(Request("profession-relationship.blacksmith", PrototypeProfessionDefinitionFactory.BlacksmithProfessionId));
-            ProfessionOperationResult duplicateActive = runtime.AddRelationship(Request("profession-relationship.blacksmith.duplicate", PrototypeProfessionDefinitionFactory.BlacksmithProfessionId));
-            ProfessionOperationResult idempotent = runtime.AddRelationship(Request("profession-relationship.blacksmith", PrototypeProfessionDefinitionFactory.BlacksmithProfessionId));
-            ProfessionOperationResult conflictingSameId = runtime.AddRelationship(Request("profession-relationship.blacksmith", PrototypeProfessionDefinitionFactory.FieldMedicProfessionId));
-            ProfessionOperationResult medic = runtime.AddRelationship(Request("profession-relationship.medic", PrototypeProfessionDefinitionFactory.FieldMedicProfessionId));
+            ProfessionOperationResult blacksmith = runtime.AddRelationship(Request("profession-relationship.blacksmith", ProfessionContentIds.BlacksmithProfessionId));
+            ProfessionOperationResult duplicateActive = runtime.AddRelationship(Request("profession-relationship.blacksmith.duplicate", ProfessionContentIds.BlacksmithProfessionId));
+            ProfessionOperationResult idempotent = runtime.AddRelationship(Request("profession-relationship.blacksmith", ProfessionContentIds.BlacksmithProfessionId));
+            ProfessionOperationResult conflictingSameId = runtime.AddRelationship(Request("profession-relationship.blacksmith", ProfessionContentIds.FieldMedicProfessionId));
+            ProfessionOperationResult medic = runtime.AddRelationship(Request("profession-relationship.medic", ProfessionContentIds.FieldMedicProfessionId));
             ProfessionOperationResult missingAuthority = runtime.Recognize("profession-relationship.medic", string.Empty);
             ProfessionOperationResult invalidAuthority = runtime.Recognize("profession-relationship.medic", "authority.guild.prototype");
             ProfessionOperationResult recognized = runtime.Recognize("profession-relationship.medic", "authority.medical.prototype", "credential.profession.medic");
@@ -60,7 +60,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(invalidAuthority.Status, Is.EqualTo(ProfessionOperationStatus.ValidationFailed));
             Assert.That(recognized.Succeeded, Is.True, recognized.Message);
             Assert.That(primary.Succeeded, Is.True, primary.Message);
-            Assert.That(runtime.QueryPrimary(PersonId).Select(snapshot => snapshot.ProfessionId), Is.EqualTo(new[] { PrototypeProfessionDefinitionFactory.FieldMedicProfessionId }));
+            Assert.That(runtime.QueryPrimary(PersonId).Select(snapshot => snapshot.ProfessionId), Is.EqualTo(new[] { ProfessionContentIds.FieldMedicProfessionId }));
         }
 
         [Test]
@@ -71,11 +71,11 @@ namespace UnityIsekaiGame.Tests
             {
                 relationshipId = "profession-relationship.spy",
                 personId = PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.SpyProfessionId,
+                professionId = ProfessionContentIds.SpyProfessionId,
                 state = ProfessionRelationshipState.Secret,
                 informalPractice = true,
                 active = true,
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessSecretId,
+                accessPolicyId = ProfessionContentIds.AccessSecretId,
                 tags = new[] { "profession.secret" }
             });
             long revision = runtime.Revision;
@@ -88,7 +88,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(projection.Denied, Is.False);
             Assert.That(projection.Snapshot.RelationshipId, Is.Empty);
             Assert.That(projection.Snapshot.PersonId, Is.Empty);
-            Assert.That(projection.Snapshot.ProfessionId, Is.EqualTo(PrototypeProfessionDefinitionFactory.SpyProfessionId));
+            Assert.That(projection.Snapshot.ProfessionId, Is.EqualTo(ProfessionContentIds.SpyProfessionId));
             Assert.That(internalProjection.Snapshot.RelationshipId, Is.EqualTo("profession-relationship.spy"));
             Assert.That(runtime.Revision, Is.EqualTo(revision));
         }
@@ -98,11 +98,11 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionRegistry registry = CreateRegistry();
             PersonProfessionRuntime runtime = CreateRuntime(registry);
-            runtime.AddRelationship(Request("profession-relationship.persist", PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId));
+            runtime.AddRelationship(Request("profession-relationship.persist", ProfessionContentIds.BlacksmithProfessionId, ProfessionContentIds.WeaponsmithSpecializationId));
             PersonProfessionRuntimeSaveData save = runtime.CreateSaveData();
 
             PersonProfessionRuntime restored = CreateRuntime(registry);
-            restored.AddRelationship(Request("profession-relationship.temporary", PrototypeProfessionDefinitionFactory.FieldMedicProfessionId));
+            restored.AddRelationship(Request("profession-relationship.temporary", ProfessionContentIds.FieldMedicProfessionId));
             Assert.That(restored.HistoryHooks.Count, Is.GreaterThan(0));
             ProfessionOperationResult restore = restored.RestoreFromSaveData(save, registry, new[] { PersonId }, restoring: true);
             Assert.That(restore.Succeeded, Is.True, restore.Message);
@@ -114,7 +114,7 @@ namespace UnityIsekaiGame.Tests
             ProfessionOperationResult rejected = restored.RestoreFromSaveData(corrupt, registry, new[] { PersonId }, restoring: true);
             Assert.That(rejected.Succeeded, Is.False);
             Assert.That(restored.Count, Is.EqualTo(1));
-            Assert.That(restored.QueryByPerson(PersonId).Single().ProfessionId, Is.EqualTo(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId));
+            Assert.That(restored.QueryByPerson(PersonId).Single().ProfessionId, Is.EqualTo(ProfessionContentIds.BlacksmithProfessionId));
         }
 
         [Test]
@@ -122,7 +122,7 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionRegistry registry = CreateRegistry();
             PersonProfessionRuntime runtime = CreateRuntime(registry);
-            runtime.AddRelationship(Request("profession-relationship.participant", PrototypeProfessionDefinitionFactory.BlacksmithProfessionId));
+            runtime.AddRelationship(Request("profession-relationship.participant", ProfessionContentIds.BlacksmithProfessionId));
             PersonProfessionPersistenceParticipant participant = new PersonProfessionPersistenceParticipant(runtime, () => registry, () => new[] { PersonId });
 
             PersistenceParticipantSaveResult capture = participant.CapturePayload();
@@ -162,14 +162,8 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
             Assert.That(catalog, Is.Not.Null);
-            DefinitionRegistry baseRegistry = catalog.CreateRegistry();
             DefinitionValidationReport report = new DefinitionValidationReport();
-            IGameDefinition[] definitions = baseRegistry.DefinitionsById.Values
-                .Concat(PrototypeProfessionDefinitionFactory.CreateDefinitions()
-                    .OfType<IGameDefinition>()
-                    .Where(definition => !baseRegistry.Contains(definition.Id)))
-                .ToArray();
-            DefinitionRegistry registry = new DefinitionRegistry(definitions, report);
+            DefinitionRegistry registry = new DefinitionRegistry(catalog.CreateRegistry().DefinitionsById.Values, report);
             Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
             return registry;
         }
@@ -177,7 +171,7 @@ namespace UnityIsekaiGame.Tests
         private static DefinitionValidationReport ValidatePrototypeProfessionDefinitions(DefinitionRegistry registry)
         {
             DefinitionValidationReport report = new DefinitionValidationReport();
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(registry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -192,7 +186,7 @@ namespace UnityIsekaiGame.Tests
         {
             return new InformationAccessDecision(
                 "person.observer",
-                ProfessionInformationSubject.Relationship("profession-relationship.spy", PersonId, PrototypeProfessionDefinitionFactory.SpyProfessionId, new[] { "profession.secret" }),
+                ProfessionInformationSubject.Relationship("profession-relationship.spy", PersonId, ProfessionContentIds.SpyProfessionId, new[] { "profession.secret" }),
                 InformationAccessMode.Inspect,
                 InformationAccessDecisionKind.RedactedAccess,
                 InformationAccessDenialCode.DetailRestriction,
@@ -201,7 +195,7 @@ namespace UnityIsekaiGame.Tests
                 new[] { "profession-id", "state" },
                 ProfessionInformationSubject.ProtectedFields,
                 Array.Empty<string>(),
-                new[] { PrototypeProfessionDefinitionFactory.AccessSecretId },
+                new[] { ProfessionContentIds.AccessSecretId },
                 10d,
                 "Redacted profession access.",
                 "Secret profession relationship hides identity details.",

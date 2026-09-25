@@ -12,6 +12,20 @@ namespace UnityIsekaiGame.Professions
     {
         public static ProfessionalActivitySourceSnapshot FromCraftingOperation(CraftingOperationRecordData record)
         {
+            int measuredQuality = record == null
+                ? 0
+                : Math.Max(0, Math.Min(1000, (int)Math.Round((0.5f + record.craftingQualityAdjustment) * 1000f)));
+            ProfessionalActivityDifficulty measuredDifficulty = record == null
+                ? ProfessionalActivityDifficulty.Unknown
+                : DifficultyFromWork(record.craftDurationSeconds, record.consumedInputs?.Count ?? 0, record.catalysts?.Count ?? 0);
+            return FromCraftingOperation(record, measuredQuality, measuredDifficulty);
+        }
+
+        public static ProfessionalActivitySourceSnapshot FromCraftingOperation(
+            CraftingOperationRecordData record,
+            int actualQuality,
+            ProfessionalActivityDifficulty difficulty)
+        {
             if (record == null)
             {
                 return Missing(ProfessionalActivitySourceType.CraftingOperation, "missing");
@@ -23,8 +37,8 @@ namespace UnityIsekaiGame.Professions
                 record.worldTime,
                 record.status == CraftingExecutionStatus.Succeeded || record.state == CraftingOperationState.Completed ? ProfessionalActivityOutcomeState.Successful : ProfessionalActivityOutcomeState.Failed,
                 Math.Max(1f, record.outputs?.Sum(output => output?.quantity ?? 0f) ?? 1f),
-                ProfessionalActivityDifficulty.Routine,
-                record.status == CraftingExecutionStatus.Succeeded ? 700 : 250,
+                difficulty,
+                record.status == CraftingExecutionStatus.Succeeded ? actualQuality : Math.Min(actualQuality, 250),
                 new[] { "source.crafting", record.recipeId },
                 (record.outputs ?? new System.Collections.Generic.List<CraftingOutputItemData>()).Select(output => output?.itemInstanceId),
                 record.state == CraftingOperationState.Completed || record.status == CraftingExecutionStatus.Succeeded,
@@ -268,6 +282,15 @@ namespace UnityIsekaiGame.Professions
                 ItemRepairQuality.Masterwork => 1000,
                 _ => 500
             };
+        }
+
+        private static ProfessionalActivityDifficulty DifficultyFromWork(float durationSeconds, int inputKinds, int catalystKinds)
+        {
+            float complexity = Math.Max(0f, durationSeconds) / 30f + Math.Max(0, inputKinds - 1) + Math.Max(0, catalystKinds);
+            if (complexity >= 8f) return ProfessionalActivityDifficulty.Advanced;
+            if (complexity >= 4f) return ProfessionalActivityDifficulty.Skilled;
+            if (complexity >= 1f) return ProfessionalActivityDifficulty.Routine;
+            return ProfessionalActivityDifficulty.Trivial;
         }
     }
 }

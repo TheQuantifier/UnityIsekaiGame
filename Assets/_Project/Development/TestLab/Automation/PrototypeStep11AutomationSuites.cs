@@ -1675,7 +1675,7 @@ namespace UnityIsekaiGame.Development.Automation
                 Scoped(context, "position", "payroll-worker"),
                 "Prototype Payroll Worker",
                 PositionCategory.Custom,
-                authorities: new[] { PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId },
+                authorities: new[] { ProfessionContentIds.PositionAppointAuthorityId },
                 compensationPolicy: compensation.Id,
                 paymentSchedule: "pay-schedule.prototype.weekly",
                 wageOrSalary: compensation.Id,
@@ -1684,7 +1684,7 @@ namespace UnityIsekaiGame.Development.Automation
             DefinitionRegistry registry = new DefinitionRegistry(runtimes.DefinitionRegistry.DefinitionsById.Values.Concat(new IGameDefinition[] { compensation, deduction, position }));
             runtimes.Economy.Configure(registry, runtimes.WorldId);
             runtimes.Payroll.Configure(registry, runtimes.WorldId);
-            runtimes.PositionEmployment.Configure(registry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, new[] { runtimes.PersonId, "person.prototype.payroll-worker" }, new[] { "organization.prototype.guild" }, new[] { PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, "organization.prototype.guild" });
+            runtimes.PositionEmployment.Configure(registry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, new[] { runtimes.PersonId, "person.prototype.payroll-worker" }, new[] { "organization.prototype.guild" }, new[] { ProfessionContentIds.PositionAppointAuthorityId, "organization.prototype.guild" });
             runtimes.Economy.CreateAccount(employerAccount, currency, "organization.prototype.guild", EconomyAccountKind.OrganizationAccount, 1000L, Tx(context, "payroll-employer-open"));
             runtimes.Economy.CreateAccount(employeeAccount, currency, "person.prototype.payroll-worker", EconomyAccountKind.PersonWallet, 0L, Tx(context, "payroll-employee-open"));
             runtimes.Economy.CreateAccount(deductionAccount, currency, "organization.prototype.tax", EconomyAccountKind.OrganizationAccount, 0L, Tx(context, "payroll-tax-open"));
@@ -1701,7 +1701,7 @@ namespace UnityIsekaiGame.Development.Automation
                 createdWorldTime = "0"
             }, Tx(context, "payroll-position"));
             PositionEligibilityResult eligibility = runtimes.PositionEmployment.EvaluateEligibility("person.prototype.payroll-worker", positionInstanceId, privilegedDiagnostics: true);
-            PositionEmploymentOperationResult employment = runtimes.PositionEmployment.AppointPerson(Scoped(context, "employment", "payroll-worker"), string.Empty, "person.prototype.payroll-worker", positionInstanceId, PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, eligibility.Snapshot, "0", Tx(context, "payroll-appoint"));
+            PositionEmploymentOperationResult employment = runtimes.PositionEmployment.AppointPerson(Scoped(context, "employment", "payroll-worker"), string.Empty, "person.prototype.payroll-worker", positionInstanceId, ProfessionContentIds.PositionAppointAuthorityId, eligibility.Snapshot, "0", Tx(context, "payroll-appoint"));
             if (!employment.Succeeded)
             {
                 failure = $"Payroll employment fixture failed: {employment.Status} {employment.Message}";
@@ -1757,7 +1757,7 @@ namespace UnityIsekaiGame.Development.Automation
             public string PayRunId { get; private set; }
             public string EmployeePersonId => employeePersonId;
             public string EmployerId => "organization.prototype.guild";
-            public string AuthorityId => PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId;
+            public string AuthorityId => ProfessionContentIds.PositionAppointAuthorityId;
 
             public PayrollOperationResult CreateAgreement(string slug, double start = 0d, double end = -1d)
             {
@@ -1819,7 +1819,7 @@ namespace UnityIsekaiGame.Development.Automation
             public PayrollFixture CreateSibling(string slug)
             {
                 string personId = $"person.prototype.payroll-worker-{slug}";
-                EmploymentRuntime.Configure(Registry, context.ScenarioContext.Runtimes.Professions, context.ScenarioContext.Runtimes.Training, context.ScenarioContext.Runtimes.ProfessionalActivities, context.ScenarioContext.Runtimes.Credentials, context.ScenarioContext.Runtimes.ProfessionalRanks, new[] { "person.prototype.payroll-worker", personId }, new[] { EmployerId }, new[] { PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, EmployerId });
+                EmploymentRuntime.Configure(Registry, context.ScenarioContext.Runtimes.Professions, context.ScenarioContext.Runtimes.Training, context.ScenarioContext.Runtimes.ProfessionalActivities, context.ScenarioContext.Runtimes.Credentials, context.ScenarioContext.Runtimes.ProfessionalRanks, new[] { "person.prototype.payroll-worker", personId }, new[] { EmployerId }, new[] { ProfessionContentIds.PositionAppointAuthorityId, EmployerId });
                 string positionInstanceId = Scoped(context, "position-instance", "payroll-worker");
                 PositionEligibilityResult eligibility = EmploymentRuntime.EvaluateEligibility(personId, positionInstanceId, privilegedDiagnostics: true);
                 PositionEmploymentOperationResult employment = EmploymentRuntime.AppointPerson(Scoped(context, "employment", $"payroll-worker-{slug}"), string.Empty, personId, positionInstanceId, AuthorityId, eligibility.Snapshot, "0", Tx(context, $"payroll-appoint-{slug}"));

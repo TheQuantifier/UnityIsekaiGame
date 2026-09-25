@@ -71,10 +71,10 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[]
                 {
-                    PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                    PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
-                    PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
-                    PrototypeProfessionDefinitionFactory.AccessSecretId
+                    ProfessionContentIds.BlacksmithProfessionId,
+                    ProfessionContentIds.FieldMedicProfessionId,
+                    ProfessionContentIds.WeaponsmithSpecializationId,
+                    ProfessionContentIds.AccessSecretId
                 });
         }
 
@@ -114,11 +114,11 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[]
                 {
-                    PrototypeProfessionDefinitionFactory.AspirationEnterBlacksmithProfessionId,
-                    PrototypeProfessionDefinitionFactory.AspirationReachMasterWeaponsmithId,
-                    PrototypeProfessionDefinitionFactory.GoalEnterBlacksmithProfessionId,
-                    PrototypeProfessionDefinitionFactory.GoalCompleteBlacksmithApprenticeshipId,
-                    PrototypeProfessionDefinitionFactory.GoalProduceMasterworkId
+                    ProfessionContentIds.AspirationEnterBlacksmithProfessionId,
+                    ProfessionContentIds.AspirationReachMasterWeaponsmithId,
+                    ProfessionContentIds.GoalEnterBlacksmithProfessionId,
+                    ProfessionContentIds.GoalCompleteBlacksmithApprenticeshipId,
+                    ProfessionContentIds.GoalProduceMasterworkId
                 });
         }
 
@@ -157,13 +157,13 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[]
                 {
-                    PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId,
-                    PrototypeProfessionDefinitionFactory.GuildClerkPositionId,
-                    PrototypeProfessionDefinitionFactory.AspirationEarnGuildLicenseId,
-                    PrototypeProfessionDefinitionFactory.GoalEarnBlacksmithGuildLicenseId
+                    ProfessionContentIds.BlacksmithProfessionId,
+                    ProfessionContentIds.BlacksmithApprenticeshipProgramId,
+                    ProfessionContentIds.BlacksmithGuildLicenseCredentialId,
+                    ProfessionContentIds.BlacksmithRankJourneymanId,
+                    ProfessionContentIds.GuildClerkPositionId,
+                    ProfessionContentIds.AspirationEarnGuildLicenseId,
+                    ProfessionContentIds.GoalEarnBlacksmithGuildLicenseId
                 });
         }
 
@@ -204,10 +204,10 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[]
                 {
-                    PrototypeProfessionDefinitionFactory.BlacksmithSelfDeclaredEntryPathId,
-                    PrototypeProfessionDefinitionFactory.FieldMedicRecognitionEntryPathId,
-                    PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationEntryPathId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithReentryPathId
+                    ProfessionContentIds.BlacksmithSelfDeclaredEntryPathId,
+                    ProfessionContentIds.FieldMedicRecognitionEntryPathId,
+                    ProfessionContentIds.WeaponsmithSpecializationEntryPathId,
+                    ProfessionContentIds.BlacksmithReentryPathId
                 });
         }
 
@@ -258,14 +258,14 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[]
                 {
-                    PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCurriculumId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithSafetyProgramId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithSafetyCurriculumId,
-                    PrototypeProfessionDefinitionFactory.TrainingLessonTransferDefinitionId,
-                    PrototypeProfessionDefinitionFactory.TrainingDemonstrationTransferDefinitionId,
-                    PrototypeProfessionDefinitionFactory.TrainingGuidedPracticeTransferDefinitionId
+                    ProfessionContentIds.BlacksmithProfessionId,
+                    ProfessionContentIds.BlacksmithApprenticeshipProgramId,
+                    ProfessionContentIds.BlacksmithApprenticeshipCurriculumId,
+                    ProfessionContentIds.BlacksmithSafetyProgramId,
+                    ProfessionContentIds.BlacksmithSafetyCurriculumId,
+                    ProfessionContentIds.TrainingLessonTransferDefinitionId,
+                    ProfessionContentIds.TrainingDemonstrationTransferDefinitionId,
+                    ProfessionContentIds.TrainingGuidedPracticeTransferDefinitionId
                 });
         }
 
@@ -305,12 +305,12 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[]
                 {
-                    PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                    PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithSupervisedPracticeActivityDefinitionId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithTeachingActivityDefinitionId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithExperimentationActivityDefinitionId
+                    ProfessionContentIds.BlacksmithProfessionId,
+                    ProfessionContentIds.WeaponsmithSpecializationId,
+                    ProfessionContentIds.BlacksmithCraftingActivityDefinitionId,
+                    ProfessionContentIds.BlacksmithSupervisedPracticeActivityDefinitionId,
+                    ProfessionContentIds.BlacksmithTeachingActivityDefinitionId,
+                    ProfessionContentIds.BlacksmithExperimentationActivityDefinitionId
                 });
         }
 
@@ -350,12 +350,12 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[]
                 {
-                    PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithWrittenExaminationId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithSupervisedPracticeActivityDefinitionId
+                    ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId,
+                    ProfessionContentIds.BlacksmithGuildLicenseCredentialId,
+                    ProfessionContentIds.BlacksmithPracticalExaminationId,
+                    ProfessionContentIds.BlacksmithWrittenExaminationId,
+                    ProfessionContentIds.BlacksmithApprenticeshipProgramId,
+                    ProfessionContentIds.BlacksmithSupervisedPracticeActivityDefinitionId
                 });
         }
 
@@ -395,13 +395,13 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[]
                 {
-                    PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithRankMasterId,
-                    PrototypeProfessionDefinitionFactory.WeaponsmithRankMasterId,
-                    PrototypeProfessionDefinitionFactory.BlacksmithRankLadderId,
-                    PrototypeProfessionDefinitionFactory.WeaponsmithRankLadderId,
-                    PrototypeProfessionDefinitionFactory.WeaponsmithMasteryId
+                    ProfessionContentIds.BlacksmithRankApprenticeId,
+                    ProfessionContentIds.BlacksmithRankJourneymanId,
+                    ProfessionContentIds.BlacksmithRankMasterId,
+                    ProfessionContentIds.WeaponsmithRankMasterId,
+                    ProfessionContentIds.BlacksmithRankLadderId,
+                    ProfessionContentIds.WeaponsmithRankLadderId,
+                    ProfessionContentIds.WeaponsmithMasteryId
                 });
         }
 
@@ -440,11 +440,11 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[]
                 {
-                    PrototypeProfessionDefinitionFactory.RoyalForgeSeniorSmithPositionId,
-                    PrototypeProfessionDefinitionFactory.GuildClerkPositionId,
-                    PrototypeProfessionDefinitionFactory.ApprenticeSupervisorPositionId,
-                    PrototypeProfessionDefinitionFactory.SeniorSmithCraftDutyId,
-                    PrototypeProfessionDefinitionFactory.GuildClerkRecordDutyId
+                    ProfessionContentIds.RoyalForgeSeniorSmithPositionId,
+                    ProfessionContentIds.GuildClerkPositionId,
+                    ProfessionContentIds.ApprenticeSupervisorPositionId,
+                    ProfessionContentIds.SeniorSmithCraftDutyId,
+                    ProfessionContentIds.GuildClerkRecordDutyId
                 });
         }
 
@@ -484,12 +484,12 @@ namespace UnityIsekaiGame.Development.Automation
                 requiredHostFeatures: TestLabHostFeature.AutomatedExecution,
                 requiredDefinitionIds: new[]
                 {
-                    PrototypeProfessionDefinitionFactory.CareerProfessionEnteredTransitionId,
-                    PrototypeProfessionDefinitionFactory.CareerEmploymentStartedTransitionId,
-                    PrototypeProfessionDefinitionFactory.CareerPromotionTransitionId,
-                    PrototypeProfessionDefinitionFactory.CareerTransferTransitionId,
-                    PrototypeProfessionDefinitionFactory.CareerRetirementTransitionId,
-                    PrototypeProfessionDefinitionFactory.CareerChangeTransitionId
+                    ProfessionContentIds.CareerProfessionEnteredTransitionId,
+                    ProfessionContentIds.CareerEmploymentStartedTransitionId,
+                    ProfessionContentIds.CareerPromotionTransitionId,
+                    ProfessionContentIds.CareerTransferTransitionId,
+                    ProfessionContentIds.CareerRetirementTransitionId,
+                    ProfessionContentIds.CareerChangeTransitionId
                 });
         }
 
@@ -497,7 +497,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             DefinitionValidationReport report = new DefinitionValidationReport();
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(runtimes.DefinitionRegistry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -505,11 +505,11 @@ namespace UnityIsekaiGame.Development.Automation
                 }
             }
 
-            bool senior = runtimes.DefinitionRegistry.TryGet(PrototypeProfessionDefinitionFactory.RoyalForgeSeniorSmithPositionId, out PositionDefinition seniorDefinition);
-            bool clerk = runtimes.DefinitionRegistry.TryGet(PrototypeProfessionDefinitionFactory.GuildClerkPositionId, out PositionDefinition clerkDefinition);
-            bool duty = runtimes.DefinitionRegistry.TryGet(PrototypeProfessionDefinitionFactory.SeniorSmithCraftDutyId, out DutyDefinition craftDuty);
-            PositionEmploymentOperationResult vacant = CreatePosition(context, "vacant-senior", PrototypeProfessionDefinitionFactory.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", PrototypeProfessionDefinitionFactory.ForgeOrganizationTypeId, 1);
-            PositionEmploymentOperationResult shared = CreatePosition(context, "vacant-clerk", PrototypeProfessionDefinitionFactory.GuildClerkPositionId, "organization.prototype.guild", PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId, 2);
+            bool senior = runtimes.DefinitionRegistry.TryGet(ProfessionContentIds.RoyalForgeSeniorSmithPositionId, out PositionDefinition seniorDefinition);
+            bool clerk = runtimes.DefinitionRegistry.TryGet(ProfessionContentIds.GuildClerkPositionId, out PositionDefinition clerkDefinition);
+            bool duty = runtimes.DefinitionRegistry.TryGet(ProfessionContentIds.SeniorSmithCraftDutyId, out DutyDefinition craftDuty);
+            PositionEmploymentOperationResult vacant = CreatePosition(context, "vacant-senior", ProfessionContentIds.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", ProfessionContentIds.ForgeOrganizationTypeId, 1);
+            PositionEmploymentOperationResult shared = CreatePosition(context, "vacant-clerk", ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, 2);
 
             bool valid = report.ErrorCount == 0
                 && report.WarningCount == 0
@@ -517,14 +517,14 @@ namespace UnityIsekaiGame.Development.Automation
                 && clerk
                 && duty
                 && seniorDefinition != null
-                && seniorDefinition.RequiredRankDefinitionIds.Contains(PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId)
-                && seniorDefinition.RequiredCredentialDefinitionIds.Contains(PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId)
-                && seniorDefinition.RequiredTrainingProgramIds.Contains(PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId)
+                && seniorDefinition.RequiredRankDefinitionIds.Contains(ProfessionContentIds.BlacksmithRankJourneymanId)
+                && seniorDefinition.RequiredCredentialDefinitionIds.Contains(ProfessionContentIds.BlacksmithGuildLicenseCredentialId)
+                && seniorDefinition.RequiredTrainingProgramIds.Contains(ProfessionContentIds.BlacksmithApprenticeshipProgramId)
                 && seniorDefinition.ExperienceRequirement.minimumValidatedActivities >= 2
                 && clerkDefinition != null
                 && clerkDefinition.SharedPositionAllowed
                 && craftDuty != null
-                && craftDuty.PositionDefinitionId == PrototypeProfessionDefinitionFactory.RoyalForgeSeniorSmithPositionId
+                && craftDuty.PositionDefinitionId == ProfessionContentIds.RoyalForgeSeniorSmithPositionId
                 && vacant.Succeeded
                 && vacant.Position?.state == PositionInstanceState.Vacant
                 && shared.Succeeded
@@ -536,26 +536,26 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             PositionEmploymentRuntime runtime = runtimes.PositionEmployment;
-            PositionEmploymentOperationResult position = CreatePosition(context, "appointment-senior", PrototypeProfessionDefinitionFactory.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", PrototypeProfessionDefinitionFactory.ForgeOrganizationTypeId, 1);
+            PositionEmploymentOperationResult position = CreatePosition(context, "appointment-senior", ProfessionContentIds.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", ProfessionContentIds.ForgeOrganizationTypeId, 1);
             long beforeEligibilityRevision = runtime.Revision;
             PositionEligibilityResult before = runtime.EvaluateEligibility(runtimes.PersonId, position.Position?.positionInstanceId, perceived: true, privilegedDiagnostics: false);
             bool noEligibilityMutation = beforeEligibilityRevision == runtime.Revision;
-            EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, "position-appointment");
+            EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankJourneymanId, "position-appointment");
             EnsureGuildLicense(context, "position-appointment");
             PositionEligibilityResult authoritative = runtime.EvaluateEligibility(runtimes.PersonId, position.Position?.positionInstanceId, privilegedDiagnostics: true);
             PositionEligibilityResult perceived = runtime.EvaluateEligibility(runtimes.PersonId, position.Position?.positionInstanceId, perceived: true, privilegedDiagnostics: false);
             PositionEmploymentOperationResult apply = runtime.SubmitApplication(context.ScenarioContext.ScopedId("position-application", "senior"), runtimes.PersonId, position.Position?.positionInstanceId, authoritative.Snapshot, "100", context.ScenarioContext.ScopedId("position-tx", "apply"));
-            PositionEmploymentOperationResult offer = runtime.OfferPosition(apply.Application?.requestId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId, "101", context.ScenarioContext.ScopedId("position-tx", "offer"));
+            PositionEmploymentOperationResult offer = runtime.OfferPosition(apply.Application?.requestId, ProfessionContentIds.PositionDutyAssignAuthorityId, "101", context.ScenarioContext.ScopedId("position-tx", "offer"));
             PositionEmploymentOperationResult accept = runtime.AcceptOffer(apply.Application?.requestId, runtimes.PersonId, "102", context.ScenarioContext.ScopedId("position-tx", "accept"));
-            PositionEmploymentOperationResult staleAppointment = runtime.AppointPerson(context.ScenarioContext.ScopedId("employment", "stale"), apply.Application?.requestId, runtimes.PersonId, position.Position?.positionInstanceId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId, authoritative.Snapshot, "103", context.ScenarioContext.ScopedId("position-tx", "stale"));
+            PositionEmploymentOperationResult staleAppointment = runtime.AppointPerson(context.ScenarioContext.ScopedId("employment", "stale"), apply.Application?.requestId, runtimes.PersonId, position.Position?.positionInstanceId, ProfessionContentIds.PositionDutyAssignAuthorityId, authoritative.Snapshot, "103", context.ScenarioContext.ScopedId("position-tx", "stale"));
             PositionEligibilityResult currentEligibility = runtime.EvaluateEligibility(runtimes.PersonId, position.Position?.positionInstanceId, privilegedDiagnostics: true);
             PositionEligibilitySnapshotData tampered = currentEligibility.Snapshot.Clone();
             tampered.evaluationHash = "stale";
-            PositionEmploymentOperationResult tamperedAppointment = runtime.AppointPerson(context.ScenarioContext.ScopedId("employment", "tampered"), apply.Application?.requestId, runtimes.PersonId, position.Position?.positionInstanceId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId, tampered, "104", context.ScenarioContext.ScopedId("position-tx", "tampered"));
+            PositionEmploymentOperationResult tamperedAppointment = runtime.AppointPerson(context.ScenarioContext.ScopedId("employment", "tampered"), apply.Application?.requestId, runtimes.PersonId, position.Position?.positionInstanceId, ProfessionContentIds.PositionDutyAssignAuthorityId, tampered, "104", context.ScenarioContext.ScopedId("position-tx", "tampered"));
             PositionEmploymentOperationResult unauthorized = runtime.AppointPerson(context.ScenarioContext.ScopedId("employment", "unauthorized"), apply.Application?.requestId, runtimes.PersonId, position.Position?.positionInstanceId, "authority.bad", currentEligibility.Snapshot, "105", context.ScenarioContext.ScopedId("position-tx", "unauthorized"));
-            PositionEmploymentOperationResult appoint = runtime.AppointPerson(context.ScenarioContext.ScopedId("employment", "senior"), apply.Application?.requestId, runtimes.PersonId, position.Position?.positionInstanceId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId, currentEligibility.Snapshot, "106", context.ScenarioContext.ScopedId("position-tx", "appoint"));
+            PositionEmploymentOperationResult appoint = runtime.AppointPerson(context.ScenarioContext.ScopedId("employment", "senior"), apply.Application?.requestId, runtimes.PersonId, position.Position?.positionInstanceId, ProfessionContentIds.PositionDutyAssignAuthorityId, currentEligibility.Snapshot, "106", context.ScenarioContext.ScopedId("position-tx", "appoint"));
 
-            bool boundaries = runtimes.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId).Count == 1
+            bool boundaries = runtimes.Professions.QueryByProfession(ProfessionContentIds.BlacksmithProfessionId).Count == 1
                 && runtimes.Credentials.QueryByRecipient(runtimes.PersonId, activeOnly: true).Any()
                 && runtimes.ProfessionalRanks.QueryByPerson(runtimes.PersonId, currentOnly: true).Any()
                 && runtimes.Knowledge.KnowledgeRevision == 0;
@@ -583,26 +583,26 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             PositionEmploymentRuntime runtime = runtimes.PositionEmployment;
-            EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, "position-duty");
+            EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankJourneymanId, "position-duty");
             EnsureGuildLicense(context, "position-duty");
-            PositionEmploymentOperationResult senior = AppointEligiblePerson(context, "duty-senior", PrototypeProfessionDefinitionFactory.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", PrototypeProfessionDefinitionFactory.ForgeOrganizationTypeId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId);
-            PositionEmploymentOperationResult overflow = AppointEligiblePerson(context, "duty-overflow", PrototypeProfessionDefinitionFactory.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", PrototypeProfessionDefinitionFactory.ForgeOrganizationTypeId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId);
-            PositionEmploymentOperationResult clerk = AppointEligiblePerson(context, "duty-clerk", PrototypeProfessionDefinitionFactory.GuildClerkPositionId, "organization.prototype.guild", PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId, PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId);
-            PositionEmploymentOperationResult duplicateSamePosition = runtime.AppointPerson(context.ScenarioContext.ScopedId("employment", "duplicate-holder"), string.Empty, runtimes.PersonId, senior.Position?.positionInstanceId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId, runtime.EvaluateEligibility(runtimes.PersonId, senior.Position?.positionInstanceId, privilegedDiagnostics: true).Snapshot, "130", context.ScenarioContext.ScopedId("position-tx", "duplicate-holder"));
-            PositionEmploymentOperationResult duty = runtime.AssignDuty(context.ScenarioContext.ScopedId("position-duty", "craft"), senior.Employment?.employmentId, PrototypeProfessionDefinitionFactory.SeniorSmithCraftDutyId, "131", context.ScenarioContext.ScopedId("position-tx", "assign-duty"));
+            PositionEmploymentOperationResult senior = AppointEligiblePerson(context, "duty-senior", ProfessionContentIds.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", ProfessionContentIds.ForgeOrganizationTypeId, ProfessionContentIds.PositionDutyAssignAuthorityId);
+            PositionEmploymentOperationResult overflow = AppointEligiblePerson(context, "duty-overflow", ProfessionContentIds.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", ProfessionContentIds.ForgeOrganizationTypeId, ProfessionContentIds.PositionDutyAssignAuthorityId);
+            PositionEmploymentOperationResult clerk = AppointEligiblePerson(context, "duty-clerk", ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
+            PositionEmploymentOperationResult duplicateSamePosition = runtime.AppointPerson(context.ScenarioContext.ScopedId("employment", "duplicate-holder"), string.Empty, runtimes.PersonId, senior.Position?.positionInstanceId, ProfessionContentIds.PositionDutyAssignAuthorityId, runtime.EvaluateEligibility(runtimes.PersonId, senior.Position?.positionInstanceId, privilegedDiagnostics: true).Snapshot, "130", context.ScenarioContext.ScopedId("position-tx", "duplicate-holder"));
+            PositionEmploymentOperationResult duty = runtime.AssignDuty(context.ScenarioContext.ScopedId("position-duty", "craft"), senior.Employment?.employmentId, ProfessionContentIds.SeniorSmithCraftDutyId, "131", context.ScenarioContext.ScopedId("position-tx", "assign-duty"));
             ProfessionalActivityOperationResult activity = runtimes.ProfessionalActivities.RegisterAndValidateActivity(
-                ActivityRequest(context, "position-duty-craft", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "position-duty-craft", "production.activity.forging"), ProfessionalResponsibilityLevel.IndependentPractitioner),
+                ActivityRequest(context, "position-duty-craft", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "position-duty-craft", "source.crafting"), ProfessionalResponsibilityLevel.IndependentPractitioner),
                 context.ScenarioContext.ScopedId("professional-evidence", "position-duty-craft"),
                 "authority.guild.prototype",
                 context.ScenarioContext.ScopedId("professional-tx", "position-duty-craft"));
             PositionEmploymentOperationResult complete = runtime.CompleteDutyWithEvidence(duty.Duty?.assignmentId, new[] { activity.Evidence?.evidenceId }, "132", context.ScenarioContext.ScopedId("position-tx", "complete-duty"));
-            PositionEmploymentOperationResult superviseDuty = runtime.AssignDuty(context.ScenarioContext.ScopedId("position-duty", "supervise"), senior.Employment?.employmentId, PrototypeProfessionDefinitionFactory.SeniorSmithSuperviseDutyId, "133", context.ScenarioContext.ScopedId("position-tx", "assign-supervise"));
+            PositionEmploymentOperationResult superviseDuty = runtime.AssignDuty(context.ScenarioContext.ScopedId("position-duty", "supervise"), senior.Employment?.employmentId, ProfessionContentIds.SeniorSmithSuperviseDutyId, "133", context.ScenarioContext.ScopedId("position-tx", "assign-supervise"));
             PositionEmploymentOperationResult delegated = runtime.DelegateDuty(superviseDuty.Duty?.assignmentId, runtimes.PersonId, runtimes.PersonId, "134", context.ScenarioContext.ScopedId("position-tx", "delegate-duty"));
-            bool authorityActive = runtime.HasActiveAuthority(runtimes.PersonId, "organization.prototype.royal-forge", PrototypeProfessionDefinitionFactory.PositionSuperviseAuthorityId);
+            bool authorityActive = runtime.HasActiveAuthority(runtimes.PersonId, "organization.prototype.royal-forge", ProfessionContentIds.PositionSuperviseAuthorityId);
             PositionEmploymentOperationResult suspended = runtime.SuspendEmployment(senior.Employment?.employmentId, "135", context.ScenarioContext.ScopedId("position-tx", "suspend"));
-            bool authoritySuspended = runtime.HasActiveAuthority(runtimes.PersonId, "organization.prototype.royal-forge", PrototypeProfessionDefinitionFactory.PositionSuperviseAuthorityId);
+            bool authoritySuspended = runtime.HasActiveAuthority(runtimes.PersonId, "organization.prototype.royal-forge", ProfessionContentIds.PositionSuperviseAuthorityId);
             PositionEmploymentOperationResult reinstated = runtime.ReinstateEmployment(senior.Employment?.employmentId, "136", context.ScenarioContext.ScopedId("position-tx", "reinstate"));
-            bool authorityReinstated = runtime.HasActiveAuthority(runtimes.PersonId, "organization.prototype.royal-forge", PrototypeProfessionDefinitionFactory.PositionSuperviseAuthorityId);
+            bool authorityReinstated = runtime.HasActiveAuthority(runtimes.PersonId, "organization.prototype.royal-forge", ProfessionContentIds.PositionSuperviseAuthorityId);
 
             bool valid = senior.Succeeded
                 && !overflow.Succeeded
@@ -626,25 +626,25 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             PositionEmploymentRuntime runtime = runtimes.PositionEmployment;
-            EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankMasterId, "position-persistence");
+            EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankMasterId, "position-persistence");
             EnsureGuildLicense(context, "position-persistence");
-            PositionEmploymentOperationResult supervisor = AppointEligiblePerson(context, "persistence-supervisor", PrototypeProfessionDefinitionFactory.ApprenticeSupervisorPositionId, "organization.prototype.guild", PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId, PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId);
-            PositionEmploymentOperationResult clerk = AppointEligiblePerson(context, "persistence-clerk", PrototypeProfessionDefinitionFactory.GuildClerkPositionId, "organization.prototype.guild", PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId, PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId);
+            PositionEmploymentOperationResult supervisor = AppointEligiblePerson(context, "persistence-supervisor", ProfessionContentIds.ApprenticeSupervisorPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionAppointAuthorityId);
+            PositionEmploymentOperationResult clerk = AppointEligiblePerson(context, "persistence-clerk", ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
             PositionEmploymentOperationResult assignSupervisor = runtime.AssignSupervisor(clerk.Position?.positionInstanceId, supervisor.Position?.positionInstanceId, context.ScenarioContext.ScopedId("position-tx", "supervisor"));
             PositionEmploymentOperationResult cycle = runtime.AssignSupervisor(supervisor.Position?.positionInstanceId, clerk.Position?.positionInstanceId, context.ScenarioContext.ScopedId("position-tx", "cycle"));
-            PositionEmploymentOperationResult secretDuty = runtime.AssignDuty(context.ScenarioContext.ScopedId("position-duty", "secret-records"), clerk.Employment?.employmentId, PrototypeProfessionDefinitionFactory.GuildClerkRecordDutyId, "149", context.ScenarioContext.ScopedId("position-tx", "secret-duty"));
+            PositionEmploymentOperationResult secretDuty = runtime.AssignDuty(context.ScenarioContext.ScopedId("position-duty", "secret-records"), clerk.Employment?.employmentId, ProfessionContentIds.GuildClerkRecordDutyId, "149", context.ScenarioContext.ScopedId("position-tx", "secret-duty"));
             PositionEmploymentProjection<DutyAssignmentData> publicProjection = runtime.ProjectDuty(secretDuty.Duty?.assignmentId, PositionEmploymentProjectionAudience.Public, null);
             PositionEmploymentOperationResult resign = runtime.Resign(clerk.Employment?.employmentId, "150", context.ScenarioContext.ScopedId("position-tx", "resign"));
-            bool authorityEnded = runtime.HasActiveAuthority(runtimes.PersonId, "organization.prototype.guild", PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId);
+            bool authorityEnded = runtime.HasActiveAuthority(runtimes.PersonId, "organization.prototype.guild", ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
             PositionEmploymentOperationResult close = runtime.ClosePosition(clerk.Position?.positionInstanceId, "151", context.ScenarioContext.ScopedId("position-tx", "close"), forceEndActiveEmployment: true);
             PositionEmploymentRuntimeSaveData save = runtime.CreateSaveData();
             PositionEmploymentRuntime restored = new PositionEmploymentRuntime();
-            PositionEmploymentOperationResult restore = restored.RestoreFromSaveData(save, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.KnownPersonIds, new[] { "organization.prototype.guild", "organization.prototype.royal-forge" }, new[] { "authority.guild.prototype", PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId, PrototypeProfessionDefinitionFactory.PositionSuperviseAuthorityId }, restoring: true);
+            PositionEmploymentOperationResult restore = restored.RestoreFromSaveData(save, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.KnownPersonIds, new[] { "organization.prototype.guild", "organization.prototype.royal-forge" }, new[] { "authority.guild.prototype", ProfessionContentIds.PositionAppointAuthorityId, ProfessionContentIds.PositionDutyAssignAuthorityId, ProfessionContentIds.PositionSuperviseAuthorityId }, restoring: true);
             PositionEmploymentRuntimeSaveData corrupt = save.Clone();
             corrupt.employments[0].personId = "person.missing";
             int beforeCount = restored.EmploymentCount;
             long beforeRevision = restored.Revision;
-            PositionEmploymentOperationResult rejected = restored.RestoreFromSaveData(corrupt, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.KnownPersonIds, new[] { "organization.prototype.guild", "organization.prototype.royal-forge" }, new[] { "authority.guild.prototype", PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId, PrototypeProfessionDefinitionFactory.PositionSuperviseAuthorityId }, restoring: true);
+            PositionEmploymentOperationResult rejected = restored.RestoreFromSaveData(corrupt, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.KnownPersonIds, new[] { "organization.prototype.guild", "organization.prototype.royal-forge" }, new[] { "authority.guild.prototype", ProfessionContentIds.PositionAppointAuthorityId, ProfessionContentIds.PositionDutyAssignAuthorityId, ProfessionContentIds.PositionSuperviseAuthorityId }, restoring: true);
             PositionEmploymentOperationResult legacyEmpty = new PositionEmploymentRuntime().RestoreFromSaveData(null, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.KnownPersonIds, Array.Empty<string>(), Array.Empty<string>(), restoring: true);
 
             bool valid = supervisor.Succeeded
@@ -674,7 +674,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             DefinitionValidationReport report = new DefinitionValidationReport();
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(runtimes.DefinitionRegistry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -682,12 +682,12 @@ namespace UnityIsekaiGame.Development.Automation
                 }
             }
 
-            bool hasApprentice = runtimes.DefinitionRegistry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId, out ProfessionalRankDefinition apprentice);
-            bool hasLadder = runtimes.DefinitionRegistry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithRankLadderId, out ProfessionalRankLadderDefinition ladder);
-            bool hasMastery = runtimes.DefinitionRegistry.TryGet(PrototypeProfessionDefinitionFactory.WeaponsmithMasteryId, out ProfessionalMasteryDefinition mastery);
+            bool hasApprentice = runtimes.DefinitionRegistry.TryGet(ProfessionContentIds.BlacksmithRankApprenticeId, out ProfessionalRankDefinition apprentice);
+            bool hasLadder = runtimes.DefinitionRegistry.TryGet(ProfessionContentIds.BlacksmithRankLadderId, out ProfessionalRankLadderDefinition ladder);
+            bool hasMastery = runtimes.DefinitionRegistry.TryGet(ProfessionContentIds.WeaponsmithMasteryId, out ProfessionalMasteryDefinition mastery);
             bool hasDefinitions = hasApprentice && hasLadder && hasMastery;
             long revision = runtimes.ProfessionalRanks.Revision;
-            ProfessionalRankAdvancementResult evaluation = runtimes.ProfessionalRanks.EvaluateAdvancement(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId, "authority.guild.prototype", privilegedDiagnostics: true);
+            ProfessionalRankAdvancementResult evaluation = runtimes.ProfessionalRanks.EvaluateAdvancement(runtimes.PersonId, ProfessionContentIds.BlacksmithRankApprenticeId, "authority.guild.prototype", privilegedDiagnostics: true);
             bool nonMutating = runtimes.ProfessionalRanks.Revision == revision;
             bool valid = report.ErrorCount == 0
                 && report.WarningCount == 0
@@ -695,9 +695,9 @@ namespace UnityIsekaiGame.Development.Automation
                 && apprentice != null
                 && apprentice.RankOrder == 10
                 && ladder != null
-                && ladder.OrderedRankDefinitionIds.SequenceEqual(new[] { PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId, PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, PrototypeProfessionDefinitionFactory.BlacksmithRankMasterId })
+                && ladder.OrderedRankDefinitionIds.SequenceEqual(new[] { ProfessionContentIds.BlacksmithRankApprenticeId, ProfessionContentIds.BlacksmithRankJourneymanId, ProfessionContentIds.BlacksmithRankMasterId })
                 && mastery != null
-                && mastery.RequiredRankDefinitionId == PrototypeProfessionDefinitionFactory.WeaponsmithRankMasterId
+                && mastery.RequiredRankDefinitionId == ProfessionContentIds.WeaponsmithRankMasterId
                 && !evaluation.AuthoritativeEligible
                 && nonMutating;
             return TestLabAssertions.True("step10-rank-definitions", "Rank definitions, ladders, mastery, and non-mutating evaluation validate", valid, $"Errors={report.ErrorCount} Warnings={report.WarningCount} Has={hasDefinitions} Eligible={evaluation.AuthoritativeEligible} Rev={revision}->{runtimes.ProfessionalRanks.Revision}");
@@ -707,14 +707,14 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             EnsureApprenticeRankFoundation(context, "promotion");
-            ProfessionalRankAdvancementResult evaluation = runtimes.ProfessionalRanks.EvaluateAdvancement(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId, "authority.guild.prototype", privilegedDiagnostics: true);
-            ProfessionalRankOperationResult submit = runtimes.ProfessionalRanks.SubmitApplication(context.ScenarioContext.ScopedId("rank-application", "apprentice"), runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId, "authority.guild.prototype", evaluation.Snapshot, "40", context.ScenarioContext.ScopedId("rank-tx", "submit"));
+            ProfessionalRankAdvancementResult evaluation = runtimes.ProfessionalRanks.EvaluateAdvancement(runtimes.PersonId, ProfessionContentIds.BlacksmithRankApprenticeId, "authority.guild.prototype", privilegedDiagnostics: true);
+            ProfessionalRankOperationResult submit = runtimes.ProfessionalRanks.SubmitApplication(context.ScenarioContext.ScopedId("rank-application", "apprentice"), runtimes.PersonId, ProfessionContentIds.BlacksmithRankApprenticeId, "authority.guild.prototype", evaluation.Snapshot, "40", context.ScenarioContext.ScopedId("rank-tx", "submit"));
             ProfessionalRankAdvancementSnapshotData staleSnapshot = evaluation.Snapshot?.Clone() ?? new ProfessionalRankAdvancementSnapshotData();
             staleSnapshot.evaluationHash = "stale";
             ProfessionalRankOperationResult stale = runtimes.ProfessionalRanks.ApprovePromotion(submit.Application?.applicationId, runtimes.PersonId, staleSnapshot, "41", context.ScenarioContext.ScopedId("rank-tx", "stale"));
             ProfessionalRankOperationResult approve = runtimes.ProfessionalRanks.ApprovePromotion(submit.Application?.applicationId, runtimes.PersonId, evaluation.Snapshot, "42", context.ScenarioContext.ScopedId("rank-tx", "approve"));
             ProfessionalRankOperationResult promote = runtimes.ProfessionalRanks.PromotePerson(context.ScenarioContext.ScopedId("rank-record", "apprentice"), submit.Application?.applicationId, evaluation.Snapshot, "43", context.ScenarioContext.ScopedId("rank-tx", "promote"));
-            bool historicalPreserved = runtimes.ProfessionalRanks.QueryByPerson(runtimes.PersonId).Any(item => item.rankDefinitionId == PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId);
+            bool historicalPreserved = runtimes.ProfessionalRanks.QueryByPerson(runtimes.PersonId).Any(item => item.rankDefinitionId == ProfessionContentIds.BlacksmithRankApprenticeId);
             bool valid = evaluation.AuthoritativeEligible
                 && submit.Succeeded
                 && !stale.Succeeded
@@ -722,37 +722,37 @@ namespace UnityIsekaiGame.Development.Automation
                 && approve.Succeeded
                 && promote.Succeeded
                 && historicalPreserved
-                && !runtimes.Credentials.QueryByRecipient(runtimes.PersonId, activeOnly: true).Any(item => item.credentialDefinitionId == PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId);
+                && !runtimes.Credentials.QueryByRecipient(runtimes.PersonId, activeOnly: true).Any(item => item.credentialDefinitionId == ProfessionContentIds.BlacksmithGuildLicenseCredentialId);
             return TestLabAssertions.True("step10-rank-promotion", "Rank application and promotion revalidate current state", valid, $"Eval={evaluation.AuthoritativeEligible} Submit={submit.Status} Stale={stale.Status} Approve={approve.Status} Promote={promote.Status}");
         }
 
         private static TestLabAutomationStepResult RankSpecializationMastery(TestLabAutomationContext context)
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            ProfessionalRankOperationResult apprentice = EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId, "mastery-apprentice");
-            ProfessionalRankOperationResult journeyman = EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, "mastery-journey");
+            ProfessionalRankOperationResult apprentice = EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankApprenticeId, "mastery-apprentice");
+            ProfessionalRankOperationResult journeyman = EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankJourneymanId, "mastery-journey");
             EnsureGuildLicense(context, "mastery-license");
-            ProfessionalRankOperationResult weaponsmithApprentice = EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.WeaponsmithRankApprenticeId, "weaponsmith-apprentice");
-            ProfessionalRankOperationResult weaponsmithMaster = EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.WeaponsmithRankMasterId, "weaponsmith-master");
+            ProfessionalRankOperationResult weaponsmithApprentice = EnsurePromotedRank(context, ProfessionContentIds.WeaponsmithRankApprenticeId, "weaponsmith-apprentice");
+            ProfessionalRankOperationResult weaponsmithMaster = EnsurePromotedRank(context, ProfessionContentIds.WeaponsmithRankMasterId, "weaponsmith-master");
             ProfessionalRankOperationResult achievement = runtimes.ProfessionalRanks.RecordQualifyingAchievement(new ProfessionalQualifyingAchievementData
             {
-                achievementId = PrototypeProfessionDefinitionFactory.BlacksmithMasterworkAchievementId,
+                achievementId = ProfessionContentIds.BlacksmithMasterworkAchievementId,
                 personId = runtimes.PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                specializationId = PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
+                specializationId = ProfessionContentIds.WeaponsmithSpecializationId,
                 sourceActivityId = context.ScenarioContext.ScopedId("professional-activity", "masterwork"),
-                activityDefinitionId = PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId,
+                activityDefinitionId = ProfessionContentIds.BlacksmithCraftingActivityDefinitionId,
                 description = "Prototype masterwork blade",
                 quality = 850,
                 difficulty = ProfessionalActivityDifficulty.Skilled,
                 validatingAuthorityId = "authority.guild.prototype",
                 worldTime = "70",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             }, context.ScenarioContext.ScopedId("rank-tx", "achievement"));
-            ProfessionalRankAdvancementResult masteryEval = runtimes.ProfessionalRanks.EvaluateMastery(runtimes.PersonId, PrototypeProfessionDefinitionFactory.WeaponsmithMasteryId, "authority.guild.prototype", privilegedDiagnostics: true);
-            ProfessionalRankOperationResult mastery = runtimes.ProfessionalRanks.GrantMastery(context.ScenarioContext.ScopedId("mastery-record", "weaponsmith"), runtimes.PersonId, PrototypeProfessionDefinitionFactory.WeaponsmithMasteryId, "authority.guild.prototype", masteryEval.Snapshot, "71", context.ScenarioContext.ScopedId("rank-tx", "mastery"));
-            bool distinctGeneralAndSpecialization = runtimes.ProfessionalRanks.QueryByPerson(runtimes.PersonId, currentOnly: true).Any(item => item.rankDefinitionId == PrototypeProfessionDefinitionFactory.WeaponsmithRankMasterId)
-                && runtimes.ProfessionalRanks.QueryByPerson(runtimes.PersonId).Any(item => item.rankDefinitionId == PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId);
+            ProfessionalRankAdvancementResult masteryEval = runtimes.ProfessionalRanks.EvaluateMastery(runtimes.PersonId, ProfessionContentIds.WeaponsmithMasteryId, "authority.guild.prototype", privilegedDiagnostics: true);
+            ProfessionalRankOperationResult mastery = runtimes.ProfessionalRanks.GrantMastery(context.ScenarioContext.ScopedId("mastery-record", "weaponsmith"), runtimes.PersonId, ProfessionContentIds.WeaponsmithMasteryId, "authority.guild.prototype", masteryEval.Snapshot, "71", context.ScenarioContext.ScopedId("rank-tx", "mastery"));
+            bool distinctGeneralAndSpecialization = runtimes.ProfessionalRanks.QueryByPerson(runtimes.PersonId, currentOnly: true).Any(item => item.rankDefinitionId == ProfessionContentIds.WeaponsmithRankMasterId)
+                && runtimes.ProfessionalRanks.QueryByPerson(runtimes.PersonId).Any(item => item.rankDefinitionId == ProfessionContentIds.BlacksmithRankJourneymanId);
             bool valid = apprentice.Succeeded
                 && journeyman.Succeeded
                 && weaponsmithApprentice.Succeeded
@@ -767,15 +767,15 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult RankLifecyclePermissionsBoundaries(TestLabAutomationContext context)
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            ProfessionalRankOperationResult promote = EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankMasterId, "lifecycle-master");
+            ProfessionalRankOperationResult promote = EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankMasterId, "lifecycle-master");
             string rankId = promote.Rank?.rankRecordId ?? string.Empty;
-            bool teachActive = runtimes.ProfessionalRanks.CanTeach(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            bool teachActive = runtimes.ProfessionalRanks.CanTeach(runtimes.PersonId, ProfessionContentIds.BlacksmithProfessionId);
             ProfessionalRankOperationResult suspend = runtimes.ProfessionalRanks.SuspendRank(rankId, "80", context.ScenarioContext.ScopedId("rank-tx", "suspend"));
-            bool teachSuspended = runtimes.ProfessionalRanks.CanTeach(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            bool teachSuspended = runtimes.ProfessionalRanks.CanTeach(runtimes.PersonId, ProfessionContentIds.BlacksmithProfessionId);
             ProfessionalRankOperationResult reinstate = runtimes.ProfessionalRanks.ReinstateRank(rankId, "81", context.ScenarioContext.ScopedId("rank-tx", "reinstate"));
-            bool teachReinstated = runtimes.ProfessionalRanks.CanTeach(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
-            ProfessionalRankOperationResult demote = runtimes.ProfessionalRanks.DemotePerson(rankId, context.ScenarioContext.ScopedId("rank-record", "demoted-journeyman"), PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, "82", context.ScenarioContext.ScopedId("rank-tx", "demote"));
-            bool teachDemoted = runtimes.ProfessionalRanks.CanTeach(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            bool teachReinstated = runtimes.ProfessionalRanks.CanTeach(runtimes.PersonId, ProfessionContentIds.BlacksmithProfessionId);
+            ProfessionalRankOperationResult demote = runtimes.ProfessionalRanks.DemotePerson(rankId, context.ScenarioContext.ScopedId("rank-record", "demoted-journeyman"), ProfessionContentIds.BlacksmithRankJourneymanId, "82", context.ScenarioContext.ScopedId("rank-tx", "demote"));
+            bool teachDemoted = runtimes.ProfessionalRanks.CanTeach(runtimes.PersonId, ProfessionContentIds.BlacksmithProfessionId);
             ProfessionalRankOperationResult revoke = runtimes.ProfessionalRanks.RevokeRank(demote.Rank?.rankRecordId, "83", context.ScenarioContext.ScopedId("rank-tx", "revoke"));
             bool skillsUnaffected = true;
             bool credentialsUnaffected = runtimes.Credentials.CredentialCount > 0;
@@ -796,7 +796,7 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult RankAccessPersistence(TestLabAutomationContext context)
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            ProfessionalRankOperationResult promote = EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId, "persistence-rank");
+            ProfessionalRankOperationResult promote = EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankApprenticeId, "persistence-rank");
             ProfessionalRankProjection<ProfessionalRankRecordData> projection = runtimes.ProfessionalRanks.ProjectRank(promote.Rank?.rankRecordId, ProfessionalRankProjectionAudience.Public, null);
             ProfessionalRankRuntimeSaveData save = runtimes.ProfessionalRanks.CreateSaveData();
             ProfessionalRankRuntime restored = new ProfessionalRankRuntime();
@@ -818,7 +818,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             DefinitionValidationReport report = new DefinitionValidationReport();
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(runtimes.DefinitionRegistry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -830,22 +830,22 @@ namespace UnityIsekaiGame.Development.Automation
             long trainingRevision = runtimes.Training.Revision;
             long activityRevision = runtimes.ProfessionalActivities.Revision;
             long credentialRevision = runtimes.Credentials.Revision;
-            CredentialQualificationResult before = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
+            CredentialQualificationResult before = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
             bool nonMutatingInitial = runtimes.Professions.Revision == professionRevision
                 && runtimes.Training.Revision == trainingRevision
                 && runtimes.ProfessionalActivities.Revision == activityRevision
                 && runtimes.Credentials.Revision == credentialRevision;
 
             EnsureBlacksmithCredentialFoundation(context, "qualification");
-            CredentialQualificationResult afterFoundation = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
-            RecordCredentialExam(context, "qualification", PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId, 820);
-            CredentialQualificationResult qualified = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
+            CredentialQualificationResult afterFoundation = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
+            RecordCredentialExam(context, "qualification", ProfessionContentIds.BlacksmithPracticalExaminationId, 820);
+            CredentialQualificationResult qualified = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
 
             bool valid = report.ErrorCount == 0
                 && report.WarningCount == 0
                 && !before.AuthoritativeQualified
                 && !afterFoundation.AuthoritativeQualified
-                && afterFoundation.BlockingFailures.Contains($"examination:{PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId}")
+                && afterFoundation.BlockingFailures.Contains($"examination:{ProfessionContentIds.BlacksmithPracticalExaminationId}")
                 && qualified.AuthoritativeQualified
                 && nonMutatingInitial;
             return TestLabAssertions.True("step10-credential-qualification", "Credential definitions resolve and qualification evaluates without mutation", valid, $"Errors={report.ErrorCount} Warnings={report.WarningCount} Before={before.AuthoritativeQualified} AfterFoundation={afterFoundation.AuthoritativeQualified} Qualified={qualified.AuthoritativeQualified} NonMutating={nonMutatingInitial}");
@@ -855,12 +855,12 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             EnsureBlacksmithCredentialFoundation(context, "issue");
-            CredentialOperationResult exam = RecordCredentialExam(context, "issue", PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId, 850);
-            CredentialQualificationResult qualification = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId);
-            CredentialOperationResult apply = runtimes.Credentials.SubmitApplication(context.ScenarioContext.ScopedId("credential-application", "issue"), runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, GuildIssuer(), qualification.Snapshot, "30", context.ScenarioContext.ScopedId("credential-tx", "apply"));
+            CredentialOperationResult exam = RecordCredentialExam(context, "issue", ProfessionContentIds.BlacksmithPracticalExaminationId, 850);
+            CredentialQualificationResult qualification = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId);
+            CredentialOperationResult apply = runtimes.Credentials.SubmitApplication(context.ScenarioContext.ScopedId("credential-application", "issue"), runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, GuildIssuer(), qualification.Snapshot, "30", context.ScenarioContext.ScopedId("credential-tx", "apply"));
             CredentialOperationResult approve = runtimes.Credentials.ApproveApplication(apply.Application?.applicationId, "authority.guild.prototype", qualification.Snapshot, "31", context.ScenarioContext.ScopedId("credential-tx", "approve"));
-            CredentialOperationResult issue = runtimes.Credentials.IssueCredential(context.ScenarioContext.ScopedId("credential-record", "issue"), PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, runtimes.PersonId, GuildIssuer(), apply.Application?.applicationId, exam.ExaminationAttempt?.attemptId, context.ScenarioContext.ScopedId("registration", "issue"), qualification.Snapshot, "32", context.ScenarioContext.ScopedId("credential-tx", "issue"));
-            bool permission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId);
+            CredentialOperationResult issue = runtimes.Credentials.IssueCredential(context.ScenarioContext.ScopedId("credential-record", "issue"), ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, runtimes.PersonId, GuildIssuer(), apply.Application?.applicationId, exam.ExaminationAttempt?.attemptId, context.ScenarioContext.ScopedId("registration", "issue"), qualification.Snapshot, "32", context.ScenarioContext.ScopedId("credential-tx", "issue"));
+            bool permission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, ProfessionContentIds.BlacksmithPracticePermissionId);
 
             bool valid = exam.Succeeded
                 && qualification.AuthoritativeQualified
@@ -869,7 +869,7 @@ namespace UnityIsekaiGame.Development.Automation
                 && issue.Succeeded
                 && issue.Credential?.authenticityState == CredentialAuthenticityState.Authoritative
                 && permission
-                && runtimes.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId).Count == 1;
+                && runtimes.Professions.QueryByProfession(ProfessionContentIds.BlacksmithProfessionId).Count == 1;
             return TestLabAssertions.True("step10-credential-issue", "Applications, examinations, and issuance produce authoritative credentials", valid, $"Exam={exam.Status} Qualified={qualification.AuthoritativeQualified} Apply={apply.Status} Approve={approve.Status} Issue={issue.Status} Permission={permission}");
         }
 
@@ -877,15 +877,15 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             EnsureBlacksmithCredentialFoundation(context, "boundary");
-            CredentialOperationResult exam = RecordCredentialExam(context, "boundary", PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId, 850);
-            CredentialQualificationResult qualification = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId);
-            CredentialOperationResult badIssuer = runtimes.Credentials.SubmitApplication(context.ScenarioContext.ScopedId("credential-application", "bad-issuer"), runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, new CredentialIssuerReferenceData { issuerId = "authority.medical.prototype", issuerKind = CredentialIssuerAuthorityKind.ProfessionalOrganization }, qualification.Snapshot, "33", context.ScenarioContext.ScopedId("credential-tx", "bad-issuer"));
-            CredentialOperationResult apply = runtimes.Credentials.SubmitApplication(context.ScenarioContext.ScopedId("credential-application", "stale"), runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, GuildIssuer(), qualification.Snapshot, "34", context.ScenarioContext.ScopedId("credential-tx", "stale-apply"));
-            runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "stale-extra", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "stale-extra", "production.activity.forging")), context.ScenarioContext.ScopedId("professional-evidence", "stale-extra"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "stale-extra"));
-            CredentialQualificationResult current = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId);
+            CredentialOperationResult exam = RecordCredentialExam(context, "boundary", ProfessionContentIds.BlacksmithPracticalExaminationId, 850);
+            CredentialQualificationResult qualification = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId);
+            CredentialOperationResult badIssuer = runtimes.Credentials.SubmitApplication(context.ScenarioContext.ScopedId("credential-application", "bad-issuer"), runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, new CredentialIssuerReferenceData { issuerId = "authority.medical.prototype", issuerKind = CredentialIssuerAuthorityKind.ProfessionalOrganization }, qualification.Snapshot, "33", context.ScenarioContext.ScopedId("credential-tx", "bad-issuer"));
+            CredentialOperationResult apply = runtimes.Credentials.SubmitApplication(context.ScenarioContext.ScopedId("credential-application", "stale"), runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, GuildIssuer(), qualification.Snapshot, "34", context.ScenarioContext.ScopedId("credential-tx", "stale-apply"));
+            runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "stale-extra", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "stale-extra", "source.crafting")), context.ScenarioContext.ScopedId("professional-evidence", "stale-extra"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "stale-extra"));
+            CredentialQualificationResult current = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId);
             CredentialOperationResult staleApprove = runtimes.Credentials.ApproveApplication(apply.Application?.applicationId, "authority.guild.prototype", current.Snapshot, "35", context.ScenarioContext.ScopedId("credential-tx", "stale-approve"));
-            CredentialOperationResult forged = runtimes.Credentials.RecordForgedClaim(context.ScenarioContext.ScopedId("credential-forged", "claim"), PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, runtimes.PersonId, "authority.guild.prototype", "36", context.ScenarioContext.ScopedId("credential-tx", "forged"));
-            bool forgedPermission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId, CredentialPermissionStatePolicy.AnyNonRevoked);
+            CredentialOperationResult forged = runtimes.Credentials.RecordForgedClaim(context.ScenarioContext.ScopedId("credential-forged", "claim"), ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, runtimes.PersonId, "authority.guild.prototype", "36", context.ScenarioContext.ScopedId("credential-tx", "forged"));
+            bool forgedPermission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, ProfessionContentIds.BlacksmithPracticePermissionId, CredentialPermissionStatePolicy.AnyNonRevoked);
 
             bool valid = exam.Succeeded
                 && !badIssuer.Succeeded
@@ -904,14 +904,14 @@ namespace UnityIsekaiGame.Development.Automation
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             CredentialOperationResult issued = IssueApprenticeshipCredential(context, "lifecycle", out _);
             string credentialId = issued.Credential?.credentialId;
-            bool activePermission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId);
+            bool activePermission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, ProfessionContentIds.BlacksmithPracticePermissionId);
             CredentialOperationResult suspend = runtimes.Credentials.SuspendCredential(credentialId, "40", context.ScenarioContext.ScopedId("credential-tx", "suspend"));
-            bool suspendedPermission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId);
+            bool suspendedPermission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, ProfessionContentIds.BlacksmithPracticePermissionId);
             CredentialOperationResult reinstate = runtimes.Credentials.ReinstateCredential(credentialId, "41", context.ScenarioContext.ScopedId("credential-tx", "reinstate"));
-            bool reinstatedPermission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId);
+            bool reinstatedPermission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, ProfessionContentIds.BlacksmithPracticePermissionId);
             CredentialOperationResult renew = runtimes.Credentials.RenewCredential(credentialId, null, "42", context.ScenarioContext.ScopedId("credential-tx", "renew"));
             CredentialOperationResult expire = runtimes.Credentials.ExpireCredential(credentialId, "43", context.ScenarioContext.ScopedId("credential-tx", "expire"));
-            bool expiredPermission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId);
+            bool expiredPermission = runtimes.Credentials.HasActivePermission(runtimes.PersonId, ProfessionContentIds.BlacksmithPracticePermissionId);
             CredentialOperationResult revoke = runtimes.Credentials.RevokeCredential(credentialId, "44", context.ScenarioContext.ScopedId("credential-tx", "revoke"));
             CredentialOperationResult revokedReinstate = runtimes.Credentials.ReinstateCredential(credentialId, "45", context.ScenarioContext.ScopedId("credential-tx", "revoked-reinstate"));
 
@@ -946,7 +946,7 @@ namespace UnityIsekaiGame.Development.Automation
                 new[] { "credential-definition-id", "state" },
                 CredentialInformationSubject.ProtectedFields,
                 Array.Empty<string>(),
-                new[] { PrototypeProfessionDefinitionFactory.AccessPublicId },
+                new[] { ProfessionContentIds.AccessPublicId },
                 50d,
                 "Credential redacted.",
                 "Credential supporting evidence hidden.",
@@ -977,7 +977,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             DefinitionRegistry registry = context.ScenarioContext.Runtimes.DefinitionRegistry;
             DefinitionValidationReport report = new DefinitionValidationReport();
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(registry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -985,11 +985,11 @@ namespace UnityIsekaiGame.Development.Automation
                 }
             }
 
-            ProfessionalActivitySourceSnapshot crafting = ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "adapter-craft", "production.activity.forging");
+            ProfessionalActivitySourceSnapshot crafting = ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "adapter-craft", "source.crafting");
             ProfessionalActivitySourceSnapshot practice = ActivityCustomSource(context, ProfessionalActivitySourceType.TrainingPracticalAssignment, "adapter-practice", "training.activity.practical");
-            bool definitions = registry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, out ProfessionalActivityDefinition craftDefinition)
+            bool definitions = registry.TryGet(ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, out ProfessionalActivityDefinition craftDefinition)
                 && craftDefinition.AcceptedSourceTypes.Contains(ProfessionalActivitySourceType.CraftingOperation)
-                && registry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithExperimentationActivityDefinitionId, out ProfessionalActivityDefinition experimentDefinition)
+                && registry.TryGet(ProfessionContentIds.BlacksmithExperimentationActivityDefinitionId, out ProfessionalActivityDefinition experimentDefinition)
                 && experimentDefinition.FailureCreditPolicy == ProfessionalFailureCreditPolicy.CountsAsFailedAttempt;
             bool adapters = crafting.Completed
                 && crafting.Reference.sourceType == ProfessionalActivitySourceType.CraftingOperation
@@ -1005,11 +1005,11 @@ namespace UnityIsekaiGame.Development.Automation
             long professionRevision = runtimes.Professions.Revision;
             long knowledgeRevision = runtimes.Knowledge.KnowledgeRevision;
             ProfessionalActivityOperationResult result = runtimes.ProfessionalActivities.RegisterAndValidateActivity(
-                ActivityRequest(context, "validated", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "validated-source", "production.activity.forging")),
+                ActivityRequest(context, "validated", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "validated-source", "source.crafting")),
                 context.ScenarioContext.ScopedId("professional-evidence", "validated"),
                 "authority.guild.prototype",
                 context.ScenarioContext.ScopedId("professional-tx", "validated"));
-            ProfessionalExperienceSummary summary = runtimes.ProfessionalActivities.BuildExperienceSummary(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            ProfessionalExperienceSummary summary = runtimes.ProfessionalActivities.BuildExperienceSummary(runtimes.PersonId, ProfessionContentIds.BlacksmithProfessionId);
 
             bool valid = result.Succeeded
                 && result.Evidence != null
@@ -1024,13 +1024,13 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             EnsureBlacksmithActivityProfession(context);
-            ProfessionalActivitySourceSnapshot source = ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "exclusive-source", "production.activity.forging");
-            ProfessionalActivityOperationResult first = runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "exclusive-a", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, source), context.ScenarioContext.ScopedId("professional-evidence", "exclusive-a"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "exclusive-a"));
-            ProfessionalActivityOperationResult second = runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "exclusive-b", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, source), context.ScenarioContext.ScopedId("professional-evidence", "exclusive-b"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "exclusive-b"));
+            ProfessionalActivitySourceSnapshot source = ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "exclusive-source", "source.crafting");
+            ProfessionalActivityOperationResult first = runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "exclusive-a", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, source), context.ScenarioContext.ScopedId("professional-evidence", "exclusive-a"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "exclusive-a"));
+            ProfessionalActivityOperationResult second = runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "exclusive-b", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, source), context.ScenarioContext.ScopedId("professional-evidence", "exclusive-b"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "exclusive-b"));
             ProfessionalActivitySourceSnapshot shared = ActivityCustomSource(context, ProfessionalActivitySourceType.TeachingSession, "shared-source", "training.activity.teaching", difficulty: ProfessionalActivityDifficulty.Skilled);
-            ProfessionalActivityOperationResult instructor = runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "shared-instructor", PrototypeProfessionDefinitionFactory.BlacksmithTeachingActivityDefinitionId, shared, ProfessionalResponsibilityLevel.Instructor, TrainingSupervisionLevel.IndependentWithReview), context.ScenarioContext.ScopedId("professional-evidence", "shared-instructor"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "shared-instructor"));
-            ProfessionalActivityOperationResult assistant = runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "shared-assistant", PrototypeProfessionDefinitionFactory.BlacksmithTeachingActivityDefinitionId, shared, ProfessionalResponsibilityLevel.Assistant, TrainingSupervisionLevel.ObservationOnly), context.ScenarioContext.ScopedId("professional-evidence", "shared-assistant"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "shared-assistant"));
-            ProfessionalExperienceSummary summary = runtimes.ProfessionalActivities.BuildExperienceSummary(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            ProfessionalActivityOperationResult instructor = runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "shared-instructor", ProfessionContentIds.BlacksmithTeachingActivityDefinitionId, shared, ProfessionalResponsibilityLevel.Instructor, TrainingSupervisionLevel.IndependentWithReview), context.ScenarioContext.ScopedId("professional-evidence", "shared-instructor"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "shared-instructor"));
+            ProfessionalActivityOperationResult assistant = runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "shared-assistant", ProfessionContentIds.BlacksmithTeachingActivityDefinitionId, shared, ProfessionalResponsibilityLevel.Assistant, TrainingSupervisionLevel.ObservationOnly), context.ScenarioContext.ScopedId("professional-evidence", "shared-assistant"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "shared-assistant"));
+            ProfessionalExperienceSummary summary = runtimes.ProfessionalActivities.BuildExperienceSummary(runtimes.PersonId, ProfessionContentIds.BlacksmithProfessionId);
 
             bool valid = first.Succeeded
                 && !second.Succeeded
@@ -1047,12 +1047,12 @@ namespace UnityIsekaiGame.Development.Automation
             EnsureBlacksmithActivityProfession(context);
             long professionRevision = runtimes.Professions.Revision;
             long trainingRevision = runtimes.Training.Revision;
-            runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "summary-independent", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "summary-independent", "production.activity.forging"), ProfessionalResponsibilityLevel.IndependentPractitioner), context.ScenarioContext.ScopedId("professional-evidence", "summary-independent"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "summary-independent"));
-            runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "summary-supervised", PrototypeProfessionDefinitionFactory.BlacksmithSupervisedPracticeActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.TrainingPracticalAssignment, "summary-supervised", "training.activity.practical"), ProfessionalResponsibilityLevel.SupervisedWorker, TrainingSupervisionLevel.CloselySupervised), context.ScenarioContext.ScopedId("professional-evidence", "summary-supervised"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "summary-supervised"));
+            runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "summary-independent", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "summary-independent", "source.crafting"), ProfessionalResponsibilityLevel.IndependentPractitioner), context.ScenarioContext.ScopedId("professional-evidence", "summary-independent"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "summary-independent"));
+            runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "summary-supervised", ProfessionContentIds.BlacksmithSupervisedPracticeActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.TrainingPracticalAssignment, "summary-supervised", "training.activity.practical"), ProfessionalResponsibilityLevel.SupervisedWorker, TrainingSupervisionLevel.CloselySupervised), context.ScenarioContext.ScopedId("professional-evidence", "summary-supervised"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "summary-supervised"));
 
             bool requirement = runtimes.ProfessionalActivities.EvaluateExperienceRequirement(runtimes.PersonId, new ProfessionalExperienceRequirementData
             {
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 minimumValidatedActivities = 2,
                 minimumIndependentActivities = 1,
                 minimumSupervisedActivities = 1,
@@ -1074,14 +1074,14 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             EnsureBlacksmithActivityProfession(context);
-            ProfessionalActivityOperationResult recorded = runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "persisted", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "persisted-source", "production.activity.forging")), context.ScenarioContext.ScopedId("professional-evidence", "persisted"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "persisted"));
-            InformationAccessDecision decision = new InformationAccessDecision("person.observer", ProfessionalActivityInformationSubject.Create(ProfessionalActivityInformationSubject.ActivityTag, recorded.Activity?.activityId, runtimes.PersonId), InformationAccessMode.Inspect, InformationAccessDecisionKind.RedactedAccess, InformationAccessDenialCode.DetailRestriction, false, InformationResharingPolicy.NoResharing, new[] { "profession-id", "state" }, ProfessionalActivityInformationSubject.ProtectedFields, Array.Empty<string>(), new[] { PrototypeProfessionDefinitionFactory.AccessPublicId }, 1d, "Redacted professional activity.", "Professional source hidden.", true);
+            ProfessionalActivityOperationResult recorded = runtimes.ProfessionalActivities.RegisterAndValidateActivity(ActivityRequest(context, "persisted", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, "persisted-source", "source.crafting")), context.ScenarioContext.ScopedId("professional-evidence", "persisted"), "authority.guild.prototype", context.ScenarioContext.ScopedId("professional-tx", "persisted"));
+            InformationAccessDecision decision = new InformationAccessDecision("person.observer", ProfessionalActivityInformationSubject.Create(ProfessionalActivityInformationSubject.ActivityTag, recorded.Activity?.activityId, runtimes.PersonId), InformationAccessMode.Inspect, InformationAccessDecisionKind.RedactedAccess, InformationAccessDenialCode.DetailRestriction, false, InformationResharingPolicy.NoResharing, new[] { "profession-id", "state" }, ProfessionalActivityInformationSubject.ProtectedFields, Array.Empty<string>(), new[] { ProfessionContentIds.AccessPublicId }, 1d, "Redacted professional activity.", "Professional source hidden.", true);
             ProfessionalActivityProjection<ProfessionalActivityRecordData> projection = runtimes.ProfessionalActivities.ProjectActivity(recorded.Activity?.activityId, ProfessionalActivityProjectionAudience.PublicInspection, decision);
             ProfessionalActivityRuntimeSaveData save = runtimes.ProfessionalActivities.CreateSaveData();
             ProfessionalActivityRuntime restored = new ProfessionalActivityRuntime();
             ProfessionalActivityOperationResult restore = restored.RestoreFromSaveData(save, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.KnownPersonIds, restoring: true);
             ProfessionalActivityRuntimeSaveData corrupt = save.Clone();
-            corrupt.activities[0].activityDefinitionId = "professional-activity.missing";
+            corrupt.activities[0].activityDefinitionId = "profession.activity.missing";
             ProfessionalActivityOperationResult rejected = restored.RestoreFromSaveData(corrupt, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.KnownPersonIds, restoring: true);
 
             bool valid = recorded.Succeeded
@@ -1100,7 +1100,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             DefinitionRegistry registry = context.ScenarioContext.Runtimes.DefinitionRegistry;
             DefinitionValidationReport report = new DefinitionValidationReport();
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(registry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -1111,7 +1111,7 @@ namespace UnityIsekaiGame.Development.Automation
             TrainingCurriculumDefinition cyclic = ScriptableObject.CreateInstance<TrainingCurriculumDefinition>();
             cyclic.DevelopmentConfigure(
                 "training-curriculum.automation.cycle",
-                PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId,
+                ProfessionContentIds.BlacksmithApprenticeshipProgramId,
                 "Automation Cycle",
                 new[]
                 {
@@ -1123,14 +1123,14 @@ namespace UnityIsekaiGame.Development.Automation
             cyclic.ValidateCatalogDefinition(registry.DefinitionsById, cycleReport);
             UnityEngine.Object.DestroyImmediate(cyclic);
 
-            bool program = registry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId, out TrainingProgramDefinition apprenticeship)
+            bool program = registry.TryGet(ProfessionContentIds.BlacksmithApprenticeshipProgramId, out TrainingProgramDefinition apprenticeship)
                 && apprenticeship.Category == TrainingProgramCategory.Apprenticeship;
-            bool curriculum = registry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCurriculumId, out TrainingCurriculumDefinition trainingCurriculum)
+            bool curriculum = registry.TryGet(ProfessionContentIds.BlacksmithApprenticeshipCurriculumId, out TrainingCurriculumDefinition trainingCurriculum)
                 && trainingCurriculum.Modules.Count >= 3
                 && trainingCurriculum.Lessons.Any(lesson => lesson.teachingMethod == TrainingTeachingMethod.Demonstration);
-            bool transfers = registry.TryGet(PrototypeProfessionDefinitionFactory.TrainingLessonTransferDefinitionId, out InformationTransferDefinition lecture)
+            bool transfers = registry.TryGet(ProfessionContentIds.TrainingLessonTransferDefinitionId, out InformationTransferDefinition lecture)
                 && lecture.Mode == InformationTransferMode.Lecture
-                && registry.TryGet(PrototypeProfessionDefinitionFactory.TrainingDemonstrationTransferDefinitionId, out InformationTransferDefinition demonstration)
+                && registry.TryGet(ProfessionContentIds.TrainingDemonstrationTransferDefinitionId, out InformationTransferDefinition demonstration)
                 && demonstration.Mode == InformationTransferMode.Demonstration;
 
             bool valid = report.ErrorCount == 0
@@ -1149,10 +1149,10 @@ namespace UnityIsekaiGame.Development.Automation
             long knowledgeRevision = runtimes.Knowledge.KnowledgeRevision;
             string enrollmentId = TrainingEnrollmentId(context, "enrollment");
 
-            TrainingOperationResult apply = runtimes.Training.ApplyToProgram(enrollmentId, runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId, context.ScenarioContext.ScopedId("training-tx", "apply"), worldTime: 1d);
-            TrainingOperationResult duplicate = runtimes.Training.ApplyToProgram(context.ScenarioContext.ScopedId("training-enrollment", "duplicate"), runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId, context.ScenarioContext.ScopedId("training-tx", "duplicate"), worldTime: 2d);
+            TrainingOperationResult apply = runtimes.Training.ApplyToProgram(enrollmentId, runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipProgramId, context.ScenarioContext.ScopedId("training-tx", "apply"), worldTime: 1d);
+            TrainingOperationResult duplicate = runtimes.Training.ApplyToProgram(context.ScenarioContext.ScopedId("training-enrollment", "duplicate"), runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipProgramId, context.ScenarioContext.ScopedId("training-tx", "duplicate"), worldTime: 2d);
             TrainingOperationResult accept = runtimes.Training.AcceptEnrollment(enrollmentId, context.ScenarioContext.ScopedId("training-tx", "accept"));
-            TrainingOperationResult instructor = runtimes.Training.AssignInstructor(enrollmentId, context.ScenarioContext.ScopedId("training-instructor", "master"), TrainingInstructorRoleKind.Master, runtimes.PersonId, context.ScenarioContext.ScopedId("training-tx", "master"), professionId: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, authorityId: "authority.guild.prototype");
+            TrainingOperationResult instructor = runtimes.Training.AssignInstructor(enrollmentId, context.ScenarioContext.ScopedId("training-instructor", "master"), TrainingInstructorRoleKind.Master, runtimes.PersonId, context.ScenarioContext.ScopedId("training-tx", "master"), professionId: ProfessionContentIds.BlacksmithProfessionId, authorityId: "authority.guild.prototype");
             TrainingOperationResult begin = runtimes.Training.BeginProgram(enrollmentId, context.ScenarioContext.ScopedId("training-tx", "begin"));
             TrainingOperationResult withdraw = runtimes.Training.Withdraw(enrollmentId, context.ScenarioContext.ScopedId("training-tx", "withdraw"));
             TrainingOperationResult terminalBegin = runtimes.Training.BeginProgram(enrollmentId, context.ScenarioContext.ScopedId("training-tx", "terminal-begin"));
@@ -1175,13 +1175,13 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             string enrollmentId = BeginTrainingApprenticeship(context, "teaching");
-            TrainingOperationResult attendance = runtimes.Training.RunLearningSession(context.ScenarioContext.ScopedId("training-session", "attendance"), enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId, PrototypeProfessionDefinitionFactory.BlacksmithSafetyLessonId, context.ScenarioContext.ScopedId("training-tx", "attendance"), startWorldTime: 10d, completionWorldTime: 11d);
+            TrainingOperationResult attendance = runtimes.Training.RunLearningSession(context.ScenarioContext.ScopedId("training-session", "attendance"), enrollmentId, ProfessionContentIds.BlacksmithBasicsModuleId, ProfessionContentIds.BlacksmithSafetyLessonId, context.ScenarioContext.ScopedId("training-tx", "attendance"), startWorldTime: 10d, completionWorldTime: 11d);
             long knowledgeBeforeTeaching = runtimes.Knowledge.KnowledgeRevision;
             TrainingOperationResult taught = runtimes.Training.RunLearningSession(
                 context.ScenarioContext.ScopedId("training-session", "teaching"),
                 enrollmentId,
-                PrototypeProfessionDefinitionFactory.BlacksmithPracticeModuleId,
-                PrototypeProfessionDefinitionFactory.BlacksmithDemonstrationLessonId,
+                ProfessionContentIds.BlacksmithPracticeModuleId,
+                ProfessionContentIds.BlacksmithDemonstrationLessonId,
                 context.ScenarioContext.ScopedId("training-tx", "teaching"),
                 BuildTrainingTeachingRequest(context, "teaching-transfer"),
                 startWorldTime: 12d,
@@ -1204,10 +1204,10 @@ namespace UnityIsekaiGame.Development.Automation
             CompleteTrainingVisibleRequirements(context, enrollmentId, completePractice: false);
             string activityId = context.ScenarioContext.ScopedId("crafting-operation", "blacksmith-training");
 
-            TrainingOperationResult missingSupervisor = runtimes.Training.RecordPracticalAssignment(context.ScenarioContext.ScopedId("training-practical", "missing-supervisor"), enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticalAssignmentId, activityId, TrainingAssignmentActivityCategory.Crafting, context.ScenarioContext.ScopedId("training-tx", "practice-missing"), supervisorPersonId: string.Empty);
-            TrainingOperationResult accepted = runtimes.Training.RecordPracticalAssignment(context.ScenarioContext.ScopedId("training-practical", "accepted"), enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticalAssignmentId, activityId, TrainingAssignmentActivityCategory.Crafting, context.ScenarioContext.ScopedId("training-tx", "practice-accepted"), quality: 700, supervisorPersonId: runtimes.PersonId);
-            TrainingOperationResult duplicate = runtimes.Training.RecordPracticalAssignment(context.ScenarioContext.ScopedId("training-practical", "duplicate"), enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticalAssignmentId, activityId, TrainingAssignmentActivityCategory.Crafting, context.ScenarioContext.ScopedId("training-tx", "practice-duplicate"), quality: 700, supervisorPersonId: runtimes.PersonId);
-            TrainingOperationResult supervised = runtimes.Training.RecordSupervisedWork(context.ScenarioContext.ScopedId("training-supervised", "forge"), enrollmentId, runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, activityId, TrainingSupervisionLevel.CloselySupervised, TrainingWorkOutcome.Succeeded, context.ScenarioContext.ScopedId("training-tx", "supervised"), quality: 725, startWorldTime: 20d, completionWorldTime: 21d);
+            TrainingOperationResult missingSupervisor = runtimes.Training.RecordPracticalAssignment(context.ScenarioContext.ScopedId("training-practical", "missing-supervisor"), enrollmentId, ProfessionContentIds.BlacksmithPracticalAssignmentId, activityId, TrainingAssignmentActivityCategory.Crafting, context.ScenarioContext.ScopedId("training-tx", "practice-missing"), supervisorPersonId: string.Empty);
+            TrainingOperationResult accepted = runtimes.Training.RecordPracticalAssignment(context.ScenarioContext.ScopedId("training-practical", "accepted"), enrollmentId, ProfessionContentIds.BlacksmithPracticalAssignmentId, activityId, TrainingAssignmentActivityCategory.Crafting, context.ScenarioContext.ScopedId("training-tx", "practice-accepted"), quality: 700, supervisorPersonId: runtimes.PersonId);
+            TrainingOperationResult duplicate = runtimes.Training.RecordPracticalAssignment(context.ScenarioContext.ScopedId("training-practical", "duplicate"), enrollmentId, ProfessionContentIds.BlacksmithPracticalAssignmentId, activityId, TrainingAssignmentActivityCategory.Crafting, context.ScenarioContext.ScopedId("training-tx", "practice-duplicate"), quality: 700, supervisorPersonId: runtimes.PersonId);
+            TrainingOperationResult supervised = runtimes.Training.RecordSupervisedWork(context.ScenarioContext.ScopedId("training-supervised", "forge"), enrollmentId, runtimes.PersonId, ProfessionContentIds.BlacksmithProfessionId, activityId, TrainingSupervisionLevel.CloselySupervised, TrainingWorkOutcome.Succeeded, context.ScenarioContext.ScopedId("training-tx", "supervised"), quality: 725, startWorldTime: 20d, completionWorldTime: 21d);
             TrainingRuntimeSaveData save = runtimes.Training.CreateSaveData();
 
             bool valid = !missingSupervisor.Succeeded
@@ -1231,14 +1231,14 @@ namespace UnityIsekaiGame.Development.Automation
             TrainingProgressResult authoritative = runtimes.Training.EvaluateProgress(enrollmentId, perceived: false);
             TrainingProgressTokenData staleToken = authoritative.RuntimeToken;
             TrainingOperationResult blocked = runtimes.Training.CompleteProgram(enrollmentId, context.ScenarioContext.ScopedId("training-tx", "complete-blocked"), authoritative.RuntimeToken);
-            TrainingOperationResult hidden = runtimes.Training.CompleteModule(enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithHiddenAssessmentModuleId, context.ScenarioContext.ScopedId("training-tx", "hidden"));
+            TrainingOperationResult hidden = runtimes.Training.CompleteModule(enrollmentId, ProfessionContentIds.BlacksmithHiddenAssessmentModuleId, context.ScenarioContext.ScopedId("training-tx", "hidden"));
             TrainingOperationResult stale = runtimes.Training.CompleteProgram(enrollmentId, context.ScenarioContext.ScopedId("training-tx", "complete-stale"), staleToken);
             TrainingProgressResult current = runtimes.Training.EvaluateProgress(enrollmentId, perceived: false);
             TrainingOperationResult complete = runtimes.Training.CompleteProgram(enrollmentId, context.ScenarioContext.ScopedId("training-tx", "complete"), current.RuntimeToken, worldTime: 100d);
 
             bool valid = perceived.EligibleForCompletion
                 && !authoritative.EligibleForCompletion
-                && authoritative.RemainingRequirements.Contains(PrototypeProfessionDefinitionFactory.BlacksmithHiddenAssessmentModuleId)
+                && authoritative.RemainingRequirements.Contains(ProfessionContentIds.BlacksmithHiddenAssessmentModuleId)
                 && !blocked.Succeeded
                 && blocked.Status == TrainingOperationStatus.RequirementBlocked
                 && hidden.Succeeded
@@ -1261,7 +1261,7 @@ namespace UnityIsekaiGame.Development.Automation
             TrainingOperationResult restore = restored.RestoreFromSaveData(save, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Transfers, runtimes.KnownPersonIds, restoring: true);
 
             TrainingRuntimeSaveData corrupt = save.Clone();
-            corrupt.enrollments[0].programId = "training-program.missing";
+            corrupt.enrollments[0].programId = "training.program.missing";
             int beforeCount = restored.EnrollmentCount;
             long beforeRevision = restored.Revision;
             TrainingOperationResult rejected = restored.RestoreFromSaveData(corrupt, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Transfers, runtimes.KnownPersonIds, restoring: true);
@@ -1277,7 +1277,7 @@ namespace UnityIsekaiGame.Development.Automation
                 new[] { "program-id", "state" },
                 TrainingInformationSubject.ProtectedFields,
                 Array.Empty<string>(),
-                new[] { PrototypeProfessionDefinitionFactory.AccessPublicId },
+                new[] { ProfessionContentIds.AccessPublicId },
                 50d,
                 "Redacted training enrollment access.",
                 "Training enrollment hides learner and progress token details.",
@@ -1294,15 +1294,15 @@ namespace UnityIsekaiGame.Development.Automation
                 && projection.Redacted
                 && !projection.Denied
                 && string.IsNullOrWhiteSpace(projection.Record.PersonId)
-                && projection.Record.ProgramId == PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId;
+                && projection.Record.ProgramId == ProfessionContentIds.BlacksmithApprenticeshipProgramId;
             return TestLabAssertions.True("step10-training-persistence", "Training persistence and projections are atomic and redacted", valid, $"Restore={restore.Status} Rejected={rejected.Status} Count={restored.EnrollmentCount}/{runtimes.Training.EnrollmentCount} Hooks={restored.HistoryHooks.Count} Redacted={projection.Redacted} Person='{projection.Record?.PersonId}'");
         }
 
         private static TestLabAutomationStepResult DefinitionsAndSpecializations(TestLabAutomationContext context)
         {
             DefinitionRegistry registry = context.ScenarioContext.Runtimes.DefinitionRegistry;
-            bool blacksmith = registry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, out ProfessionDefinition profession);
-            bool specialization = registry.TryGet(PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId, out ProfessionSpecializationDefinition weaponsmith);
+            bool blacksmith = registry.TryGet(ProfessionContentIds.BlacksmithProfessionId, out ProfessionDefinition profession);
+            bool specialization = registry.TryGet(ProfessionContentIds.WeaponsmithSpecializationId, out ProfessionSpecializationDefinition weaponsmith);
             bool parentMatches = specialization && string.Equals(weaponsmith.ParentProfessionId, profession?.Id, StringComparison.Ordinal);
             bool listed = blacksmith && profession.AllowedSpecializationIds.Contains(weaponsmith.Id);
             bool noGrantPayloads = blacksmith && profession.RelatedSkillIds.Contains("skill.smithing") && profession.RelatedCapabilityIds.Count == 0;
@@ -1318,7 +1318,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 relationshipId = "profession-relationship.test.blacksmith",
                 personId = personId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 informalPractice = true,
                 primary = true,
                 startWorldTime = "10",
@@ -1328,7 +1328,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 relationshipId = "profession-relationship.test.blacksmith.duplicate",
                 personId = personId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 informalPractice = true,
                 startWorldTime = "11",
                 transactionId = "tx.profession.blacksmith.duplicate"
@@ -1337,7 +1337,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 relationshipId = "profession-relationship.test.medic",
                 personId = personId,
-                professionId = PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
+                professionId = ProfessionContentIds.FieldMedicProfessionId,
                 informalPractice = true,
                 startWorldTime = "12",
                 transactionId = "tx.profession.medic"
@@ -1346,7 +1346,7 @@ namespace UnityIsekaiGame.Development.Automation
             ProfessionOperationResult recognize = runtime.Recognize("profession-relationship.test.medic", "authority.medical.prototype", "credential.prototype.medic", "tx.profession.medic.recognize");
             ProfessionOperationResult primary = runtime.SetPrimary("profession-relationship.test.medic", "tx.profession.medic.primary");
 
-            bool onePrimary = runtime.QueryPrimary(personId).Count == 1 && runtime.QueryPrimary(personId).Single().ProfessionId == PrototypeProfessionDefinitionFactory.FieldMedicProfessionId;
+            bool onePrimary = runtime.QueryPrimary(personId).Count == 1 && runtime.QueryPrimary(personId).Single().ProfessionId == ProfessionContentIds.FieldMedicProfessionId;
             bool valid = informal.Succeeded
                 && !duplicate.Succeeded
                 && duplicate.Status == ProfessionOperationStatus.DuplicateActiveRelationship
@@ -1368,19 +1368,19 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 relationshipId = "profession-relationship.test.spy",
                 personId = personId,
-                professionId = PrototypeProfessionDefinitionFactory.SpyProfessionId,
+                professionId = ProfessionContentIds.SpyProfessionId,
                 state = ProfessionRelationshipState.Secret,
                 informalPractice = true,
                 active = true,
                 startWorldTime = "20",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessSecretId,
+                accessPolicyId = ProfessionContentIds.AccessSecretId,
                 tags = new[] { "profession.secret" },
                 transactionId = "tx.profession.spy"
             });
 
             InformationAccessDecision redactedDecision = new InformationAccessDecision(
                 "person.observer",
-                ProfessionInformationSubject.Relationship("profession-relationship.test.spy", personId, PrototypeProfessionDefinitionFactory.SpyProfessionId, new[] { "profession.secret" }),
+                ProfessionInformationSubject.Relationship("profession-relationship.test.spy", personId, ProfessionContentIds.SpyProfessionId, new[] { "profession.secret" }),
                 InformationAccessMode.Inspect,
                 InformationAccessDecisionKind.RedactedAccess,
                 InformationAccessDenialCode.DetailRestriction,
@@ -1389,7 +1389,7 @@ namespace UnityIsekaiGame.Development.Automation
                 new[] { "profession-id", "state" },
                 ProfessionInformationSubject.ProtectedFields,
                 Array.Empty<string>(),
-                new[] { PrototypeProfessionDefinitionFactory.AccessSecretId },
+                new[] { ProfessionContentIds.AccessSecretId },
                 20d,
                 "Redacted profession access.",
                 "Secret profession relationship hides identity details.",
@@ -1401,7 +1401,7 @@ namespace UnityIsekaiGame.Development.Automation
                 && !projection.Denied
                 && projection.Snapshot != null
                 && string.IsNullOrWhiteSpace(projection.Snapshot.PersonId)
-                && projection.Snapshot.ProfessionId == PrototypeProfessionDefinitionFactory.SpyProfessionId;
+                && projection.Snapshot.ProfessionId == ProfessionContentIds.SpyProfessionId;
             return TestLabAssertions.True("step10-profession-secret", "Secret profession relationships redact ordinary projections", valid, $"Created={created.Status} Redacted={projection.Redacted} Denied={projection.Denied} Person='{projection.Snapshot?.PersonId}' Profession='{projection.Snapshot?.ProfessionId}'");
         }
 
@@ -1413,10 +1413,10 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 relationshipId = "profession-relationship.test.persist",
                 personId = personId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 informalPractice = true,
                 primary = true,
-                specializationIds = new[] { PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId },
+                specializationIds = new[] { ProfessionContentIds.WeaponsmithSpecializationId },
                 startWorldTime = "30",
                 transactionId = "tx.profession.persist"
             });
@@ -1447,7 +1447,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 relationshipId = "profession-relationship.test.boundary",
                 personId = personId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 informalPractice = true,
                 startWorldTime = "40",
                 transactionId = "tx.profession.boundary"
@@ -1472,7 +1472,7 @@ namespace UnityIsekaiGame.Development.Automation
                 maximumHolders = Math.Max(1, maxHolders),
                 vacancyAllowed = true,
                 createdWorldTime = context.ScenarioContext.ScopedId("position-time", $"{slug}-created"),
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId,
+                accessPolicyId = ProfessionContentIds.AccessPublicId,
                 provenance = "test-lab"
             }, context.ScenarioContext.ScopedId("position-tx", $"{slug}-create"));
         }
@@ -1480,7 +1480,7 @@ namespace UnityIsekaiGame.Development.Automation
         private static PositionEmploymentOperationResult AppointEligiblePerson(TestLabAutomationContext context, string slug, string positionDefinitionId, string organizationId, string organizationTypeId, string authorityId, EmploymentClassification? classification = null)
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            PositionEmploymentOperationResult position = CreatePosition(context, slug, positionDefinitionId, organizationId, organizationTypeId, positionDefinitionId == PrototypeProfessionDefinitionFactory.GuildClerkPositionId ? 2 : 1);
+            PositionEmploymentOperationResult position = CreatePosition(context, slug, positionDefinitionId, organizationId, organizationTypeId, positionDefinitionId == ProfessionContentIds.GuildClerkPositionId ? 2 : 1);
             if (!position.Succeeded && !position.Duplicate)
             {
                 return position;
@@ -1495,7 +1495,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             DefinitionValidationReport report = new DefinitionValidationReport();
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(runtimes.DefinitionRegistry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -1504,9 +1504,9 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             EnsureBlacksmithActivityProfession(context);
-            PersonProfessionSnapshot relationship = runtimes.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, activeOnly: true).First();
+            PersonProfessionSnapshot relationship = runtimes.Professions.QueryByProfession(ProfessionContentIds.BlacksmithProfessionId, activeOnly: true).First();
             CareerHistoryOperationResult start = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "identity", CareerEpisodeCategory.FormalProfessionalPractice, relationshipId: relationship.RelationshipId, primary: true), context.ScenarioContext.ScopedId("career-tx", "identity-start"));
-            CareerHistoryOperationResult transition = runtimes.CareerHistory.RecordTransition(Transition(context, "identity", PrototypeProfessionDefinitionFactory.CareerProfessionEnteredTransitionId, CareerTransitionCategory.ProfessionEntered, destinationEpisodeIds: new[] { start.Episode?.episodeId }, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.ProfessionRelationship, relationship.RelationshipId, runtimes.Professions.Revision) }), context.ScenarioContext.ScopedId("career-tx", "identity-transition"));
+            CareerHistoryOperationResult transition = runtimes.CareerHistory.RecordTransition(Transition(context, "identity", ProfessionContentIds.CareerProfessionEnteredTransitionId, CareerTransitionCategory.ProfessionEntered, destinationEpisodeIds: new[] { start.Episode?.episodeId }, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.ProfessionRelationship, relationship.RelationshipId, runtimes.Professions.Revision) }), context.ScenarioContext.ScopedId("career-tx", "identity-transition"));
             CareerHistoryOperationResult first = runtimes.CareerHistory.BuildTimeline(runtimes.PersonId);
             first.Timeline.Episodes[0].state = CareerEpisodeState.Ended;
             CareerHistoryOperationResult second = runtimes.CareerHistory.BuildTimeline(runtimes.PersonId);
@@ -1526,26 +1526,26 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult CareerAuthoritativeTransitions(TestLabAutomationContext context)
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            ProfessionalRankOperationResult journeyman = EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, "career-authority-journeyman");
+            ProfessionalRankOperationResult journeyman = EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankJourneymanId, "career-authority-journeyman");
             CareerHistoryOperationResult rankEpisode = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "ranked", CareerEpisodeCategory.FormalProfessionalPractice, rankRecordId: journeyman.Rank?.rankRecordId, rankDefinitionId: journeyman.Rank?.rankDefinitionId, primary: true), context.ScenarioContext.ScopedId("career-tx", "ranked"));
-            ProfessionalRankOperationResult master = EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankMasterId, "career-authority-master");
-            CareerHistoryOperationResult promotion = runtimes.CareerHistory.RecordTransition(Transition(context, "promotion", PrototypeProfessionDefinitionFactory.CareerPromotionTransitionId, CareerTransitionCategory.Promotion, sourceEpisodeIds: new[] { rankEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { rankEpisode.Episode?.episodeId }, previousRank: journeyman.Rank?.rankRecordId, newRank: master.Rank?.rankRecordId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Rank, master.Rank?.rankRecordId, runtimes.ProfessionalRanks.Revision) }, authority: "authority.guild.prototype"), context.ScenarioContext.ScopedId("career-tx", "promotion"));
-            ProfessionalRankOperationResult demoted = runtimes.ProfessionalRanks.DemotePerson(master.Rank?.rankRecordId, context.ScenarioContext.ScopedId("rank-record", "career-demoted"), PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, "70", context.ScenarioContext.ScopedId("rank-tx", "career-demote"));
-            CareerHistoryOperationResult demotion = runtimes.CareerHistory.RecordTransition(Transition(context, "demotion", PrototypeProfessionDefinitionFactory.CareerDemotionTransitionId, CareerTransitionCategory.Demotion, sourceEpisodeIds: new[] { rankEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { rankEpisode.Episode?.episodeId }, previousRank: master.Rank?.rankRecordId, newRank: demoted.Rank?.rankRecordId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Rank, demoted.Rank?.rankRecordId, runtimes.ProfessionalRanks.Revision) }, authority: "authority.guild.prototype"), context.ScenarioContext.ScopedId("career-tx", "demotion"));
+            ProfessionalRankOperationResult master = EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankMasterId, "career-authority-master");
+            CareerHistoryOperationResult promotion = runtimes.CareerHistory.RecordTransition(Transition(context, "promotion", ProfessionContentIds.CareerPromotionTransitionId, CareerTransitionCategory.Promotion, sourceEpisodeIds: new[] { rankEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { rankEpisode.Episode?.episodeId }, previousRank: journeyman.Rank?.rankRecordId, newRank: master.Rank?.rankRecordId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Rank, master.Rank?.rankRecordId, runtimes.ProfessionalRanks.Revision) }, authority: "authority.guild.prototype"), context.ScenarioContext.ScopedId("career-tx", "promotion"));
+            ProfessionalRankOperationResult demoted = runtimes.ProfessionalRanks.DemotePerson(master.Rank?.rankRecordId, context.ScenarioContext.ScopedId("rank-record", "career-demoted"), ProfessionContentIds.BlacksmithRankJourneymanId, "70", context.ScenarioContext.ScopedId("rank-tx", "career-demote"));
+            CareerHistoryOperationResult demotion = runtimes.CareerHistory.RecordTransition(Transition(context, "demotion", ProfessionContentIds.CareerDemotionTransitionId, CareerTransitionCategory.Demotion, sourceEpisodeIds: new[] { rankEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { rankEpisode.Episode?.episodeId }, previousRank: master.Rank?.rankRecordId, newRank: demoted.Rank?.rankRecordId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Rank, demoted.Rank?.rankRecordId, runtimes.ProfessionalRanks.Revision) }, authority: "authority.guild.prototype"), context.ScenarioContext.ScopedId("career-tx", "demotion"));
 
-            PositionEmploymentOperationResult clerk = AppointEligiblePerson(context, "career-transfer-clerk", PrototypeProfessionDefinitionFactory.GuildClerkPositionId, "organization.prototype.guild", PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId, PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId);
+            PositionEmploymentOperationResult clerk = AppointEligiblePerson(context, "career-transfer-clerk", ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
             CareerHistoryOperationResult clerkEpisode = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "transfer-clerk", CareerEpisodeCategory.Employment, employment: clerk.Employment, primary: false), context.ScenarioContext.ScopedId("career-tx", "transfer-clerk"));
-            PositionEmploymentOperationResult target = CreatePosition(context, "career-transfer-target", PrototypeProfessionDefinitionFactory.IndependentContractorPositionId, "organization.prototype.independent", PrototypeProfessionDefinitionFactory.IndependentOrganizationTypeId, 2);
+            PositionEmploymentOperationResult target = CreatePosition(context, "career-transfer-target", ProfessionContentIds.IndependentContractorPositionId, "organization.prototype.independent", ProfessionContentIds.IndependentOrganizationTypeId, 2);
             PositionEligibilityResult transferEligibility = runtimes.PositionEmployment.EvaluateEligibility(runtimes.PersonId, target.Position?.positionInstanceId, privilegedDiagnostics: true);
             PositionEmploymentOperationResult transfer = runtimes.PositionEmployment.TransferPerson(clerk.Employment?.employmentId, context.ScenarioContext.ScopedId("employment", "career-transfer"), target.Position?.positionInstanceId, "authority.guild.prototype", transferEligibility.Snapshot, "72", context.ScenarioContext.ScopedId("position-tx", "career-transfer"));
             CareerHistoryOperationResult transferEpisode = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "transfer-target", CareerEpisodeCategory.Employment, employment: transfer.Employment, primary: false), context.ScenarioContext.ScopedId("career-tx", "transfer-target"));
-            CareerHistoryOperationResult transferTransition = runtimes.CareerHistory.RecordTransition(Transition(context, "transfer", PrototypeProfessionDefinitionFactory.CareerTransferTransitionId, CareerTransitionCategory.Transfer, sourceEpisodeIds: new[] { clerkEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { transferEpisode.Episode?.episodeId }, previousEmployment: clerk.Employment?.employmentId, newEmployment: transfer.Employment?.employmentId, previousPosition: clerk.Position?.positionInstanceId, newPosition: target.Position?.positionInstanceId, organization: "organization.prototype.independent", supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Employment, transfer.Employment?.employmentId, runtimes.PositionEmployment.Revision), CareerSource(CareerTransitionSourceRecordType.Position, target.Position?.positionInstanceId, runtimes.PositionEmployment.Revision) }, authority: "authority.guild.prototype"), context.ScenarioContext.ScopedId("career-tx", "transfer"));
+            CareerHistoryOperationResult transferTransition = runtimes.CareerHistory.RecordTransition(Transition(context, "transfer", ProfessionContentIds.CareerTransferTransitionId, CareerTransitionCategory.Transfer, sourceEpisodeIds: new[] { clerkEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { transferEpisode.Episode?.episodeId }, previousEmployment: clerk.Employment?.employmentId, newEmployment: transfer.Employment?.employmentId, previousPosition: clerk.Position?.positionInstanceId, newPosition: target.Position?.positionInstanceId, organization: "organization.prototype.independent", supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Employment, transfer.Employment?.employmentId, runtimes.PositionEmployment.Revision), CareerSource(CareerTransitionSourceRecordType.Position, target.Position?.positionInstanceId, runtimes.PositionEmployment.Revision) }, authority: "authority.guild.prototype"), context.ScenarioContext.ScopedId("career-tx", "transfer"));
             PositionEmploymentOperationResult resigned = runtimes.PositionEmployment.Resign(transfer.Employment?.employmentId, "73", context.ScenarioContext.ScopedId("position-tx", "career-resign"));
-            CareerHistoryOperationResult resignation = runtimes.CareerHistory.RecordTransition(Transition(context, "resignation", PrototypeProfessionDefinitionFactory.CareerResignationTransitionId, CareerTransitionCategory.Resignation, sourceEpisodeIds: new[] { transferEpisode.Episode?.episodeId }, previousEmployment: transfer.Employment?.employmentId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Employment, transfer.Employment?.employmentId, runtimes.PositionEmployment.Revision) }), context.ScenarioContext.ScopedId("career-tx", "resignation"));
-            PositionEmploymentOperationResult dismissedEmployment = AppointEligiblePerson(context, "career-dismiss-clerk", PrototypeProfessionDefinitionFactory.GuildClerkPositionId, "organization.prototype.guild", PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId, PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId);
+            CareerHistoryOperationResult resignation = runtimes.CareerHistory.RecordTransition(Transition(context, "resignation", ProfessionContentIds.CareerResignationTransitionId, CareerTransitionCategory.Resignation, sourceEpisodeIds: new[] { transferEpisode.Episode?.episodeId }, previousEmployment: transfer.Employment?.employmentId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Employment, transfer.Employment?.employmentId, runtimes.PositionEmployment.Revision) }), context.ScenarioContext.ScopedId("career-tx", "resignation"));
+            PositionEmploymentOperationResult dismissedEmployment = AppointEligiblePerson(context, "career-dismiss-clerk", ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
             CareerHistoryOperationResult dismissEpisode = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "dismiss-clerk", CareerEpisodeCategory.Employment, employment: dismissedEmployment.Employment, secret: true), context.ScenarioContext.ScopedId("career-tx", "dismiss-clerk"));
             PositionEmploymentOperationResult dismissed = runtimes.PositionEmployment.Dismiss(dismissedEmployment.Employment?.employmentId, "74", context.ScenarioContext.ScopedId("position-tx", "career-dismiss"));
-            CareerHistoryOperationResult dismissal = runtimes.CareerHistory.RecordTransition(Transition(context, "dismissal", PrototypeProfessionDefinitionFactory.CareerDismissalTransitionId, CareerTransitionCategory.Dismissal, sourceEpisodeIds: new[] { dismissEpisode.Episode?.episodeId }, previousEmployment: dismissedEmployment.Employment?.employmentId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Employment, dismissedEmployment.Employment?.employmentId, runtimes.PositionEmployment.Revision) }, authority: PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId, secret: true), context.ScenarioContext.ScopedId("career-tx", "dismissal"));
+            CareerHistoryOperationResult dismissal = runtimes.CareerHistory.RecordTransition(Transition(context, "dismissal", ProfessionContentIds.CareerDismissalTransitionId, CareerTransitionCategory.Dismissal, sourceEpisodeIds: new[] { dismissEpisode.Episode?.episodeId }, previousEmployment: dismissedEmployment.Employment?.employmentId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Employment, dismissedEmployment.Employment?.employmentId, runtimes.PositionEmployment.Revision) }, authority: ProfessionContentIds.PositionRestrictedRecordsAuthorityId, secret: true), context.ScenarioContext.ScopedId("career-tx", "dismissal"));
 
             bool valid = journeyman.Succeeded && master.Succeeded && promotion.Succeeded && demoted.Succeeded && demotion.Succeeded && transfer.Succeeded && transferTransition.Succeeded && resigned.Succeeded && resignation.Succeeded && dismissed.Succeeded && dismissal.Succeeded;
             return TestLabAssertions.True("step10-career-transitions", "Career transitions reference authoritative rank and employment mutations", valid, $"Promotion={promotion.Status} Demotion={demotion.Status} Transfer={transferTransition.Status} Resign={resignation.Status} Dismiss={dismissal.Status}");
@@ -1554,15 +1554,15 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult CareerConcurrentGapsRedaction(TestLabAutomationContext context)
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, "career-concurrent");
-            PositionEmploymentOperationResult senior = AppointEligiblePerson(context, "career-primary-senior", PrototypeProfessionDefinitionFactory.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", PrototypeProfessionDefinitionFactory.ForgeOrganizationTypeId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId);
+            EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankJourneymanId, "career-concurrent");
+            PositionEmploymentOperationResult senior = AppointEligiblePerson(context, "career-primary-senior", ProfessionContentIds.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", ProfessionContentIds.ForgeOrganizationTypeId, ProfessionContentIds.PositionDutyAssignAuthorityId);
             CareerHistoryOperationResult primary = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "primary-senior", CareerEpisodeCategory.Employment, employment: senior.Employment, primary: true, exclusive: false), context.ScenarioContext.ScopedId("career-tx", "primary-senior"));
-            PositionEmploymentOperationResult clerk = AppointEligiblePerson(context, "career-secondary-clerk", PrototypeProfessionDefinitionFactory.GuildClerkPositionId, "organization.prototype.guild", PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId, PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId);
+            PositionEmploymentOperationResult clerk = AppointEligiblePerson(context, "career-secondary-clerk", ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
             CareerHistoryOperationResult secondary = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "secondary-clerk", CareerEpisodeCategory.Employment, employment: clerk.Employment, primary: false, exclusive: false), context.ScenarioContext.ScopedId("career-tx", "secondary-clerk"));
             CareerHistoryOperationResult setPrimary = runtimes.CareerHistory.SetPrimaryCareer(secondary.Episode?.episodeId, context.ScenarioContext.ScopedId("career-tx", "set-primary"));
             CareerHistoryOperationResult gap = runtimes.CareerHistory.BeginCareerGap(context.ScenarioContext.ScopedId("career-episode", "gap"), runtimes.PersonId, "80", "Travel between contracts.", context.ScenarioContext.ScopedId("career-tx", "gap-start"));
             CareerHistoryOperationResult gapEnd = runtimes.CareerHistory.EndCareerGap(gap.Episode?.episodeId, "81", "Accepted work.", context.ScenarioContext.ScopedId("career-tx", "gap-end"));
-            CareerHistoryOperationResult secret = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "secret-spy", CareerEpisodeCategory.FormalProfessionalPractice, profession: PrototypeProfessionDefinitionFactory.SpyProfessionId, primary: false, secret: true), context.ScenarioContext.ScopedId("career-tx", "secret"));
+            CareerHistoryOperationResult secret = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "secret-spy", CareerEpisodeCategory.FormalProfessionalPractice, profession: ProfessionContentIds.SpyProfessionId, primary: false, secret: true), context.ScenarioContext.ScopedId("career-tx", "secret"));
             CareerHistoryProjection<CareerEpisodeData> redacted = runtimes.CareerHistory.ProjectEpisode(secret.Episode?.episodeId, CareerHistoryProjectionAudience.Public);
             CareerHistoryOperationResult timeline = runtimes.CareerHistory.BuildTimeline(runtimes.PersonId);
 
@@ -1582,20 +1582,20 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult CareerRetirementReturnChange(TestLabAutomationContext context)
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            PositionEmploymentOperationResult contractor = AppointEligiblePerson(context, "career-retire-contractor", PrototypeProfessionDefinitionFactory.IndependentContractorPositionId, "organization.prototype.independent", PrototypeProfessionDefinitionFactory.IndependentOrganizationTypeId, "authority.guild.prototype", EmploymentClassification.IndependentServiceFoundation);
+            PositionEmploymentOperationResult contractor = AppointEligiblePerson(context, "career-retire-contractor", ProfessionContentIds.IndependentContractorPositionId, "organization.prototype.independent", ProfessionContentIds.IndependentOrganizationTypeId, "authority.guild.prototype", EmploymentClassification.IndependentServiceFoundation);
             CareerHistoryOperationResult contractorEpisode = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "retire-contractor", CareerEpisodeCategory.IndependentPractice, employment: contractor.Employment, primary: true, exclusive: false), context.ScenarioContext.ScopedId("career-tx", "retire-contractor"));
             PositionEmploymentOperationResult retireEmployment = runtimes.PositionEmployment.Retire(contractor.Employment?.employmentId, "90", context.ScenarioContext.ScopedId("position-tx", "retire"));
-            CareerHistoryOperationResult retirementEpisode = runtimes.CareerHistory.StartCareerEpisode(new CareerEpisodeData { episodeId = context.ScenarioContext.ScopedId("career-episode", "retirement"), personId = runtimes.PersonId, category = CareerEpisodeCategory.Retirement, state = CareerEpisodeState.Active, careerClassification = CareerClassification.Retirement, startWorldTime = "90", primaryCareer = false, accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId }, context.ScenarioContext.ScopedId("career-tx", "retirement-episode"));
-            CareerHistoryOperationResult retirement = runtimes.CareerHistory.RecordTransition(Transition(context, "retirement", PrototypeProfessionDefinitionFactory.CareerRetirementTransitionId, CareerTransitionCategory.Retirement, sourceEpisodeIds: new[] { contractorEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { retirementEpisode.Episode?.episodeId }, previousEmployment: contractor.Employment?.employmentId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Employment, contractor.Employment?.employmentId, runtimes.PositionEmployment.Revision) }), context.ScenarioContext.ScopedId("career-tx", "retirement"));
-            PositionEmploymentOperationResult returnEmployment = AppointEligiblePerson(context, "career-return-contractor", PrototypeProfessionDefinitionFactory.IndependentContractorPositionId, "organization.prototype.independent", PrototypeProfessionDefinitionFactory.IndependentOrganizationTypeId, "authority.guild.prototype", EmploymentClassification.IndependentServiceFoundation);
+            CareerHistoryOperationResult retirementEpisode = runtimes.CareerHistory.StartCareerEpisode(new CareerEpisodeData { episodeId = context.ScenarioContext.ScopedId("career-episode", "retirement"), personId = runtimes.PersonId, category = CareerEpisodeCategory.Retirement, state = CareerEpisodeState.Active, careerClassification = CareerClassification.Retirement, startWorldTime = "90", primaryCareer = false, accessPolicyId = ProfessionContentIds.AccessPublicId }, context.ScenarioContext.ScopedId("career-tx", "retirement-episode"));
+            CareerHistoryOperationResult retirement = runtimes.CareerHistory.RecordTransition(Transition(context, "retirement", ProfessionContentIds.CareerRetirementTransitionId, CareerTransitionCategory.Retirement, sourceEpisodeIds: new[] { contractorEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { retirementEpisode.Episode?.episodeId }, previousEmployment: contractor.Employment?.employmentId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.Employment, contractor.Employment?.employmentId, runtimes.PositionEmployment.Revision) }), context.ScenarioContext.ScopedId("career-tx", "retirement"));
+            PositionEmploymentOperationResult returnEmployment = AppointEligiblePerson(context, "career-return-contractor", ProfessionContentIds.IndependentContractorPositionId, "organization.prototype.independent", ProfessionContentIds.IndependentOrganizationTypeId, "authority.guild.prototype", EmploymentClassification.IndependentServiceFoundation);
             CareerHistoryOperationResult returnEpisode = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "return-contractor", CareerEpisodeCategory.IndependentPractice, employment: returnEmployment.Employment, primary: true, exclusive: false), context.ScenarioContext.ScopedId("career-tx", "return-episode"));
-            CareerHistoryOperationResult returned = runtimes.CareerHistory.RecordTransition(Transition(context, "return", PrototypeProfessionDefinitionFactory.CareerReturnFromRetirementTransitionId, CareerTransitionCategory.ReturnFromRetirement, sourceEpisodeIds: new[] { retirementEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { returnEpisode.Episode?.episodeId }, newEmployment: returnEmployment.Employment?.employmentId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.CareerEpisode, retirementEpisode.Episode?.episodeId, runtimes.CareerHistory.Revision), CareerSource(CareerTransitionSourceRecordType.Employment, returnEmployment.Employment?.employmentId, runtimes.PositionEmployment.Revision) }), context.ScenarioContext.ScopedId("career-tx", "return"));
-            ProfessionOperationResult medic = runtimes.Professions.AddRelationship(new AddProfessionRelationshipRequest { relationshipId = context.ScenarioContext.ScopedId("profession-relationship", "career-medic"), personId = runtimes.PersonId, professionId = PrototypeProfessionDefinitionFactory.FieldMedicProfessionId, informalPractice = true, formalPractice = true, active = true, startWorldTime = "94", transactionId = context.ScenarioContext.ScopedId("profession-tx", "career-medic") });
-            CareerHistoryOperationResult medicEpisode = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "career-medic", CareerEpisodeCategory.FormalProfessionalPractice, profession: PrototypeProfessionDefinitionFactory.FieldMedicProfessionId, relationshipId: medic.Snapshot?.RelationshipId, primary: true, exclusive: false), context.ScenarioContext.ScopedId("career-tx", "medic"));
-            CareerHistoryOperationResult change = runtimes.CareerHistory.RecordTransition(Transition(context, "career-change", PrototypeProfessionDefinitionFactory.CareerChangeTransitionId, CareerTransitionCategory.CareerChange, sourceEpisodeIds: new[] { returnEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { medicEpisode.Episode?.episodeId }, profession: PrototypeProfessionDefinitionFactory.FieldMedicProfessionId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.ProfessionRelationship, medic.Snapshot?.RelationshipId, runtimes.Professions.Revision), CareerSource(CareerTransitionSourceRecordType.Employment, returnEmployment.Employment?.employmentId, runtimes.PositionEmployment.Revision) }), context.ScenarioContext.ScopedId("career-tx", "career-change"));
+            CareerHistoryOperationResult returned = runtimes.CareerHistory.RecordTransition(Transition(context, "return", ProfessionContentIds.CareerReturnFromRetirementTransitionId, CareerTransitionCategory.ReturnFromRetirement, sourceEpisodeIds: new[] { retirementEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { returnEpisode.Episode?.episodeId }, newEmployment: returnEmployment.Employment?.employmentId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.CareerEpisode, retirementEpisode.Episode?.episodeId, runtimes.CareerHistory.Revision), CareerSource(CareerTransitionSourceRecordType.Employment, returnEmployment.Employment?.employmentId, runtimes.PositionEmployment.Revision) }), context.ScenarioContext.ScopedId("career-tx", "return"));
+            ProfessionOperationResult medic = runtimes.Professions.AddRelationship(new AddProfessionRelationshipRequest { relationshipId = context.ScenarioContext.ScopedId("profession-relationship", "career-medic"), personId = runtimes.PersonId, professionId = ProfessionContentIds.FieldMedicProfessionId, informalPractice = true, formalPractice = true, active = true, startWorldTime = "94", transactionId = context.ScenarioContext.ScopedId("profession-tx", "career-medic") });
+            CareerHistoryOperationResult medicEpisode = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "career-medic", CareerEpisodeCategory.FormalProfessionalPractice, profession: ProfessionContentIds.FieldMedicProfessionId, relationshipId: medic.Snapshot?.RelationshipId, primary: true, exclusive: false), context.ScenarioContext.ScopedId("career-tx", "medic"));
+            CareerHistoryOperationResult change = runtimes.CareerHistory.RecordTransition(Transition(context, "career-change", ProfessionContentIds.CareerChangeTransitionId, CareerTransitionCategory.CareerChange, sourceEpisodeIds: new[] { returnEpisode.Episode?.episodeId }, destinationEpisodeIds: new[] { medicEpisode.Episode?.episodeId }, profession: ProfessionContentIds.FieldMedicProfessionId, supportingRecords: new[] { CareerSource(CareerTransitionSourceRecordType.ProfessionRelationship, medic.Snapshot?.RelationshipId, runtimes.Professions.Revision), CareerSource(CareerTransitionSourceRecordType.Employment, returnEmployment.Employment?.employmentId, runtimes.PositionEmployment.Revision) }), context.ScenarioContext.ScopedId("career-tx", "career-change"));
             CareerHistoryOperationResult timeline = runtimes.CareerHistory.BuildTimeline(runtimes.PersonId);
 
-            bool valid = retireEmployment.Succeeded && retirementEpisode.Succeeded && retirement.Succeeded && returnEmployment.Succeeded && returned.Succeeded && medic.Succeeded && change.Succeeded && timeline.Timeline.Transitions.Any(item => item.category == CareerTransitionCategory.CareerChange) && timeline.Timeline.Episodes.Any(item => item.professionId == PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            bool valid = retireEmployment.Succeeded && retirementEpisode.Succeeded && retirement.Succeeded && returnEmployment.Succeeded && returned.Succeeded && medic.Succeeded && change.Succeeded && timeline.Timeline.Transitions.Any(item => item.category == CareerTransitionCategory.CareerChange) && timeline.Timeline.Episodes.Any(item => item.professionId == ProfessionContentIds.BlacksmithProfessionId);
             return TestLabAssertions.True("step10-career-retirement", "Retirement, return, and career change retain prior career history", valid, $"Retire={retirement.Status} Return={returned.Status} Change={change.Status} Episodes={timeline.Timeline?.Episodes.Count}");
         }
 
@@ -1603,15 +1603,15 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             EnsureBlacksmithActivityProfession(context);
-            PersonProfessionSnapshot relationship = runtimes.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, activeOnly: true).First();
+            PersonProfessionSnapshot relationship = runtimes.Professions.QueryByProfession(ProfessionContentIds.BlacksmithProfessionId, activeOnly: true).First();
             CareerHistoryOperationResult start = runtimes.CareerHistory.StartCareerEpisode(CareerEpisode(context, "persist", CareerEpisodeCategory.FormalProfessionalPractice, relationshipId: relationship.RelationshipId, primary: true), context.ScenarioContext.ScopedId("career-tx", "persist-start"));
-            CareerHistoryOperationResult achievement = runtimes.CareerHistory.RecordMilestone(new CareerMilestoneRecordData { milestoneId = context.ScenarioContext.ScopedId("career-milestone", "achievement"), personId = runtimes.PersonId, kind = CareerMilestoneKind.Achievement, episodeId = start.Episode?.episodeId, professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, worldTime = "100", description = "Prototype career milestone.", exclusive = true, accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId }, context.ScenarioContext.ScopedId("career-tx", "achievement"));
+            CareerHistoryOperationResult achievement = runtimes.CareerHistory.RecordMilestone(new CareerMilestoneRecordData { milestoneId = context.ScenarioContext.ScopedId("career-milestone", "achievement"), personId = runtimes.PersonId, kind = CareerMilestoneKind.Achievement, episodeId = start.Episode?.episodeId, professionId = ProfessionContentIds.BlacksmithProfessionId, worldTime = "100", description = "Prototype career milestone.", exclusive = true, accessPolicyId = ProfessionContentIds.AccessPublicId }, context.ScenarioContext.ScopedId("career-tx", "achievement"));
             CareerHistoryRuntimeSaveData save = runtimes.CareerHistory.CreateSaveData();
             CareerHistoryRuntime restored = new CareerHistoryRuntime();
-            CareerHistoryOperationResult restore = restored.RestoreFromSaveData(save, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.PositionEmployment, runtimes.KnownPersonIds, new[] { "organization.prototype.guild", "organization.prototype.royal-forge", "organization.prototype.independent" }, new[] { "authority.guild.prototype", PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId }, restoring: true);
+            CareerHistoryOperationResult restore = restored.RestoreFromSaveData(save, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.PositionEmployment, runtimes.KnownPersonIds, new[] { "organization.prototype.guild", "organization.prototype.royal-forge", "organization.prototype.independent" }, new[] { "authority.guild.prototype", ProfessionContentIds.PositionDutyAssignAuthorityId }, restoring: true);
             CareerHistoryRuntimeSaveData corrupt = save.Clone();
             corrupt.episodes[0].professionId = "profession.missing";
-            CareerHistoryOperationResult rejected = restored.RestoreFromSaveData(corrupt, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.PositionEmployment, runtimes.KnownPersonIds, new[] { "organization.prototype.guild", "organization.prototype.royal-forge", "organization.prototype.independent" }, new[] { "authority.guild.prototype", PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId }, restoring: true);
+            CareerHistoryOperationResult rejected = restored.RestoreFromSaveData(corrupt, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.PositionEmployment, runtimes.KnownPersonIds, new[] { "organization.prototype.guild", "organization.prototype.royal-forge", "organization.prototype.independent" }, new[] { "authority.guild.prototype", ProfessionContentIds.PositionDutyAssignAuthorityId }, restoring: true);
             CareerHistoryOperationResult timeline = restored.BuildTimeline(runtimes.PersonId);
 
             bool valid = start.Succeeded && achievement.Succeeded && restore.Succeeded && restored.HistoryHooks.Count == 0 && !rejected.Succeeded && timeline.Succeeded && timeline.Timeline.Episodes.Count == 1 && timeline.Timeline.Milestones.Count == 1;
@@ -1631,7 +1631,7 @@ namespace UnityIsekaiGame.Development.Automation
             bool exclusive = false,
             bool secret = false)
         {
-            string professionId = profession ?? PrototypeProfessionDefinitionFactory.BlacksmithProfessionId;
+            string professionId = profession ?? ProfessionContentIds.BlacksmithProfessionId;
             string organizationId = employment?.employerOrganizationId ?? string.Empty;
             string sourceId = !string.IsNullOrWhiteSpace(employment?.employmentId) ? employment.employmentId : relationshipId;
             bool hasEmploymentSource = !string.IsNullOrWhiteSpace(employment?.employmentId);
@@ -1656,7 +1656,7 @@ namespace UnityIsekaiGame.Development.Automation
                 primaryCareer = primary,
                 exclusiveCareer = exclusive,
                 secret = secret,
-                accessPolicyId = secret ? PrototypeProfessionDefinitionFactory.AccessSecretId : PrototypeProfessionDefinitionFactory.AccessPublicId,
+                accessPolicyId = secret ? ProfessionContentIds.AccessSecretId : ProfessionContentIds.AccessPublicId,
                 provenance = "test-lab",
                 sourceRecords = string.IsNullOrWhiteSpace(sourceId) || (!hasEmploymentSource && !hasProfessionSource)
                     ? Array.Empty<CareerSourceRecordReferenceData>()
@@ -1691,7 +1691,7 @@ namespace UnityIsekaiGame.Development.Automation
                 category = category,
                 sourceEpisodeIds = sourceEpisodeIds ?? Array.Empty<string>(),
                 destinationEpisodeIds = destinationEpisodeIds ?? Array.Empty<string>(),
-                professionId = profession ?? PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = profession ?? ProfessionContentIds.BlacksmithProfessionId,
                 previousRankRecordId = previousRank ?? string.Empty,
                 newRankRecordId = newRank ?? string.Empty,
                 previousEmploymentId = previousEmployment ?? string.Empty,
@@ -1706,7 +1706,7 @@ namespace UnityIsekaiGame.Development.Automation
                 secret = secret,
                 reason = "Prototype career transition.",
                 supportingRecords = supportingRecords ?? Array.Empty<CareerSourceRecordReferenceData>(),
-                accessPolicyId = secret ? PrototypeProfessionDefinitionFactory.AccessSecretId : PrototypeProfessionDefinitionFactory.AccessPublicId,
+                accessPolicyId = secret ? ProfessionContentIds.AccessSecretId : ProfessionContentIds.AccessPublicId,
                 provenance = "test-lab"
             };
         }
@@ -1733,7 +1733,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 relationshipId = "profession-relationship.step10.preview-other",
                 personId = context.ScenarioContext.Runtimes.PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
+                professionId = ProfessionContentIds.FieldMedicProfessionId,
                 informalPractice = true,
                 startWorldTime = "1",
                 transactionId = "tx.step10.preview-other"
@@ -1772,12 +1772,12 @@ namespace UnityIsekaiGame.Development.Automation
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             ProfessionEligibilityContext requestContext = MedicContext(context, preview: false);
             ProfessionEntryOperationResult submit = runtimes.ProfessionEntries.SubmitFormalRequest(requestContext, "tx.step10.formal.submit", "profession-entry-request.step10.medic");
-            bool noRelationshipBeforeApproval = runtimes.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.FieldMedicProfessionId).Count == 0;
+            bool noRelationshipBeforeApproval = runtimes.Professions.QueryByProfession(ProfessionContentIds.FieldMedicProfessionId).Count == 0;
             ProfessionOperationResult unrelatedMutation = runtimes.Professions.AddRelationship(new AddProfessionRelationshipRequest
             {
                 relationshipId = "profession-relationship.step10.formal.unrelated",
                 personId = runtimes.PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 informalPractice = true,
                 selfDeclared = true,
                 startWorldTime = "2.5",
@@ -1804,8 +1804,8 @@ namespace UnityIsekaiGame.Development.Automation
             ProfessionEligibilityResult evaluated = runtimes.ProfessionEntries.Evaluate(BlacksmithContext(context, preview: true));
             ProfessionEligibilityResult badAuthority = runtimes.ProfessionEntries.Evaluate(new ProfessionEligibilityContext(
                 runtimes.PersonId,
-                PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
-                PrototypeProfessionDefinitionFactory.FieldMedicRecognitionEntryPathId,
+                ProfessionContentIds.FieldMedicProfessionId,
+                ProfessionContentIds.FieldMedicRecognitionEntryPathId,
                 formal: true,
                 authorityId: "authority.guild.prototype",
                 worldTime: 2d,
@@ -1816,15 +1816,15 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 relationshipId = "profession-relationship.step10.stale-other",
                 personId = runtimes.PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
+                professionId = ProfessionContentIds.FieldMedicProfessionId,
                 informalPractice = true,
                 startWorldTime = "3",
                 transactionId = "tx.step10.stale-other"
             });
             ProfessionEntryOperationResult stale = runtimes.ProfessionEntries.EnterInformal(new ProfessionEligibilityContext(
                 runtimes.PersonId,
-                PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                PrototypeProfessionDefinitionFactory.BlacksmithSelfDeclaredEntryPathId,
+                ProfessionContentIds.BlacksmithProfessionId,
+                ProfessionContentIds.BlacksmithSelfDeclaredEntryPathId,
                 selfDeclared: true,
                 worldTime: 4d,
                 preview: false,
@@ -1835,8 +1835,8 @@ namespace UnityIsekaiGame.Development.Automation
                 && badAuthority.Status == ProfessionEligibilityStatus.InvalidAuthority
                 && !stale.Succeeded
                 && stale.Status == ProfessionEntryOperationStatus.EligibilityFailed
-                && runtimes.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId).Count == 0;
-            return TestLabAssertions.True("step10-entry-stale", "Invalid authority and stale eligibility are rejected before mutation", valid, $"Evaluated={evaluated.Status} BadAuthority={badAuthority.Status} Stale={stale.Status} BlacksmithCount={runtimes.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId).Count}");
+                && runtimes.Professions.QueryByProfession(ProfessionContentIds.BlacksmithProfessionId).Count == 0;
+            return TestLabAssertions.True("step10-entry-stale", "Invalid authority and stale eligibility are rejected before mutation", valid, $"Evaluated={evaluated.Status} BadAuthority={badAuthority.Status} Stale={stale.Status} BlacksmithCount={runtimes.Professions.QueryByProfession(ProfessionContentIds.BlacksmithProfessionId).Count}");
         }
 
         private static TestLabAutomationStepResult SpecializationAndReentry(TestLabAutomationContext context)
@@ -1845,17 +1845,17 @@ namespace UnityIsekaiGame.Development.Automation
             ProfessionEntryOperationResult baseEntry = runtimes.ProfessionEntries.EnterInformal(BlacksmithContext(context, preview: false), "tx.step10.spec.base", "profession-relationship.step10.spec.blacksmith");
             ProfessionEntryOperationResult specialization = runtimes.ProfessionEntries.EnterSpecialization(new ProfessionEligibilityContext(
                 runtimes.PersonId,
-                PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationEntryPathId,
-                PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
+                ProfessionContentIds.BlacksmithProfessionId,
+                ProfessionContentIds.WeaponsmithSpecializationEntryPathId,
+                ProfessionContentIds.WeaponsmithSpecializationId,
                 worldTime: 5d,
                 skills: new[] { Skill("skill.smithing", 1) },
                 preview: false), "profession-relationship.step10.spec.blacksmith", "tx.step10.spec");
             ProfessionOperationResult inactive = runtimes.Professions.Activate("profession-relationship.step10.spec.blacksmith", false, "tx.step10.inactive");
             ProfessionEntryOperationResult resume = runtimes.ProfessionEntries.ResumeInactive(new ProfessionEligibilityContext(
                 runtimes.PersonId,
-                PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                PrototypeProfessionDefinitionFactory.BlacksmithReentryPathId,
+                ProfessionContentIds.BlacksmithProfessionId,
+                ProfessionContentIds.BlacksmithReentryPathId,
                 worldTime: 6d,
                 preview: false), "profession-relationship.step10.spec.blacksmith", "tx.step10.resume");
             runtimes.Professions.TryGetSnapshot("profession-relationship.step10.spec.blacksmith", out PersonProfessionSnapshot final);
@@ -1866,7 +1866,7 @@ namespace UnityIsekaiGame.Development.Automation
                 && resume.Succeeded
                 && final != null
                 && final.Active
-                && final.SpecializationIds.Contains(PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId);
+                && final.SpecializationIds.Contains(ProfessionContentIds.WeaponsmithSpecializationId);
             return TestLabAssertions.True("step10-entry-specialization-reentry", "Specialization entry and inactive reentry preserve parent relationships", valid, $"Base={baseEntry.Status} Spec={specialization.Status} Inactive={inactive.Status} Resume={resume.Status} Active={final?.Active} Specs={string.Join(",", final?.SpecializationIds ?? Array.Empty<string>())}");
         }
 
@@ -1876,7 +1876,7 @@ namespace UnityIsekaiGame.Development.Automation
             ProfessionEntryOperationResult submit = runtimes.ProfessionEntries.SubmitFormalRequest(MedicContext(context, preview: false), "tx.step10.persist.submit", "profession-entry-request.step10.persist");
             InformationAccessDecision redactedDecision = new InformationAccessDecision(
                 "person.observer",
-                ProfessionEntryInformationSubject.Request("profession-entry-request.step10.persist", runtimes.PersonId, PrototypeProfessionDefinitionFactory.FieldMedicProfessionId),
+                ProfessionEntryInformationSubject.Request("profession-entry-request.step10.persist", runtimes.PersonId, ProfessionContentIds.FieldMedicProfessionId),
                 InformationAccessMode.Inspect,
                 InformationAccessDecisionKind.RedactedAccess,
                 InformationAccessDenialCode.DetailRestriction,
@@ -1885,7 +1885,7 @@ namespace UnityIsekaiGame.Development.Automation
                 new[] { "profession-id", "entry-path-id", "state" },
                 ProfessionEntryInformationSubject.ProtectedFields,
                 Array.Empty<string>(),
-                new[] { PrototypeProfessionDefinitionFactory.AccessPublicId },
+                new[] { ProfessionContentIds.AccessPublicId },
                 7d,
                 "Redacted profession entry request.",
                 "Entry request hides applicant and authority details.",
@@ -1914,8 +1914,8 @@ namespace UnityIsekaiGame.Development.Automation
         {
             return new ProfessionEligibilityContext(
                 context.ScenarioContext.Runtimes.PersonId,
-                PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                PrototypeProfessionDefinitionFactory.BlacksmithSelfDeclaredEntryPathId,
+                ProfessionContentIds.BlacksmithProfessionId,
+                ProfessionContentIds.BlacksmithSelfDeclaredEntryPathId,
                 selfDeclared: true,
                 worldTime: 1d,
                 correlationId: "step10.blacksmith",
@@ -1931,11 +1931,11 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             string enrollmentId = TrainingEnrollmentId(context, slug);
-            TrainingOperationResult apply = runtimes.Training.ApplyToProgram(enrollmentId, runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId, context.ScenarioContext.ScopedId("training-tx", $"{slug}-apply"), worldTime: 1d);
+            TrainingOperationResult apply = runtimes.Training.ApplyToProgram(enrollmentId, runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipProgramId, context.ScenarioContext.ScopedId("training-tx", $"{slug}-apply"), worldTime: 1d);
             if (apply.Succeeded)
             {
                 runtimes.Training.AcceptEnrollment(enrollmentId, context.ScenarioContext.ScopedId("training-tx", $"{slug}-accept"));
-                runtimes.Training.AssignInstructor(enrollmentId, context.ScenarioContext.ScopedId("training-instructor", $"{slug}-master"), TrainingInstructorRoleKind.Master, runtimes.PersonId, context.ScenarioContext.ScopedId("training-tx", $"{slug}-master"), professionId: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, authorityId: "authority.guild.prototype");
+                runtimes.Training.AssignInstructor(enrollmentId, context.ScenarioContext.ScopedId("training-instructor", $"{slug}-master"), TrainingInstructorRoleKind.Master, runtimes.PersonId, context.ScenarioContext.ScopedId("training-tx", $"{slug}-master"), professionId: ProfessionContentIds.BlacksmithProfessionId, authorityId: "authority.guild.prototype");
                 runtimes.Training.BeginProgram(enrollmentId, context.ScenarioContext.ScopedId("training-tx", $"{slug}-begin"));
             }
 
@@ -1945,17 +1945,17 @@ namespace UnityIsekaiGame.Development.Automation
         private static void CompleteTrainingVisibleRequirements(TestLabAutomationContext context, string enrollmentId, bool completePractice)
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            runtimes.Training.RunLearningSession(context.ScenarioContext.ScopedId("training-session", "safety"), enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId, PrototypeProfessionDefinitionFactory.BlacksmithSafetyLessonId, context.ScenarioContext.ScopedId("training-tx", "safety"));
-            runtimes.Training.CompleteModule(enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId, context.ScenarioContext.ScopedId("training-tx", "module-basics"));
-            runtimes.Training.RunLearningSession(context.ScenarioContext.ScopedId("training-session", "practice"), enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticeModuleId, PrototypeProfessionDefinitionFactory.BlacksmithDemonstrationLessonId, context.ScenarioContext.ScopedId("training-tx", "practice-lesson"));
+            runtimes.Training.RunLearningSession(context.ScenarioContext.ScopedId("training-session", "safety"), enrollmentId, ProfessionContentIds.BlacksmithBasicsModuleId, ProfessionContentIds.BlacksmithSafetyLessonId, context.ScenarioContext.ScopedId("training-tx", "safety"));
+            runtimes.Training.CompleteModule(enrollmentId, ProfessionContentIds.BlacksmithBasicsModuleId, context.ScenarioContext.ScopedId("training-tx", "module-basics"));
+            runtimes.Training.RunLearningSession(context.ScenarioContext.ScopedId("training-session", "practice"), enrollmentId, ProfessionContentIds.BlacksmithPracticeModuleId, ProfessionContentIds.BlacksmithDemonstrationLessonId, context.ScenarioContext.ScopedId("training-tx", "practice-lesson"));
             if (!completePractice)
             {
                 return;
             }
 
             string activityId = context.ScenarioContext.ScopedId("crafting-operation", "practice-complete");
-            runtimes.Training.RecordPracticalAssignment(context.ScenarioContext.ScopedId("training-practical", "practice-complete"), enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticalAssignmentId, activityId, TrainingAssignmentActivityCategory.Crafting, context.ScenarioContext.ScopedId("training-tx", "practice-complete"), quality: 700, supervisorPersonId: runtimes.PersonId);
-            runtimes.Training.CompleteModule(enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticeModuleId, context.ScenarioContext.ScopedId("training-tx", "module-practice"));
+            runtimes.Training.RecordPracticalAssignment(context.ScenarioContext.ScopedId("training-practical", "practice-complete"), enrollmentId, ProfessionContentIds.BlacksmithPracticalAssignmentId, activityId, TrainingAssignmentActivityCategory.Crafting, context.ScenarioContext.ScopedId("training-tx", "practice-complete"), quality: 700, supervisorPersonId: runtimes.PersonId);
+            runtimes.Training.CompleteModule(enrollmentId, ProfessionContentIds.BlacksmithPracticeModuleId, context.ScenarioContext.ScopedId("training-tx", "module-practice"));
         }
 
         private static InformationTransferRequest BuildTrainingTeachingRequest(TestLabAutomationContext context, string slug)
@@ -2026,7 +2026,7 @@ namespace UnityIsekaiGame.Development.Automation
         private static void EnsureBlacksmithActivityProfession(TestLabAutomationContext context)
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            if (runtimes.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, activeOnly: true).Any(item => string.Equals(item.PersonId, runtimes.PersonId, StringComparison.Ordinal)))
+            if (runtimes.Professions.QueryByProfession(ProfessionContentIds.BlacksmithProfessionId, activeOnly: true).Any(item => string.Equals(item.PersonId, runtimes.PersonId, StringComparison.Ordinal)))
             {
                 return;
             }
@@ -2035,8 +2035,8 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 relationshipId = context.ScenarioContext.ScopedId("profession-relationship", "activity-blacksmith"),
                 personId = runtimes.PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                specializationIds = new[] { PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId },
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
+                specializationIds = new[] { ProfessionContentIds.WeaponsmithSpecializationId },
                 formalPractice = true,
                 informalPractice = true,
                 selfDeclared = true,
@@ -2055,8 +2055,8 @@ namespace UnityIsekaiGame.Development.Automation
             DefinitionValidationReport report = ValidatePrototypeProfessionDefinitions(runtimes.DefinitionRegistry);
 
             LifePathOperationResult path = EnsureLifePathRecord(context);
-            LifePathOperationResult aspiration = runtimes.LifePaths.AddAspiration(LifeAspiration(context, "definitions", PrototypeProfessionDefinitionFactory.AspirationEnterBlacksmithProfessionId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId), context.ScenarioContext.ScopedId("life-tx", "definitions-aspiration"));
-            LifePathOperationResult goal = runtimes.LifePaths.AddGoal(LifeGoal(context, "definitions", PrototypeProfessionDefinitionFactory.GoalEnterBlacksmithProfessionId, aspiration.Aspiration?.aspirationId, targetProfession: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId), context.ScenarioContext.ScopedId("life-tx", "definitions-goal"));
+            LifePathOperationResult aspiration = runtimes.LifePaths.AddAspiration(LifeAspiration(context, "definitions", ProfessionContentIds.AspirationEnterBlacksmithProfessionId, ProfessionContentIds.BlacksmithProfessionId), context.ScenarioContext.ScopedId("life-tx", "definitions-aspiration"));
+            LifePathOperationResult goal = runtimes.LifePaths.AddGoal(LifeGoal(context, "definitions", ProfessionContentIds.GoalEnterBlacksmithProfessionId, aspiration.Aspiration?.aspirationId, targetProfession: ProfessionContentIds.BlacksmithProfessionId), context.ScenarioContext.ScopedId("life-tx", "definitions-goal"));
             LifePathSnapshot snapshot = runtimes.LifePaths.BuildSnapshot(runtimes.PersonId).Snapshot;
             bool valid = report.ErrorCount == 0
                 && report.WarningCount == 0
@@ -2066,15 +2066,15 @@ namespace UnityIsekaiGame.Development.Automation
                 && snapshot != null
                 && snapshot.LifePaths.Count == 1
                 && snapshot.LifePaths[0].formativeReferences.Length == 1
-                && runtimes.DefinitionRegistry.TryGet(PrototypeProfessionDefinitionFactory.GoalCompleteBlacksmithApprenticeshipId, out LifeGoalDefinition trainingGoal)
-                && trainingGoal.RequiredTrainingProgramIds.Contains(PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId);
+                && runtimes.DefinitionRegistry.TryGet(ProfessionContentIds.GoalCompleteBlacksmithApprenticeshipId, out LifeGoalDefinition trainingGoal)
+                && trainingGoal.RequiredTrainingProgramIds.Contains(ProfessionContentIds.BlacksmithApprenticeshipProgramId);
             return TestLabAssertions.True("step10-life-definitions", "Life-path definitions and records validate without grants", valid, $"Errors={report.ErrorCount} Warnings={report.WarningCount} Path={path.Status} Aspiration={aspiration.Status} Goal={goal.Status} Snapshot={snapshot?.LifePaths.Count}/{snapshot?.Aspirations.Count}/{snapshot?.Goals.Count}");
         }
 
         private static DefinitionValidationReport ValidatePrototypeProfessionDefinitions(DefinitionRegistry registry)
         {
             DefinitionValidationReport report = new DefinitionValidationReport();
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(registry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -2091,21 +2091,21 @@ namespace UnityIsekaiGame.Development.Automation
             EnsureLifePathRecord(context);
             EnsureBlacksmithCredentialFoundation(context, "life-progress");
             CredentialOperationResult license = EnsureGuildLicense(context, "life-progress");
-            EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, "life-progress");
+            EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankJourneymanId, "life-progress");
             CreateLifePositionEmployment(context, "life-progress");
-            ProfessionalActivityOperationResult crafting = RegisterLifeActivity(context, "life-crafting", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, ProfessionalActivitySourceType.CraftingOperation);
-            ProfessionalActivityOperationResult discovery = RegisterLifeActivity(context, "life-discovery", PrototypeProfessionDefinitionFactory.BlacksmithExperimentationActivityDefinitionId, ProfessionalActivitySourceType.DiscoveryClaim);
+            ProfessionalActivityOperationResult crafting = RegisterLifeActivity(context, "life-crafting", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, ProfessionalActivitySourceType.CraftingOperation);
+            ProfessionalActivityOperationResult discovery = RegisterLifeActivity(context, "life-discovery", ProfessionContentIds.BlacksmithExperimentationActivityDefinitionId, ProfessionalActivitySourceType.DiscoveryClaim);
 
-            PersonGoalData professionGoal = AddLifeGoal(context, "progress-profession", PrototypeProfessionDefinitionFactory.GoalEnterBlacksmithProfessionId, targetProfession: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
-            PersonGoalData trainingGoal = AddLifeGoal(context, "progress-training", PrototypeProfessionDefinitionFactory.GoalCompleteBlacksmithApprenticeshipId, targetTraining: PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId);
-            PersonGoalData credentialGoal = AddLifeGoal(context, "progress-credential", PrototypeProfessionDefinitionFactory.GoalEarnBlacksmithGuildLicenseId, targetCredential: PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId);
-            PersonGoalData rankGoal = AddLifeGoal(context, "progress-rank", PrototypeProfessionDefinitionFactory.GoalReachJourneymanRankId, targetRank: PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId);
-            PersonGoalData positionGoal = AddLifeGoal(context, "progress-position", PrototypeProfessionDefinitionFactory.GoalObtainGuildClerkPositionId, targetPosition: PrototypeProfessionDefinitionFactory.GuildClerkPositionId);
-            PersonGoalData craftingGoal = AddLifeGoal(context, "progress-crafting", PrototypeProfessionDefinitionFactory.GoalProduceMasterworkId, targetActivity: PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId);
-            PersonGoalData discoveryGoal = AddLifeGoal(context, "progress-discovery", PrototypeProfessionDefinitionFactory.GoalConfirmDiscoveryId, targetActivity: PrototypeProfessionDefinitionFactory.BlacksmithExperimentationActivityDefinitionId);
+            PersonGoalData professionGoal = AddLifeGoal(context, "progress-profession", ProfessionContentIds.GoalEnterBlacksmithProfessionId, targetProfession: ProfessionContentIds.BlacksmithProfessionId);
+            PersonGoalData trainingGoal = AddLifeGoal(context, "progress-training", ProfessionContentIds.GoalCompleteBlacksmithApprenticeshipId, targetTraining: ProfessionContentIds.BlacksmithApprenticeshipProgramId);
+            PersonGoalData credentialGoal = AddLifeGoal(context, "progress-credential", ProfessionContentIds.GoalEarnBlacksmithGuildLicenseId, targetCredential: ProfessionContentIds.BlacksmithGuildLicenseCredentialId);
+            PersonGoalData rankGoal = AddLifeGoal(context, "progress-rank", ProfessionContentIds.GoalReachJourneymanRankId, targetRank: ProfessionContentIds.BlacksmithRankJourneymanId);
+            PersonGoalData positionGoal = AddLifeGoal(context, "progress-position", ProfessionContentIds.GoalObtainGuildClerkPositionId, targetPosition: ProfessionContentIds.GuildClerkPositionId);
+            PersonGoalData craftingGoal = AddLifeGoal(context, "progress-crafting", ProfessionContentIds.GoalProduceMasterworkId, targetActivity: ProfessionContentIds.BlacksmithCraftingActivityDefinitionId);
+            PersonGoalData discoveryGoal = AddLifeGoal(context, "progress-discovery", ProfessionContentIds.GoalConfirmDiscoveryId, targetActivity: ProfessionContentIds.BlacksmithExperimentationActivityDefinitionId);
 
             LifePathOperationResult staleToken = runtimes.LifePaths.EvaluateGoalProgress(professionGoal.goalId);
-            RegisterLifeActivity(context, "life-stale-mutation", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, ProfessionalActivitySourceType.CraftingOperation);
+            RegisterLifeActivity(context, "life-stale-mutation", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, ProfessionalActivitySourceType.CraftingOperation);
             LifePathOperationResult stale = runtimes.LifePaths.CompleteGoal(professionGoal.goalId, staleToken.Progress, "70", context.ScenarioContext.ScopedId("life-tx", "stale-complete"));
             LifePathOperationResult current = runtimes.LifePaths.EvaluateGoalProgress(professionGoal.goalId);
             LifePathOperationResult complete = runtimes.LifePaths.CompleteGoal(professionGoal.goalId, current.Progress, "71", context.ScenarioContext.ScopedId("life-tx", "complete"));
@@ -2135,13 +2135,13 @@ namespace UnityIsekaiGame.Development.Automation
                 personId = runtimes.PersonId,
                 kind = ProfessionalIdentityKind.Primary,
                 alignment = ProfessionalIdentityAlignmentState.Conflicted,
-                professionId = PrototypeProfessionDefinitionFactory.SpyProfessionId,
+                professionId = ProfessionContentIds.SpyProfessionId,
                 selfPerceived = true,
                 publicDeclared = false,
                 active = true,
                 secret = true,
                 motivationTags = new[] { "secret.identity" },
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessSecretId
+                accessPolicyId = ProfessionContentIds.AccessSecretId
             }, context.ScenarioContext.ScopedId("life-tx", "identity"));
             LifePathOperationResult conflict = runtimes.LifePaths.RecordIdentityConflict(new IdentityConflictData
             {
@@ -2149,7 +2149,7 @@ namespace UnityIsekaiGame.Development.Automation
                 personId = runtimes.PersonId,
                 state = ProfessionalIdentityAlignmentState.Conflicted,
                 identityIds = new[] { identity.Identity?.identityId },
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessSecretId
+                accessPolicyId = ProfessionContentIds.AccessSecretId
             }, context.ScenarioContext.ScopedId("life-tx", "identity-conflict"));
             LifePathProjection<LifePathSnapshot> publicProjection = runtimes.LifePaths.ProjectSnapshot(runtimes.PersonId, LifePathProjectionAudience.Public);
             LifePathProjection<LifePathSnapshot> privileged = runtimes.LifePaths.ProjectSnapshot(runtimes.PersonId, LifePathProjectionAudience.SubjectPerson);
@@ -2159,7 +2159,7 @@ namespace UnityIsekaiGame.Development.Automation
                 && runtimes.Professions.QueryByPerson(runtimes.PersonId).Count == 0
                 && publicProjection.Redacted
                 && publicProjection.Record.Identities.Count == 0
-                && privileged.Record.Identities.Any(item => item.professionId == PrototypeProfessionDefinitionFactory.SpyProfessionId);
+                && privileged.Record.Identities.Any(item => item.professionId == ProfessionContentIds.SpyProfessionId);
             return TestLabAssertions.True("step10-life-identity", "Professional identity stays separate from profession state and secret projections redact", valid, $"Identity={identity.Status} Conflict={conflict.Status} Redacted={publicProjection.Redacted} ProfRev={professionRevision}->{runtimes.Professions.Revision}");
         }
 
@@ -2167,9 +2167,9 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             EnsureLifePathRecord(context);
-            LifePathOperationResult aspiration = runtimes.LifePaths.AddAspiration(LifeAspiration(context, "lifecycle", PrototypeProfessionDefinitionFactory.AspirationEnterBlacksmithProfessionId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId), context.ScenarioContext.ScopedId("life-tx", "lifecycle-aspiration"));
-            LifePathOperationResult conflict = runtimes.LifePaths.AddAspiration(LifeAspiration(context, "lifecycle-conflict", PrototypeProfessionDefinitionFactory.AspirationEnterBlacksmithProfessionId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId), context.ScenarioContext.ScopedId("life-tx", "lifecycle-conflict"));
-            PersonGoalData goal = AddLifeGoal(context, "lifecycle-goal", PrototypeProfessionDefinitionFactory.GoalEnterBlacksmithProfessionId, aspiration.Aspiration?.aspirationId, targetProfession: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            LifePathOperationResult aspiration = runtimes.LifePaths.AddAspiration(LifeAspiration(context, "lifecycle", ProfessionContentIds.AspirationEnterBlacksmithProfessionId, ProfessionContentIds.BlacksmithProfessionId), context.ScenarioContext.ScopedId("life-tx", "lifecycle-aspiration"));
+            LifePathOperationResult conflict = runtimes.LifePaths.AddAspiration(LifeAspiration(context, "lifecycle-conflict", ProfessionContentIds.AspirationEnterBlacksmithProfessionId, ProfessionContentIds.BlacksmithProfessionId), context.ScenarioContext.ScopedId("life-tx", "lifecycle-conflict"));
+            PersonGoalData goal = AddLifeGoal(context, "lifecycle-goal", ProfessionContentIds.GoalEnterBlacksmithProfessionId, aspiration.Aspiration?.aspirationId, targetProfession: ProfessionContentIds.BlacksmithProfessionId);
             LifePathOperationResult pause = runtimes.LifePaths.SetAspirationState(aspiration.Aspiration?.aspirationId, PersonAspirationState.Paused, "20", "Paused.", context.ScenarioContext.ScopedId("life-tx", "pause"));
             LifePathOperationResult resume = runtimes.LifePaths.SetAspirationState(aspiration.Aspiration?.aspirationId, PersonAspirationState.Active, "21", "Resumed.", context.ScenarioContext.ScopedId("life-tx", "resume"));
             LifePathOperationResult fail = runtimes.LifePaths.SetGoalState(goal.goalId, PersonGoalState.Failed, "22", "Failed.", context.ScenarioContext.ScopedId("life-tx", "goal-fail"));
@@ -2186,7 +2186,7 @@ namespace UnityIsekaiGame.Development.Automation
                 sourceRecordId = context.ScenarioContext.ScopedId("life-source", "setback"),
                 worldTime = "24",
                 exclusive = true,
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             }, context.ScenarioContext.ScopedId("life-tx", "setback"));
             bool valid = aspiration.Succeeded
                 && conflict.Status == LifePathOperationStatus.Conflict
@@ -2202,7 +2202,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             EnsureLifePathRecord(context);
-            AddLifeGoal(context, "persist-goal", PrototypeProfessionDefinitionFactory.GoalEnterBlacksmithProfessionId, targetProfession: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            AddLifeGoal(context, "persist-goal", ProfessionContentIds.GoalEnterBlacksmithProfessionId, targetProfession: ProfessionContentIds.BlacksmithProfessionId);
             LifePathRuntimeSaveData save = runtimes.LifePaths.CreateSaveData();
             LifePathRuntime restored = new LifePathRuntime();
             restored.Configure(runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.PositionEmployment, runtimes.CareerHistory, runtimes.KnownPersonIds, DefaultLifePathOrganizations());
@@ -2263,10 +2263,10 @@ namespace UnityIsekaiGame.Development.Automation
             PrepareStep10IntegrationFixture(context, "cross-system");
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             Step10IntegrationValidationReport graph = ValidateStep10Graph(context);
-            bool hasProfession = runtimes.Professions.QueryByPerson(runtimes.PersonId).Any(item => item.ProfessionId == PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
-            bool hasCredential = runtimes.Credentials.QueryByRecipient(runtimes.PersonId, activeOnly: true).Any(item => item.credentialDefinitionId == PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId || item.credentialDefinitionId == PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId);
-            bool hasRank = runtimes.ProfessionalRanks.QueryByPerson(runtimes.PersonId, currentOnly: true).Any(item => item.rankDefinitionId == PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId);
-            bool hasEmployment = runtimes.PositionEmployment.QueryEmploymentByPerson(runtimes.PersonId, activeOnly: true).Any(item => item.positionDefinitionId == PrototypeProfessionDefinitionFactory.GuildClerkPositionId);
+            bool hasProfession = runtimes.Professions.QueryByPerson(runtimes.PersonId).Any(item => item.ProfessionId == ProfessionContentIds.BlacksmithProfessionId);
+            bool hasCredential = runtimes.Credentials.QueryByRecipient(runtimes.PersonId, activeOnly: true).Any(item => item.credentialDefinitionId == ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId || item.credentialDefinitionId == ProfessionContentIds.BlacksmithGuildLicenseCredentialId);
+            bool hasRank = runtimes.ProfessionalRanks.QueryByPerson(runtimes.PersonId, currentOnly: true).Any(item => item.rankDefinitionId == ProfessionContentIds.BlacksmithRankJourneymanId);
+            bool hasEmployment = runtimes.PositionEmployment.QueryEmploymentByPerson(runtimes.PersonId, activeOnly: true).Any(item => item.positionDefinitionId == ProfessionContentIds.GuildClerkPositionId);
             bool hasLifePath = runtimes.LifePaths.QueryLifePathsByPerson(runtimes.PersonId).Count > 0;
             bool valid = graph.ErrorCount == 0 && hasProfession && hasCredential && hasRank && hasEmployment && hasLifePath;
             return TestLabAssertions.True("step10-integration-cross-system", "Representative profession, credential, rank, employment, career, and life-path graph remains authoritative", valid, $"Errors={graph.ErrorCount} Profession={hasProfession} Credential={hasCredential} Rank={hasRank} Employment={hasEmployment} LifePath={hasLifePath}");
@@ -2281,7 +2281,7 @@ namespace UnityIsekaiGame.Development.Automation
 
             for (int i = 0; i < 24; i++)
             {
-                RegisterLifeActivity(context, $"scale-{i:00}", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, ProfessionalActivitySourceType.CraftingOperation);
+                RegisterLifeActivity(context, $"scale-{i:00}", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, ProfessionalActivitySourceType.CraftingOperation);
             }
 
             string snapshotAfterMutation = Step10IntegrationValidator.CreateCanonicalFingerprint(snapshot);
@@ -2292,8 +2292,8 @@ namespace UnityIsekaiGame.Development.Automation
             bool valid = string.Equals(before, snapshotAfterMutation, StringComparison.Ordinal)
                 && currentGraph.ErrorCount == 0
                 && publicProjection != null
-                && runtimes.ProfessionalActivities.BuildExperienceSummary(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId).TotalValidatedActivities >= 24;
-            return TestLabAssertions.True("step10-integration-scale", "Large fixtures, immutable snapshots, and access-aware projections remain stable", valid, $"SnapshotStable={before == snapshotAfterMutation} Errors={currentGraph.ErrorCount} Activities={runtimes.ProfessionalActivities.BuildExperienceSummary(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId).TotalValidatedActivities} ProjectionDenied={publicProjection?.Denied}");
+                && runtimes.ProfessionalActivities.BuildExperienceSummary(runtimes.PersonId, ProfessionContentIds.BlacksmithProfessionId).TotalValidatedActivities >= 24;
+            return TestLabAssertions.True("step10-integration-scale", "Large fixtures, immutable snapshots, and access-aware projections remain stable", valid, $"SnapshotStable={before == snapshotAfterMutation} Errors={currentGraph.ErrorCount} Activities={runtimes.ProfessionalActivities.BuildExperienceSummary(runtimes.PersonId, ProfessionContentIds.BlacksmithProfessionId).TotalValidatedActivities} ProjectionDenied={publicProjection?.Denied}");
         }
 
         private static void PrepareStep10IntegrationFixture(TestLabAutomationContext context, string slug)
@@ -2302,26 +2302,26 @@ namespace UnityIsekaiGame.Development.Automation
             EnsureLifePathRecord(context);
             EnsureBlacksmithCredentialFoundation(context, slug);
             CredentialOperationResult credential = IssueApprenticeshipCredential(context, $"{slug}-credential", out _);
-            ProfessionalRankOperationResult rank = EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, $"{slug}-rank");
+            ProfessionalRankOperationResult rank = EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankJourneymanId, $"{slug}-rank");
             CreateLifePositionEmployment(context, slug);
-            ProfessionalActivityOperationResult activity = RegisterLifeActivity(context, $"{slug}-activity", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, ProfessionalActivitySourceType.CraftingOperation);
+            ProfessionalActivityOperationResult activity = RegisterLifeActivity(context, $"{slug}-activity", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, ProfessionalActivitySourceType.CraftingOperation);
 
-            PersonAspirationData aspiration = LifeAspiration(context, $"{slug}-license", PrototypeProfessionDefinitionFactory.AspirationEarnGuildLicenseId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            PersonAspirationData aspiration = LifeAspiration(context, $"{slug}-license", ProfessionContentIds.AspirationEarnGuildLicenseId, ProfessionContentIds.BlacksmithProfessionId);
             aspiration.targetSubjectType = LifePathTargetSubjectType.Credential;
-            aspiration.targetCredentialDefinitionId = PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId;
+            aspiration.targetCredentialDefinitionId = ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId;
             runtimes.LifePaths.AddAspiration(aspiration, context.ScenarioContext.ScopedId("life-tx", $"{slug}-aspiration"));
 
             AddLifeGoal(
                 context,
                 $"{slug}-credential",
-                PrototypeProfessionDefinitionFactory.GoalEarnBlacksmithGuildLicenseId,
+                ProfessionContentIds.GoalEarnBlacksmithGuildLicenseId,
                 aspiration.aspirationId,
-                targetProfession: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                targetCredential: PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId);
+                targetProfession: ProfessionContentIds.BlacksmithProfessionId,
+                targetCredential: ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId);
 
             CareerHistoryRuntimeSaveData careerSave = runtimes.CareerHistory.CreateSaveData();
             PositionEmploymentRuntimeSaveData positionSave = runtimes.PositionEmployment.CreateSaveData();
-            EmploymentRecordData employment = positionSave.employments.FirstOrDefault(item => item.personId == runtimes.PersonId && item.positionDefinitionId == PrototypeProfessionDefinitionFactory.GuildClerkPositionId);
+            EmploymentRecordData employment = positionSave.employments.FirstOrDefault(item => item.personId == runtimes.PersonId && item.positionDefinitionId == ProfessionContentIds.GuildClerkPositionId);
             if (employment != null && careerSave.episodes.All(item => item.employmentId != employment.employmentId))
             {
                 careerSave.episodes.Add(new CareerEpisodeData
@@ -2329,7 +2329,7 @@ namespace UnityIsekaiGame.Development.Automation
                     episodeId = context.ScenarioContext.ScopedId("career-episode", slug),
                     personId = runtimes.PersonId,
                     category = CareerEpisodeCategory.Employment,
-                    professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                    professionId = ProfessionContentIds.BlacksmithProfessionId,
                     employmentId = employment.employmentId,
                     positionInstanceId = employment.positionInstanceId,
                     organizationId = employment.employerOrganizationId,
@@ -2337,13 +2337,13 @@ namespace UnityIsekaiGame.Development.Automation
                     rankRecordId = rank.Rank?.rankRecordId ?? string.Empty,
                     credentialId = credential.Credential?.credentialId ?? string.Empty,
                     primaryCareer = true,
-                    accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                    accessPolicyId = ProfessionContentIds.AccessPublicId
                 });
                 runtimes.CareerHistory.RestoreFromSaveData(careerSave, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.PositionEmployment, runtimes.KnownPersonIds, DefaultLifePathOrganizations(), DefaultLifePathAuthorities(), restoring: false);
             }
 
             CareerEpisodeData episode = runtimes.CareerHistory.CreateSaveData().episodes.FirstOrDefault(item => item.personId == runtimes.PersonId && item.state == CareerEpisodeState.Active);
-            PersonProfessionSnapshot profession = runtimes.Professions.QueryByPerson(runtimes.PersonId).FirstOrDefault(item => item.ProfessionId == PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            PersonProfessionSnapshot profession = runtimes.Professions.QueryByPerson(runtimes.PersonId).FirstOrDefault(item => item.ProfessionId == ProfessionContentIds.BlacksmithProfessionId);
             if (profession != null && episode != null)
             {
                 runtimes.LifePaths.SetProfessionalIdentity(new ProfessionalIdentityData
@@ -2352,11 +2352,11 @@ namespace UnityIsekaiGame.Development.Automation
                     personId = runtimes.PersonId,
                     kind = ProfessionalIdentityKind.Primary,
                     alignment = ProfessionalIdentityAlignmentState.Aligned,
-                    professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                    professionId = ProfessionContentIds.BlacksmithProfessionId,
                     professionRelationshipId = profession.RelationshipId,
                     careerEpisodeId = episode.episodeId,
                     active = true,
-                    accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                    accessPolicyId = ProfessionContentIds.AccessPublicId
                 }, context.ScenarioContext.ScopedId("life-tx", $"{slug}-identity"));
             }
 
@@ -2398,7 +2398,7 @@ namespace UnityIsekaiGame.Development.Automation
                 state = LifePathState.Active,
                 startWorldTime = "1",
                 formativeReferences = new[] { new FormativeReferenceData { referenceId = context.ScenarioContext.ScopedId("life-origin", "village"), kind = FormativeReferenceKind.Origin, subjectId = "origin.prototype.village", weight = 10 } },
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             }, context.ScenarioContext.ScopedId("life-tx", "path"));
         }
 
@@ -2413,7 +2413,7 @@ namespace UnityIsekaiGame.Development.Automation
                 targetProfessionId = targetProfession,
                 priority = 10,
                 startWorldTime = "2",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             };
         }
 
@@ -2434,7 +2434,7 @@ namespace UnityIsekaiGame.Development.Automation
                 targetActivityDefinitionId = targetActivity,
                 priority = 10,
                 startWorldTime = "3",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             };
         }
 
@@ -2454,7 +2454,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             EnsureBlacksmithActivityProfession(context);
             return context.ScenarioContext.Runtimes.ProfessionalActivities.RegisterAndValidateActivity(
-                ActivityRequest(context, slug, definitionId, ActivityCustomSource(context, sourceType, slug, sourceType == ProfessionalActivitySourceType.DiscoveryClaim ? "production.activity.experimentation" : "production.activity.forging", ProfessionalActivityDifficulty.Skilled), ProfessionalResponsibilityLevel.IndependentPractitioner),
+                ActivityRequest(context, slug, definitionId, ActivityCustomSource(context, sourceType, slug, sourceType == ProfessionalActivitySourceType.DiscoveryClaim ? "production.activity.experimentation" : "source.crafting", ProfessionalActivityDifficulty.Skilled), ProfessionalResponsibilityLevel.IndependentPractitioner),
                 context.ScenarioContext.ScopedId("professional-evidence", slug),
                 "authority.guild.prototype",
                 context.ScenarioContext.ScopedId("professional-tx", slug));
@@ -2468,12 +2468,12 @@ namespace UnityIsekaiGame.Development.Automation
             string employmentId = context.ScenarioContext.ScopedId("employment", slug);
             if (save.positions.All(item => !string.Equals(item.positionInstanceId, positionId, StringComparison.Ordinal)))
             {
-                save.positions.Add(new PositionInstanceData { positionInstanceId = positionId, positionDefinitionId = PrototypeProfessionDefinitionFactory.GuildClerkPositionId, organizationId = "organization.prototype.guild", organizationTypeId = PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId, state = PositionInstanceState.Filled, holderPersonIds = new[] { runtimes.PersonId }, maximumHolders = 2, vacancyAllowed = true, accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId });
+                save.positions.Add(new PositionInstanceData { positionInstanceId = positionId, positionDefinitionId = ProfessionContentIds.GuildClerkPositionId, organizationId = "organization.prototype.guild", organizationTypeId = ProfessionContentIds.GuildOrganizationTypeId, state = PositionInstanceState.Filled, holderPersonIds = new[] { runtimes.PersonId }, maximumHolders = 2, vacancyAllowed = true, accessPolicyId = ProfessionContentIds.AccessPublicId });
             }
 
             if (save.employments.All(item => !string.Equals(item.employmentId, employmentId, StringComparison.Ordinal)))
             {
-                save.employments.Add(new EmploymentRecordData { employmentId = employmentId, personId = runtimes.PersonId, employerOrganizationId = "organization.prototype.guild", positionInstanceId = positionId, positionDefinitionId = PrototypeProfessionDefinitionFactory.GuildClerkPositionId, classification = EmploymentClassification.PartTime, state = EmploymentState.Active, startWorldTime = "12", appointmentAuthorityId = PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId });
+                save.employments.Add(new EmploymentRecordData { employmentId = employmentId, personId = runtimes.PersonId, employerOrganizationId = "organization.prototype.guild", positionInstanceId = positionId, positionDefinitionId = ProfessionContentIds.GuildClerkPositionId, classification = EmploymentClassification.PartTime, state = EmploymentState.Active, startWorldTime = "12", appointmentAuthorityId = ProfessionContentIds.PositionAppointAuthorityId, accessPolicyId = ProfessionContentIds.AccessPublicId });
             }
 
             runtimes.PositionEmployment.RestoreFromSaveData(save, runtimes.DefinitionRegistry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, runtimes.KnownPersonIds, DefaultLifePathOrganizations(), DefaultLifePathAuthorities(), restoring: false);
@@ -2481,7 +2481,7 @@ namespace UnityIsekaiGame.Development.Automation
 
         private static string[] DefaultLifePathOrganizations() => new[] { "organization.prototype.guild", "organization.prototype.royal-forge", "organization.prototype.independent" };
 
-        private static string[] DefaultLifePathAuthorities() => new[] { "authority.guild.prototype", PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId, "organization.prototype.guild" };
+        private static string[] DefaultLifePathAuthorities() => new[] { "authority.guild.prototype", ProfessionContentIds.PositionAppointAuthorityId, ProfessionContentIds.PositionDutyAssignAuthorityId, "organization.prototype.guild" };
 
         private static ProfessionalActivityRegistrationRequest ActivityRequest(
             TestLabAutomationContext context,
@@ -2496,8 +2496,8 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 ActivityId = context.ScenarioContext.ScopedId("professional-activity", slug),
                 PersonId = runtimes.PersonId,
-                ProfessionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                SpecializationId = PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
+                ProfessionId = ProfessionContentIds.BlacksmithProfessionId,
+                SpecializationId = ProfessionContentIds.WeaponsmithSpecializationId,
                 ActivityDefinitionId = definitionId,
                 Source = source,
                 Responsibility = responsibility,
@@ -2507,7 +2507,7 @@ namespace UnityIsekaiGame.Development.Automation
                 Quality = source?.Quality ?? 700,
                 Difficulty = source?.Difficulty ?? ProfessionalActivityDifficulty.Routine,
                 Outcome = source?.Outcome ?? ProfessionalActivityOutcomeState.Successful,
-                AccessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId,
+                AccessPolicyId = ProfessionContentIds.AccessPublicId,
                 Provenance = "test-lab"
             };
         }
@@ -2535,24 +2535,24 @@ namespace UnityIsekaiGame.Development.Automation
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             EnsureBlacksmithActivityProfession(context);
 
-            bool completedTraining = runtimes.Training.QueryByProgram(PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId)
+            bool completedTraining = runtimes.Training.QueryByProgram(ProfessionContentIds.BlacksmithApprenticeshipProgramId)
                 .Any(item => string.Equals(item.PersonId, runtimes.PersonId, StringComparison.Ordinal) && item.State == TrainingEnrollmentState.Completed);
             if (!completedTraining)
             {
                 string enrollmentId = BeginTrainingApprenticeship(context, $"credential-{slug}");
                 CompleteTrainingVisibleRequirements(context, enrollmentId, completePractice: true);
-                runtimes.Training.CompleteModule(enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithHiddenAssessmentModuleId, context.ScenarioContext.ScopedId("training-tx", $"{slug}-hidden"));
+                runtimes.Training.CompleteModule(enrollmentId, ProfessionContentIds.BlacksmithHiddenAssessmentModuleId, context.ScenarioContext.ScopedId("training-tx", $"{slug}-hidden"));
                 TrainingProgressResult progress = runtimes.Training.EvaluateProgress(enrollmentId, perceived: false);
                 runtimes.Training.CompleteProgram(enrollmentId, context.ScenarioContext.ScopedId("training-tx", $"{slug}-complete"), progress.RuntimeToken, worldTime: 24d);
             }
 
-            if (runtimes.ProfessionalActivities.BuildExperienceSummary(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId).TotalValidatedActivities == 0)
+            if (runtimes.ProfessionalActivities.BuildExperienceSummary(runtimes.PersonId, ProfessionContentIds.BlacksmithProfessionId).TotalValidatedActivities == 0)
             {
                 runtimes.ProfessionalActivities.RegisterAndValidateActivity(
                     ActivityRequest(
                         context,
                         $"credential-{slug}-supervised",
-                        PrototypeProfessionDefinitionFactory.BlacksmithSupervisedPracticeActivityDefinitionId,
+                        ProfessionContentIds.BlacksmithSupervisedPracticeActivityDefinitionId,
                         ActivityCustomSource(context, ProfessionalActivitySourceType.TrainingPracticalAssignment, $"credential-{slug}-practice", "training.activity.practical"),
                         ProfessionalResponsibilityLevel.SupervisedWorker,
                         TrainingSupervisionLevel.CloselySupervised),
@@ -2593,9 +2593,9 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             EnsureBlacksmithCredentialFoundation(context, slug);
-            CredentialOperationResult exam = RecordCredentialExam(context, slug, PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId, 850);
-            CredentialQualificationResult qualification = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId);
-            CredentialOperationResult apply = runtimes.Credentials.SubmitApplication(context.ScenarioContext.ScopedId("credential-application", slug), runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, GuildIssuer(), qualification.Snapshot, "30", context.ScenarioContext.ScopedId("credential-tx", $"{slug}-apply"));
+            CredentialOperationResult exam = RecordCredentialExam(context, slug, ProfessionContentIds.BlacksmithPracticalExaminationId, 850);
+            CredentialQualificationResult qualification = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId);
+            CredentialOperationResult apply = runtimes.Credentials.SubmitApplication(context.ScenarioContext.ScopedId("credential-application", slug), runtimes.PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, GuildIssuer(), qualification.Snapshot, "30", context.ScenarioContext.ScopedId("credential-tx", $"{slug}-apply"));
             CredentialOperationResult approve = runtimes.Credentials.ApproveApplication(apply.Application?.applicationId, "authority.guild.prototype", qualification.Snapshot, "31", context.ScenarioContext.ScopedId("credential-tx", $"{slug}-approve"));
             applicationId = apply.Application?.applicationId ?? string.Empty;
             if (!exam.Succeeded || !qualification.AuthoritativeQualified || !apply.Succeeded || !approve.Succeeded)
@@ -2603,7 +2603,7 @@ namespace UnityIsekaiGame.Development.Automation
                 return CredentialOperationResult.Failure(CredentialOperationStatus.InvalidRequest, $"Credential fixture setup failed. Exam={exam.Status} Qualified={qualification.AuthoritativeQualified} Apply={apply.Status} Approve={approve.Status}", runtimes.Credentials.Revision, qualification);
             }
 
-            return runtimes.Credentials.IssueCredential(context.ScenarioContext.ScopedId("credential-record", slug), PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, runtimes.PersonId, GuildIssuer(), applicationId, exam.ExaminationAttempt?.attemptId, context.ScenarioContext.ScopedId("registration", slug), qualification.Snapshot, "32", context.ScenarioContext.ScopedId("credential-tx", $"{slug}-issue"));
+            return runtimes.Credentials.IssueCredential(context.ScenarioContext.ScopedId("credential-record", slug), ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, runtimes.PersonId, GuildIssuer(), applicationId, exam.ExaminationAttempt?.attemptId, context.ScenarioContext.ScopedId("registration", slug), qualification.Snapshot, "32", context.ScenarioContext.ScopedId("credential-tx", $"{slug}-issue"));
         }
 
         private static CredentialIssuerReferenceData GuildIssuer()
@@ -2630,31 +2630,31 @@ namespace UnityIsekaiGame.Development.Automation
                 return ProfessionalRankOperationResult.Success("Rank already active.", runtimes.ProfessionalRanks.Revision, runtimes.ProfessionalRanks.Revision, rank: existing, duplicate: true);
             }
 
-            if (rankDefinitionId == PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId)
+            if (rankDefinitionId == ProfessionContentIds.BlacksmithRankJourneymanId)
             {
-                EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId, $"{slug}-prior");
-                if (!runtimes.Credentials.QueryByRecipient(runtimes.PersonId, activeOnly: true).Any(item => item.credentialDefinitionId == PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId))
+                EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankApprenticeId, $"{slug}-prior");
+                if (!runtimes.Credentials.QueryByRecipient(runtimes.PersonId, activeOnly: true).Any(item => item.credentialDefinitionId == ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId))
                 {
                     IssueApprenticeshipCredential(context, $"{slug}-apprenticeship", out _);
                 }
             }
-            else if (rankDefinitionId == PrototypeProfessionDefinitionFactory.BlacksmithRankMasterId)
+            else if (rankDefinitionId == ProfessionContentIds.BlacksmithRankMasterId)
             {
-                EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, $"{slug}-prior");
+                EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankJourneymanId, $"{slug}-prior");
                 EnsureGuildLicense(context, $"{slug}-license");
             }
-            else if (rankDefinitionId == PrototypeProfessionDefinitionFactory.WeaponsmithRankApprenticeId)
+            else if (rankDefinitionId == ProfessionContentIds.WeaponsmithRankApprenticeId)
             {
-                EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId, $"{slug}-prior");
-                if (!runtimes.Credentials.QueryByRecipient(runtimes.PersonId, activeOnly: true).Any(item => item.credentialDefinitionId == PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId))
+                EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankApprenticeId, $"{slug}-prior");
+                if (!runtimes.Credentials.QueryByRecipient(runtimes.PersonId, activeOnly: true).Any(item => item.credentialDefinitionId == ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId))
                 {
                     IssueApprenticeshipCredential(context, $"{slug}-apprenticeship", out _);
                 }
             }
-            else if (rankDefinitionId == PrototypeProfessionDefinitionFactory.WeaponsmithRankMasterId)
+            else if (rankDefinitionId == ProfessionContentIds.WeaponsmithRankMasterId)
             {
-                EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, $"{slug}-general-prior");
-                EnsurePromotedRank(context, PrototypeProfessionDefinitionFactory.WeaponsmithRankApprenticeId, $"{slug}-special-prior");
+                EnsurePromotedRank(context, ProfessionContentIds.BlacksmithRankJourneymanId, $"{slug}-general-prior");
+                EnsurePromotedRank(context, ProfessionContentIds.WeaponsmithRankApprenticeId, $"{slug}-special-prior");
                 EnsureGuildLicense(context, $"{slug}-license");
             }
             else
@@ -2677,7 +2677,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
             CredentialRecordData existing = runtimes.Credentials.QueryByRecipient(runtimes.PersonId, activeOnly: true)
-                .FirstOrDefault(item => string.Equals(item.credentialDefinitionId, PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId, StringComparison.Ordinal));
+                .FirstOrDefault(item => string.Equals(item.credentialDefinitionId, ProfessionContentIds.BlacksmithGuildLicenseCredentialId, StringComparison.Ordinal));
             if (existing != null)
             {
                 return CredentialOperationResult.Success("Guild license already active.", runtimes.Credentials.Revision, runtimes.Credentials.Revision, credential: existing, duplicate: true);
@@ -2686,23 +2686,23 @@ namespace UnityIsekaiGame.Development.Automation
             EnsureBlacksmithCredentialFoundation(context, $"guild-{slug}");
             EnsureBlacksmithSafetyTraining(context, slug);
             RegisterIndependentBlacksmithActivity(context, $"{slug}-independent");
-            RecordCredentialExam(context, $"{slug}-practical", PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId, 850);
-            RecordCredentialExam(context, $"{slug}-written", PrototypeProfessionDefinitionFactory.BlacksmithWrittenExaminationId, 840);
-            CredentialQualificationResult qualification = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId, privilegedDiagnostics: true);
-            CredentialOperationResult apply = runtimes.Credentials.SubmitApplication(context.ScenarioContext.ScopedId("credential-application", $"guild-{slug}"), runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId, GuildIssuer(), qualification.Snapshot, "60", context.ScenarioContext.ScopedId("credential-tx", $"guild-{slug}-apply"));
+            RecordCredentialExam(context, $"{slug}-practical", ProfessionContentIds.BlacksmithPracticalExaminationId, 850);
+            RecordCredentialExam(context, $"{slug}-written", ProfessionContentIds.BlacksmithWrittenExaminationId, 840);
+            CredentialQualificationResult qualification = runtimes.Credentials.EvaluateQualification(runtimes.PersonId, ProfessionContentIds.BlacksmithGuildLicenseCredentialId, privilegedDiagnostics: true);
+            CredentialOperationResult apply = runtimes.Credentials.SubmitApplication(context.ScenarioContext.ScopedId("credential-application", $"guild-{slug}"), runtimes.PersonId, ProfessionContentIds.BlacksmithGuildLicenseCredentialId, GuildIssuer(), qualification.Snapshot, "60", context.ScenarioContext.ScopedId("credential-tx", $"guild-{slug}-apply"));
             CredentialOperationResult approve = runtimes.Credentials.ApproveApplication(apply.Application?.applicationId, "authority.guild.prototype", qualification.Snapshot, "61", context.ScenarioContext.ScopedId("credential-tx", $"guild-{slug}-approve"));
             if (!qualification.AuthoritativeQualified || !apply.Succeeded || !approve.Succeeded)
             {
                 return CredentialOperationResult.Failure(CredentialOperationStatus.MissingQualification, $"Guild license fixture failed. Qualified={qualification.AuthoritativeQualified} Apply={apply.Status} Approve={approve.Status}", runtimes.Credentials.Revision, qualification);
             }
 
-            return runtimes.Credentials.IssueCredential(context.ScenarioContext.ScopedId("credential-record", $"guild-{slug}"), PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId, runtimes.PersonId, GuildIssuer(), apply.Application?.applicationId, context.ScenarioContext.ScopedId("credential-exam", $"{slug}-practical"), context.ScenarioContext.ScopedId("registration", $"guild-{slug}"), qualification.Snapshot, "62", context.ScenarioContext.ScopedId("credential-tx", $"guild-{slug}-issue"));
+            return runtimes.Credentials.IssueCredential(context.ScenarioContext.ScopedId("credential-record", $"guild-{slug}"), ProfessionContentIds.BlacksmithGuildLicenseCredentialId, runtimes.PersonId, GuildIssuer(), apply.Application?.applicationId, context.ScenarioContext.ScopedId("credential-exam", $"{slug}-practical"), context.ScenarioContext.ScopedId("registration", $"guild-{slug}"), qualification.Snapshot, "62", context.ScenarioContext.ScopedId("credential-tx", $"guild-{slug}-issue"));
         }
 
         private static void EnsureBlacksmithSafetyTraining(TestLabAutomationContext context, string slug)
         {
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            bool completed = runtimes.Training.QueryByProgram(PrototypeProfessionDefinitionFactory.BlacksmithSafetyProgramId)
+            bool completed = runtimes.Training.QueryByProgram(ProfessionContentIds.BlacksmithSafetyProgramId)
                 .Any(item => string.Equals(item.PersonId, runtimes.PersonId, StringComparison.Ordinal) && item.State == TrainingEnrollmentState.Completed);
             if (completed)
             {
@@ -2710,11 +2710,11 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             string enrollmentId = context.ScenarioContext.ScopedId("training-enrollment", $"safety-{slug}");
-            runtimes.Training.ApplyToProgram(enrollmentId, runtimes.PersonId, PrototypeProfessionDefinitionFactory.BlacksmithSafetyProgramId, context.ScenarioContext.ScopedId("training-tx", $"safety-{slug}-apply"), worldTime: 33d);
+            runtimes.Training.ApplyToProgram(enrollmentId, runtimes.PersonId, ProfessionContentIds.BlacksmithSafetyProgramId, context.ScenarioContext.ScopedId("training-tx", $"safety-{slug}-apply"), worldTime: 33d);
             runtimes.Training.AcceptEnrollment(enrollmentId, context.ScenarioContext.ScopedId("training-tx", $"safety-{slug}-accept"));
             runtimes.Training.BeginProgram(enrollmentId, context.ScenarioContext.ScopedId("training-tx", $"safety-{slug}-begin"));
-            runtimes.Training.RunLearningSession(context.ScenarioContext.ScopedId("training-session", $"safety-{slug}"), enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId, PrototypeProfessionDefinitionFactory.BlacksmithSafetyLessonId, context.ScenarioContext.ScopedId("training-tx", $"safety-{slug}-lesson"));
-            runtimes.Training.CompleteModule(enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId, context.ScenarioContext.ScopedId("training-tx", $"safety-{slug}-module"));
+            runtimes.Training.RunLearningSession(context.ScenarioContext.ScopedId("training-session", $"safety-{slug}"), enrollmentId, ProfessionContentIds.BlacksmithBasicsModuleId, ProfessionContentIds.BlacksmithSafetyLessonId, context.ScenarioContext.ScopedId("training-tx", $"safety-{slug}-lesson"));
+            runtimes.Training.CompleteModule(enrollmentId, ProfessionContentIds.BlacksmithBasicsModuleId, context.ScenarioContext.ScopedId("training-tx", $"safety-{slug}-module"));
             TrainingProgressResult progress = runtimes.Training.EvaluateProgress(enrollmentId, perceived: false);
             runtimes.Training.CompleteProgram(enrollmentId, context.ScenarioContext.ScopedId("training-tx", $"safety-{slug}-complete"), progress.RuntimeToken, worldTime: 36d);
         }
@@ -2726,8 +2726,8 @@ namespace UnityIsekaiGame.Development.Automation
                 ActivityRequest(
                     context,
                     slug,
-                    PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId,
-                    ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, slug, "production.activity.forging", ProfessionalActivityDifficulty.Skilled),
+                    ProfessionContentIds.BlacksmithCraftingActivityDefinitionId,
+                    ActivityCustomSource(context, ProfessionalActivitySourceType.CraftingOperation, slug, "source.crafting", ProfessionalActivityDifficulty.Skilled),
                     ProfessionalResponsibilityLevel.IndependentPractitioner,
                     TrainingSupervisionLevel.IndependentWithReview),
                 context.ScenarioContext.ScopedId("professional-evidence", slug),
@@ -2751,8 +2751,8 @@ namespace UnityIsekaiGame.Development.Automation
         {
             return new ProfessionEligibilityContext(
                 context.ScenarioContext.Runtimes.PersonId,
-                PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
-                PrototypeProfessionDefinitionFactory.FieldMedicRecognitionEntryPathId,
+                ProfessionContentIds.FieldMedicProfessionId,
+                ProfessionContentIds.FieldMedicRecognitionEntryPathId,
                 formal: true,
                 authorityId: "authority.medical.prototype",
                 worldTime: 2d,
