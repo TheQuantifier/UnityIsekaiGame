@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a0b7d03205c41ad9ca402de7df3126d, type: 3}
+  m_Name: examination_blacksmith_practical
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.CredentialExaminationDefinition
+  id: examination.blacksmith.practical
+  displayName: Blacksmith Practical Certification Exam
+  debugName: Blacksmith Practical Certification Exam
+  relatedCredentialDefinitionIds:
+  - credential.blacksmith.apprenticeship-certificate
+  - credential.blacksmith.guild-license
+  assessmentCategory: 3
+  knowledgeSubjectIds:
+  - knowledge.subject.forge-safety
+  - knowledge.subject.metalwork
+  requiredSkillOrCapabilityIds: []
+  practicalActivityDefinitionIds:
+  - profession.activity.blacksmith.crafting
+  - profession.activity.blacksmith.supervised-practice
+  passingScore: 700
+  attemptLimit: 3
+  retakePolicyId: 
+  requiredEvaluatorAuthorityIds:
+  - authority.guild.prototype
+  accessPolicyId: information-access.profession.public
+  version: 1

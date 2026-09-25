@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9872e45c7754488ca39a2a927571a8d5, type: 3}
+  m_Name: profession_mastery_blacksmith_weaponsmith
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.ProfessionalMasteryDefinition
+  id: profession.mastery.blacksmith.weaponsmith
+  displayName: Weaponsmith Mastery
+  professionId: profession.blacksmith
+  specializationId: profession.specialization.blacksmith.weaponsmith
+  requiredRankDefinitionId: profession.rank.blacksmith.weaponsmith.master
+  experienceRequirement:
+    professionId: profession.blacksmith
+    specializationId: profession.specialization.blacksmith.weaponsmith
+    requiredCategory: 0
+    minimumValidatedActivities: 2
+    minimumIndependentActivities: 1
+    minimumSupervisedActivities: 0
+    minimumDifficulty: 3
+    minimumQuality: 700
+    requireRecentActivity: 0
+  requiredBreadthCount: 1
+  requiredDepthQuality: 700
+  requiredIndependentWorkCount: 1
+  requiredTeachingOrLeadershipCount: 0
+  requiredCredentialDefinitionIds:
+  - credential.blacksmith.guild-license
+  requiredExaminationDefinitionIds:
+  - examination.blacksmith.practical
+  requiredAchievementIds:
+  - achievement.blacksmith.masterwork.prototype
+  requiredAuthorityIds:
+  - authority.guild.prototype
+  recognitionTrack: 0
+  visibility: 1
+  accessPolicyId: information-access.profession.public
+  version: 1

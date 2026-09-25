@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d846e4d78d94ca3ba7e7c9f064654e6, type: 3}
+  m_Name: profession_activity_blacksmith_experimentation
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.ProfessionalActivityDefinition
+  id: profession.activity.blacksmith.experimentation
+  displayName: Blacksmith Experimentation Activity
+  debugName: Blacksmith Experimentation Activity
+  description: 
+  category: 6
+  applicableProfessionIds:
+  - profession.blacksmith
+  applicableSpecializationIds: []
+  acceptedSourceTypes: 0700000008000000
+  requiredActivityTags:
+  - production.activity.experimentation
+  minimumSuccessState: 1
+  minimumQuality: 200
+  minimumDifficulty: 3
+  supervisionPolicy: 0
+  independentWorkPolicy: 0
+  quantityOrDurationInterpretation: 
+  defaultDifficulty: 3
+  repetitionPolicy: 0
+  failureCreditPolicy: 2
+  creditPolicy: 1
+  evidenceRequirementIds: []
+  accessPolicyId: information-access.profession.public
+  version: 1

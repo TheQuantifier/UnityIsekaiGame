@@ -98,9 +98,9 @@ namespace UnityIsekaiGame.Professions
             {
                 report.AddError("Professional Mastery definition has no stable ID.");
             }
-            else if (!Id.StartsWith("profession-mastery.", StringComparison.Ordinal))
+            else if (!Id.StartsWith("profession.mastery.", StringComparison.Ordinal))
             {
-                report.AddWarning($"Professional Mastery definition '{DisplayName}' should use the 'profession-mastery.' namespace prefix.");
+                report.AddWarning($"Professional Mastery definition '{DisplayName}' should use the 'profession.mastery.' namespace prefix.");
             }
 
             if (definitionsById == null || !definitionsById.TryGetValue(ProfessionId, out IGameDefinition professionDefinition) || professionDefinition is not ProfessionDefinition)

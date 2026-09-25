@@ -104,9 +104,9 @@ namespace UnityIsekaiGame.Professions
             {
                 report.AddError("Professional Activity definition has no stable ID.");
             }
-            else if (!Id.StartsWith("professional-activity.", StringComparison.Ordinal))
+            else if (!Id.StartsWith("profession.activity.", StringComparison.Ordinal))
             {
-                report.AddWarning($"Professional Activity definition '{DisplayName}' should use the 'professional-activity.' namespace prefix.");
+                report.AddWarning($"Professional Activity definition '{DisplayName}' should use the 'profession.activity.' namespace prefix.");
             }
 
             if (ApplicableProfessionIds.Count == 0)

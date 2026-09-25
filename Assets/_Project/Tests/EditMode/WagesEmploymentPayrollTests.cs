@@ -182,7 +182,7 @@ namespace UnityIsekaiGame.Tests
                     "position.test.payroll-worker",
                     "Payroll Worker",
                     PositionCategory.Custom,
-                    authorities: new[] { PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId },
+                    authorities: new[] { ProfessionContentIds.PositionAppointAuthorityId },
                     compensationPolicy: compensation.Id,
                     paymentSchedule: "pay-schedule.test.weekly",
                     wageOrSalary: compensation.Id,
@@ -205,8 +205,8 @@ namespace UnityIsekaiGame.Tests
                 transfers.Configure(registry, "person.payroll.employee");
                 training.Configure(registry, professions, transfers, new[] { "person.payroll.employee" });
                 activities.Configure(registry, professions, new[] { "person.payroll.employee" });
-                credentials.Configure(registry, professions, training, activities, new[] { "person.payroll.employee" }, new[] { PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId });
-                ranks.Configure(registry, professions, training, activities, credentials, new[] { "person.payroll.employee" }, new[] { PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId });
+                credentials.Configure(registry, professions, training, activities, new[] { "person.payroll.employee" }, new[] { ProfessionContentIds.PositionAppointAuthorityId });
+                ranks.Configure(registry, professions, training, activities, credentials, new[] { "person.payroll.employee" }, new[] { ProfessionContentIds.PositionAppointAuthorityId });
 
                 PositionEmploymentRuntime positions = new PositionEmploymentRuntime();
                 positions.Configure(
@@ -218,7 +218,7 @@ namespace UnityIsekaiGame.Tests
                     ranks,
                     new[] { "person.payroll.employee" },
                     new[] { "organization.payroll.employer" },
-                    new[] { PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, "organization.payroll.employer" });
+                    new[] { ProfessionContentIds.PositionAppointAuthorityId, "organization.payroll.employer" });
                 PositionEmploymentOperationResult positionResult = positions.CreatePosition(new PositionInstanceData
                 {
                     positionInstanceId = "position-instance.payroll-worker",
@@ -231,7 +231,7 @@ namespace UnityIsekaiGame.Tests
                 }, "tx.position.create");
                 Assert.That(positionResult.Succeeded, Is.True, positionResult.Message);
                 PositionEligibilityResult eligibility = positions.EvaluateEligibility("person.payroll.employee", "position-instance.payroll-worker", privilegedDiagnostics: true);
-                PositionEmploymentOperationResult employment = positions.AppointPerson("employment.payroll.worker", string.Empty, "person.payroll.employee", "position-instance.payroll-worker", PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, eligibility.Snapshot, "1", "tx.position.appoint");
+                PositionEmploymentOperationResult employment = positions.AppointPerson("employment.payroll.worker", string.Empty, "person.payroll.employee", "position-instance.payroll-worker", ProfessionContentIds.PositionAppointAuthorityId, eligibility.Snapshot, "1", "tx.position.appoint");
                 Assert.That(employment.Succeeded, Is.True, employment.Message);
 
                 economy.CreateAccount("account.payroll.employer", gold, "organization.payroll.employer", EconomyAccountKind.OrganizationAccount, employerOpeningBalance, "tx.account.employer");

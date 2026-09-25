@@ -26,7 +26,7 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionRegistry registry = CreateRegistry();
             DefinitionValidationReport report = new DefinitionValidationReport();
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(registry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -37,7 +37,7 @@ namespace UnityIsekaiGame.Tests
             TrainingCurriculumDefinition cyclic = ScriptableObject.CreateInstance<TrainingCurriculumDefinition>();
             cyclic.DevelopmentConfigure(
                 "training-curriculum.test.cycle",
-                PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId,
+                ProfessionContentIds.BlacksmithApprenticeshipProgramId,
                 "Cycle",
                 new[]
                 {
@@ -51,7 +51,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
             Assert.That(report.WarningCount, Is.Zero, report.GetSummary());
             Assert.That(cycleReport.ErrorCount, Is.GreaterThan(0), cycleReport.GetSummary());
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId, out TrainingProgramDefinition program), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.BlacksmithApprenticeshipProgramId, out TrainingProgramDefinition program), Is.True);
             Assert.That(program.Category, Is.EqualTo(TrainingProgramCategory.Apprenticeship));
         }
 
@@ -63,9 +63,9 @@ namespace UnityIsekaiGame.Tests
             long knowledgeRevision = fixture.LearnerKnowledge.KnowledgeRevision;
 
             TrainingOperationResult apply = fixture.Apply();
-            TrainingOperationResult duplicate = fixture.Training.ApplyToProgram("training-enrollment.test.blacksmith.second", LearnerId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId, "tx.training.duplicate");
+            TrainingOperationResult duplicate = fixture.Training.ApplyToProgram("training-enrollment.test.blacksmith.second", LearnerId, ProfessionContentIds.BlacksmithApprenticeshipProgramId, "tx.training.duplicate");
             TrainingOperationResult accept = fixture.Training.AcceptEnrollment(EnrollmentId, "tx.training.accept");
-            TrainingOperationResult master = fixture.Training.AssignInstructor(EnrollmentId, "training-instructor.test.master", TrainingInstructorRoleKind.Master, MasterId, "tx.training.master", professionId: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, authorityId: "authority.guild.prototype");
+            TrainingOperationResult master = fixture.Training.AssignInstructor(EnrollmentId, "training-instructor.test.master", TrainingInstructorRoleKind.Master, MasterId, "tx.training.master", professionId: ProfessionContentIds.BlacksmithProfessionId, authorityId: "authority.guild.prototype");
             TrainingOperationResult begin = fixture.Training.BeginProgram(EnrollmentId, "tx.training.begin");
             TrainingOperationResult invalidAfterTerminal = fixture.Training.Withdraw(EnrollmentId, "tx.training.withdraw");
             TrainingOperationResult terminalBegin = fixture.Training.BeginProgram(EnrollmentId, "tx.training.begin.after-terminal");
@@ -89,7 +89,7 @@ namespace UnityIsekaiGame.Tests
         {
             using Fixture fixture = new Fixture();
             fixture.BeginApprenticeship();
-            TrainingOperationResult attended = fixture.Training.RunLearningSession("training-session.test.attendance", EnrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId, PrototypeProfessionDefinitionFactory.BlacksmithSafetyLessonId, "tx.training.attendance", startWorldTime: 10d, completionWorldTime: 11d);
+            TrainingOperationResult attended = fixture.Training.RunLearningSession("training-session.test.attendance", EnrollmentId, ProfessionContentIds.BlacksmithBasicsModuleId, ProfessionContentIds.BlacksmithSafetyLessonId, "tx.training.attendance", startWorldTime: 10d, completionWorldTime: 11d);
             long knowledgeBeforeTeaching = fixture.LearnerKnowledge.KnowledgeRevision;
             Assert.That(attended.Succeeded, Is.True, attended.Message);
             Assert.That(fixture.LearnerKnowledge.KnowledgeRevision, Is.EqualTo(knowledgeBeforeTeaching));
@@ -97,8 +97,8 @@ namespace UnityIsekaiGame.Tests
             TrainingOperationResult taught = fixture.Training.RunLearningSession(
                 "training-session.test.teaching",
                 EnrollmentId,
-                PrototypeProfessionDefinitionFactory.BlacksmithPracticeModuleId,
-                PrototypeProfessionDefinitionFactory.BlacksmithDemonstrationLessonId,
+                ProfessionContentIds.BlacksmithPracticeModuleId,
+                ProfessionContentIds.BlacksmithDemonstrationLessonId,
                 "tx.training.teaching",
                 fixture.TeachingRequest("tx.training.teaching.transfer"),
                 startWorldTime: 12d,
@@ -119,10 +119,10 @@ namespace UnityIsekaiGame.Tests
             fixture.CompleteBasics();
             fixture.RunPracticeLesson();
 
-            TrainingOperationResult missingSupervisor = fixture.Training.RecordPracticalAssignment("training-practical.test.missing-supervisor", EnrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticalAssignmentId, "crafting-operation.prototype.blacksmith.001", TrainingAssignmentActivityCategory.Crafting, "tx.training.practice.missing", supervisorPersonId: "");
-            TrainingOperationResult accepted = fixture.Training.RecordPracticalAssignment("training-practical.test.accepted", EnrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticalAssignmentId, "crafting-operation.prototype.blacksmith.001", TrainingAssignmentActivityCategory.Crafting, "tx.training.practice.accepted", quality: 700, supervisorPersonId: MasterId);
-            TrainingOperationResult duplicateActivity = fixture.Training.RecordPracticalAssignment("training-practical.test.duplicate", EnrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticalAssignmentId, "crafting-operation.prototype.blacksmith.001", TrainingAssignmentActivityCategory.Crafting, "tx.training.practice.duplicate", quality: 700, supervisorPersonId: MasterId);
-            TrainingOperationResult supervised = fixture.Training.RecordSupervisedWork("training-supervised.test.forge", EnrollmentId, MasterId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, "crafting-operation.prototype.blacksmith.001", TrainingSupervisionLevel.CloselySupervised, TrainingWorkOutcome.Succeeded, "tx.training.supervised", quality: 725, startWorldTime: 20d, completionWorldTime: 21d);
+            TrainingOperationResult missingSupervisor = fixture.Training.RecordPracticalAssignment("training-practical.test.missing-supervisor", EnrollmentId, ProfessionContentIds.BlacksmithPracticalAssignmentId, "crafting-operation.prototype.blacksmith.001", TrainingAssignmentActivityCategory.Crafting, "tx.training.practice.missing", supervisorPersonId: "");
+            TrainingOperationResult accepted = fixture.Training.RecordPracticalAssignment("training-practical.test.accepted", EnrollmentId, ProfessionContentIds.BlacksmithPracticalAssignmentId, "crafting-operation.prototype.blacksmith.001", TrainingAssignmentActivityCategory.Crafting, "tx.training.practice.accepted", quality: 700, supervisorPersonId: MasterId);
+            TrainingOperationResult duplicateActivity = fixture.Training.RecordPracticalAssignment("training-practical.test.duplicate", EnrollmentId, ProfessionContentIds.BlacksmithPracticalAssignmentId, "crafting-operation.prototype.blacksmith.001", TrainingAssignmentActivityCategory.Crafting, "tx.training.practice.duplicate", quality: 700, supervisorPersonId: MasterId);
+            TrainingOperationResult supervised = fixture.Training.RecordSupervisedWork("training-supervised.test.forge", EnrollmentId, MasterId, ProfessionContentIds.BlacksmithProfessionId, "crafting-operation.prototype.blacksmith.001", TrainingSupervisionLevel.CloselySupervised, TrainingWorkOutcome.Succeeded, "tx.training.supervised", quality: 725, startWorldTime: 20d, completionWorldTime: 21d);
 
             Assert.That(missingSupervisor.Succeeded, Is.False);
             Assert.That(missingSupervisor.Status, Is.EqualTo(TrainingOperationStatus.RequirementBlocked));
@@ -144,14 +144,14 @@ namespace UnityIsekaiGame.Tests
             TrainingProgressResult authoritative = fixture.Training.EvaluateProgress(EnrollmentId, perceived: false);
             TrainingProgressTokenData staleToken = authoritative.RuntimeToken;
             TrainingOperationResult blocked = fixture.Training.CompleteProgram(EnrollmentId, "tx.training.complete.blocked", authoritative.RuntimeToken);
-            TrainingOperationResult hidden = fixture.Training.CompleteModule(EnrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithHiddenAssessmentModuleId, "tx.training.hidden");
+            TrainingOperationResult hidden = fixture.Training.CompleteModule(EnrollmentId, ProfessionContentIds.BlacksmithHiddenAssessmentModuleId, "tx.training.hidden");
             TrainingOperationResult stale = fixture.Training.CompleteProgram(EnrollmentId, "tx.training.complete.stale", staleToken);
             TrainingProgressResult current = fixture.Training.EvaluateProgress(EnrollmentId, perceived: false);
             TrainingOperationResult complete = fixture.Training.CompleteProgram(EnrollmentId, "tx.training.complete", current.RuntimeToken, worldTime: 100d);
 
             Assert.That(perceived.EligibleForCompletion, Is.True);
             Assert.That(authoritative.EligibleForCompletion, Is.False);
-            Assert.That(authoritative.RemainingRequirements, Does.Contain(PrototypeProfessionDefinitionFactory.BlacksmithHiddenAssessmentModuleId));
+            Assert.That(authoritative.RemainingRequirements, Does.Contain(ProfessionContentIds.BlacksmithHiddenAssessmentModuleId));
             Assert.That(blocked.Succeeded, Is.False);
             Assert.That(blocked.Status, Is.EqualTo(TrainingOperationStatus.RequirementBlocked));
             Assert.That(hidden.Succeeded, Is.True, hidden.Message);
@@ -173,7 +173,7 @@ namespace UnityIsekaiGame.Tests
 
             TrainingOperationResult restore = restored.RestoreFromSaveData(save, fixture.Registry, fixture.Professions, fixture.Transfers, fixture.Persons, restoring: true);
             TrainingRuntimeSaveData corrupt = save.Clone();
-            corrupt.enrollments[0].programId = "training-program.missing";
+            corrupt.enrollments[0].programId = "training.program.missing";
             int beforeCount = restored.EnrollmentCount;
             long beforeRevision = restored.Revision;
             TrainingOperationResult rejected = restored.RestoreFromSaveData(corrupt, fixture.Registry, fixture.Professions, fixture.Transfers, fixture.Persons, restoring: true);
@@ -211,7 +211,7 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
             Assert.That(catalog, Is.Not.Null);
-            return PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(catalog.CreateRegistry());
+            return catalog.CreateRegistry();
         }
 
         private static KnowledgePropositionData Proposition()
@@ -284,28 +284,28 @@ namespace UnityIsekaiGame.Tests
 
             public TrainingOperationResult Apply()
             {
-                return Training.ApplyToProgram(EnrollmentId, LearnerId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId, "tx.training.apply", worldTime: 1d);
+                return Training.ApplyToProgram(EnrollmentId, LearnerId, ProfessionContentIds.BlacksmithApprenticeshipProgramId, "tx.training.apply", worldTime: 1d);
             }
 
             public void BeginApprenticeship()
             {
                 Assert.That(Apply().Succeeded, Is.True);
                 Assert.That(Training.AcceptEnrollment(EnrollmentId, "tx.training.accept").Succeeded, Is.True);
-                Assert.That(Training.AssignInstructor(EnrollmentId, "training-instructor.test.master", TrainingInstructorRoleKind.Master, MasterId, "tx.training.master", professionId: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, authorityId: "authority.guild.prototype").Succeeded, Is.True);
+                Assert.That(Training.AssignInstructor(EnrollmentId, "training-instructor.test.master", TrainingInstructorRoleKind.Master, MasterId, "tx.training.master", professionId: ProfessionContentIds.BlacksmithProfessionId, authorityId: "authority.guild.prototype").Succeeded, Is.True);
                 Assert.That(Training.BeginProgram(EnrollmentId, "tx.training.begin").Succeeded, Is.True);
             }
 
             public void CompleteBasics()
             {
-                TrainingOperationResult attendance = Training.RunLearningSession("training-session.test.safety", EnrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId, PrototypeProfessionDefinitionFactory.BlacksmithSafetyLessonId, "tx.training.safety");
+                TrainingOperationResult attendance = Training.RunLearningSession("training-session.test.safety", EnrollmentId, ProfessionContentIds.BlacksmithBasicsModuleId, ProfessionContentIds.BlacksmithSafetyLessonId, "tx.training.safety");
                 Assert.That(attendance.Succeeded, Is.True, attendance.Message);
-                TrainingOperationResult basics = Training.CompleteModule(EnrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId, "tx.training.module.basics");
+                TrainingOperationResult basics = Training.CompleteModule(EnrollmentId, ProfessionContentIds.BlacksmithBasicsModuleId, "tx.training.module.basics");
                 Assert.That(basics.Succeeded, Is.True, basics.Message);
             }
 
             public void RunPracticeLesson()
             {
-                TrainingOperationResult session = Training.RunLearningSession("training-session.test.practice", EnrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticeModuleId, PrototypeProfessionDefinitionFactory.BlacksmithDemonstrationLessonId, "tx.training.practice.lesson");
+                TrainingOperationResult session = Training.RunLearningSession("training-session.test.practice", EnrollmentId, ProfessionContentIds.BlacksmithPracticeModuleId, ProfessionContentIds.BlacksmithDemonstrationLessonId, "tx.training.practice.lesson");
                 Assert.That(session.Succeeded, Is.True, session.Message);
             }
 
@@ -313,9 +313,9 @@ namespace UnityIsekaiGame.Tests
             {
                 CompleteBasics();
                 RunPracticeLesson();
-                TrainingOperationResult practical = Training.RecordPracticalAssignment("training-practical.test.complete", EnrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticalAssignmentId, "crafting-operation.prototype.blacksmith.complete", TrainingAssignmentActivityCategory.Crafting, "tx.training.practice.complete", quality: 700, supervisorPersonId: MasterId);
+                TrainingOperationResult practical = Training.RecordPracticalAssignment("training-practical.test.complete", EnrollmentId, ProfessionContentIds.BlacksmithPracticalAssignmentId, "crafting-operation.prototype.blacksmith.complete", TrainingAssignmentActivityCategory.Crafting, "tx.training.practice.complete", quality: 700, supervisorPersonId: MasterId);
                 Assert.That(practical.Succeeded, Is.True, practical.Message);
-                TrainingOperationResult practice = Training.CompleteModule(EnrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticeModuleId, "tx.training.module.practice");
+                TrainingOperationResult practice = Training.CompleteModule(EnrollmentId, ProfessionContentIds.BlacksmithPracticeModuleId, "tx.training.module.practice");
                 Assert.That(practice.Succeeded, Is.True, practice.Message);
             }
 

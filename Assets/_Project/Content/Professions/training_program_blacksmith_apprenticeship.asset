@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0df532193ec40e1abfa107006f9862c, type: 3}
+  m_Name: training_program_blacksmith_apprenticeship
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.TrainingProgramDefinition
+  programId: training.program.blacksmith.apprenticeship
+  displayName: Blacksmith Apprenticeship
+  debugName: Blacksmith Apprenticeship
+  description: 
+  category: 3
+  formality: 1
+  relatedProfessionIds:
+  - profession.blacksmith
+  relatedSpecializationIds: []
+  durationFoundationHours: 240
+  entryPathIds:
+  - profession.entry.blacksmith.self-declared
+  curriculumId: training.curriculum.blacksmith.apprenticeship
+  instructorRequirements:
+  - requirementId: training.instructor-requirement.blacksmith.master
+    role: 2
+    requiredProfessionId: profession.blacksmith
+    requiredSpecializationId: 
+    requiredSkillIds: []
+    requiredKnowledgeSubjectIds: []
+    requiredOrganizationId: 
+    requiredAuthorityId: authority.guild.prototype
+    accessPolicyId: information-access.profession.public
+    maximumLearnerCapacity: 1
+  minimumLearners: 1
+  maximumLearners: 1
+  requiredOrganizationId: organization.prototype.guild
+  requiredLocationIds: []
+  requiredToolIds: []
+  requiredStationIds:
+  - production-station.prototype.workstation
+  requiredResourceIds: []
+  completionRequirementIds:
+  - training.module.blacksmith.basics
+  - training.module.blacksmith.hidden-assessment
+  - training.module.blacksmith.practical
+  withdrawalAllowed: 1
+  dismissalAllowed: 1
+  failureAllowed: 1
+  defaultAccessPolicyId: information-access.profession.public
+  version: 1
+  validationMetadata: 

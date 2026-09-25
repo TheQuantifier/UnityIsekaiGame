@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bc32dd95cab4f9e9902f26d905089c2, type: 3}
+  m_Name: profession_rank-ladder_crafter_informal
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.ProfessionalRankLadderDefinition
+  id: profession.rank-ladder.crafter.informal
+  displayName: Crafter Informal Rank Track
+  professionId: profession.crafter
+  specializationId: 
+  orderedRankDefinitionIds:
+  - profession.rank.crafter.master
+  - profession.rank.crafter.novice
+  - profession.rank.crafter.skilled
+  terminalRankDefinitionIds:
+  - profession.rank.crafter.master
+  lateralRankDefinitionIds: []
+  demotionPathRankDefinitionIds: []
+  allowMultipleRoots: 0
+  allowRankSkipping: 0
+  formalTrack: 0
+  informalTrack: 1
+  restricted: 0
+  secret: 0
+  visibility: 1
+  accessPolicyId: information-access.profession.public
+  version: 1

@@ -277,7 +277,7 @@ namespace UnityIsekaiGame.Professions
                 startWorldTime = worldTime,
                 reasonStarted = reason,
                 primaryCareer = primary,
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             }, transactionId);
         }
 
@@ -339,7 +339,7 @@ namespace UnityIsekaiGame.Professions
 
             bool privileged = audience == CareerHistoryProjectionAudience.SubjectPerson || audience == CareerHistoryProjectionAudience.PrivilegedDebug || audience == CareerHistoryProjectionAudience.Employer || audience == CareerHistoryProjectionAudience.ProfessionAuthority;
             bool denied = decision != null && decision.Denied;
-            bool redacted = !denied && (episode.secret || !string.IsNullOrWhiteSpace(episode.accessPolicyId) && episode.accessPolicyId == PrototypeProfessionDefinitionFactory.AccessSecretId) && !privileged;
+            bool redacted = !denied && (episode.secret || !string.IsNullOrWhiteSpace(episode.accessPolicyId) && episode.accessPolicyId == ProfessionContentIds.AccessSecretId) && !privileged;
             CareerEpisodeData projected = episode.Clone();
             List<string> redactedFields = new List<string>();
             if (denied)

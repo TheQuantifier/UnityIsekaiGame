@@ -25,7 +25,7 @@ namespace UnityIsekaiGame.Tests
             DefinitionRegistry registry = Registry();
             DefinitionValidationReport report = new DefinitionValidationReport();
 
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(registry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -35,7 +35,7 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
             Assert.That(report.WarningCount, Is.Zero, report.GetSummary());
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, out ProfessionalActivityDefinition crafting), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, out ProfessionalActivityDefinition crafting), Is.True);
             Assert.That(crafting.AcceptedSourceTypes, Does.Contain(ProfessionalActivitySourceType.CraftingOperation));
         }
 
@@ -120,12 +120,12 @@ namespace UnityIsekaiGame.Tests
             long trainingRevision = training.Revision;
 
             ProfessionalActivityOperationResult result = fixture.Activities.RegisterAndValidateActivity(
-                Request("craft.activity.validation", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, CraftingSource("craft.source.validation", PersonId, "20")),
+                Request("craft.activity.validation", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, CraftingSource("craft.source.validation", PersonId, "20")),
                 "evidence.craft.activity.validation",
                 "authority.guild.prototype",
                 "tx.craft.activity.validation");
 
-            ProfessionalExperienceSummary summary = fixture.Activities.BuildExperienceSummary(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            ProfessionalExperienceSummary summary = fixture.Activities.BuildExperienceSummary(PersonId, ProfessionContentIds.BlacksmithProfessionId);
 
             Assert.That(result.Succeeded, Is.True, result.Message);
             Assert.That(result.Evidence, Is.Not.Null);
@@ -146,7 +146,7 @@ namespace UnityIsekaiGame.Tests
             activities.Configure(registry, professions, knownPersons);
 
             ProfessionalActivityValidationResult result = activities.EvaluateActivity(
-                Request("activity.no-profession", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, CraftingSource("craft.source.no-profession", PersonId, "25")));
+                Request("activity.no-profession", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, CraftingSource("craft.source.no-profession", PersonId, "25")));
 
             Assert.That(result.Valid, Is.False);
             Assert.That(result.Status, Is.EqualTo(ProfessionalActivityOperationStatus.MissingProfessionRelationship));
@@ -160,12 +160,12 @@ namespace UnityIsekaiGame.Tests
             Fixture fixture = CreateFixture();
             ProfessionalActivitySourceSnapshot exclusiveSource = CraftingSource("craft.source.exclusive", PersonId, "30");
             ProfessionalActivityOperationResult first = fixture.Activities.RegisterAndValidateActivity(
-                Request("activity.exclusive.first", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, exclusiveSource),
+                Request("activity.exclusive.first", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, exclusiveSource),
                 "evidence.exclusive.first",
                 "authority.guild.prototype",
                 "tx.exclusive.first");
             ProfessionalActivityOperationResult duplicate = fixture.Activities.RegisterAndValidateActivity(
-                Request("activity.exclusive.second", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, exclusiveSource),
+                Request("activity.exclusive.second", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, exclusiveSource),
                 "evidence.exclusive.second",
                 "authority.guild.prototype",
                 "tx.exclusive.second");
@@ -180,17 +180,17 @@ namespace UnityIsekaiGame.Tests
                 worldTime: "31",
                 tags: "training.activity.teaching");
             ProfessionalActivityOperationResult instructor = fixture.Activities.RegisterAndValidateActivity(
-                Request("activity.shared.instructor", PrototypeProfessionDefinitionFactory.BlacksmithTeachingActivityDefinitionId, sharedSource, ProfessionalResponsibilityLevel.Instructor, TrainingSupervisionLevel.IndependentWithReview),
+                Request("activity.shared.instructor", ProfessionContentIds.BlacksmithTeachingActivityDefinitionId, sharedSource, ProfessionalResponsibilityLevel.Instructor, TrainingSupervisionLevel.IndependentWithReview),
                 "evidence.shared.instructor",
                 "authority.guild.prototype",
                 "tx.shared.instructor");
             ProfessionalActivityOperationResult assistant = fixture.Activities.RegisterAndValidateActivity(
-                Request("activity.shared.assistant", PrototypeProfessionDefinitionFactory.BlacksmithTeachingActivityDefinitionId, sharedSource, ProfessionalResponsibilityLevel.Assistant, TrainingSupervisionLevel.ObservationOnly),
+                Request("activity.shared.assistant", ProfessionContentIds.BlacksmithTeachingActivityDefinitionId, sharedSource, ProfessionalResponsibilityLevel.Assistant, TrainingSupervisionLevel.ObservationOnly),
                 "evidence.shared.assistant",
                 "authority.guild.prototype",
                 "tx.shared.assistant");
 
-            ProfessionalExperienceSummary summary = fixture.Activities.BuildExperienceSummary(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            ProfessionalExperienceSummary summary = fixture.Activities.BuildExperienceSummary(PersonId, ProfessionContentIds.BlacksmithProfessionId);
 
             Assert.That(first.Succeeded, Is.True, first.Message);
             Assert.That(duplicate.Succeeded, Is.False);
@@ -206,20 +206,20 @@ namespace UnityIsekaiGame.Tests
         {
             Fixture fixture = CreateFixture();
             fixture.Activities.RegisterAndValidateActivity(
-                Request("activity.summary.independent", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, CraftingSource("craft.source.summary", PersonId, "40"), ProfessionalResponsibilityLevel.IndependentPractitioner),
+                Request("activity.summary.independent", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, CraftingSource("craft.source.summary", PersonId, "40"), ProfessionalResponsibilityLevel.IndependentPractitioner),
                 "evidence.summary.independent",
                 "authority.guild.prototype",
                 "tx.summary.independent");
             fixture.Activities.RegisterAndValidateActivity(
-                Request("activity.summary.practice", PrototypeProfessionDefinitionFactory.BlacksmithSupervisedPracticeActivityDefinitionId, PracticalSource("training.source.practice", PersonId, "41"), ProfessionalResponsibilityLevel.SupervisedWorker, TrainingSupervisionLevel.CloselySupervised),
+                Request("activity.summary.practice", ProfessionContentIds.BlacksmithSupervisedPracticeActivityDefinitionId, PracticalSource("training.source.practice", PersonId, "41"), ProfessionalResponsibilityLevel.SupervisedWorker, TrainingSupervisionLevel.CloselySupervised),
                 "evidence.summary.practice",
                 "authority.guild.prototype",
                 "tx.summary.practice");
 
-            ProfessionalExperienceSummary before = fixture.Activities.BuildExperienceSummary(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            ProfessionalExperienceSummary before = fixture.Activities.BuildExperienceSummary(PersonId, ProfessionContentIds.BlacksmithProfessionId);
             bool requirement = fixture.Activities.EvaluateExperienceRequirement(PersonId, new ProfessionalExperienceRequirementData
             {
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 minimumValidatedActivities = 2,
                 minimumIndependentActivities = 1,
                 minimumSupervisedActivities = 1,
@@ -241,7 +241,7 @@ namespace UnityIsekaiGame.Tests
                 new[] { "profession-id", "state" },
                 ProfessionalActivityInformationSubject.ProtectedFields,
                 Array.Empty<string>(),
-                new[] { PrototypeProfessionDefinitionFactory.AccessPublicId },
+                new[] { ProfessionContentIds.AccessPublicId },
                 42d,
                 "Redacted professional activity.",
                 "Professional source details hidden.",
@@ -262,7 +262,7 @@ namespace UnityIsekaiGame.Tests
         {
             Fixture fixture = CreateFixture();
             ProfessionalActivityOperationResult recorded = fixture.Activities.RegisterAndValidateActivity(
-                Request("activity.persist", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, CraftingSource("craft.source.persist", PersonId, "50")),
+                Request("activity.persist", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, CraftingSource("craft.source.persist", PersonId, "50")),
                 "evidence.persist",
                 "authority.guild.prototype",
                 "tx.persist");
@@ -284,7 +284,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(missingRelationshipValid, Is.False);
             Assert.That(missingRelationshipFailure, Does.Contain("relationship"));
             Assert.That(restored.EvidenceCount, Is.EqualTo(1));
-            Assert.That(restored.BuildExperienceSummary(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId).TotalValidatedActivities, Is.EqualTo(1));
+            Assert.That(restored.BuildExperienceSummary(PersonId, ProfessionContentIds.BlacksmithProfessionId).TotalValidatedActivities, Is.EqualTo(1));
         }
 
         private static Fixture CreateFixture()
@@ -297,8 +297,8 @@ namespace UnityIsekaiGame.Tests
             {
                 relationshipId = "profession-relationship.professional-activity.blacksmith",
                 personId = PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                specializationIds = new[] { PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId },
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
+                specializationIds = new[] { ProfessionContentIds.WeaponsmithSpecializationId },
                 informalPractice = true,
                 selfDeclared = true,
                 active = true,
@@ -315,7 +315,7 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
             Assert.That(catalog, Is.Not.Null);
-            return PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(catalog.CreateRegistry());
+            return catalog.CreateRegistry();
         }
 
         private static ProfessionalActivityRegistrationRequest Request(
@@ -329,8 +329,8 @@ namespace UnityIsekaiGame.Tests
             {
                 ActivityId = activityId,
                 PersonId = PersonId,
-                ProfessionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                SpecializationId = PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
+                ProfessionId = ProfessionContentIds.BlacksmithProfessionId,
+                SpecializationId = ProfessionContentIds.WeaponsmithSpecializationId,
                 ActivityDefinitionId = definitionId,
                 Source = source,
                 Responsibility = responsibility,
@@ -340,7 +340,7 @@ namespace UnityIsekaiGame.Tests
                 Quality = source?.Quality ?? 700,
                 Difficulty = source?.Difficulty ?? ProfessionalActivityDifficulty.Routine,
                 Outcome = source?.Outcome ?? ProfessionalActivityOutcomeState.Successful,
-                AccessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId,
+                AccessPolicyId = ProfessionContentIds.AccessPublicId,
                 Provenance = "test"
             };
         }
@@ -355,7 +355,7 @@ namespace UnityIsekaiGame.Tests
                 quality: 750,
                 difficulty: ProfessionalActivityDifficulty.Routine,
                 worldTime: worldTime,
-                tags: "production.activity.forging");
+                tags: "source.crafting");
         }
 
         private static ProfessionalActivitySourceSnapshot PracticalSource(string sourceId, string personId, string worldTime)

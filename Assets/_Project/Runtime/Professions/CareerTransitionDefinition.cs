@@ -81,9 +81,9 @@ namespace UnityIsekaiGame.Professions
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
-            if (string.IsNullOrWhiteSpace(Id) || !Id.StartsWith("career-transition.", StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(Id) || !Id.StartsWith("career.transition.", StringComparison.Ordinal))
             {
-                report.AddError($"{nameof(CareerTransitionDefinition)} '{DisplayName}' must use the 'career-transition.' namespace.");
+                report.AddError($"{nameof(CareerTransitionDefinition)} '{DisplayName}' must use the 'career.transition.' namespace.");
             }
 
             if (string.IsNullOrWhiteSpace(DisplayName))

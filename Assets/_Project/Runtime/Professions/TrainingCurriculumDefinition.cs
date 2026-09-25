@@ -312,9 +312,9 @@ namespace UnityIsekaiGame.Professions
             {
                 report.AddError($"Training Curriculum '{name}' is missing a stable ID.");
             }
-            else if (!Id.StartsWith("training-curriculum.", StringComparison.Ordinal))
+            else if (!Id.StartsWith("training.curriculum.", StringComparison.Ordinal))
             {
-                report.AddWarning($"Training Curriculum '{Id}' should use the 'training-curriculum.' namespace prefix.");
+                report.AddWarning($"Training Curriculum '{Id}' should use the 'training.curriculum.' namespace prefix.");
             }
 
             if (string.IsNullOrWhiteSpace(ProgramId))

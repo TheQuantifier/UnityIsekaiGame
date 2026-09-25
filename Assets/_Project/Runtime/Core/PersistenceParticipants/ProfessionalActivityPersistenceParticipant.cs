@@ -9,7 +9,7 @@ namespace UnityIsekaiGame.Persistence
 {
     public sealed class ProfessionalActivityPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
-        public const string Key = "person.professional-activity";
+        public const string Key = "world.professional-activities";
         public const int CurrentParticipantSchemaVersion = 1;
 
         private readonly ProfessionalActivityRuntime runtime;
@@ -35,11 +35,11 @@ namespace UnityIsekaiGame.Persistence
         public string ParticipantKey => Key;
         public int ParticipantSchemaVersion => CurrentParticipantSchemaVersion;
         public bool IsRequired => false;
-        public PersistenceScope Scope => PersistenceScope.Player;
+        public PersistenceScope Scope => PersistenceScope.SharedWorld;
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.IdentityAndProgression;
         public int LoadPriority => 85;
-        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { PlayerIdentityProgressionPersistenceParticipant.Key, PersonProfessionPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => Array.Empty<string>();
         public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => new[]
         {
             ProfessionEntryPersistenceParticipant.Key,

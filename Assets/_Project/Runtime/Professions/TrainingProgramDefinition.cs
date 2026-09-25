@@ -135,9 +135,9 @@ namespace UnityIsekaiGame.Professions
             {
                 report.AddError($"Training Program '{name}' is missing a stable ID.");
             }
-            else if (!Id.StartsWith("training-program.", StringComparison.Ordinal))
+            else if (!Id.StartsWith("training.program.", StringComparison.Ordinal))
             {
-                report.AddWarning($"Training Program '{Id}' should use the 'training-program.' namespace prefix.");
+                report.AddWarning($"Training Program '{Id}' should use the 'training.program.' namespace prefix.");
             }
 
             ValidateEnum(category, nameof(TrainingProgramCategory), report);

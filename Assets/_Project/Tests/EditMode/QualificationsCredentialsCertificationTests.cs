@@ -20,7 +20,7 @@ namespace UnityIsekaiGame.Tests
             DefinitionRegistry registry = Registry();
             DefinitionValidationReport report = new DefinitionValidationReport();
 
-            foreach (IGameDefinition definition in PrototypeProfessionDefinitionFactory.CreateDefinitions().OfType<IGameDefinition>())
+            foreach (IGameDefinition definition in ProfessionContentIds.GetDefinitions(registry))
             {
                 if (definition is IDefinitionCatalogValidationParticipant participant)
                 {
@@ -30,10 +30,10 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
             Assert.That(report.WarningCount, Is.Zero, report.GetSummary());
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, out CredentialDefinition credential), Is.True);
-            Assert.That(credential.RequiredTrainingProgramIds, Does.Contain(PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId));
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId, out CredentialExaminationDefinition exam), Is.True);
-            Assert.That(exam.RelatedCredentialDefinitionIds, Does.Contain(PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId));
+            Assert.That(registry.TryGet(ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, out CredentialDefinition credential), Is.True);
+            Assert.That(credential.RequiredTrainingProgramIds, Does.Contain(ProfessionContentIds.BlacksmithApprenticeshipProgramId));
+            Assert.That(registry.TryGet(ProfessionContentIds.BlacksmithPracticalExaminationId, out CredentialExaminationDefinition exam), Is.True);
+            Assert.That(exam.RelatedCredentialDefinitionIds, Does.Contain(ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId));
         }
 
         [Test]
@@ -45,11 +45,11 @@ namespace UnityIsekaiGame.Tests
             long activityRevision = fixture.Activities.Revision;
             long credentialRevision = fixture.Credentials.Revision;
 
-            CredentialQualificationResult initial = fixture.Credentials.EvaluateQualification(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
+            CredentialQualificationResult initial = fixture.Credentials.EvaluateQualification(PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
             CompleteTrainingAndExperience(fixture, "qualification");
-            CredentialQualificationResult withoutExam = fixture.Credentials.EvaluateQualification(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
-            RecordExam(fixture, "qualification", PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId, 850);
-            CredentialQualificationResult qualified = fixture.Credentials.EvaluateQualification(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
+            CredentialQualificationResult withoutExam = fixture.Credentials.EvaluateQualification(PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
+            RecordExam(fixture, "qualification", ProfessionContentIds.BlacksmithPracticalExaminationId, 850);
+            CredentialQualificationResult qualified = fixture.Credentials.EvaluateQualification(PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, privilegedDiagnostics: true);
 
             Assert.That(initial.AuthoritativeQualified, Is.False);
             Assert.That(fixture.Professions.Revision, Is.GreaterThanOrEqualTo(professionRevision));
@@ -57,7 +57,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(fixture.Activities.Revision, Is.GreaterThan(activityRevision));
             Assert.That(fixture.Credentials.Revision, Is.GreaterThan(credentialRevision));
             Assert.That(withoutExam.AuthoritativeQualified, Is.False);
-            Assert.That(withoutExam.BlockingFailures, Does.Contain($"examination:{PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId}"));
+            Assert.That(withoutExam.BlockingFailures, Does.Contain($"examination:{ProfessionContentIds.BlacksmithPracticalExaminationId}"));
             Assert.That(qualified.AuthoritativeQualified, Is.True);
             Assert.That(fixture.Credentials.ApplicationCount, Is.Zero);
             Assert.That(fixture.Credentials.CredentialCount, Is.Zero);
@@ -71,9 +71,9 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(issued.Succeeded, Is.True, issued.Message);
             Assert.That(issued.Credential.authenticityState, Is.EqualTo(CredentialAuthenticityState.Authoritative));
-            Assert.That(fixture.Credentials.HasActivePermission(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId), Is.True);
-            Assert.That(fixture.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.BlacksmithProfessionId).Count, Is.EqualTo(1));
-            Assert.That(fixture.Professions.QueryByProfession(PrototypeProfessionDefinitionFactory.FieldMedicProfessionId).Count, Is.Zero);
+            Assert.That(fixture.Credentials.HasActivePermission(PersonId, ProfessionContentIds.BlacksmithPracticePermissionId), Is.True);
+            Assert.That(fixture.Professions.QueryByProfession(ProfessionContentIds.BlacksmithProfessionId).Count, Is.EqualTo(1));
+            Assert.That(fixture.Professions.QueryByProfession(ProfessionContentIds.FieldMedicProfessionId).Count, Is.Zero);
         }
 
         [Test]
@@ -81,15 +81,15 @@ namespace UnityIsekaiGame.Tests
         {
             Fixture fixture = CreateFixture();
             CompleteTrainingAndExperience(fixture, "boundary");
-            RecordExam(fixture, "boundary", PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId, 850);
-            CredentialQualificationResult qualification = fixture.Credentials.EvaluateQualification(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId);
+            RecordExam(fixture, "boundary", ProfessionContentIds.BlacksmithPracticalExaminationId, 850);
+            CredentialQualificationResult qualification = fixture.Credentials.EvaluateQualification(PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId);
 
-            CredentialOperationResult badIssuer = fixture.Credentials.SubmitApplication("credential-application.bad-issuer", PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, new CredentialIssuerReferenceData { issuerId = "authority.medical.prototype", issuerKind = CredentialIssuerAuthorityKind.ProfessionalOrganization }, qualification.Snapshot, "30", "tx.bad-issuer");
-            CredentialOperationResult apply = fixture.Credentials.SubmitApplication("credential-application.stale", PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, GuildIssuer(), qualification.Snapshot, "31", "tx.stale.apply");
-            fixture.Activities.RegisterAndValidateActivity(Request("activity.stale.extra", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, Source(ProfessionalActivitySourceType.CraftingOperation, "source.stale.extra", "production.activity.forging")), "evidence.stale.extra", "authority.guild.prototype", "tx.stale.extra");
-            CredentialQualificationResult current = fixture.Credentials.EvaluateQualification(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId);
+            CredentialOperationResult badIssuer = fixture.Credentials.SubmitApplication("credential-application.bad-issuer", PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, new CredentialIssuerReferenceData { issuerId = "authority.medical.prototype", issuerKind = CredentialIssuerAuthorityKind.ProfessionalOrganization }, qualification.Snapshot, "30", "tx.bad-issuer");
+            CredentialOperationResult apply = fixture.Credentials.SubmitApplication("credential-application.stale", PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, GuildIssuer(), qualification.Snapshot, "31", "tx.stale.apply");
+            fixture.Activities.RegisterAndValidateActivity(Request("activity.stale.extra", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, Source(ProfessionalActivitySourceType.CraftingOperation, "source.stale.extra", "source.crafting")), "evidence.stale.extra", "authority.guild.prototype", "tx.stale.extra");
+            CredentialQualificationResult current = fixture.Credentials.EvaluateQualification(PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId);
             CredentialOperationResult stale = fixture.Credentials.ApproveApplication(apply.Application.applicationId, "authority.guild.prototype", current.Snapshot, "32", "tx.stale.approve");
-            CredentialOperationResult forged = fixture.Credentials.RecordForgedClaim("credential.forged.claim", PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, PersonId, "authority.guild.prototype", "33", "tx.forged");
+            CredentialOperationResult forged = fixture.Credentials.RecordForgedClaim("credential.forged.claim", ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, PersonId, "authority.guild.prototype", "33", "tx.forged");
 
             Assert.That(badIssuer.Succeeded, Is.False);
             Assert.That(badIssuer.Status, Is.EqualTo(CredentialOperationStatus.UnauthorizedIssuer));
@@ -98,7 +98,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(stale.Status, Is.EqualTo(CredentialOperationStatus.StaleQualification));
             Assert.That(forged.Succeeded, Is.True, forged.Message);
             Assert.That(forged.Credential.state, Is.EqualTo(CredentialState.ForgedClaimFoundation));
-            Assert.That(fixture.Credentials.HasActivePermission(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId, CredentialPermissionStatePolicy.AnyNonRevoked), Is.False);
+            Assert.That(fixture.Credentials.HasActivePermission(PersonId, ProfessionContentIds.BlacksmithPracticePermissionId, CredentialPermissionStatePolicy.AnyNonRevoked), Is.False);
         }
 
         [Test]
@@ -109,13 +109,13 @@ namespace UnityIsekaiGame.Tests
             string credentialId = issued.Credential.credentialId;
 
             CredentialOperationResult suspend = fixture.Credentials.SuspendCredential(credentialId, "40", "tx.suspend");
-            bool suspendedPermission = fixture.Credentials.HasActivePermission(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId);
+            bool suspendedPermission = fixture.Credentials.HasActivePermission(PersonId, ProfessionContentIds.BlacksmithPracticePermissionId);
             CredentialOperationResult reinstate = fixture.Credentials.ReinstateCredential(credentialId, "41", "tx.reinstate");
-            bool reinstatedPermission = fixture.Credentials.HasActivePermission(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId);
+            bool reinstatedPermission = fixture.Credentials.HasActivePermission(PersonId, ProfessionContentIds.BlacksmithPracticePermissionId);
             CredentialOperationResult renew = fixture.Credentials.RenewCredential(credentialId, null, "42", "tx.renew");
             CredentialOperationResult expire = fixture.Credentials.ExpireCredential(credentialId, "43", "tx.expire");
-            bool expiredPermission = fixture.Credentials.HasActivePermission(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithPracticePermissionId);
-            InformationAccessDecision decision = new InformationAccessDecision("person.observer", CredentialInformationSubject.Create(CredentialInformationSubject.CredentialTag, credentialId, PersonId), InformationAccessMode.Inspect, InformationAccessDecisionKind.RedactedAccess, InformationAccessDenialCode.DetailRestriction, false, InformationResharingPolicy.NoResharing, new[] { "credential-definition-id", "state" }, CredentialInformationSubject.ProtectedFields, Array.Empty<string>(), new[] { PrototypeProfessionDefinitionFactory.AccessPublicId }, 44d, "Redacted.", "Hidden.", true);
+            bool expiredPermission = fixture.Credentials.HasActivePermission(PersonId, ProfessionContentIds.BlacksmithPracticePermissionId);
+            InformationAccessDecision decision = new InformationAccessDecision("person.observer", CredentialInformationSubject.Create(CredentialInformationSubject.CredentialTag, credentialId, PersonId), InformationAccessMode.Inspect, InformationAccessDecisionKind.RedactedAccess, InformationAccessDenialCode.DetailRestriction, false, InformationResharingPolicy.NoResharing, new[] { "credential-definition-id", "state" }, CredentialInformationSubject.ProtectedFields, Array.Empty<string>(), new[] { ProfessionContentIds.AccessPublicId }, 44d, "Redacted.", "Hidden.", true);
             CredentialProjection<CredentialRecordData> projection = fixture.Credentials.ProjectCredential(credentialId, CredentialProjectionAudience.PublicInspection, decision);
 
             Assert.That(issued.Succeeded, Is.True, issued.Message);
@@ -163,8 +163,8 @@ namespace UnityIsekaiGame.Tests
             {
                 relationshipId = "profession-relationship.credential.blacksmith",
                 personId = PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                specializationIds = new[] { PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId },
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
+                specializationIds = new[] { ProfessionContentIds.WeaponsmithSpecializationId },
                 informalPractice = true,
                 selfDeclared = true,
                 active = true,
@@ -185,25 +185,25 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
             Assert.That(catalog, Is.Not.Null);
-            return PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(catalog.CreateRegistry());
+            return catalog.CreateRegistry();
         }
 
         private static void CompleteTrainingAndExperience(Fixture fixture, string slug)
         {
             string enrollmentId = $"training-enrollment.credential.{slug}";
-            fixture.Training.ApplyToProgram(enrollmentId, PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId, $"tx.training.{slug}.apply", worldTime: 1d);
+            fixture.Training.ApplyToProgram(enrollmentId, PersonId, ProfessionContentIds.BlacksmithApprenticeshipProgramId, $"tx.training.{slug}.apply", worldTime: 1d);
             fixture.Training.AcceptEnrollment(enrollmentId, $"tx.training.{slug}.accept");
-            fixture.Training.AssignInstructor(enrollmentId, $"training-instructor.{slug}.master", TrainingInstructorRoleKind.Master, PersonId, $"tx.training.{slug}.master", professionId: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, authorityId: "authority.guild.prototype");
+            fixture.Training.AssignInstructor(enrollmentId, $"training-instructor.{slug}.master", TrainingInstructorRoleKind.Master, PersonId, $"tx.training.{slug}.master", professionId: ProfessionContentIds.BlacksmithProfessionId, authorityId: "authority.guild.prototype");
             fixture.Training.BeginProgram(enrollmentId, $"tx.training.{slug}.begin");
-            fixture.Training.RunLearningSession($"training-session.{slug}.safety", enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId, PrototypeProfessionDefinitionFactory.BlacksmithSafetyLessonId, $"tx.training.{slug}.safety");
-            fixture.Training.CompleteModule(enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithBasicsModuleId, $"tx.training.{slug}.module.basics");
-            fixture.Training.RunLearningSession($"training-session.{slug}.practice", enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticeModuleId, PrototypeProfessionDefinitionFactory.BlacksmithDemonstrationLessonId, $"tx.training.{slug}.practice");
-            fixture.Training.RecordPracticalAssignment($"training-practical.{slug}.complete", enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticalAssignmentId, $"crafting-operation.{slug}.training", TrainingAssignmentActivityCategory.Crafting, $"tx.training.{slug}.practical", quality: 700, supervisorPersonId: PersonId);
-            fixture.Training.CompleteModule(enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithPracticeModuleId, $"tx.training.{slug}.module.practice");
-            fixture.Training.CompleteModule(enrollmentId, PrototypeProfessionDefinitionFactory.BlacksmithHiddenAssessmentModuleId, $"tx.training.{slug}.module.hidden");
+            fixture.Training.RunLearningSession($"training-session.{slug}.safety", enrollmentId, ProfessionContentIds.BlacksmithBasicsModuleId, ProfessionContentIds.BlacksmithSafetyLessonId, $"tx.training.{slug}.safety");
+            fixture.Training.CompleteModule(enrollmentId, ProfessionContentIds.BlacksmithBasicsModuleId, $"tx.training.{slug}.module.basics");
+            fixture.Training.RunLearningSession($"training-session.{slug}.practice", enrollmentId, ProfessionContentIds.BlacksmithPracticeModuleId, ProfessionContentIds.BlacksmithDemonstrationLessonId, $"tx.training.{slug}.practice");
+            fixture.Training.RecordPracticalAssignment($"training-practical.{slug}.complete", enrollmentId, ProfessionContentIds.BlacksmithPracticalAssignmentId, $"crafting-operation.{slug}.training", TrainingAssignmentActivityCategory.Crafting, $"tx.training.{slug}.practical", quality: 700, supervisorPersonId: PersonId);
+            fixture.Training.CompleteModule(enrollmentId, ProfessionContentIds.BlacksmithPracticeModuleId, $"tx.training.{slug}.module.practice");
+            fixture.Training.CompleteModule(enrollmentId, ProfessionContentIds.BlacksmithHiddenAssessmentModuleId, $"tx.training.{slug}.module.hidden");
             TrainingProgressResult progress = fixture.Training.EvaluateProgress(enrollmentId, perceived: false);
             fixture.Training.CompleteProgram(enrollmentId, $"tx.training.{slug}.complete", progress.RuntimeToken, worldTime: 24d);
-            fixture.Activities.RegisterAndValidateActivity(Request($"activity.credential.{slug}.practice", PrototypeProfessionDefinitionFactory.BlacksmithSupervisedPracticeActivityDefinitionId, Source(ProfessionalActivitySourceType.TrainingPracticalAssignment, $"source.credential.{slug}.practice", "training.activity.practical"), ProfessionalResponsibilityLevel.SupervisedWorker, TrainingSupervisionLevel.CloselySupervised), $"evidence.credential.{slug}.practice", "authority.guild.prototype", $"tx.activity.{slug}.practice");
+            fixture.Activities.RegisterAndValidateActivity(Request($"activity.credential.{slug}.practice", ProfessionContentIds.BlacksmithSupervisedPracticeActivityDefinitionId, Source(ProfessionalActivitySourceType.TrainingPracticalAssignment, $"source.credential.{slug}.practice", "training.activity.practical"), ProfessionalResponsibilityLevel.SupervisedWorker, TrainingSupervisionLevel.CloselySupervised), $"evidence.credential.{slug}.practice", "authority.guild.prototype", $"tx.activity.{slug}.practice");
         }
 
         private static CredentialOperationResult RecordExam(Fixture fixture, string slug, string examinationDefinitionId, int score)
@@ -235,16 +235,16 @@ namespace UnityIsekaiGame.Tests
         private static CredentialOperationResult IssueApprenticeshipCredential(Fixture fixture, string slug, out string applicationId)
         {
             CompleteTrainingAndExperience(fixture, slug);
-            CredentialOperationResult exam = RecordExam(fixture, slug, PrototypeProfessionDefinitionFactory.BlacksmithPracticalExaminationId, 850);
-            CredentialQualificationResult qualification = fixture.Credentials.EvaluateQualification(PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId);
-            CredentialOperationResult apply = fixture.Credentials.SubmitApplication($"credential-application.{slug}", PersonId, PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, GuildIssuer(), qualification.Snapshot, "30", $"tx.application.{slug}");
+            CredentialOperationResult exam = RecordExam(fixture, slug, ProfessionContentIds.BlacksmithPracticalExaminationId, 850);
+            CredentialQualificationResult qualification = fixture.Credentials.EvaluateQualification(PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId);
+            CredentialOperationResult apply = fixture.Credentials.SubmitApplication($"credential-application.{slug}", PersonId, ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, GuildIssuer(), qualification.Snapshot, "30", $"tx.application.{slug}");
             CredentialOperationResult approve = fixture.Credentials.ApproveApplication(apply.Application.applicationId, "authority.guild.prototype", qualification.Snapshot, "31", $"tx.approve.{slug}");
             applicationId = apply.Application.applicationId;
             Assert.That(exam.Succeeded, Is.True, exam.Message);
             Assert.That(qualification.AuthoritativeQualified, Is.True);
             Assert.That(apply.Succeeded, Is.True, apply.Message);
             Assert.That(approve.Succeeded, Is.True, approve.Message);
-            return fixture.Credentials.IssueCredential($"credential-record.{slug}", PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipCertificateCredentialId, PersonId, GuildIssuer(), applicationId, exam.ExaminationAttempt.attemptId, $"registration.{slug}", qualification.Snapshot, "32", $"tx.issue.{slug}");
+            return fixture.Credentials.IssueCredential($"credential-record.{slug}", ProfessionContentIds.BlacksmithApprenticeshipCertificateCredentialId, PersonId, GuildIssuer(), applicationId, exam.ExaminationAttempt.attemptId, $"registration.{slug}", qualification.Snapshot, "32", $"tx.issue.{slug}");
         }
 
         private static CredentialIssuerReferenceData GuildIssuer()
@@ -267,8 +267,8 @@ namespace UnityIsekaiGame.Tests
             {
                 ActivityId = activityId,
                 PersonId = PersonId,
-                ProfessionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                SpecializationId = PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
+                ProfessionId = ProfessionContentIds.BlacksmithProfessionId,
+                SpecializationId = ProfessionContentIds.WeaponsmithSpecializationId,
                 ActivityDefinitionId = definitionId,
                 Source = source,
                 Responsibility = responsibility,
@@ -278,7 +278,7 @@ namespace UnityIsekaiGame.Tests
                 Quality = source?.Quality ?? 700,
                 Difficulty = source?.Difficulty ?? ProfessionalActivityDifficulty.Routine,
                 Outcome = source?.Outcome ?? ProfessionalActivityOutcomeState.Successful,
-                AccessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId,
+                AccessPolicyId = ProfessionContentIds.AccessPublicId,
                 Provenance = "test"
             };
         }

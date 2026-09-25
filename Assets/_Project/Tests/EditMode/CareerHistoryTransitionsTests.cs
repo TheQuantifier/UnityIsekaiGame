@@ -25,9 +25,9 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
             Assert.That(report.WarningCount, Is.Zero, report.GetSummary());
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.CareerPromotionTransitionId, out CareerTransitionDefinition promotion), Is.True);
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.CareerDismissalTransitionId, out CareerTransitionDefinition dismissal), Is.True);
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.CareerReturnFromRetirementTransitionId, out CareerTransitionDefinition returnDefinition), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.CareerPromotionTransitionId, out CareerTransitionDefinition promotion), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.CareerDismissalTransitionId, out CareerTransitionDefinition dismissal), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.CareerReturnFromRetirementTransitionId, out CareerTransitionDefinition returnDefinition), Is.True);
             Assert.That(promotion.RequiredSourceRecordTypes, Does.Contain(CareerTransitionSourceRecordType.Rank));
             Assert.That(dismissal.SecretAllowed, Is.True);
             Assert.That(returnDefinition.RequiredSourceRecordTypes, Does.Contain(CareerTransitionSourceRecordType.CareerEpisode));
@@ -37,19 +37,19 @@ namespace UnityIsekaiGame.Tests
         public void EpisodesTimelinesConcurrentPrimaryAndGapsAreDeterministic()
         {
             using TestLabRuntimeBundle bundle = Bundle();
-            ProfessionOperationResult profession = AddProfession(bundle, "primary", PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, primary: true);
-            PositionEmploymentOperationResult employment = Appoint(bundle, "primary", IndependentOrganization, PrototypeProfessionDefinitionFactory.IndependentOrganizationTypeId);
+            ProfessionOperationResult profession = AddProfession(bundle, "primary", ProfessionContentIds.BlacksmithProfessionId, primary: true);
+            PositionEmploymentOperationResult employment = Appoint(bundle, "primary", IndependentOrganization, ProfessionContentIds.IndependentOrganizationTypeId);
             CareerHistoryOperationResult primary = bundle.CareerHistory.StartCareerEpisode(Episode("career.primary", profession.Snapshot.RelationshipId, employment.Employment, primary: true), "tx.career.primary");
             CareerHistoryOperationResult secondary = bundle.CareerHistory.StartCareerEpisode(new CareerEpisodeData
             {
                 episodeId = "career.secondary",
                 personId = PersonId,
                 category = CareerEpisodeCategory.Employment,
-                professionId = PrototypeProfessionDefinitionFactory.FieldMedicProfessionId,
+                professionId = ProfessionContentIds.FieldMedicProfessionId,
                 startWorldTime = "3",
                 state = CareerEpisodeState.Active,
                 careerClassification = CareerClassification.Secondary,
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             }, "tx.career.secondary");
             CareerHistoryOperationResult gap = bundle.CareerHistory.BeginCareerGap("career.gap", PersonId, "4", "Between commissions", "tx.career.gap");
 
@@ -72,22 +72,22 @@ namespace UnityIsekaiGame.Tests
         public void PromotionDemotionTransferResignationDismissalReferenceAuthoritativeSources()
         {
             using TestLabRuntimeBundle bundle = Bundle();
-            ProfessionOperationResult profession = AddProfession(bundle, "authoritative", PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, primary: true);
-            ProfessionalRankRecordData apprentice = SeedRank(bundle, "rank.apprentice", PrototypeProfessionDefinitionFactory.BlacksmithRankApprenticeId, ProfessionalRankState.Replaced);
-            ProfessionalRankRecordData journeyman = SeedRank(bundle, "rank.journeyman", PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId, ProfessionalRankState.Active);
-            PositionEmploymentOperationResult firstEmployment = Appoint(bundle, "source", IndependentOrganization, PrototypeProfessionDefinitionFactory.IndependentOrganizationTypeId);
-            PositionEmploymentOperationResult targetPosition = CreatePosition(bundle, "target", PrototypeProfessionDefinitionFactory.GuildClerkPositionId, GuildOrganization, PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId);
+            ProfessionOperationResult profession = AddProfession(bundle, "authoritative", ProfessionContentIds.BlacksmithProfessionId, primary: true);
+            ProfessionalRankRecordData apprentice = SeedRank(bundle, "rank.apprentice", ProfessionContentIds.BlacksmithRankApprenticeId, ProfessionalRankState.Replaced);
+            ProfessionalRankRecordData journeyman = SeedRank(bundle, "rank.journeyman", ProfessionContentIds.BlacksmithRankJourneymanId, ProfessionalRankState.Active);
+            PositionEmploymentOperationResult firstEmployment = Appoint(bundle, "source", IndependentOrganization, ProfessionContentIds.IndependentOrganizationTypeId);
+            PositionEmploymentOperationResult targetPosition = CreatePosition(bundle, "target", ProfessionContentIds.GuildClerkPositionId, GuildOrganization, ProfessionContentIds.GuildOrganizationTypeId);
             PositionEligibilityResult transferEligibility = bundle.PositionEmployment.EvaluateEligibility(PersonId, targetPosition.Position.positionInstanceId, privilegedDiagnostics: true);
-            PositionEmploymentOperationResult transferEmployment = bundle.PositionEmployment.TransferPerson(firstEmployment.Employment.employmentId, "employment.career.transfer", targetPosition.Position.positionInstanceId, PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId, transferEligibility.Snapshot, "20", "tx.position.transfer");
+            PositionEmploymentOperationResult transferEmployment = bundle.PositionEmployment.TransferPerson(firstEmployment.Employment.employmentId, "employment.career.transfer", targetPosition.Position.positionInstanceId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId, transferEligibility.Snapshot, "20", "tx.position.transfer");
             PositionEmploymentOperationResult resignation = bundle.PositionEmployment.Resign(transferEmployment.Employment.employmentId, "21", "tx.position.resign");
-            PositionEmploymentOperationResult dismissedEmployment = Appoint(bundle, "dismissal", IndependentOrganization, PrototypeProfessionDefinitionFactory.IndependentOrganizationTypeId);
+            PositionEmploymentOperationResult dismissedEmployment = Appoint(bundle, "dismissal", IndependentOrganization, ProfessionContentIds.IndependentOrganizationTypeId);
             PositionEmploymentOperationResult dismissal = bundle.PositionEmployment.Dismiss(dismissedEmployment.Employment.employmentId, "22", "tx.position.dismiss");
             CareerHistoryOperationResult episode = bundle.CareerHistory.StartCareerEpisode(Episode("career.authoritative", profession.Snapshot.RelationshipId, firstEmployment.Employment, primary: true), "tx.career.authoritative");
-            CareerHistoryOperationResult promotion = bundle.CareerHistory.RecordTransition(Transition("transition.promotion", PrototypeProfessionDefinitionFactory.CareerPromotionTransitionId, CareerTransitionCategory.Promotion, new[] { "career.authoritative" }, Array.Empty<string>(), firstEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.Rank, apprentice.rankRecordId), Source(CareerTransitionSourceRecordType.Rank, journeyman.rankRecordId) }, previousRank: apprentice.rankRecordId, newRank: journeyman.rankRecordId), "tx.career.promotion");
-            CareerHistoryOperationResult demotion = bundle.CareerHistory.RecordTransition(Transition("transition.demotion", PrototypeProfessionDefinitionFactory.CareerDemotionTransitionId, CareerTransitionCategory.Demotion, new[] { "career.authoritative" }, Array.Empty<string>(), firstEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.Rank, journeyman.rankRecordId), Source(CareerTransitionSourceRecordType.Rank, apprentice.rankRecordId) }, previousRank: journeyman.rankRecordId, newRank: apprentice.rankRecordId), "tx.career.demotion");
-            CareerHistoryOperationResult transfer = bundle.CareerHistory.RecordTransition(Transition("transition.transfer", PrototypeProfessionDefinitionFactory.CareerTransferTransitionId, CareerTransitionCategory.Transfer, new[] { "career.authoritative" }, Array.Empty<string>(), transferEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.Employment, firstEmployment.Employment.employmentId), Source(CareerTransitionSourceRecordType.Employment, transferEmployment.Employment.employmentId), Source(CareerTransitionSourceRecordType.Position, targetPosition.Position.positionInstanceId) }, previousEmployment: firstEmployment.Employment.employmentId, previousPosition: firstEmployment.Employment.positionInstanceId), "tx.career.transfer");
-            CareerHistoryOperationResult resign = bundle.CareerHistory.RecordTransition(Transition("transition.resignation", PrototypeProfessionDefinitionFactory.CareerResignationTransitionId, CareerTransitionCategory.Resignation, new[] { "career.authoritative" }, Array.Empty<string>(), transferEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.Employment, resignation.Employment.employmentId) }), "tx.career.resign");
-            CareerHistoryOperationResult dismiss = bundle.CareerHistory.RecordTransition(Transition("transition.dismissal", PrototypeProfessionDefinitionFactory.CareerDismissalTransitionId, CareerTransitionCategory.Dismissal, new[] { "career.authoritative" }, Array.Empty<string>(), dismissal.Employment, new[] { Source(CareerTransitionSourceRecordType.Employment, dismissal.Employment.employmentId) }, secret: true), "tx.career.dismiss");
+            CareerHistoryOperationResult promotion = bundle.CareerHistory.RecordTransition(Transition("transition.promotion", ProfessionContentIds.CareerPromotionTransitionId, CareerTransitionCategory.Promotion, new[] { "career.authoritative" }, Array.Empty<string>(), firstEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.Rank, apprentice.rankRecordId), Source(CareerTransitionSourceRecordType.Rank, journeyman.rankRecordId) }, previousRank: apprentice.rankRecordId, newRank: journeyman.rankRecordId), "tx.career.promotion");
+            CareerHistoryOperationResult demotion = bundle.CareerHistory.RecordTransition(Transition("transition.demotion", ProfessionContentIds.CareerDemotionTransitionId, CareerTransitionCategory.Demotion, new[] { "career.authoritative" }, Array.Empty<string>(), firstEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.Rank, journeyman.rankRecordId), Source(CareerTransitionSourceRecordType.Rank, apprentice.rankRecordId) }, previousRank: journeyman.rankRecordId, newRank: apprentice.rankRecordId), "tx.career.demotion");
+            CareerHistoryOperationResult transfer = bundle.CareerHistory.RecordTransition(Transition("transition.transfer", ProfessionContentIds.CareerTransferTransitionId, CareerTransitionCategory.Transfer, new[] { "career.authoritative" }, Array.Empty<string>(), transferEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.Employment, firstEmployment.Employment.employmentId), Source(CareerTransitionSourceRecordType.Employment, transferEmployment.Employment.employmentId), Source(CareerTransitionSourceRecordType.Position, targetPosition.Position.positionInstanceId) }, previousEmployment: firstEmployment.Employment.employmentId, previousPosition: firstEmployment.Employment.positionInstanceId), "tx.career.transfer");
+            CareerHistoryOperationResult resign = bundle.CareerHistory.RecordTransition(Transition("transition.resignation", ProfessionContentIds.CareerResignationTransitionId, CareerTransitionCategory.Resignation, new[] { "career.authoritative" }, Array.Empty<string>(), transferEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.Employment, resignation.Employment.employmentId) }), "tx.career.resign");
+            CareerHistoryOperationResult dismiss = bundle.CareerHistory.RecordTransition(Transition("transition.dismissal", ProfessionContentIds.CareerDismissalTransitionId, CareerTransitionCategory.Dismissal, new[] { "career.authoritative" }, Array.Empty<string>(), dismissal.Employment, new[] { Source(CareerTransitionSourceRecordType.Employment, dismissal.Employment.employmentId) }, secret: true), "tx.career.dismiss");
             CareerHistoryProjection<CareerTimelineSnapshot> publicProjection = bundle.CareerHistory.ProjectTimeline(PersonId, CareerHistoryProjectionAudience.Public, null);
 
             Assert.That(episode.Succeeded, Is.True, episode.Message);
@@ -103,9 +103,9 @@ namespace UnityIsekaiGame.Tests
         public void RetirementReturnCareerChangeAndMilestonesPreservePriorHistory()
         {
             using TestLabRuntimeBundle bundle = Bundle();
-            ProfessionOperationResult blacksmith = AddProfession(bundle, "smith", PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, primary: true);
-            ProfessionOperationResult medic = AddProfession(bundle, "medic", PrototypeProfessionDefinitionFactory.FieldMedicProfessionId, primary: false);
-            PositionEmploymentOperationResult employment = Appoint(bundle, "retirement", IndependentOrganization, PrototypeProfessionDefinitionFactory.IndependentOrganizationTypeId);
+            ProfessionOperationResult blacksmith = AddProfession(bundle, "smith", ProfessionContentIds.BlacksmithProfessionId, primary: true);
+            ProfessionOperationResult medic = AddProfession(bundle, "medic", ProfessionContentIds.FieldMedicProfessionId, primary: false);
+            PositionEmploymentOperationResult employment = Appoint(bundle, "retirement", IndependentOrganization, ProfessionContentIds.IndependentOrganizationTypeId);
             CareerHistoryOperationResult smithEpisode = bundle.CareerHistory.StartCareerEpisode(Episode("career.smith", blacksmith.Snapshot.RelationshipId, employment.Employment, primary: true), "tx.career.smith");
             PositionEmploymentOperationResult retirementEmployment = bundle.PositionEmployment.Retire(employment.Employment.employmentId, "30", "tx.position.retire");
             CareerHistoryOperationResult retiredEpisode = bundle.CareerHistory.StartCareerEpisode(new CareerEpisodeData
@@ -117,14 +117,14 @@ namespace UnityIsekaiGame.Tests
                 careerClassification = CareerClassification.Retirement,
                 startWorldTime = "30",
                 sourceRecords = new[] { Source(CareerTransitionSourceRecordType.CareerEpisode, "career.smith") },
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             }, "tx.career.retired");
-            CareerHistoryOperationResult retirement = bundle.CareerHistory.RecordTransition(Transition("transition.retirement", PrototypeProfessionDefinitionFactory.CareerRetirementTransitionId, CareerTransitionCategory.Retirement, new[] { "career.smith" }, new[] { "career.retired" }, retirementEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.Employment, retirementEmployment.Employment.employmentId) }), "tx.career.retirement");
-            PositionEmploymentOperationResult returnEmployment = Appoint(bundle, "return", IndependentOrganization, PrototypeProfessionDefinitionFactory.IndependentOrganizationTypeId);
-            CareerHistoryOperationResult medicEpisode = bundle.CareerHistory.StartCareerEpisode(Episode("career.medic", medic.Snapshot.RelationshipId, returnEmployment.Employment, primary: false, professionId: PrototypeProfessionDefinitionFactory.FieldMedicProfessionId), "tx.career.medic");
-            CareerHistoryOperationResult returned = bundle.CareerHistory.RecordTransition(Transition("transition.return", PrototypeProfessionDefinitionFactory.CareerReturnFromRetirementTransitionId, CareerTransitionCategory.ReturnFromRetirement, new[] { "career.retired" }, new[] { "career.medic" }, returnEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.CareerEpisode, "career.retired"), Source(CareerTransitionSourceRecordType.Employment, returnEmployment.Employment.employmentId) }), "tx.career.return");
+            CareerHistoryOperationResult retirement = bundle.CareerHistory.RecordTransition(Transition("transition.retirement", ProfessionContentIds.CareerRetirementTransitionId, CareerTransitionCategory.Retirement, new[] { "career.smith" }, new[] { "career.retired" }, retirementEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.Employment, retirementEmployment.Employment.employmentId) }), "tx.career.retirement");
+            PositionEmploymentOperationResult returnEmployment = Appoint(bundle, "return", IndependentOrganization, ProfessionContentIds.IndependentOrganizationTypeId);
+            CareerHistoryOperationResult medicEpisode = bundle.CareerHistory.StartCareerEpisode(Episode("career.medic", medic.Snapshot.RelationshipId, returnEmployment.Employment, primary: false, professionId: ProfessionContentIds.FieldMedicProfessionId), "tx.career.medic");
+            CareerHistoryOperationResult returned = bundle.CareerHistory.RecordTransition(Transition("transition.return", ProfessionContentIds.CareerReturnFromRetirementTransitionId, CareerTransitionCategory.ReturnFromRetirement, new[] { "career.retired" }, new[] { "career.medic" }, returnEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.CareerEpisode, "career.retired"), Source(CareerTransitionSourceRecordType.Employment, returnEmployment.Employment.employmentId) }), "tx.career.return");
             CareerHistoryOperationResult retirementEnded = bundle.CareerHistory.EndCareerEpisode("career.retired", "31", "Returned to active work", "tx.career.retirement-ended");
-            CareerHistoryOperationResult careerChange = bundle.CareerHistory.RecordTransition(Transition("transition.change", PrototypeProfessionDefinitionFactory.CareerChangeTransitionId, CareerTransitionCategory.CareerChange, new[] { "career.smith" }, new[] { "career.medic" }, returnEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.ProfessionRelationship, medic.Snapshot.RelationshipId), Source(CareerTransitionSourceRecordType.Employment, returnEmployment.Employment.employmentId) }), "tx.career.change");
+            CareerHistoryOperationResult careerChange = bundle.CareerHistory.RecordTransition(Transition("transition.change", ProfessionContentIds.CareerChangeTransitionId, CareerTransitionCategory.CareerChange, new[] { "career.smith" }, new[] { "career.medic" }, returnEmployment.Employment, new[] { Source(CareerTransitionSourceRecordType.ProfessionRelationship, medic.Snapshot.RelationshipId), Source(CareerTransitionSourceRecordType.Employment, returnEmployment.Employment.employmentId) }), "tx.career.change");
             CareerHistoryOperationResult achievement = bundle.CareerHistory.RecordMilestone(Milestone("milestone.achievement", CareerMilestoneKind.Achievement, "career.smith"), "tx.career.achievement");
             CareerHistoryOperationResult setback = bundle.CareerHistory.RecordMilestone(Milestone("milestone.setback", CareerMilestoneKind.Setback, "career.medic", secret: true), "tx.career.setback");
             CareerTimelineSnapshot timeline = bundle.CareerHistory.BuildTimeline(PersonId).Timeline;
@@ -137,7 +137,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(timeline.Episodes.Select(item => item.episodeId), Does.Contain("career.retired"));
             Assert.That(timeline.Episodes.Select(item => item.episodeId), Does.Contain("career.medic"));
             Assert.That(CareerHistoryRequirementAdapters.IsRetired(bundle.CareerHistory, PersonId), Is.False);
-            Assert.That(CareerHistoryRequirementAdapters.HasPreviousProfession(bundle.CareerHistory, PersonId, PrototypeProfessionDefinitionFactory.BlacksmithProfessionId), Is.True);
+            Assert.That(CareerHistoryRequirementAdapters.HasPreviousProfession(bundle.CareerHistory, PersonId, ProfessionContentIds.BlacksmithProfessionId), Is.True);
             Assert.That(CareerHistoryRequirementAdapters.HasCareerTransition(bundle.CareerHistory, PersonId, CareerTransitionCategory.CareerChange), Is.True);
         }
 
@@ -145,8 +145,8 @@ namespace UnityIsekaiGame.Tests
         public void PersistenceRejectsCorruptRestoreWithoutMutationOrHookReplay()
         {
             using TestLabRuntimeBundle bundle = Bundle();
-            ProfessionOperationResult profession = AddProfession(bundle, "persist", PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, primary: true);
-            PositionEmploymentOperationResult employment = Appoint(bundle, "persist", IndependentOrganization, PrototypeProfessionDefinitionFactory.IndependentOrganizationTypeId);
+            ProfessionOperationResult profession = AddProfession(bundle, "persist", ProfessionContentIds.BlacksmithProfessionId, primary: true);
+            PositionEmploymentOperationResult employment = Appoint(bundle, "persist", IndependentOrganization, ProfessionContentIds.IndependentOrganizationTypeId);
             CareerHistoryOperationResult episode = bundle.CareerHistory.StartCareerEpisode(Episode("career.persist", profession.Snapshot.RelationshipId, employment.Employment, primary: true), "tx.career.persist");
             CareerHistoryRuntimeSaveData save = bundle.CareerHistory.CreateSaveData();
             CareerHistoryRuntime restored = NewCareerRuntime(bundle);
@@ -175,7 +175,7 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
             Assert.That(catalog, Is.Not.Null);
-            DefinitionRegistry registry = PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(catalog.CreateRegistry());
+            DefinitionRegistry registry = catalog.CreateRegistry();
             DefinitionValidationReport report = new DefinitionValidationReport();
             registry = new DefinitionRegistry(registry.DefinitionsById.Values, report);
             Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
@@ -204,11 +204,11 @@ namespace UnityIsekaiGame.Tests
                 formalPractice = true,
                 selfDeclared = true,
                 recognized = true,
-                recognizingAuthorityId = professionId == PrototypeProfessionDefinitionFactory.FieldMedicProfessionId ? "authority.medical.prototype" : GuildAuthority,
+                recognizingAuthorityId = professionId == ProfessionContentIds.FieldMedicProfessionId ? "authority.medical.prototype" : GuildAuthority,
                 primary = primary,
                 active = true,
                 startWorldTime = "1",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId,
+                accessPolicyId = ProfessionContentIds.AccessPublicId,
                 transactionId = $"tx.profession.{slug}"
             });
             Assert.That(result.Succeeded, Is.True, result.Message);
@@ -217,7 +217,7 @@ namespace UnityIsekaiGame.Tests
 
         private static PositionEmploymentOperationResult CreatePosition(TestLabRuntimeBundle bundle, string slug, string organizationId, string organizationTypeId)
         {
-            return CreatePosition(bundle, slug, PrototypeProfessionDefinitionFactory.IndependentContractorPositionId, organizationId, organizationTypeId);
+            return CreatePosition(bundle, slug, ProfessionContentIds.IndependentContractorPositionId, organizationId, organizationTypeId);
         }
 
         private static PositionEmploymentOperationResult CreatePosition(TestLabRuntimeBundle bundle, string slug, string definitionId, string organizationId, string organizationTypeId)
@@ -229,10 +229,10 @@ namespace UnityIsekaiGame.Tests
                 organizationId = organizationId,
                 organizationTypeId = organizationTypeId,
                 state = PositionInstanceState.Vacant,
-                maximumHolders = definitionId == PrototypeProfessionDefinitionFactory.GuildClerkPositionId ? 2 : 4,
+                maximumHolders = definitionId == ProfessionContentIds.GuildClerkPositionId ? 2 : 4,
                 vacancyAllowed = true,
                 createdWorldTime = "1",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             }, $"tx.position.create.{slug}");
             Assert.That(result.Succeeded, Is.True, result.Message);
             return result;
@@ -243,7 +243,7 @@ namespace UnityIsekaiGame.Tests
             PositionEmploymentOperationResult position = CreatePosition(bundle, slug, organizationId, organizationTypeId);
             PositionEligibilityResult eligibility = bundle.PositionEmployment.EvaluateEligibility(PersonId, position.Position.positionInstanceId, privilegedDiagnostics: true);
             Assert.That(eligibility.AuthoritativeEligible, Is.True, string.Join(",", eligibility.BlockingFailures));
-            PositionEmploymentOperationResult appointment = bundle.PositionEmployment.AppointPerson($"employment.career.{slug}", string.Empty, PersonId, position.Position.positionInstanceId, PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, eligibility.Snapshot, "2", $"tx.position.appoint.{slug}", EmploymentClassification.IndependentServiceFoundation);
+            PositionEmploymentOperationResult appointment = bundle.PositionEmployment.AppointPerson($"employment.career.{slug}", string.Empty, PersonId, position.Position.positionInstanceId, ProfessionContentIds.PositionAppointAuthorityId, eligibility.Snapshot, "2", $"tx.position.appoint.{slug}", EmploymentClassification.IndependentServiceFoundation);
             Assert.That(appointment.Succeeded, Is.True, appointment.Message);
             return appointment;
         }
@@ -255,7 +255,7 @@ namespace UnityIsekaiGame.Tests
                 episodeId = episodeId,
                 personId = PersonId,
                 category = CareerEpisodeCategory.Employment,
-                professionId = string.IsNullOrWhiteSpace(professionId) ? PrototypeProfessionDefinitionFactory.BlacksmithProfessionId : professionId,
+                professionId = string.IsNullOrWhiteSpace(professionId) ? ProfessionContentIds.BlacksmithProfessionId : professionId,
                 employmentId = employment.employmentId,
                 positionInstanceId = employment.positionInstanceId,
                 organizationId = employment.employerOrganizationId,
@@ -264,7 +264,7 @@ namespace UnityIsekaiGame.Tests
                 careerClassification = primary ? CareerClassification.Primary : CareerClassification.Secondary,
                 workClassification = employment.classification,
                 primaryCareer = primary,
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId,
+                accessPolicyId = ProfessionContentIds.AccessPublicId,
                 sourceRecords = new[]
                 {
                     Source(CareerTransitionSourceRecordType.ProfessionRelationship, professionRelationshipId),
@@ -283,7 +283,7 @@ namespace UnityIsekaiGame.Tests
                 category = category,
                 sourceEpisodeIds = sourceEpisodes ?? Array.Empty<string>(),
                 destinationEpisodeIds = destinationEpisodes ?? Array.Empty<string>(),
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 previousRankRecordId = previousRank,
                 newRankRecordId = newRank,
                 previousEmploymentId = string.IsNullOrWhiteSpace(previousEmployment) ? employment.employmentId : previousEmployment,
@@ -292,9 +292,9 @@ namespace UnityIsekaiGame.Tests
                 newPositionInstanceId = employment.positionInstanceId,
                 organizationId = employment.employerOrganizationId,
                 transitionWorldTime = employment.startWorldTime,
-                decidingAuthorityId = PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId,
+                decidingAuthorityId = ProfessionContentIds.PositionAppointAuthorityId,
                 secret = secret,
-                accessPolicyId = secret ? PrototypeProfessionDefinitionFactory.AccessSecretId : PrototypeProfessionDefinitionFactory.AccessPublicId,
+                accessPolicyId = secret ? ProfessionContentIds.AccessSecretId : ProfessionContentIds.AccessPublicId,
                 supportingRecords = sources ?? Array.Empty<CareerSourceRecordReferenceData>()
             };
         }
@@ -309,12 +309,12 @@ namespace UnityIsekaiGame.Tests
                 episodeId = episodeId,
                 sourceRecordId = episodeId,
                 sourceRecordType = CareerTransitionSourceRecordType.CareerEpisode,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 worldTime = "40",
                 description = kind.ToString(),
                 exclusive = true,
                 secret = secret,
-                accessPolicyId = secret ? PrototypeProfessionDefinitionFactory.AccessSecretId : PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = secret ? ProfessionContentIds.AccessSecretId : ProfessionContentIds.AccessPublicId
             };
         }
 
@@ -335,16 +335,16 @@ namespace UnityIsekaiGame.Tests
             {
                 rankRecordId = recordId,
                 personId = PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 specializationId = string.Empty,
-                ladderDefinitionId = PrototypeProfessionDefinitionFactory.BlacksmithRankLadderId,
+                ladderDefinitionId = ProfessionContentIds.BlacksmithRankLadderId,
                 rankDefinitionId = rankDefinitionId,
                 state = state,
                 trackKind = ProfessionalRankTrackKind.Formal,
                 recognizingAuthorityId = GuildAuthority,
                 issueWorldTime = "5",
                 effectiveWorldTime = "5",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             };
             save.ranks.Add(rank);
             ProfessionalRankOperationResult restore = bundle.ProfessionalRanks.RestoreFromSaveData(save, bundle.DefinitionRegistry, bundle.Professions, bundle.Training, bundle.ProfessionalActivities, bundle.Credentials, bundle.KnownPersonIds, Authorities(), restoring: false);
@@ -381,12 +381,12 @@ namespace UnityIsekaiGame.Tests
                 "authority.medical.prototype",
                 "authority.government.prototype",
                 "authority.school.prototype",
-                PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId,
-                PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId,
-                PrototypeProfessionDefinitionFactory.PositionSuperviseAuthorityId,
-                PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId,
-                PrototypeProfessionDefinitionFactory.BlacksmithTeachPermissionId,
-                PrototypeProfessionDefinitionFactory.ForgeRestrictedStationPermissionId,
+                ProfessionContentIds.PositionAppointAuthorityId,
+                ProfessionContentIds.PositionDutyAssignAuthorityId,
+                ProfessionContentIds.PositionSuperviseAuthorityId,
+                ProfessionContentIds.PositionRestrictedRecordsAuthorityId,
+                ProfessionContentIds.BlacksmithTeachPermissionId,
+                ProfessionContentIds.ForgeRestrictedStationPermissionId,
                 GuildOrganization,
                 IndependentOrganization
             };

@@ -32,10 +32,10 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
             Assert.That(report.WarningCount, Is.Zero, report.GetSummary());
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.AspirationReachMasterWeaponsmithId, out AspirationDefinition aspiration), Is.True);
-            Assert.That(aspiration.SuggestedGoalDefinitionIds, Does.Contain(PrototypeProfessionDefinitionFactory.GoalReachMasterRankId));
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.GoalCompleteBlacksmithApprenticeshipId, out LifeGoalDefinition trainingGoal), Is.True);
-            Assert.That(trainingGoal.RequiredTrainingProgramIds, Does.Contain(PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId));
+            Assert.That(registry.TryGet(ProfessionContentIds.AspirationReachMasterWeaponsmithId, out AspirationDefinition aspiration), Is.True);
+            Assert.That(aspiration.SuggestedGoalDefinitionIds, Does.Contain(ProfessionContentIds.GoalReachMasterRankId));
+            Assert.That(registry.TryGet(ProfessionContentIds.GoalCompleteBlacksmithApprenticeshipId, out LifeGoalDefinition trainingGoal), Is.True);
+            Assert.That(trainingGoal.RequiredTrainingProgramIds, Does.Contain(ProfessionContentIds.BlacksmithApprenticeshipProgramId));
             Assert.That(badReport.ErrorCount, Is.GreaterThanOrEqualTo(2), badReport.GetSummary());
         }
 
@@ -44,11 +44,11 @@ namespace UnityIsekaiGame.Tests
         {
             using TestLabRuntimeBundle bundle = Bundle();
             AddLifePath(bundle);
-            LifePathOperationResult aspiration = bundle.LifePaths.AddAspiration(Aspiration("aspiration.life.blacksmith", PrototypeProfessionDefinitionFactory.AspirationEnterBlacksmithProfessionId, targetProfession: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId), "tx.life.aspiration");
-            LifePathOperationResult duplicateConflict = bundle.LifePaths.AddAspiration(Aspiration("aspiration.life.blacksmith.second", PrototypeProfessionDefinitionFactory.AspirationEnterBlacksmithProfessionId, targetProfession: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId), "tx.life.aspiration.conflict");
-            LifePathOperationResult enter = bundle.LifePaths.AddGoal(Goal("goal.life.enter", PrototypeProfessionDefinitionFactory.GoalEnterBlacksmithProfessionId, aspiration.Aspiration.aspirationId, targetProfession: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId), "tx.life.goal.enter");
-            LifePathOperationResult training = bundle.LifePaths.AddGoal(Goal("goal.life.training", PrototypeProfessionDefinitionFactory.GoalCompleteBlacksmithApprenticeshipId, aspiration.Aspiration.aspirationId, targetTraining: PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId, dependencies: new[] { enter.Goal.goalId }), "tx.life.goal.training");
-            LifePathOperationResult impossible = bundle.LifePaths.AddGoal(Goal("goal.life.impossible", PrototypeProfessionDefinitionFactory.GoalReachMasterRankId, aspiration.Aspiration.aspirationId, targetRank: PrototypeProfessionDefinitionFactory.BlacksmithRankMasterId, dependencies: new[] { "goal.life.missing" }), "tx.life.goal.bad");
+            LifePathOperationResult aspiration = bundle.LifePaths.AddAspiration(Aspiration("aspiration.life.blacksmith", ProfessionContentIds.AspirationEnterBlacksmithProfessionId, targetProfession: ProfessionContentIds.BlacksmithProfessionId), "tx.life.aspiration");
+            LifePathOperationResult duplicateConflict = bundle.LifePaths.AddAspiration(Aspiration("aspiration.life.blacksmith.second", ProfessionContentIds.AspirationEnterBlacksmithProfessionId, targetProfession: ProfessionContentIds.BlacksmithProfessionId), "tx.life.aspiration.conflict");
+            LifePathOperationResult enter = bundle.LifePaths.AddGoal(Goal("goal.life.enter", ProfessionContentIds.GoalEnterBlacksmithProfessionId, aspiration.Aspiration.aspirationId, targetProfession: ProfessionContentIds.BlacksmithProfessionId), "tx.life.goal.enter");
+            LifePathOperationResult training = bundle.LifePaths.AddGoal(Goal("goal.life.training", ProfessionContentIds.GoalCompleteBlacksmithApprenticeshipId, aspiration.Aspiration.aspirationId, targetTraining: ProfessionContentIds.BlacksmithApprenticeshipProgramId, dependencies: new[] { enter.Goal.goalId }), "tx.life.goal.training");
+            LifePathOperationResult impossible = bundle.LifePaths.AddGoal(Goal("goal.life.impossible", ProfessionContentIds.GoalReachMasterRankId, aspiration.Aspiration.aspirationId, targetRank: ProfessionContentIds.BlacksmithRankMasterId, dependencies: new[] { "goal.life.missing" }), "tx.life.goal.bad");
             LifePathSnapshot before = bundle.LifePaths.BuildSnapshot(PersonId).Snapshot;
             LifePathOperationResult pause = bundle.LifePaths.SetAspirationState(aspiration.Aspiration.aspirationId, PersonAspirationState.Paused, "2", "Waiting on apprenticeship.", "tx.life.pause");
             LifePathOperationResult resume = bundle.LifePaths.SetAspirationState(aspiration.Aspiration.aspirationId, PersonAspirationState.Active, "3", "Resumed.", "tx.life.resume");
@@ -76,27 +76,27 @@ namespace UnityIsekaiGame.Tests
             using TestLabRuntimeBundle bundle = Bundle();
             AddLifePath(bundle);
             AddProfession(bundle);
-            SeedTraining(bundle, "training.life.complete", PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId);
-            SeedCredential(bundle, "credential.life.guild", PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId);
-            SeedRank(bundle, "rank.life.journeyman", PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId);
-            SeedEmployment(bundle, "position.life.guild-clerk", "employment.life.guild-clerk", PrototypeProfessionDefinitionFactory.GuildClerkPositionId);
-            SeedActivity(bundle, "activity.life.crafting", PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId, ProfessionalActivitySourceType.CraftingOperation);
-            SeedActivity(bundle, "activity.life.discovery", PrototypeProfessionDefinitionFactory.BlacksmithExperimentationActivityDefinitionId, ProfessionalActivitySourceType.DiscoveryClaim);
+            SeedTraining(bundle, "training.life.complete", ProfessionContentIds.BlacksmithApprenticeshipProgramId);
+            SeedCredential(bundle, "credential.life.guild", ProfessionContentIds.BlacksmithGuildLicenseCredentialId);
+            SeedRank(bundle, "rank.life.journeyman", ProfessionContentIds.BlacksmithRankJourneymanId);
+            SeedEmployment(bundle, "position.life.guild-clerk", "employment.life.guild-clerk", ProfessionContentIds.GuildClerkPositionId);
+            SeedActivity(bundle, "activity.life.crafting", ProfessionContentIds.BlacksmithCraftingActivityDefinitionId, ProfessionalActivitySourceType.CraftingOperation);
+            SeedActivity(bundle, "activity.life.discovery", ProfessionContentIds.BlacksmithExperimentationActivityDefinitionId, ProfessionalActivitySourceType.DiscoveryClaim);
 
-            PersonGoalData professionGoal = AddGoal(bundle, "goal.life.progress.profession", PrototypeProfessionDefinitionFactory.GoalEnterBlacksmithProfessionId, targetProfession: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
-            PersonGoalData trainingGoal = AddGoal(bundle, "goal.life.progress.training", PrototypeProfessionDefinitionFactory.GoalCompleteBlacksmithApprenticeshipId, targetTraining: PrototypeProfessionDefinitionFactory.BlacksmithApprenticeshipProgramId);
-            PersonGoalData credentialGoal = AddGoal(bundle, "goal.life.progress.credential", PrototypeProfessionDefinitionFactory.GoalEarnBlacksmithGuildLicenseId, targetCredential: PrototypeProfessionDefinitionFactory.BlacksmithGuildLicenseCredentialId);
-            PersonGoalData rankGoal = AddGoal(bundle, "goal.life.progress.rank", PrototypeProfessionDefinitionFactory.GoalReachJourneymanRankId, targetRank: PrototypeProfessionDefinitionFactory.BlacksmithRankJourneymanId);
-            PersonGoalData positionGoal = AddGoal(bundle, "goal.life.progress.position", PrototypeProfessionDefinitionFactory.GoalObtainGuildClerkPositionId, targetPosition: PrototypeProfessionDefinitionFactory.GuildClerkPositionId);
-            PersonGoalData craftingGoal = AddGoal(bundle, "goal.life.progress.crafting", PrototypeProfessionDefinitionFactory.GoalProduceMasterworkId, targetActivity: PrototypeProfessionDefinitionFactory.BlacksmithCraftingActivityDefinitionId);
-            PersonGoalData discoveryGoal = AddGoal(bundle, "goal.life.progress.discovery", PrototypeProfessionDefinitionFactory.GoalConfirmDiscoveryId, targetActivity: PrototypeProfessionDefinitionFactory.BlacksmithExperimentationActivityDefinitionId);
-            LifePathOperationResult perceivedCreate = bundle.LifePaths.AddGoal(Goal("goal.life.perceived", PrototypeProfessionDefinitionFactory.GoalReachMasterRankId, targetRank: PrototypeProfessionDefinitionFactory.BlacksmithRankMasterId, progress: LifeGoalProgressState.Satisfied), "tx.life.perceived");
+            PersonGoalData professionGoal = AddGoal(bundle, "goal.life.progress.profession", ProfessionContentIds.GoalEnterBlacksmithProfessionId, targetProfession: ProfessionContentIds.BlacksmithProfessionId);
+            PersonGoalData trainingGoal = AddGoal(bundle, "goal.life.progress.training", ProfessionContentIds.GoalCompleteBlacksmithApprenticeshipId, targetTraining: ProfessionContentIds.BlacksmithApprenticeshipProgramId);
+            PersonGoalData credentialGoal = AddGoal(bundle, "goal.life.progress.credential", ProfessionContentIds.GoalEarnBlacksmithGuildLicenseId, targetCredential: ProfessionContentIds.BlacksmithGuildLicenseCredentialId);
+            PersonGoalData rankGoal = AddGoal(bundle, "goal.life.progress.rank", ProfessionContentIds.GoalReachJourneymanRankId, targetRank: ProfessionContentIds.BlacksmithRankJourneymanId);
+            PersonGoalData positionGoal = AddGoal(bundle, "goal.life.progress.position", ProfessionContentIds.GoalObtainGuildClerkPositionId, targetPosition: ProfessionContentIds.GuildClerkPositionId);
+            PersonGoalData craftingGoal = AddGoal(bundle, "goal.life.progress.crafting", ProfessionContentIds.GoalProduceMasterworkId, targetActivity: ProfessionContentIds.BlacksmithCraftingActivityDefinitionId);
+            PersonGoalData discoveryGoal = AddGoal(bundle, "goal.life.progress.discovery", ProfessionContentIds.GoalConfirmDiscoveryId, targetActivity: ProfessionContentIds.BlacksmithExperimentationActivityDefinitionId);
+            LifePathOperationResult perceivedCreate = bundle.LifePaths.AddGoal(Goal("goal.life.perceived", ProfessionContentIds.GoalReachMasterRankId, targetRank: ProfessionContentIds.BlacksmithRankMasterId, progress: LifeGoalProgressState.Satisfied), "tx.life.perceived");
             Assert.That(perceivedCreate.Succeeded, Is.True, perceivedCreate.Message);
             PersonGoalData perceivedGoal = perceivedCreate.Goal;
             LifePathOperationResult perceivedOnly = bundle.LifePaths.EvaluateGoalProgress(perceivedGoal.goalId);
 
             LifePathOperationResult staleToken = bundle.LifePaths.EvaluateGoalProgress(professionGoal.goalId);
-            AddProfession(bundle, "second", PrototypeProfessionDefinitionFactory.FieldMedicProfessionId);
+            AddProfession(bundle, "second", ProfessionContentIds.FieldMedicProfessionId);
             LifePathOperationResult staleComplete = bundle.LifePaths.CompleteGoal(professionGoal.goalId, staleToken.Progress, "9", "tx.life.stale");
             LifePathOperationResult currentToken = bundle.LifePaths.EvaluateGoalProgress(professionGoal.goalId);
             LifePathOperationResult complete = bundle.LifePaths.CompleteGoal(professionGoal.goalId, currentToken.Progress, "10", "tx.life.complete");
@@ -128,13 +128,13 @@ namespace UnityIsekaiGame.Tests
                 personId = PersonId,
                 kind = ProfessionalIdentityKind.Primary,
                 alignment = ProfessionalIdentityAlignmentState.Conflicted,
-                professionId = PrototypeProfessionDefinitionFactory.SpyProfessionId,
+                professionId = ProfessionContentIds.SpyProfessionId,
                 selfPerceived = true,
                 publicDeclared = false,
                 active = true,
                 secret = true,
                 motivationTags = new[] { "secret.identity" },
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessSecretId
+                accessPolicyId = ProfessionContentIds.AccessSecretId
             }, "tx.life.identity");
             LifePathOperationResult conflict = bundle.LifePaths.RecordIdentityConflict(new IdentityConflictData
             {
@@ -145,7 +145,7 @@ namespace UnityIsekaiGame.Tests
                 aspirationIds = Array.Empty<string>(),
                 goalIds = Array.Empty<string>(),
                 conflictTags = new[] { "secret.identity" },
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessSecretId
+                accessPolicyId = ProfessionContentIds.AccessSecretId
             }, "tx.life.conflict");
             LifePathProjection<LifePathSnapshot> publicProjection = bundle.LifePaths.ProjectSnapshot(PersonId, LifePathProjectionAudience.Public);
             LifePathProjection<LifePathSnapshot> privateProjection = bundle.LifePaths.ProjectSnapshot(PersonId, LifePathProjectionAudience.SubjectPerson);
@@ -156,7 +156,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(bundle.Professions.QueryByPerson(PersonId).Count, Is.Zero);
             Assert.That(publicProjection.Redacted, Is.True);
             Assert.That(publicProjection.Record.Identities, Is.Empty);
-            Assert.That(privateProjection.Record.Identities.Single().professionId, Is.EqualTo(PrototypeProfessionDefinitionFactory.SpyProfessionId));
+            Assert.That(privateProjection.Record.Identities.Single().professionId, Is.EqualTo(ProfessionContentIds.SpyProfessionId));
         }
 
         [Test]
@@ -164,7 +164,7 @@ namespace UnityIsekaiGame.Tests
         {
             using TestLabRuntimeBundle bundle = Bundle();
             AddLifePath(bundle);
-            AddGoal(bundle, "goal.life.persist", PrototypeProfessionDefinitionFactory.GoalEnterBlacksmithProfessionId, targetProfession: PrototypeProfessionDefinitionFactory.BlacksmithProfessionId);
+            AddGoal(bundle, "goal.life.persist", ProfessionContentIds.GoalEnterBlacksmithProfessionId, targetProfession: ProfessionContentIds.BlacksmithProfessionId);
             LifePathOperationResult achievement = bundle.LifePaths.RecordAchievementOrSetback(new LifePathAchievementSetbackReferenceData
             {
                 recordId = "achievement.life.persist",
@@ -175,7 +175,7 @@ namespace UnityIsekaiGame.Tests
                 sourceRecordId = "source.life.persist",
                 worldTime = "11",
                 exclusive = true,
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             }, "tx.life.achievement");
             LifePathRuntimeSaveData save = bundle.LifePaths.CreateSaveData();
             LifePathRuntime restored = NewLifePathRuntime(bundle);
@@ -205,7 +205,7 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
             Assert.That(catalog, Is.Not.Null);
-            DefinitionRegistry registry = PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(catalog.CreateRegistry());
+            DefinitionRegistry registry = catalog.CreateRegistry();
             DefinitionValidationReport report = new DefinitionValidationReport();
             registry = new DefinitionRegistry(registry.DefinitionsById.Values, report);
             Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
@@ -235,12 +235,12 @@ namespace UnityIsekaiGame.Tests
                 {
                     new FormativeReferenceData { referenceId = "origin.prototype", kind = FormativeReferenceKind.Origin, subjectId = "origin.village", weight = 10 }
                 },
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             }, "tx.life.path");
             Assert.That(result.Succeeded, Is.True, result.Message);
         }
 
-        private static LifePathOperationResult AddProfession(TestLabRuntimeBundle bundle, string slug = "blacksmith", string professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId)
+        private static LifePathOperationResult AddProfession(TestLabRuntimeBundle bundle, string slug = "blacksmith", string professionId = ProfessionContentIds.BlacksmithProfessionId)
         {
             LifePathOperationResult noOp = LifePathOperationResult.Success("No-op", bundle.LifePaths.Revision, bundle.LifePaths.Revision);
             ProfessionOperationResult result = bundle.Professions.AddRelationship(new AddProfessionRelationshipRequest
@@ -252,11 +252,11 @@ namespace UnityIsekaiGame.Tests
                 formalPractice = true,
                 selfDeclared = true,
                 recognized = true,
-                recognizingAuthorityId = professionId == PrototypeProfessionDefinitionFactory.FieldMedicProfessionId ? "authority.medical.prototype" : GuildAuthority,
-                primary = professionId == PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                recognizingAuthorityId = professionId == ProfessionContentIds.FieldMedicProfessionId ? "authority.medical.prototype" : GuildAuthority,
+                primary = professionId == ProfessionContentIds.BlacksmithProfessionId,
                 active = true,
                 startWorldTime = "2",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId,
+                accessPolicyId = ProfessionContentIds.AccessPublicId,
                 transactionId = $"tx.profession.life.{slug}"
             });
             Assert.That(result.Succeeded, Is.True, result.Message);
@@ -281,7 +281,7 @@ namespace UnityIsekaiGame.Tests
                 targetProfessionId = targetProfession,
                 priority = 10,
                 startWorldTime = "1",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             };
         }
 
@@ -304,7 +304,7 @@ namespace UnityIsekaiGame.Tests
                 dependencyGoalIds = dependencies ?? Array.Empty<string>(),
                 priority = 10,
                 startWorldTime = "1",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             };
         }
 
@@ -318,7 +318,7 @@ namespace UnityIsekaiGame.Tests
         private static void SeedTraining(TestLabRuntimeBundle bundle, string enrollmentId, string programId)
         {
             TrainingRuntimeSaveData save = bundle.Training.CreateSaveData();
-            save.enrollments.Add(new TrainingEnrollmentData { enrollmentId = enrollmentId, personId = PersonId, programId = programId, relatedProfessionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, state = TrainingEnrollmentState.Completed, revision = 1L });
+            save.enrollments.Add(new TrainingEnrollmentData { enrollmentId = enrollmentId, personId = PersonId, programId = programId, relatedProfessionId = ProfessionContentIds.BlacksmithProfessionId, state = TrainingEnrollmentState.Completed, revision = 1L });
             TrainingOperationResult restore = bundle.Training.RestoreFromSaveData(save, bundle.DefinitionRegistry, bundle.Professions, bundle.Transfers, bundle.KnownPersonIds, restoring: false);
             Assert.That(restore.Succeeded, Is.True, restore.Message);
         }
@@ -335,8 +335,8 @@ namespace UnityIsekaiGame.Tests
                 applicantPersonId = PersonId,
                 credentialDefinitionId = credentialDefinitionId,
                 requestedIssuer = new CredentialIssuerReferenceData { issuerId = GuildAuthority, issuerKind = CredentialIssuerAuthorityKind.Guild },
-                relatedProfessionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                relatedSpecializationId = PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
+                relatedProfessionId = ProfessionContentIds.BlacksmithProfessionId,
+                relatedSpecializationId = ProfessionContentIds.WeaponsmithSpecializationId,
                 submissionWorldTime = "3",
                 qualificationSnapshot = bundle.Credentials.EvaluateQualification(PersonId, credentialDefinitionId, perceived: true, privilegedDiagnostics: true).Snapshot,
                 supportingTrainingRecordIds = definition.RequiredTrainingProgramIds.ToArray(),
@@ -345,7 +345,7 @@ namespace UnityIsekaiGame.Tests
                 decisionWorldTime = "3",
                 decisionMakerId = GuildAuthority,
                 decisionReason = "Approved fixture prerequisite.",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             });
             foreach (string examinationId in examinationIds)
             {
@@ -359,7 +359,7 @@ namespace UnityIsekaiGame.Tests
                     completionWorldTime = "3",
                     score = 900,
                     state = CredentialExaminationAttemptState.Passed,
-                    accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                    accessPolicyId = ProfessionContentIds.AccessPublicId
                 });
             }
 
@@ -370,8 +370,8 @@ namespace UnityIsekaiGame.Tests
                 recipientPersonId = PersonId,
                 issuer = new CredentialIssuerReferenceData { issuerId = GuildAuthority, issuerKind = CredentialIssuerAuthorityKind.Guild },
                 state = CredentialState.Active,
-                relatedProfessionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
-                relatedSpecializationId = PrototypeProfessionDefinitionFactory.WeaponsmithSpecializationId,
+                relatedProfessionId = ProfessionContentIds.BlacksmithProfessionId,
+                relatedSpecializationId = ProfessionContentIds.WeaponsmithSpecializationId,
                 supportingApplicationId = applicationId,
                 supportingExaminationAttemptId = examinationIds.FirstOrDefault() is string firstExam && !string.IsNullOrWhiteSpace(firstExam) ? $"{credentialId}.{firstExam}.attempt" : string.Empty,
                 supportingTrainingRecordIds = definition.RequiredTrainingProgramIds.ToArray(),
@@ -379,7 +379,7 @@ namespace UnityIsekaiGame.Tests
                 registrationNumber = $"registration.{credentialId}",
                 issueWorldTime = "3",
                 effectiveWorldTime = "3",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             });
             CredentialOperationResult restore = bundle.Credentials.RestoreFromSaveData(save, bundle.DefinitionRegistry, bundle.Professions, bundle.Training, bundle.ProfessionalActivities, bundle.KnownPersonIds, Authorities(), restoring: false);
             Assert.That(restore.Succeeded, Is.True, restore.Message);
@@ -388,7 +388,7 @@ namespace UnityIsekaiGame.Tests
         private static void SeedRank(TestLabRuntimeBundle bundle, string rankRecordId, string rankDefinitionId)
         {
             ProfessionalRankRuntimeSaveData save = bundle.ProfessionalRanks.CreateSaveData();
-            save.ranks.Add(new ProfessionalRankRecordData { rankRecordId = rankRecordId, personId = PersonId, professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId, ladderDefinitionId = PrototypeProfessionDefinitionFactory.BlacksmithRankLadderId, rankDefinitionId = rankDefinitionId, state = ProfessionalRankState.Active, recognizingAuthorityId = GuildAuthority, issueWorldTime = "4", effectiveWorldTime = "4", accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId });
+            save.ranks.Add(new ProfessionalRankRecordData { rankRecordId = rankRecordId, personId = PersonId, professionId = ProfessionContentIds.BlacksmithProfessionId, ladderDefinitionId = ProfessionContentIds.BlacksmithRankLadderId, rankDefinitionId = rankDefinitionId, state = ProfessionalRankState.Active, recognizingAuthorityId = GuildAuthority, issueWorldTime = "4", effectiveWorldTime = "4", accessPolicyId = ProfessionContentIds.AccessPublicId });
             ProfessionalRankOperationResult restore = bundle.ProfessionalRanks.RestoreFromSaveData(save, bundle.DefinitionRegistry, bundle.Professions, bundle.Training, bundle.ProfessionalActivities, bundle.Credentials, bundle.KnownPersonIds, Authorities(), restoring: false);
             Assert.That(restore.Succeeded, Is.True, restore.Message);
         }
@@ -396,8 +396,8 @@ namespace UnityIsekaiGame.Tests
         private static void SeedEmployment(TestLabRuntimeBundle bundle, string positionId, string employmentId, string positionDefinitionId)
         {
             PositionEmploymentRuntimeSaveData save = bundle.PositionEmployment.CreateSaveData();
-            save.positions.Add(new PositionInstanceData { positionInstanceId = positionId, positionDefinitionId = positionDefinitionId, organizationId = GuildOrganization, organizationTypeId = PrototypeProfessionDefinitionFactory.GuildOrganizationTypeId, state = PositionInstanceState.Filled, holderPersonIds = new[] { PersonId }, maximumHolders = 2, vacancyAllowed = true, accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId });
-            save.employments.Add(new EmploymentRecordData { employmentId = employmentId, personId = PersonId, employerOrganizationId = GuildOrganization, positionInstanceId = positionId, positionDefinitionId = positionDefinitionId, classification = EmploymentClassification.PartTime, state = EmploymentState.Active, startWorldTime = "5", appointmentAuthorityId = PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId });
+            save.positions.Add(new PositionInstanceData { positionInstanceId = positionId, positionDefinitionId = positionDefinitionId, organizationId = GuildOrganization, organizationTypeId = ProfessionContentIds.GuildOrganizationTypeId, state = PositionInstanceState.Filled, holderPersonIds = new[] { PersonId }, maximumHolders = 2, vacancyAllowed = true, accessPolicyId = ProfessionContentIds.AccessPublicId });
+            save.employments.Add(new EmploymentRecordData { employmentId = employmentId, personId = PersonId, employerOrganizationId = GuildOrganization, positionInstanceId = positionId, positionDefinitionId = positionDefinitionId, classification = EmploymentClassification.PartTime, state = EmploymentState.Active, startWorldTime = "5", appointmentAuthorityId = ProfessionContentIds.PositionAppointAuthorityId, accessPolicyId = ProfessionContentIds.AccessPublicId });
             PositionEmploymentOperationResult restore = bundle.PositionEmployment.RestoreFromSaveData(save, bundle.DefinitionRegistry, bundle.Professions, bundle.Training, bundle.ProfessionalActivities, bundle.Credentials, bundle.ProfessionalRanks, bundle.KnownPersonIds, Organizations(), Authorities(), restoring: false);
             Assert.That(restore.Succeeded, Is.True, restore.Message);
         }
@@ -409,7 +409,7 @@ namespace UnityIsekaiGame.Tests
             {
                 activityId = activityId,
                 personId = PersonId,
-                professionId = PrototypeProfessionDefinitionFactory.BlacksmithProfessionId,
+                professionId = ProfessionContentIds.BlacksmithProfessionId,
                 activityDefinitionId = activityDefinitionId,
                 source = new ProfessionalActivitySourceReferenceData { sourceType = sourceType, sourceId = $"{activityId}.source", sourceRevision = 1L },
                 state = ProfessionalActivityState.Validated,
@@ -418,7 +418,7 @@ namespace UnityIsekaiGame.Tests
                 quality = 800,
                 startWorldTime = "6",
                 completionWorldTime = "7",
-                accessPolicyId = PrototypeProfessionDefinitionFactory.AccessPublicId
+                accessPolicyId = ProfessionContentIds.AccessPublicId
             });
             ProfessionalActivityOperationResult restore = bundle.ProfessionalActivities.RestoreFromSaveData(save, bundle.DefinitionRegistry, bundle.Professions, bundle.KnownPersonIds, restoring: false);
             Assert.That(restore.Succeeded, Is.True, restore.Message);
@@ -433,6 +433,6 @@ namespace UnityIsekaiGame.Tests
 
         private static string[] Organizations() => new[] { GuildOrganization, "organization.prototype.royal-forge", "organization.prototype.independent" };
 
-        private static string[] Authorities() => new[] { GuildAuthority, PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId, PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId, GuildOrganization };
+        private static string[] Authorities() => new[] { GuildAuthority, ProfessionContentIds.PositionAppointAuthorityId, ProfessionContentIds.PositionDutyAssignAuthorityId, GuildOrganization };
     }
 }

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49b028d5827535749beabf49efcb2817, type: 3}
+  m_Name: profession_specialization_blacksmith_weaponsmith
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.ProfessionSpecializationDefinition
+  specializationId: profession.specialization.blacksmith.weaponsmith
+  parentProfessionId: profession.blacksmith
+  displayName: Weaponsmith
+  debugName: Weaponsmith
+  description: 
+  relatedSkillIds:
+  - skill.smithing
+  knowledgeSubjectIds:
+  - knowledge.subject.weapons
+  relatedCapabilityIds: []
+  productionActivityCategoryIds:
+  - production.activity.weapon-crafting
+  recognitionForm: 0
+  defaultAccessPolicyId: information-access.profession.public
+  version: 1
+  validationMetadata: 

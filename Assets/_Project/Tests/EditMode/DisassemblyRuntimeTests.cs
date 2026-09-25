@@ -124,18 +124,18 @@ namespace UnityIsekaiGame.Tests
         public void DisassemblerAndSalvagerAreDistinctProfessionsAndActivities()
         {
             DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
-            DefinitionRegistry registry = PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(catalog.CreateRegistry());
+            DefinitionRegistry registry = catalog.CreateRegistry();
 
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.DisassemblerProfessionId, out ProfessionDefinition disassembler), Is.True);
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.SalvagerProfessionId, out ProfessionDefinition salvager), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.DisassemblerProfessionId, out ProfessionDefinition disassembler), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.SalvagerProfessionId, out ProfessionDefinition salvager), Is.True);
             Assert.That(disassembler.RelatedSkillIds, Does.Contain("skill.disassembly"));
             Assert.That(salvager.RelatedSkillIds, Does.Contain("skill.salvaging"));
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.ItemRecoveryActivityDefinitionId, out ProfessionalActivityDefinition disassemblyActivity), Is.True);
-            Assert.That(registry.TryGet(PrototypeProfessionDefinitionFactory.SalvagePickupActivityDefinitionId, out ProfessionalActivityDefinition salvageActivity), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.ItemRecoveryActivityDefinitionId, out ProfessionalActivityDefinition disassemblyActivity), Is.True);
+            Assert.That(registry.TryGet(ProfessionContentIds.SalvagePickupActivityDefinitionId, out ProfessionalActivityDefinition salvageActivity), Is.True);
             Assert.That(disassemblyActivity.RequiredActivityTags, Does.Contain("recovery.disassemble"));
-            Assert.That(disassemblyActivity.ApplicableProfessionIds, Does.Not.Contain(PrototypeProfessionDefinitionFactory.SalvagerProfessionId));
+            Assert.That(disassemblyActivity.ApplicableProfessionIds, Does.Not.Contain(ProfessionContentIds.SalvagerProfessionId));
             Assert.That(salvageActivity.RequiredActivityTags, Does.Contain("recovery.salvage"));
-            Assert.That(salvageActivity.ApplicableProfessionIds, Does.Contain(PrototypeProfessionDefinitionFactory.SalvagerProfessionId));
+            Assert.That(salvageActivity.ApplicableProfessionIds, Does.Contain(ProfessionContentIds.SalvagerProfessionId));
         }
 
         [Test]

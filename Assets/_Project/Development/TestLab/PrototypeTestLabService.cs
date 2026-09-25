@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14529,7 +14529,6 @@ namespace UnityIsekaiGame.Development
             registry = PrototypeOrganizationAuthorityDefinitionFactory.AddMissingPrototypeOrganizationAuthorityDefinitions(registry);
             registry = PrototypeOrganizationResourceDefinitionFactory.AddMissingPrototypeOrganizationResourceDefinitions(registry);
             registry = PrototypeOrganizationDecisionDefinitionFactory.AddMissingPrototypeOrganizationDecisionDefinitions(registry);
-            registry = PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(registry);
             registry = PrototypeRelationshipDefinitionFactory.AddMissingPrototypeRelationshipDefinitions(registry);
             registry = PrototypeAttitudeDefinitionFactory.AddMissingPrototypeAttitudeDefinitions(registry);
             registry = PrototypeReputationDefinitionFactory.AddMissingPrototypeReputationDefinitions(registry);

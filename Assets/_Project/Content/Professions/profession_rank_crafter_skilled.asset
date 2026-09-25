@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b71b8f190b8149028cd7fd0d0642635c, type: 3}
+  m_Name: profession_rank_crafter_skilled
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Professions.ProfessionalRankDefinition
+  id: profession.rank.crafter.skilled
+  displayName: Skilled Crafter
+  debugName: Skilled Crafter
+  professionId: profession.crafter
+  specializationId: 
+  rankOrder: 1
+  category: 5
+  priorRankDefinitionIds:
+  - profession.rank.crafter.novice
+  allowRankSkipping: 0
+  requiredCredentialDefinitionIds: []
+  requiredTrainingProgramIds: []
+  experienceRequirement:
+    professionId: profession.crafter
+    specializationId: 
+    requiredCategory: 0
+    minimumValidatedActivities: 5
+    minimumIndependentActivities: 0
+    minimumSupervisedActivities: 0
+    minimumDifficulty: 1
+    minimumQuality: 450
+    requireRecentActivity: 0
+  requiredExaminationDefinitionIds: []
+  requiredAuthorityIds: []
+  selfClaimAllowed: 1
+  trackKind: 1
+  grantedPermissionFoundationIds: []
+  titleEligibilityFoundationIds: []
+  teachingEligibility: 0
+  supervisionEligibility: 0
+  maximumApprenticeCapacity: 0
+  suspensionAllowed: 1
+  revocationAllowed: 1
+  secret: 0
+  visibility: 1
+  accessPolicyId: information-access.profession.public
+  version: 1

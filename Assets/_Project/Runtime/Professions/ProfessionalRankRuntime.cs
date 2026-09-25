@@ -516,6 +516,41 @@ namespace UnityIsekaiGame.Professions
             }
 
             ProfessionalRankLadderDefinition ladder = FindLadder(definition.ProfessionId, definition.SpecializationId, definition.Id);
+            if (ladder == null)
+            {
+                return ProfessionalRankOperationResult.Failure(ProfessionalRankOperationStatus.MissingLadder, "Informal rank ladder is missing.", revision);
+            }
+
+            if (ranksById.Values.Any(item => string.Equals(item.personId, personId ?? string.Empty, StringComparison.Ordinal)
+                && string.Equals(item.ladderDefinitionId, ladder.Id, StringComparison.Ordinal)
+                && IsActiveLike(item.state)
+                && string.Equals(item.rankDefinitionId, definition.Id, StringComparison.Ordinal)))
+            {
+                return ProfessionalRankOperationResult.Failure(ProfessionalRankOperationStatus.DuplicateActiveRank, "Person already has this active informal rank.", revision);
+            }
+
+            List<ProfessionalRankRecordData> changedPrior = new List<ProfessionalRankRecordData>();
+            foreach (ProfessionalRankRecordData prior in ranksById.Values
+                .Where(item => string.Equals(item.personId, personId ?? string.Empty, StringComparison.Ordinal)
+                    && string.Equals(item.ladderDefinitionId, ladder.Id, StringComparison.Ordinal)
+                    && IsActiveLike(item.state))
+                .OrderBy(item => item.rankRecordId, StringComparer.Ordinal))
+            {
+                if (!TryRankDefinition(prior.rankDefinitionId, out ProfessionalRankDefinition priorDefinition)
+                    || priorDefinition.RankOrder >= definition.RankOrder)
+                {
+                    continue;
+                }
+
+                ProfessionalRankRecordData updatedPrior = prior.Clone();
+                updatedPrior.state = ProfessionalRankState.Former;
+                updatedPrior.endWorldTime = worldTime ?? string.Empty;
+                updatedPrior.replacedByRankRecordId = id;
+                updatedPrior.revision++;
+                updatedPrior.revisionHistory = AddSorted(updatedPrior.revisionHistory, $"superseded:{id}:{worldTime ?? string.Empty}");
+                changedPrior.Add(updatedPrior);
+            }
+
             ProfessionalRankRecordData rank = new ProfessionalRankRecordData
             {
                 rankRecordId = id,
@@ -531,6 +566,7 @@ namespace UnityIsekaiGame.Professions
                 effectiveWorldTime = worldTime ?? string.Empty,
                 accessPolicyId = definition.AccessPolicyId,
                 provenance = transactionId ?? string.Empty,
+                replacesRankRecordId = changedPrior.OrderByDescending(item => ResolveRankOrder(item.rankDefinitionId)).Select(item => item.rankRecordId).FirstOrDefault() ?? string.Empty,
                 revisionHistory = new[] { $"informal:{worldTime ?? string.Empty}" },
                 revision = 1L
             };
@@ -538,6 +574,11 @@ namespace UnityIsekaiGame.Professions
             if (preview)
             {
                 return ProfessionalRankOperationResult.Success("Informal rank recognition previewed.", before, before, rank: rank, preview: true);
+            }
+
+            foreach (ProfessionalRankRecordData prior in changedPrior)
+            {
+                ranksById[prior.rankRecordId] = prior.Clone();
             }
 
             ranksById[id] = rank.Clone();

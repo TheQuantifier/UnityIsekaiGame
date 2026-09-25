@@ -16,6 +16,7 @@ using UnityIsekaiGame.Inventory.Identity;
 using UnityIsekaiGame.Inventory.Production;
 using UnityIsekaiGame.Inventory.Quality;
 using UnityIsekaiGame.Inventory.Recipes;
+using UnityIsekaiGame.Professions;
 using UnityIsekaiGame.Skills;
 using UnityIsekaiGame.WorldEntities;
 
@@ -200,6 +201,7 @@ namespace UnityIsekaiGame.Gameplay
             finally { group6InventoryTransaction = false; }
 
             RecordItemRecoverySkillUse(result.Operation, personId);
+            ProfessionCoordinator.RecordItemRecovery(result.Operation);
             dirtyTracker?.MarkDirty($"Item recovery completed: {itemInstanceId}.");
             return result;
         }
@@ -422,6 +424,10 @@ namespace UnityIsekaiGame.Gameplay
             string personId = playerService?.PlayerId ?? PersistenceService.LocalPlayerId;
             string operationId = Guid.NewGuid().ToString("D");
             DisassemblyResult result = ItemRecovery.RecordSalvagePickup(operationId, sourceId, personId, CurrentCraftingWorldTime(), item, calculation, physicalCollectedQuantity, totalCollectedQuantity);
+            if (result.Succeeded && result.Operation != null)
+            {
+                ProfessionCoordinator.RecordItemRecovery(result.Operation);
+            }
             if (result.Succeeded && playerSkills != null && GetDefinitionRegistry().TryGet("skill.salvaging", out SkillDefinition skill))
             {
                 playerSkills.RecordQualifyingAction(new SkillActionExecutionEvent
@@ -881,6 +887,10 @@ namespace UnityIsekaiGame.Gameplay
             EnsureExtendedItemState();
             playerStats?.RefreshEquipmentModifiers();
             RecordCraftingSkillUse(recipe, execution.Operation, personId);
+            ProfessionCoordinator.RecordCrafting(
+                execution.Operation,
+                ResolveCraftingProfessionalQuality(execution.Operation, scaling.ExpectedQuality),
+                ResolveCraftingProfessionalDifficulty(execution.Operation));
             string outputSummary = string.Join(", ", execution.Operation.outputs
                 .Where(output => output.createdItemInstance)
                 .Select(output =>
@@ -898,6 +908,28 @@ namespace UnityIsekaiGame.Gameplay
             string skillSummary = scaling.SkillUsed ? $" using {scaling.SkillId} {scaling.SkillGrade}" : " without a learned crafting Skill";
             string catalystSummary = DescribeCatalystResult(execution.Operation, registry);
             return PrototypeCraftingResult.Success($"Crafted {outputSummary}{skillSummary} at {scaling.ExpectedQuality:P0} expected quality.{catalystSummary}", execution.Operation);
+        }
+
+        private int ResolveCraftingProfessionalQuality(CraftingOperationRecordData operation, float fallbackQuality)
+        {
+            float[] qualities = (operation?.outputs ?? new List<CraftingOutputItemData>())
+                .Where(output => output != null && !string.IsNullOrWhiteSpace(output.itemInstanceId))
+                .Select(output => ItemQualityAffixes.TryGetQualityForItem(output.itemInstanceId, out ItemQualitySnapshot snapshot) ? snapshot.OverallQuality : -1f)
+                .Where(value => value >= 0f)
+                .ToArray();
+            float measured = qualities.Length > 0 ? qualities.Average() : Mathf.Clamp01(fallbackQuality);
+            return Mathf.Clamp(Mathf.RoundToInt(measured * 1000f), 0, 1000);
+        }
+
+        private static ProfessionalActivityDifficulty ResolveCraftingProfessionalDifficulty(CraftingOperationRecordData operation)
+        {
+            float score = (operation?.craftDurationSeconds ?? 0f) / 30f
+                + Math.Max(0, (operation?.consumedInputs?.Count ?? 0) - 1)
+                + Math.Max(0, operation?.catalysts?.Count ?? 0);
+            if (score >= 8f) return ProfessionalActivityDifficulty.Advanced;
+            if (score >= 4f) return ProfessionalActivityDifficulty.Skilled;
+            if (score >= 1f) return ProfessionalActivityDifficulty.Routine;
+            return ProfessionalActivityDifficulty.Trivial;
         }
 
         private static string DescribeCatalystResult(CraftingOperationRecordData operation, DefinitionRegistry registry)

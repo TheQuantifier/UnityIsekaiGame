@@ -134,9 +134,9 @@ namespace UnityIsekaiGame.Professions
             {
                 report.AddError("Professional Rank definition has no stable ID.");
             }
-            else if (!Id.StartsWith("profession-rank.", StringComparison.Ordinal))
+            else if (!Id.StartsWith("profession.rank.", StringComparison.Ordinal))
             {
-                report.AddWarning($"Professional Rank definition '{DisplayName}' should use the 'profession-rank.' namespace prefix.");
+                report.AddWarning($"Professional Rank definition '{DisplayName}' should use the 'profession.rank.' namespace prefix.");
             }
 
             if (definitionsById == null || !definitionsById.TryGetValue(ProfessionId, out IGameDefinition professionDefinition) || professionDefinition is not ProfessionDefinition)

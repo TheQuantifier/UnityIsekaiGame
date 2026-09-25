@@ -330,6 +330,12 @@ namespace UnityIsekaiGame.Gameplay
         private ProductionWorkflowRuntime playerProductionWorkflow;
         private ExperimentationRuntime playerExperimentation;
         private PlayerItemIdentitySynchronizer playerItemIdentitySynchronizer;
+        private ProfessionCoordinator professionCoordinator;
+        private long synchronizedProfessionRevision = -1L;
+        private long synchronizedTrainingRevision = -1L;
+        private long synchronizedCredentialRevision = -1L;
+        private long synchronizedRankRevision = -1L;
+        private long synchronizedEmploymentRevision = -1L;
         private bool dirtyEventsSubscribed;
 
         public PersistenceService PlayerService => playerService;
@@ -342,6 +348,19 @@ namespace UnityIsekaiGame.Gameplay
         public GameSaveDirtyTracker DirtyTracker => dirtyTracker;
         public AutosaveCoordinator Autosave => autosaveCoordinator;
         public DefinitionCatalog DefinitionCatalog => definitionCatalog;
+        public string PlayerPersonId => ResolvePlayerPersonId();
+        public ProfessionCoordinator ProfessionCoordinator => professionCoordinator ??= new ProfessionCoordinator(
+            GetDefinitionRegistry(),
+            Professions,
+            ProfessionEntries,
+            ProfessionalActivities,
+            ProfessionalRanks,
+            CareerHistory,
+            LifePaths,
+            new OrganizationProfessionAuthorityResolver(OrganizationAuthority),
+            Training,
+            Credentials,
+            PositionEmployment);
         public CombatExecutionService CombatExecution => combatExecutionService ??= CreateCombatExecutionService();
         public AttackResolutionService AttackResolution
         {
@@ -952,6 +971,7 @@ namespace UnityIsekaiGame.Gameplay
         private void Update()
         {
             AdvanceGroup6Crafting();
+            SynchronizeProfessionLifecycle();
 
             if (memoryMaintenance == null || playTimeTracker == null)
             {
@@ -1520,6 +1540,7 @@ namespace UnityIsekaiGame.Gameplay
             EnsurePlayerLocationParticipant();
             EnsurePersistenceConsistencyValidators();
             InitializeSceneCharacters();
+            EnsureProfessionLifePathFoundation(playerIdentityProgression);
             PlayerReadiness = playerPersistenceContext.BuildReadiness(new[]
             {
                 PlayerIdentityProgressionPersistenceParticipant.Key,
@@ -1539,6 +1560,12 @@ namespace UnityIsekaiGame.Gameplay
                 InformationTransferPersistenceParticipant.WorldKey,
                 InformationAccessPersistenceParticipant.WorldKey,
                 KnowledgeRecordPersistenceParticipant.WorldKey,
+                TrainingPersistenceParticipant.Key,
+                ProfessionalActivityPersistenceParticipant.Key,
+                CredentialPersistenceParticipant.Key,
+                ProfessionalRankPersistenceParticipant.Key,
+                PositionEmploymentPersistenceParticipant.Key,
+                CareerHistoryPersistenceParticipant.Key,
                 LocationPersistenceParticipant.Key,
                 EntityLocationPersistenceParticipant.Key,
                 InteractionPointPersistenceParticipant.Key,
@@ -3427,7 +3454,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => Professions,
                 () => InformationTransfers,
                 () => knownPersons,
-                playerService.PlayerId);
+                worldService.WorldId);
 
             RegisterParticipant(playerTrainingParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -3462,7 +3489,7 @@ namespace UnityIsekaiGame.Gameplay
                 GetDefinitionRegistry,
                 () => Professions,
                 () => knownPersons,
-                playerService.PlayerId);
+                worldService.WorldId);
 
             RegisterParticipant(playerProfessionalActivityParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -3503,7 +3530,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => ProfessionalActivities,
                 () => knownPersons,
                 () => authorities,
-                playerService.PlayerId);
+                worldService.WorldId);
 
             RegisterParticipant(playerCredentialParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -3546,7 +3573,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => Credentials,
                 () => knownPersons,
                 () => authorities,
-                playerService.PlayerId);
+                worldService.WorldId);
 
             RegisterParticipant(playerProfessionalRankParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -3593,7 +3620,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => knownPersons,
                 () => organizations,
                 () => authorities,
-                playerService.PlayerId);
+                worldService.WorldId);
 
             RegisterParticipant(playerPositionEmploymentParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -3642,7 +3669,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => knownPersons,
                 () => organizations,
                 () => authorities,
-                playerService.PlayerId);
+                worldService.WorldId);
 
             RegisterParticipant(playerCareerHistoryParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -5007,6 +5034,7 @@ namespace UnityIsekaiGame.Gameplay
             if (!restoring)
             {
                 knowledgeHistoryEventBridge?.RecordIdentityAssignment($"origin.{origin?.originId}", origin?.originId, progression?.BirthGift?.giftDefinitionId);
+                EnsureProfessionLifePathFoundation(progression);
             }
         }
 
@@ -5015,6 +5043,79 @@ namespace UnityIsekaiGame.Gameplay
             if (!restoring)
             {
                 knowledgeHistoryEventBridge?.RecordIdentityAssignment($"birth-gift.{gift?.giftDefinitionId}", progression?.Origin?.originId, gift?.giftDefinitionId);
+                EnsureProfessionLifePathFoundation(progression);
+            }
+        }
+
+        private void SynchronizeProfessionLifecycle()
+        {
+            if (playerService == null || playTimeTracker == null)
+            {
+                return;
+            }
+
+            if (synchronizedProfessionRevision == Professions.Revision
+                && synchronizedTrainingRevision == Training.Revision
+                && synchronizedCredentialRevision == Credentials.Revision
+                && synchronizedRankRevision == ProfessionalRanks.Revision
+                && synchronizedEmploymentRevision == PositionEmployment.Revision)
+            {
+                return;
+            }
+
+            string personId = ResolvePlayerPersonId();
+            string worldTime = playTimeTracker.CumulativeSeconds.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+            bool changed = ProfessionCoordinator.SynchronizeCareerLifecycle(personId, worldTime, $"tx.career-lifecycle.{personId}.{worldTime}");
+            synchronizedProfessionRevision = Professions.Revision;
+            synchronizedTrainingRevision = Training.Revision;
+            synchronizedCredentialRevision = Credentials.Revision;
+            synchronizedRankRevision = ProfessionalRanks.Revision;
+            synchronizedEmploymentRevision = PositionEmployment.Revision;
+            if (changed)
+            {
+                dirtyTracker?.MarkDirty("Professional career lifecycle synchronized.");
+            }
+        }
+
+        private void EnsureProfessionLifePathFoundation(PlayerIdentityProgression progression)
+        {
+            if (progression == null)
+            {
+                return;
+            }
+
+            string worldTime = (playTimeTracker?.CumulativeSeconds ?? 0d).ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+            bool created = ProfessionCoordinator.EnsureLifePathFoundation(
+                progression.PersonId,
+                progression.Origin?.originId,
+                progression.BirthGift?.giftDefinitionId,
+                worldTime,
+                $"tx.life-path.foundation.{progression.PersonId}");
+            if (created)
+            {
+                dirtyTracker?.MarkDirty("Player life-path foundation updated.");
+            }
+        }
+
+        private sealed class OrganizationProfessionAuthorityResolver : IProfessionAuthorityResolver
+        {
+            private readonly OrganizationAuthorityRuntime runtime;
+
+            public OrganizationProfessionAuthorityResolver(OrganizationAuthorityRuntime runtime)
+            {
+                this.runtime = runtime;
+            }
+
+            public bool HasAuthority(string actingPersonId, string authorityId, string organizationId = "")
+            {
+                if (runtime == null || string.IsNullOrWhiteSpace(actingPersonId) || string.IsNullOrWhiteSpace(authorityId))
+                {
+                    return false;
+                }
+
+                return runtime.QueryGrants(actingPersonId, organizationId, activeOnly: true)
+                    .Any(grant => string.Equals(grant.Data.authorityRoleDefinitionId, authorityId, StringComparison.Ordinal)
+                        || (grant.Data.permissionDefinitionIds ?? Array.Empty<string>()).Contains(authorityId, StringComparer.Ordinal));
             }
         }
 
@@ -5143,23 +5244,22 @@ namespace UnityIsekaiGame.Gameplay
                 }
             }
 
-            definitionRegistry = PrototypeFamilyRelationshipDefinitionFactory.AddMissingPrototypeFamilyRelationshipDefinitions(
-                PrototypeSocialEmotionDefinitionFactory.AddMissingPrototypeSocialEmotionDefinitions(
-                    PrototypeSocialInfluenceDefinitionFactory.AddMissingPrototypeSocialInfluenceDefinitions(
-                        PrototypeSocialDecisionDefinitionFactory.AddMissingPrototypeSocialDecisionDefinitions(
-                            PrototypeSocialNetworkDefinitionFactory.AddMissingPrototypeSocialNetworkDefinitions(
-                                PrototypeSocialNormDefinitionFactory.AddMissingPrototypeSocialNormDefinitions(
-                                    PrototypeSocialInteractionDefinitionFactory.AddMissingPrototypeSocialInteractionDefinitions(
-                                        PrototypeRumorDefinitionFactory.AddMissingPrototypeRumorDefinitions(
-                                            PrototypeReputationDefinitionFactory.AddMissingPrototypeReputationDefinitions(
-                                                PrototypeAttitudeDefinitionFactory.AddMissingPrototypeAttitudeDefinitions(
-                                                    PrototypeRelationshipDefinitionFactory.AddMissingPrototypeRelationshipDefinitions(
-                                                        PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(
-                                                            PrototypeOrganizationDecisionDefinitionFactory.AddMissingPrototypeOrganizationDecisionDefinitions(
-                                                                PrototypeOrganizationResourceDefinitionFactory.AddMissingPrototypeOrganizationResourceDefinitions(
-                                                                    PrototypeOrganizationAuthorityDefinitionFactory.AddMissingPrototypeOrganizationAuthorityDefinitions(
-                                                                        PrototypeOrganizationMembershipDefinitionFactory.AddMissingPrototypeOrganizationMembershipDefinitions(
-                                                                            PrototypeOrganizationDefinitionFactory.AddMissingPrototypeOrganizationDefinitions(new DefinitionRegistry(definitions))))))))))))))))));
+            definitionRegistry = PrototypeOrganizationDefinitionFactory.AddMissingPrototypeOrganizationDefinitions(new DefinitionRegistry(definitions));
+            definitionRegistry = PrototypeOrganizationMembershipDefinitionFactory.AddMissingPrototypeOrganizationMembershipDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeOrganizationAuthorityDefinitionFactory.AddMissingPrototypeOrganizationAuthorityDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeOrganizationResourceDefinitionFactory.AddMissingPrototypeOrganizationResourceDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeOrganizationDecisionDefinitionFactory.AddMissingPrototypeOrganizationDecisionDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeRelationshipDefinitionFactory.AddMissingPrototypeRelationshipDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeAttitudeDefinitionFactory.AddMissingPrototypeAttitudeDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeReputationDefinitionFactory.AddMissingPrototypeReputationDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeRumorDefinitionFactory.AddMissingPrototypeRumorDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeSocialInteractionDefinitionFactory.AddMissingPrototypeSocialInteractionDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeSocialNormDefinitionFactory.AddMissingPrototypeSocialNormDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeSocialNetworkDefinitionFactory.AddMissingPrototypeSocialNetworkDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeSocialDecisionDefinitionFactory.AddMissingPrototypeSocialDecisionDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeSocialInfluenceDefinitionFactory.AddMissingPrototypeSocialInfluenceDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeSocialEmotionDefinitionFactory.AddMissingPrototypeSocialEmotionDefinitions(definitionRegistry);
+            definitionRegistry = PrototypeFamilyRelationshipDefinitionFactory.AddMissingPrototypeFamilyRelationshipDefinitions(definitionRegistry);
             definitionRegistry = PrototypeFactionDefinitionFactory.AddMissingPrototypeFactionDefinitions(definitionRegistry);
             definitionRegistry = PrototypeDiplomacyDefinitionFactory.AddMissingPrototypeDiplomacyDefinitions(definitionRegistry);
             definitionRegistry = PrototypeGovernmentDefinitionFactory.AddMissingPrototypeGovernmentDefinitions(definitionRegistry);
@@ -5340,12 +5440,12 @@ namespace UnityIsekaiGame.Gameplay
                 "organization.prototype.guild",
                 "authority.government.prototype",
                 "authority.school.prototype",
-                PrototypeProfessionDefinitionFactory.PositionAppointAuthorityId,
-                PrototypeProfessionDefinitionFactory.PositionDutyAssignAuthorityId,
-                PrototypeProfessionDefinitionFactory.PositionSuperviseAuthorityId,
-                PrototypeProfessionDefinitionFactory.PositionRestrictedRecordsAuthorityId,
-                PrototypeProfessionDefinitionFactory.BlacksmithTeachPermissionId,
-                PrototypeProfessionDefinitionFactory.ForgeRestrictedStationPermissionId,
+                ProfessionContentIds.PositionAppointAuthorityId,
+                ProfessionContentIds.PositionDutyAssignAuthorityId,
+                ProfessionContentIds.PositionSuperviseAuthorityId,
+                ProfessionContentIds.PositionRestrictedRecordsAuthorityId,
+                ProfessionContentIds.BlacksmithTeachPermissionId,
+                ProfessionContentIds.ForgeRestrictedStationPermissionId,
                 "organization.prototype.royal-forge",
                 "organization.prototype.temple",
                 "organization.prototype.university",

@@ -256,9 +256,9 @@ namespace UnityIsekaiGame.Editor
 
             SalvagePickupCalculation masterSalvage = SalvagePickupScalingCalculator.Calculate(4, 7, true, "group6.master-salvager");
             Require(Mathf.Approximately(masterSalvage.BonusChance, 0.5f), "AAA Salvaging does not use the configured 50% double-yield chance.");
-            DefinitionRegistry professionRegistry = PrototypeProfessionDefinitionFactory.AddMissingPrototypeProfessionDefinitions(registry);
-            Require(professionRegistry.TryGet(PrototypeProfessionDefinitionFactory.DisassemblerProfessionId, out ProfessionDefinition _), "Disassembler profession is missing.");
-            Require(professionRegistry.TryGet(PrototypeProfessionDefinitionFactory.SalvagerProfessionId, out ProfessionDefinition _), "Salvager profession is missing.");
+            DefinitionRegistry professionRegistry = registry;
+            Require(professionRegistry.TryGet(ProfessionContentIds.DisassemblerProfessionId, out ProfessionDefinition _), "Disassembler profession is missing.");
+            Require(professionRegistry.TryGet(ProfessionContentIds.SalvagerProfessionId, out ProfessionDefinition _), "Salvager profession is missing.");
         }
 
         private static string CraftedItemId(PrototypeCraftingResult[] results, string definitionId)
