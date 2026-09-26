@@ -50,7 +50,7 @@ namespace UnityIsekaiGame.Economy
         public const string PlayerAccountPrefix = "economy-account.person.";
         public const string MerchantAccount = "economy-account.business.prototype-town-workshop";
         public const string ExternalTradeAccount = "economy-account.region.prototype-town-external-trade";
-        public const string TreasuryAccount = "economy-account.organization.prototype-town";
+        public const string TreasuryAccount = "economy-account.organization.prototype.government";
         public const string RevenueAuthority = "revenue-authority.prototype-town";
         public const string BusinessInstance = "business-instance.prototype-town-workshop";
         public const string EstablishmentInstance = "business-establishment.prototype-town-workshop";

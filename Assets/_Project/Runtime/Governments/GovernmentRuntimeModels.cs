@@ -560,6 +560,56 @@ namespace UnityIsekaiGame.Governments
     }
 
     [Serializable]
+    public sealed class GovernmentOrganizationCharterRecordData
+    {
+        public string charterId;
+        public string charterDefinitionId;
+        public string governmentId;
+        public string organizationId;
+        public string supervisingOrganizationId;
+        public string legalInstrumentId;
+        public string[] jurisdictionIds = Array.Empty<string>();
+        public string[] grantedPowerIds = Array.Empty<string>();
+        public string[] dutyIds = Array.Empty<string>();
+        public GovernmentOrganizationCharterCategory category;
+        public GovernmentOrganizationCharterLifecycleState lifecycleState = GovernmentOrganizationCharterLifecycleState.Active;
+        public bool revocable = true;
+        public double effectiveWorldTime;
+        public double endedWorldTime = -1d;
+        public string sourceAuthorityGrantId;
+        public string sourceDecisionId;
+        public PoliticalVisibility visibility = PoliticalVisibility.Public;
+        public string provenanceId;
+        public long revision = 1L;
+
+        public GovernmentOrganizationCharterRecordData Clone()
+        {
+            return new GovernmentOrganizationCharterRecordData
+            {
+                charterId = charterId ?? string.Empty,
+                charterDefinitionId = charterDefinitionId ?? string.Empty,
+                governmentId = governmentId ?? string.Empty,
+                organizationId = organizationId ?? string.Empty,
+                supervisingOrganizationId = supervisingOrganizationId ?? string.Empty,
+                legalInstrumentId = legalInstrumentId ?? string.Empty,
+                jurisdictionIds = PoliticalModelUtility.Clean(jurisdictionIds),
+                grantedPowerIds = PoliticalModelUtility.Clean(grantedPowerIds),
+                dutyIds = PoliticalModelUtility.Clean(dutyIds),
+                category = category,
+                lifecycleState = lifecycleState,
+                revocable = revocable,
+                effectiveWorldTime = effectiveWorldTime,
+                endedWorldTime = endedWorldTime,
+                sourceAuthorityGrantId = sourceAuthorityGrantId ?? string.Empty,
+                sourceDecisionId = sourceDecisionId ?? string.Empty,
+                visibility = visibility,
+                provenanceId = provenanceId ?? string.Empty,
+                revision = Math.Max(1L, revision)
+            };
+        }
+    }
+
+    [Serializable]
     public sealed class PoliticalTransactionRecordData
     {
         public string transactionId;
@@ -597,6 +647,19 @@ namespace UnityIsekaiGame.Governments
         public GovernmentSeatRecordData[] seats = Array.Empty<GovernmentSeatRecordData>();
         public SovereigntyClaimRecordData[] sovereigntyClaims = Array.Empty<SovereigntyClaimRecordData>();
         public JurisdictionRecordData[] jurisdictions = Array.Empty<JurisdictionRecordData>();
+        public GovernmentOrganizationCharterRecordData[] organizationCharters = Array.Empty<GovernmentOrganizationCharterRecordData>();
+        public GovernmentOfficeTenureRecordData[] officeTenures = Array.Empty<GovernmentOfficeTenureRecordData>();
+        public GovernmentElectionRecordData[] elections = Array.Empty<GovernmentElectionRecordData>();
+        public GovernmentPermitRecordData[] permits = Array.Empty<GovernmentPermitRecordData>();
+        public GovernmentFiscalMandateRecordData[] fiscalMandates = Array.Empty<GovernmentFiscalMandateRecordData>();
+        public GovernmentLegitimacyRecordData[] legitimacyAssessments = Array.Empty<GovernmentLegitimacyRecordData>();
+        public GovernmentRemittancePolicyRecordData[] remittancePolicies = Array.Empty<GovernmentRemittancePolicyRecordData>();
+        public GovernmentRemittanceSettlementRecordData[] remittanceSettlements = Array.Empty<GovernmentRemittanceSettlementRecordData>();
+        public GovernmentFiscalReliefRecordData[] fiscalReliefs = Array.Empty<GovernmentFiscalReliefRecordData>();
+        public GovernmentActionRegulationRecordData[] actionRegulations = Array.Empty<GovernmentActionRegulationRecordData>();
+        public GovernmentOfficeVacancyRecordData[] officeVacancies = Array.Empty<GovernmentOfficeVacancyRecordData>();
+        public GovernmentLegitimacyEventRecordData[] legitimacyEvents = Array.Empty<GovernmentLegitimacyEventRecordData>();
+        public GovernmentBudgetCycleRecordData[] budgetCycles = Array.Empty<GovernmentBudgetCycleRecordData>();
         public PoliticalTransitionPlanRecordData[] transitions = Array.Empty<PoliticalTransitionPlanRecordData>();
         public PoliticalTransactionRecordData[] transactions = Array.Empty<PoliticalTransactionRecordData>();
 
@@ -619,6 +682,19 @@ namespace UnityIsekaiGame.Governments
                 seats = seats == null ? Array.Empty<GovernmentSeatRecordData>() : seats.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
                 sovereigntyClaims = sovereigntyClaims == null ? Array.Empty<SovereigntyClaimRecordData>() : sovereigntyClaims.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
                 jurisdictions = jurisdictions == null ? Array.Empty<JurisdictionRecordData>() : jurisdictions.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                organizationCharters = organizationCharters == null ? Array.Empty<GovernmentOrganizationCharterRecordData>() : organizationCharters.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                officeTenures = officeTenures == null ? Array.Empty<GovernmentOfficeTenureRecordData>() : officeTenures.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                elections = elections == null ? Array.Empty<GovernmentElectionRecordData>() : elections.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                permits = permits == null ? Array.Empty<GovernmentPermitRecordData>() : permits.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                fiscalMandates = fiscalMandates == null ? Array.Empty<GovernmentFiscalMandateRecordData>() : fiscalMandates.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                legitimacyAssessments = legitimacyAssessments == null ? Array.Empty<GovernmentLegitimacyRecordData>() : legitimacyAssessments.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                remittancePolicies = remittancePolicies == null ? Array.Empty<GovernmentRemittancePolicyRecordData>() : remittancePolicies.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                remittanceSettlements = remittanceSettlements == null ? Array.Empty<GovernmentRemittanceSettlementRecordData>() : remittanceSettlements.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                fiscalReliefs = fiscalReliefs == null ? Array.Empty<GovernmentFiscalReliefRecordData>() : fiscalReliefs.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                actionRegulations = actionRegulations == null ? Array.Empty<GovernmentActionRegulationRecordData>() : actionRegulations.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                officeVacancies = officeVacancies == null ? Array.Empty<GovernmentOfficeVacancyRecordData>() : officeVacancies.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                legitimacyEvents = legitimacyEvents == null ? Array.Empty<GovernmentLegitimacyEventRecordData>() : legitimacyEvents.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                budgetCycles = budgetCycles == null ? Array.Empty<GovernmentBudgetCycleRecordData>() : budgetCycles.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
                 transitions = transitions == null ? Array.Empty<PoliticalTransitionPlanRecordData>() : transitions.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
                 transactions = transactions == null ? Array.Empty<PoliticalTransactionRecordData>() : transactions.Select(item => item?.Clone()).Where(item => item != null).ToArray()
             };
@@ -640,9 +716,10 @@ namespace UnityIsekaiGame.Governments
         public PoliticalTerritoryRecordData Territory { get; private set; }
         public TerritorialClaimRecordData Claim { get; private set; }
         public JurisdictionRecordData Jurisdiction { get; private set; }
+        public GovernmentOrganizationCharterRecordData OrganizationCharter { get; private set; }
         public PoliticalTransitionPlanRecordData Transition { get; private set; }
 
-        public static PoliticalOperationResult Success(string message, long before, long after, bool preview = false, bool duplicate = false, string subjectId = "", PolityRecordData polity = null, GovernmentRecordData government = null, PoliticalTerritoryRecordData territory = null, TerritorialClaimRecordData claim = null, JurisdictionRecordData jurisdiction = null, PoliticalTransitionPlanRecordData transition = null)
+        public static PoliticalOperationResult Success(string message, long before, long after, bool preview = false, bool duplicate = false, string subjectId = "", PolityRecordData polity = null, GovernmentRecordData government = null, PoliticalTerritoryRecordData territory = null, TerritorialClaimRecordData claim = null, JurisdictionRecordData jurisdiction = null, PoliticalTransitionPlanRecordData transition = null, GovernmentOrganizationCharterRecordData organizationCharter = null)
         {
             return new PoliticalOperationResult
             {
@@ -659,7 +736,8 @@ namespace UnityIsekaiGame.Governments
                 Territory = territory?.Clone(),
                 Claim = claim?.Clone(),
                 Jurisdiction = jurisdiction?.Clone(),
-                Transition = transition?.Clone()
+                Transition = transition?.Clone(),
+                OrganizationCharter = organizationCharter?.Clone()
             };
         }
 

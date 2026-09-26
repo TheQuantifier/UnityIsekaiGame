@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Laws;
 
 namespace UnityIsekaiGame.Organizations
 {
@@ -21,13 +22,17 @@ namespace UnityIsekaiGame.Organizations
 
         public static readonly string[] PrototypeOrganizationIds =
         {
-            "organization.prototype.guild",
+            "organization.prototype.adventurers-guild",
             "organization.prototype.merchant-guild",
+            "organization.prototype.city-guard",
             "organization.prototype.royal-forge",
             "organization.prototype.temple",
             "organization.prototype.university",
             "organization.prototype.government",
-            "organization.prototype.independent"
+            "organization.prototype.manor-administration",
+            "organization.prototype.duchy-administration",
+            "organization.prototype.crown-administration",
+            PrototypeLegalDefinitionFactory.WorldAuthorityOrganizationId
         };
 
         public static DefinitionRegistry AddMissingPrototypeOrganizationDefinitions(DefinitionRegistry baseRegistry)
@@ -66,21 +71,30 @@ namespace UnityIsekaiGame.Organizations
             return definitions;
         }
 
-        public static void SeedPrototypeOrganizations(OrganizationRuntime runtime, DefinitionRegistry registry, string worldId)
+        public static void SeedPrototypeOrganizations(
+            OrganizationRuntime runtime,
+            DefinitionRegistry registry,
+            string worldId,
+            IEnumerable<string> knownPersonIds = null,
+            IEnumerable<string> knownPlaceIds = null)
         {
             if (runtime == null)
             {
                 return;
             }
 
-            runtime.Configure(registry, worldId);
-            Seed(runtime, "organization.prototype.guild", GuildDefinitionId, "Prototype Adventurers Guild", "Guild", 0d);
+            runtime.Configure(registry, worldId, knownPersonIds, knownPlaceIds);
+            Seed(runtime, "organization.prototype.adventurers-guild", GuildDefinitionId, "Prototype Adventurers Guild", "Guild", 0d);
             Seed(runtime, "organization.prototype.merchant-guild", GuildDefinitionId, "Prototype Merchant Guild", "Merchant Guild", 0d);
+            Seed(runtime, "organization.prototype.city-guard", MilitaryOrderDefinitionId, "Prototype City Guard", "City Guard", 0d);
             Seed(runtime, "organization.prototype.royal-forge", CompanyDefinitionId, "Prototype Royal Forge", "Royal Forge", 0d);
             Seed(runtime, "organization.prototype.temple", ReligiousOrderDefinitionId, "Prototype Temple", "Temple", 0d);
             Seed(runtime, "organization.prototype.university", InstitutionDefinitionId, "Prototype University", "University", 0d);
             Seed(runtime, "organization.prototype.government", CivicBodyDefinitionId, "Prototype Civic Office", "Civic Office", 0d);
-            Seed(runtime, "organization.prototype.independent", InstitutionDefinitionId, "Independent Practitioners", "Independent", 0d);
+            Seed(runtime, "organization.prototype.manor-administration", CivicBodyDefinitionId, "Prototype Manor Administration", "Manor Administration", 0d);
+            Seed(runtime, "organization.prototype.duchy-administration", CivicBodyDefinitionId, "Prototype Duchy Administration", "Duchy Administration", 0d);
+            Seed(runtime, "organization.prototype.crown-administration", CivicBodyDefinitionId, "Prototype Crown Administration", "Crown Administration", 0d);
+            Seed(runtime, PrototypeLegalDefinitionFactory.WorldAuthorityOrganizationId, CivicBodyDefinitionId, "Fundamental World Authority", "World Authority", 0d);
         }
 
         private static void Seed(OrganizationRuntime runtime, string organizationId, string definitionId, string name, string shortName, double worldTime)

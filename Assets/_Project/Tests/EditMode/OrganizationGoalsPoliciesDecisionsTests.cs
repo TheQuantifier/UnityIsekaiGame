@@ -15,7 +15,7 @@ namespace UnityIsekaiGame.Tests
 {
     public sealed class OrganizationGoalsPoliciesDecisionsTests
     {
-        private const string GuildId = "organization.prototype.guild";
+        private const string GuildId = "organization.prototype.adventurers-guild";
         private const string ActorId = PersistenceService.LocalPlayerId;
 
         [Test]
@@ -282,7 +282,7 @@ namespace UnityIsekaiGame.Tests
             private void CreateGuildmaster()
             {
                 OrganizationMembershipOperationResult member = CreateVotingMember(ActorId, "guildmaster");
-                string[] ranks = { PrototypeOrganizationMembershipDefinitionFactory.GuildNoviceRankId, PrototypeOrganizationMembershipDefinitionFactory.GuildJourneymanRankId, PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId };
+                string[] ranks = PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds.ToArray();
                 for (int index = 0; index < ranks.Length; index++) Memberships.AssignRank(new OrganizationRankAssignmentRequest
                 {
                     rankAssignmentId = $"organization-rank-assignment.test.decisions.{index}",

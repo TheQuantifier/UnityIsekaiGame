@@ -32,5 +32,5 @@ MonoBehaviour:
   authority: 0
   visibility: 2
   presentationColor: {r: 0.62, g: 0.24, b: 0.2, a: 1}
-  culturePlaceholder: 
-  foundingMetadataPlaceholder: 
+  cultureId:
+  foundingMetadata:

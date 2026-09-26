@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71df4d583f7b4e569eec9cc9ba1e4287, type: 3}
+  m_Name: government_charter_prototype_adventurers_guild
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Governments:GovernmentOrganizationCharterDefinition
+  charterDefinitionId: government-charter.prototype.adventurers-guild
+  displayName: Prototype Adventurers Guild Charter
+  description: 
+  category: 2
+  governmentId: government.prototype.civic
+  organizationId: organization.prototype.adventurers-guild
+  supervisingOrganizationId: organization.prototype.government
+  legalInstrumentId: legal-instrument.charter.prototype.adventurers-guild
+  jurisdictionIds:
+  - jurisdiction.prototype.town
+  grantedPowerIds:
+  - guild.power.assign-guild-rank
+  - guild.power.issue-contracts
+  - guild.power.register-adventurers
+  dutyIds:
+  - guild.duty.keep-member-records
+  - guild.duty.report-dangerous-contracts
+  revocable: 1
+  defaultVisibility: 0
+  tags:
+  - charter
+  - government
+  - prototype
+  version: 1

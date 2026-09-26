@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Skills.SkillDefinition
   skillId: skill.salvaging
   displayName: Salvaging
+  skillTypes: 8
   description: Learned proficiency at spotting and gathering extra usable pieces
     from fallen debris and resource drops.
   primaryCategory: {fileID: 11400000, guid: 53200000000000000000000000000053, type: 2}

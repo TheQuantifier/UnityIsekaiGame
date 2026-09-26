@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58aa7ab4208df214ba59f622996786f1, type: 3}
+  m_Name: organization_authority_binding_prototype_guild_receptionist_office
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:OrganizationAuthorityBindingDefinition
+  bindingDefinitionId: organization-authority-binding.prototype.guild.receptionist-office
+  displayName: Guild Receptionist Office Authority
+  sourceType: 30
+  sourceDefinitionId: organization-office.prototype.guild.receptionist
+  sourceRuntimeId: 
+  authorityRoleDefinitionId: organization-authority-role.prototype.guild-receptionist
+  scopeType: 10
+  scopeMatch: 0
+  scopedOrganizationDefinitionId: 
+  startOffset: 0
+  duration: -1
+  priority: 70
+  conflictPolicy: 20
+  visibility: 0
+  tags:
+  - authority
+  - organization
+  - prototype
+  version: 1

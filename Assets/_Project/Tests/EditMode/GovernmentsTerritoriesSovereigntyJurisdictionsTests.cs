@@ -8,6 +8,8 @@ using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Governments;
 using UnityIsekaiGame.Organizations;
 using UnityIsekaiGame.Persistence;
+using UnityIsekaiGame.Social.Family;
+using UnityIsekaiGame.Social.Relationships;
 using UnityEngine;
 
 namespace UnityIsekaiGame.Tests
@@ -33,6 +35,142 @@ namespace UnityIsekaiGame.Tests
             Assert.That(government.Category, Is.EqualTo(GovernmentCategory.MonarchicalGovernment));
             Assert.That(territory.Category, Is.EqualTo(PoliticalTerritoryCategory.Realm));
             Assert.That(jurisdiction.Category, Is.EqualTo(JurisdictionCategory.GeneralGovernment));
+        }
+
+        [Test]
+        public void AdministrativeTitles_FormTheConfiguredAuthorityHierarchy()
+        {
+            DefinitionRegistry registry = CreateRegistry();
+            string[] hierarchy =
+            {
+                PrototypeGovernmentDefinitionFactory.NobleOfficeDefinitionId,
+                PrototypeGovernmentDefinitionFactory.VillageChiefOfficeDefinitionId,
+                PrototypeGovernmentDefinitionFactory.MayorGovernmentOfficeDefinitionId,
+                PrototypeGovernmentDefinitionFactory.ManorLordOfficeDefinitionId,
+                PrototypeGovernmentDefinitionFactory.DukeOfficeDefinitionId,
+                PrototypeGovernmentDefinitionFactory.MonarchOfficeDefinitionId
+            };
+            GovernmentAuthorityTier[] tiers =
+            {
+                GovernmentAuthorityTier.Noble,
+                GovernmentAuthorityTier.Village,
+                GovernmentAuthorityTier.Town,
+                GovernmentAuthorityTier.Manor,
+                GovernmentAuthorityTier.Duchy,
+                GovernmentAuthorityTier.Kingdom
+            };
+
+            for (int index = 0; index < hierarchy.Length; index++)
+            {
+                Assert.That(registry.TryGet(hierarchy[index], out GovernmentOfficeDefinition office), Is.True, hierarchy[index]);
+                Assert.That(office.AuthorityTier, Is.EqualTo(tiers[index]));
+                Assert.That(office.SuperiorOfficeDefinitionId, Is.EqualTo(index + 1 < hierarchy.Length ? hierarchy[index + 1] : string.Empty));
+            }
+
+            Assert.That(registry.TryGet(PrototypeGovernmentDefinitionFactory.DukeOfficeDefinitionId, out GovernmentOfficeDefinition duke), Is.True);
+            Assert.That(duke.EligibilityRule, Is.EqualTo(GovernmentOfficeEligibilityRule.DirectDescendantOfReigningMonarch));
+            Assert.That(registry.TryGet(PrototypeGovernmentDefinitionFactory.TownAdministrationDefinitionId, out GovernmentDefinition town), Is.True);
+            Assert.That(town.DefaultLevel, Is.EqualTo(GovernmentLevel.Municipal));
+        }
+
+        [Test]
+        public void DucalOffice_RequiresDirectDescentFromTheActiveMonarch()
+        {
+            const string monarchPerson = "person.test.monarch";
+            const string heirPerson = "person.test.heir";
+            const string outsiderPerson = "person.test.outsider";
+            string[] people = { monarchPerson, heirPerson, outsiderPerson };
+            DefinitionRegistry registry = PrototypeFamilyRelationshipDefinitionFactory.AddMissingPrototypeFamilyRelationshipDefinitions(CreateRegistry());
+            OrganizationRuntime organizations = new OrganizationRuntime();
+            PrototypeOrganizationDefinitionFactory.SeedPrototypeOrganizations(organizations, registry, PersistenceService.LocalWorldId, people);
+            organizations.Configure(registry, PersistenceService.LocalWorldId, people, Array.Empty<string>());
+            OrganizationMembershipRuntime memberships = new OrganizationMembershipRuntime();
+            memberships.Configure(registry, organizations, PersistenceService.LocalWorldId, people, PrototypeOrganizationDefinitionFactory.PrototypeOrganizationIds);
+            OrganizationAuthorityRuntime authority = new OrganizationAuthorityRuntime();
+            authority.Configure(registry, organizations, memberships, PersistenceService.LocalWorldId, people, PrototypeOrganizationDefinitionFactory.PrototypeOrganizationIds);
+            OrganizationResourceRuntime resources = new OrganizationResourceRuntime();
+            resources.Configure(registry, organizations, authority, null, PersistenceService.LocalWorldId);
+            OrganizationDecisionRuntime decisions = new OrganizationDecisionRuntime();
+            decisions.Configure(registry, organizations, memberships, authority, resources, PersistenceService.LocalWorldId, people, null);
+            FactionRuntime factions = new FactionRuntime();
+            factions.Configure(registry, organizations, memberships, authority, resources, decisions, PersistenceService.LocalWorldId, people);
+            DiplomacyRuntime diplomacy = new DiplomacyRuntime();
+            diplomacy.Configure(registry, organizations, factions, authority, decisions, resources, PersistenceService.LocalWorldId, people);
+            RelationshipRuntime relationships = new RelationshipRuntime();
+            relationships.Configure(registry, people);
+            FamilyRelationshipRuntime family = new FamilyRelationshipRuntime();
+            family.Configure(registry, people, relationships, null, null, PersistenceService.LocalWorldId, people);
+            Assert.That(family.RecordParentage(new FamilyParentageRequest { transactionId = "tx.family.royal-parentage", parentPersonId = monarchPerson, childPersonId = heirPerson, parentageKind = ParentageKind.Biological, evidenceStatus = ParentageEvidenceStatus.Confirmed, worldTime = 0d }).Succeeded, Is.True);
+
+            CreateCivicOfficeAssignment(memberships, monarchPerson, "monarch", PrototypeOrganizationMembershipDefinitionFactory.MonarchOfficeId);
+            CreateCivicOfficeAssignment(memberships, heirPerson, "heir", PrototypeOrganizationMembershipDefinitionFactory.DukeOfficeId);
+            GovernmentRuntime governments = new GovernmentRuntime();
+            governments.Configure(registry, organizations, memberships, authority, decisions, resources, factions, diplomacy, null, PersistenceService.LocalWorldId, people, Array.Empty<string>(), family);
+            Assert.That(governments.CreatePolity(new PolityCreateRequest { transactionId = "tx.polity.royal-line", polityId = "polity.test.royal-line", polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Test Kingdom", worldTime = 0d }).Succeeded, Is.True);
+            Assert.That(governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.government.royal-line", governmentId = "government.test.royal-line", governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = "polity.test.royal-line", officialName = "Test Royal Government", primaryGoverningOrganizationId = PrototypeInstitutionalContentIds.CivicOrganization, governingOrganizationIds = new[] { PrototypeInstitutionalContentIds.CivicOrganization }, level = GovernmentLevel.Central, worldTime = 0d }).Succeeded, Is.True);
+
+            PoliticalOperationResult monarch = governments.InstallOfficeholder(Installation("monarch", monarchPerson, PrototypeGovernmentDefinitionFactory.MonarchOfficeDefinitionId, GovernmentOfficeSelectionMethod.HereditarySuccession));
+            GovernmentOfficeInstallationRequest deniedRequest = Installation("duke-denied", heirPerson, PrototypeGovernmentDefinitionFactory.DukeOfficeDefinitionId, GovernmentOfficeSelectionMethod.HereditarySuccession);
+            deniedRequest.lineageAnchorPersonId = outsiderPerson;
+            PoliticalOperationResult denied = governments.InstallOfficeholder(deniedRequest);
+            GovernmentOfficeInstallationRequest acceptedRequest = Installation("duke", heirPerson, PrototypeGovernmentDefinitionFactory.DukeOfficeDefinitionId, GovernmentOfficeSelectionMethod.HereditarySuccession);
+            acceptedRequest.lineageAnchorPersonId = monarchPerson;
+            PoliticalOperationResult accepted = governments.InstallOfficeholder(acceptedRequest);
+
+            Assert.That(monarch.Succeeded, Is.True, monarch.Message);
+            Assert.That(denied.Succeeded, Is.False);
+            Assert.That(accepted.Succeeded, Is.True, accepted.Message);
+            Assert.That(governments.TryGetOfficeTenure("government-office-tenure.test.duke", out GovernmentOfficeTenureRecordData tenure), Is.True);
+            Assert.That(tenure.lineageAnchorPersonId, Is.EqualTo(monarchPerson));
+        }
+
+        [Test]
+        public void DesignatedSuccessor_ReplacesIncumbentWithoutLeavingStaleOrganizationAuthority()
+        {
+            const string incumbent = "person.test.incumbent";
+            const string successor = "person.test.successor";
+            string[] people = { incumbent, successor };
+            DefinitionRegistry registry = CreateRegistry();
+            OrganizationRuntime organizations = new OrganizationRuntime();
+            PrototypeOrganizationDefinitionFactory.SeedPrototypeOrganizations(organizations, registry, PersistenceService.LocalWorldId, people);
+            organizations.Configure(registry, PersistenceService.LocalWorldId, people, Array.Empty<string>());
+            OrganizationMembershipRuntime memberships = new OrganizationMembershipRuntime();
+            memberships.Configure(registry, organizations, PersistenceService.LocalWorldId, people, PrototypeOrganizationDefinitionFactory.PrototypeOrganizationIds);
+            OrganizationAuthorityRuntime authority = new OrganizationAuthorityRuntime();
+            authority.Configure(registry, organizations, memberships, PersistenceService.LocalWorldId, people, PrototypeOrganizationDefinitionFactory.PrototypeOrganizationIds);
+            OrganizationResourceRuntime resources = new OrganizationResourceRuntime();
+            resources.Configure(registry, organizations, authority, null, PersistenceService.LocalWorldId);
+            OrganizationDecisionRuntime decisions = new OrganizationDecisionRuntime();
+            decisions.Configure(registry, organizations, memberships, authority, resources, PersistenceService.LocalWorldId, people, null);
+            FactionRuntime factions = new FactionRuntime();
+            factions.Configure(registry, organizations, memberships, authority, resources, decisions, PersistenceService.LocalWorldId, people);
+            DiplomacyRuntime diplomacy = new DiplomacyRuntime();
+            diplomacy.Configure(registry, organizations, factions, authority, decisions, resources, PersistenceService.LocalWorldId, people);
+
+            foreach (string person in people)
+            {
+                string suffix = person.EndsWith("successor", StringComparison.Ordinal) ? "successor" : "incumbent";
+                Assert.That(memberships.ApplyMembership(new OrganizationMembershipRequest { transactionId = $"tx.membership.{suffix}", membershipId = $"membership.test.{suffix}", organizationId = PrototypeInstitutionalContentIds.CivicOrganization, personId = person, membershipDefinitionId = PrototypeOrganizationMembershipDefinitionFactory.CivicOfficialMemberId, targetStatus = OrganizationMembershipStatus.Active, sourceKind = OrganizationMembershipSourceKind.WorldSetup, explicitConsent = true }).Succeeded, Is.True);
+            }
+            Assert.That(memberships.CreateOffice(new OrganizationOfficeRequest { transactionId = "tx.office.mayor", officeId = "office.test.mayor", organizationId = PrototypeInstitutionalContentIds.CivicOrganization, officeDefinitionId = PrototypeOrganizationMembershipDefinitionFactory.MayorOfficeId, displayName = "Mayor" }).Succeeded, Is.True);
+            Assert.That(memberships.AssignOffice(new OrganizationOfficeAssignmentRequest { transactionId = "tx.assignment.incumbent", officeAssignmentId = "assignment.test.incumbent", officeId = "office.test.mayor", membershipId = "membership.test.incumbent" }).Succeeded, Is.True);
+            Assert.That(memberships.AssignOffice(new OrganizationOfficeAssignmentRequest { transactionId = "tx.assignment.successor", officeAssignmentId = "assignment.test.successor", officeId = "office.test.mayor", membershipId = "membership.test.successor", proposed = true }).Succeeded, Is.True);
+
+            GovernmentRuntime governments = new GovernmentRuntime();
+            governments.Configure(registry, organizations, memberships, authority, decisions, resources, factions, diplomacy, null, PersistenceService.LocalWorldId, people, Array.Empty<string>());
+            Assert.That(governments.CreatePolity(new PolityCreateRequest { transactionId = "tx.polity.succession", polityId = "polity.test.succession", polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Succession Realm" }).Succeeded, Is.True);
+            Assert.That(governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.government.succession", governmentId = "government.test.succession", governmentDefinitionId = PrototypeGovernmentDefinitionFactory.TownAdministrationDefinitionId, polityId = "polity.test.succession", officialName = "Succession Town", primaryGoverningOrganizationId = PrototypeInstitutionalContentIds.CivicOrganization, governingOrganizationIds = new[] { PrototypeInstitutionalContentIds.CivicOrganization }, level = GovernmentLevel.Municipal }).Succeeded, Is.True);
+            Assert.That(governments.InstallOfficeholder(new GovernmentOfficeInstallationRequest { transactionId = "tx.tenure.incumbent", tenureId = "tenure.test.incumbent", governmentId = "government.test.succession", officeDefinitionId = PrototypeGovernmentDefinitionFactory.MayorGovernmentOfficeDefinitionId, organizationOfficeId = "office.test.mayor", officeAssignmentId = "assignment.test.incumbent", holderPersonId = incumbent, selectionMethod = GovernmentOfficeSelectionMethod.SovereignAppointment }).Succeeded, Is.True);
+            Assert.That(governments.InstallOfficeholder(new GovernmentOfficeInstallationRequest { transactionId = "tx.tenure.successor", tenureId = "tenure.test.successor", governmentId = "government.test.succession", officeDefinitionId = PrototypeGovernmentDefinitionFactory.MayorGovernmentOfficeDefinitionId, organizationOfficeId = "office.test.mayor", officeAssignmentId = "assignment.test.successor", holderPersonId = successor, selectionMethod = GovernmentOfficeSelectionMethod.SovereignAppointment, state = GovernmentOfficeTenureState.Designated }).Succeeded, Is.True);
+
+            PoliticalOperationResult ended = governments.EndOfficeTenure(new GovernmentOfficeEndRequest { transactionId = "tx.tenure.end", tenureId = "tenure.test.incumbent", cause = GovernmentOfficeVacancyCause.Resignation, worldTime = 5d });
+
+            Assert.That(ended.Succeeded, Is.True, ended.Message);
+            Assert.That(governments.GetActiveOfficeholder("government.test.succession", PrototypeGovernmentDefinitionFactory.MayorGovernmentOfficeDefinitionId, 5d).holderPersonId, Is.EqualTo(successor));
+            Assert.That(memberships.TryGetOffice("office.test.mayor", out OrganizationOfficeSnapshot office), Is.True);
+            Assert.That(office.Assignments.Single(item => item.officeAssignmentId == "assignment.test.incumbent").state, Is.EqualTo(OrganizationOfficeAssignmentState.Ended));
+            Assert.That(office.Assignments.Single(item => item.officeAssignmentId == "assignment.test.successor").state, Is.EqualTo(OrganizationOfficeAssignmentState.Active));
+            Assert.That(governments.OfficeVacancies.Single(item => item.priorTenureId == "tenure.test.incumbent").state, Is.EqualTo(GovernmentOfficeVacancyState.SuccessorInstalled));
         }
 
         [Test]
@@ -99,7 +237,7 @@ namespace UnityIsekaiGame.Tests
         {
             RuntimeFixture fixture = CreateFixture();
             CreatePoliticalGraph(fixture, PoliticalVisibility.Public);
-            Assert.That(fixture.Governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.government.provincial", governmentId = "government.test.provincial", governmentDefinitionId = PrototypeGovernmentDefinitionFactory.ProvincialAdministrationDefinitionId, polityId = "polity.test.kingdom", officialName = "Provincial Government", primaryGoverningOrganizationId = "organization.prototype.guild", governingOrganizationIds = new[] { "organization.prototype.guild" }, level = GovernmentLevel.Provincial, worldTime = 4d }).Succeeded, Is.True);
+            Assert.That(fixture.Governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.government.provincial", governmentId = "government.test.provincial", governmentDefinitionId = PrototypeGovernmentDefinitionFactory.ProvincialAdministrationDefinitionId, polityId = "polity.test.kingdom", officialName = "Provincial Government", primaryGoverningOrganizationId = "organization.prototype.adventurers-guild", governingOrganizationIds = new[] { "organization.prototype.adventurers-guild" }, level = GovernmentLevel.Provincial, worldTime = 4d }).Succeeded, Is.True);
             Assert.That(fixture.Governments.RecordControl(new TerritorialControlRequest { transactionId = "tx.control.initial", controlId = "control.test.initial", territoryId = "political-territory.test.realm", controllingGovernmentId = "government.test.royal", worldTime = 5d }).Succeeded, Is.True);
             int events = 0;
             fixture.Governments.OperationCommitted += _ => events++;
@@ -187,7 +325,7 @@ namespace UnityIsekaiGame.Tests
         private static void CreatePoliticalGraph(RuntimeFixture fixture, PoliticalVisibility visibility)
         {
             Assert.That(fixture.Governments.CreatePolity(new PolityCreateRequest { transactionId = "tx.polity", polityId = "polity.test.kingdom", polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Test Kingdom", worldTime = 1d, visibility = visibility }).Succeeded, Is.True);
-            Assert.That(fixture.Governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.government", governmentId = "government.test.royal", governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = "polity.test.kingdom", officialName = "Test Royal Government", primaryGoverningOrganizationId = "organization.prototype.guild", governingOrganizationIds = new[] { "organization.prototype.guild" }, level = GovernmentLevel.Central, worldTime = 2d, visibility = visibility }).Succeeded, Is.True);
+            Assert.That(fixture.Governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.government", governmentId = "government.test.royal", governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = "polity.test.kingdom", officialName = "Test Royal Government", primaryGoverningOrganizationId = "organization.prototype.adventurers-guild", governingOrganizationIds = new[] { "organization.prototype.adventurers-guild" }, level = GovernmentLevel.Central, worldTime = 2d, visibility = visibility }).Succeeded, Is.True);
             Assert.That(fixture.Governments.CreateTerritory(new TerritoryCreateRequest { transactionId = "tx.territory", territoryId = "political-territory.test.realm", territoryDefinitionId = PrototypeGovernmentDefinitionFactory.RealmTerritoryDefinitionId, displayName = "Test Realm", polityId = "polity.test.kingdom", primaryGovernmentId = "government.test.royal", placeIds = new[] { "place.test.capital" }, worldTime = 3d, visibility = visibility }).Succeeded, Is.True);
         }
 
@@ -197,6 +335,44 @@ namespace UnityIsekaiGame.Tests
         }
 
         private static JurisdictionResolutionRequest Resolution(double worldTime) => new JurisdictionResolutionRequest { requesterGovernmentId = "government.test.royal", territoryId = "political-territory.test.realm", subjectMatter = JurisdictionSubjectMatter.GeneralAdministration, worldTime = worldTime };
+
+        private static void CreateCivicOfficeAssignment(OrganizationMembershipRuntime memberships, string personId, string suffix, string officeDefinitionId)
+        {
+            string membershipId = $"organization-membership.test.civic.{suffix}";
+            string officeId = $"organization-office-record.test.civic.{suffix}";
+            OrganizationMembershipOperationResult membership = memberships.ApplyMembership(new OrganizationMembershipRequest
+            {
+                transactionId = $"tx.membership.{suffix}", membershipId = membershipId, organizationId = PrototypeInstitutionalContentIds.CivicOrganization,
+                personId = personId, membershipDefinitionId = PrototypeOrganizationMembershipDefinitionFactory.CivicOfficialMemberId,
+                targetStatus = OrganizationMembershipStatus.Active, sourceKind = OrganizationMembershipSourceKind.WorldSetup, explicitConsent = true, worldTime = 0d
+            });
+            Assert.That(membership.Succeeded, Is.True, membership.Message);
+            OrganizationMembershipOperationResult office = memberships.CreateOffice(new OrganizationOfficeRequest
+            {
+                transactionId = $"tx.office.{suffix}", officeId = officeId, organizationId = PrototypeInstitutionalContentIds.CivicOrganization,
+                officeDefinitionId = officeDefinitionId, displayName = suffix, worldTime = 0d
+            });
+            Assert.That(office.Succeeded, Is.True, office.Message);
+            OrganizationMembershipOperationResult assignment = memberships.AssignOffice(new OrganizationOfficeAssignmentRequest
+            {
+                transactionId = $"tx.assignment.{suffix}", officeAssignmentId = $"organization-office-assignment.test.civic.{suffix}",
+                officeId = officeId, membershipId = membershipId, appointedById = "world.test", worldTime = 0d
+            });
+            Assert.That(assignment.Succeeded, Is.True, assignment.Message);
+        }
+
+        private static GovernmentOfficeInstallationRequest Installation(string suffix, string personId, string officeDefinitionId, GovernmentOfficeSelectionMethod method)
+        {
+            return new GovernmentOfficeInstallationRequest
+            {
+                transactionId = $"tx.government-office-tenure.{suffix}", tenureId = $"government-office-tenure.test.{suffix}",
+                governmentId = "government.test.royal-line", officeDefinitionId = officeDefinitionId,
+                organizationOfficeId = $"organization-office-record.test.civic.{(suffix.StartsWith("duke", StringComparison.Ordinal) ? "heir" : suffix)}",
+                officeAssignmentId = $"organization-office-assignment.test.civic.{(suffix.StartsWith("duke", StringComparison.Ordinal) ? "heir" : suffix)}",
+                holderPersonId = personId, selectionMethod = method, state = GovernmentOfficeTenureState.Active,
+                appointingAuthorityId = "world.test", worldTime = 0d, provenanceId = "test"
+            };
+        }
 
         private sealed class RuntimeFixture
         {

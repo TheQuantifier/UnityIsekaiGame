@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71df4d583f7b4e569eec9cc9ba1e4287, type: 3}
+  m_Name: government_charter_prototype_merchant_guild
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Governments:GovernmentOrganizationCharterDefinition
+  charterDefinitionId: government-charter.prototype.merchant-guild
+  displayName: Prototype Merchant Guild Charter
+  description: 
+  category: 2
+  governmentId: government.prototype.civic
+  organizationId: organization.prototype.merchant-guild
+  supervisingOrganizationId: organization.prototype.government
+  legalInstrumentId: legal-instrument.charter.prototype.merchant-guild
+  jurisdictionIds:
+  - jurisdiction.prototype.town
+  grantedPowerIds:
+  - guild.power.certify-trade
+  - guild.power.mediate-commercial-disputes
+  - guild.power.register-merchants
+  dutyIds:
+  - guild.duty.keep-trade-records
+  - guild.duty.report-fraud
+  revocable: 1
+  defaultVisibility: 0
+  tags:
+  - charter
+  - government
+  - prototype
+  version: 1

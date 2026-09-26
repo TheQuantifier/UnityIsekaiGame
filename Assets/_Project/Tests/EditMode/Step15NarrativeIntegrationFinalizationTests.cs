@@ -64,7 +64,7 @@ namespace UnityIsekaiGame.Tests
                 RequesterPersonId = "person.prototype.hero",
                 PersonId = "person.prototype.hero",
                 LocationId = "location.prototype.guild",
-                OrganizationId = "organization.prototype.guild",
+                OrganizationId = "organization.prototype.adventurers-guild",
                 WorldTime = 9d,
                 Limit = 25
             });
@@ -110,11 +110,11 @@ namespace UnityIsekaiGame.Tests
             snapshot.Objectives.objectives[0].satisfied = true;
             snapshot.Objectives.objectives[0].satisfiedWorldTime = 9d;
             snapshot.Sources.sources[0].hostLocationId = "location.prototype.guild";
-            snapshot.Sources.sources[0].operatingOrganizationId = "organization.prototype.guild";
+            snapshot.Sources.sources[0].operatingOrganizationId = "organization.prototype.adventurers-guild";
             snapshot.Sources.sources[0].interactionPointId = "interaction-point.prototype.guild-board";
             snapshot.Sources.listings[0].claimedAssignmentId = "assignment.prototype.guild-posting";
             snapshot.Conversations.conversations[0].hostLocationId = "location.prototype.guild";
-            snapshot.Conversations.conversations[0].operatingOrganizationId = "organization.prototype.guild";
+            snapshot.Conversations.conversations[0].operatingOrganizationId = "organization.prototype.adventurers-guild";
             return snapshot.Clone();
         }
 

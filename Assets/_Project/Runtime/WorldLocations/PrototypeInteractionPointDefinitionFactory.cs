@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.Organizations;
 
 namespace UnityIsekaiGame.WorldLocations
 {
@@ -83,7 +84,7 @@ namespace UnityIsekaiGame.WorldLocations
         {
             HashSet<string> ids = new HashSet<string>(existingIds ?? Array.Empty<string>(), StringComparer.Ordinal);
             List<InteractionServiceDefinition> definitions = new List<InteractionServiceDefinition>();
-            AddService(definitions, ids, RegisterAdventurerServiceId, "Register Adventurer", InteractionServiceCategory.Registration, new[] { AdventurerGuildCounterDefinitionId }, InteractionDestinationRuntime.OrganizationMembership, InteractionProviderRequirementKind.AnyAuthorizedMember, mutates: true, authority: new[] { "permission.prototype.guild.membership-admin" }, membership: new[] { "membership-definition.prototype.adventurer" });
+            AddService(definitions, ids, RegisterAdventurerServiceId, "Register Adventurer", InteractionServiceCategory.Registration, new[] { AdventurerGuildCounterDefinitionId }, InteractionDestinationRuntime.OrganizationMembership, InteractionProviderRequirementKind.AnyAuthorizedMember, mutates: true, authority: new[] { PrototypeOrganizationAuthorityDefinitionFactory.AdmitMembersPermissionId }, membership: new[] { PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId });
             AddService(definitions, ids, AdventurerIntroductionServiceId, "Adventurer Introduction", InteractionServiceCategory.Information, new[] { AdventurerGuildCounterDefinitionId }, InteractionDestinationRuntime.KnowledgeRecords, InteractionProviderRequirementKind.AnyAuthorizedMember);
             AddService(definitions, ids, AdventurerRankAdminServiceId, "Adventurer Rank Administration", InteractionServiceCategory.RankAdministration, new[] { AdventurerGuildCounterDefinitionId, GuildHeadDeskDefinitionId }, InteractionDestinationRuntime.OrganizationMembership, InteractionProviderRequirementKind.SpecificOfficeholder, mutates: true, authority: new[] { "permission.prototype.guild.rank-admin" });
             AddService(definitions, ids, AdventurerInformationServiceId, "Adventurer Guild Information", InteractionServiceCategory.Information, new[] { AdventurerGuildCounterDefinitionId, GuildHeadDeskDefinitionId }, InteractionDestinationRuntime.KnowledgeRecords, InteractionProviderRequirementKind.AnyAuthorizedMember);
@@ -112,12 +113,12 @@ namespace UnityIsekaiGame.WorldLocations
             string world = string.IsNullOrWhiteSpace(worldId) ? PersistenceService.LocalWorldId : worldId.Trim();
             runtime.Configure(registry, locations, entityLocations, world);
             SeedPoint(runtime, AdventurerGuildCounterPointId, AdventurerGuildCounterDefinitionId, "Adventurer Guild Counter", "location.prototype.adventurers-guild", new[] { RegisterAdventurerServiceId, AdventurerIntroductionServiceId, AdventurerRankAdminServiceId, AdventurerInformationServiceId, QuestBoardBrowseServiceId }, "prototype.scene.interaction.adventurer-guild-counter");
-            Link(runtime, AdventurerGuildCounterPointId, InteractionSubjectLinkRole.RepresentedOrganization, "Organization", "organization.prototype.guild", world);
-            Provider(runtime, AdventurerGuildCounterPointId, RegisterAdventurerServiceId, PrototypeEntityLocationFactory.GuildMasterPersonId, world);
+            Link(runtime, AdventurerGuildCounterPointId, InteractionSubjectLinkRole.RepresentedOrganization, "Organization", "organization.prototype.adventurers-guild", world);
+            Provider(runtime, AdventurerGuildCounterPointId, RegisterAdventurerServiceId, PrototypeEntityLocationFactory.AdventurersGuildReceptionistPersonId, world);
 
             SeedPoint(runtime, MerchantGuildCounterPointId, MerchantGuildCounterDefinitionId, "Merchant Guild Counter", "location.prototype.merchant-counter", new[] { RegisterMerchantServiceId, MerchantPermitServiceId, MerchantInformationServiceId }, "prototype.scene.interaction.merchant-guild-counter");
             Link(runtime, MerchantGuildCounterPointId, InteractionSubjectLinkRole.RepresentedOrganization, "Organization", "organization.prototype.merchant-guild", world);
-            Provider(runtime, MerchantGuildCounterPointId, RegisterMerchantServiceId, PrototypeEntityLocationFactory.MerchantPersonId, world);
+            Provider(runtime, MerchantGuildCounterPointId, RegisterMerchantServiceId, PrototypeEntityLocationFactory.MerchantGuildReceptionistPersonId, world);
 
             SeedPoint(runtime, MayorDeskPointId, MayorDeskDefinitionId, "Mayor Desk", "location.prototype.mayor-office", new[] { MeetMayorServiceId, GovernmentInformationServiceId }, "prototype.scene.interaction.mayor-desk");
             Link(runtime, MayorDeskPointId, InteractionSubjectLinkRole.RepresentedGovernment, "Government", "government.prototype.civic", world);

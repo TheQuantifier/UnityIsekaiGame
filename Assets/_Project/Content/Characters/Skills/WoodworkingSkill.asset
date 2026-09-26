@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Skills.SkillDefinition
   skillId: skill.woodworking
   displayName: Woodworking
+  skillTypes: 4
   description: Learned proficiency at shaping, joining, and finishing wooden goods.
   primaryCategory: {fileID: 11400000, guid: 53200000000000000000000000000053, type: 2}
   tags: []

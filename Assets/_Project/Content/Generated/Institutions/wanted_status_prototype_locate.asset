@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af9bb136d5a9b6c48aa488cbe11366b5, type: 3}
+  m_Name: wanted_status_prototype_locate
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Crimes:WantedStatusDefinition
+  definitionId: wanted-status.prototype.locate
+  displayName: Wanted for Location
+  description: 
+  visibility: 1
+  tags:
+  - crime
+  - wanted
+  version: 1
+  purpose: 3
+  mayBePublic: 1
+  mayBeRestricted: 1
+  mayBeSecret: 1
+  mayDeriveFromWarrant: 1

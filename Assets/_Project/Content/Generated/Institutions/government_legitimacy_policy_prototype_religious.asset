@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3891f5d6ba55d9a4e8a35fe42081482e, type: 3}
+  m_Name: government_legitimacy_policy_prototype_religious
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Governments:GovernmentLegitimacyPolicyDefinition
+  policyDefinitionId: government-legitimacy-policy.prototype.religious
+  displayName: Religious Government Legitimacy
+  governmentCategories: 08000000
+  weights:
+  - component: 6
+    weightBasisPoints: 3500
+  - component: 3
+    weightBasisPoints: 1800
+  - component: 5
+    weightBasisPoints: 1600
+  - component: 7
+    weightBasisPoints: 1200
+  - component: 4
+    weightBasisPoints: 900
+  - component: 8
+    weightBasisPoints: 1000
+  contestedThreshold: 2000
+  fragileThreshold: 4000
+  acceptedThreshold: 6000
+  strongThreshold: 8000
+  reveredThreshold: 9500
+  version: 1

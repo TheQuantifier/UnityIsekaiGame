@@ -803,14 +803,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldOrganizations == null)
-                {
-                    worldOrganizations = new OrganizationRuntime();
-                    PrototypeOrganizationDefinitionFactory.SeedPrototypeOrganizations(worldOrganizations, GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId);
-                }
-
-                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
-                worldOrganizations.Configure(GetDefinitionRegistry(), playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), Array.Empty<string>());
+                EnsureGroup10InstitutionalRuntime();
                 return worldOrganizations;
             }
         }
@@ -818,13 +811,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldOrganizationMemberships == null)
-                {
-                    worldOrganizationMemberships = new OrganizationMembershipRuntime();
-                }
-
-                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
-                worldOrganizationMemberships.Configure(GetDefinitionRegistry(), Organizations, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetPrototypeOrganizations());
+                EnsureGroup10InstitutionalRuntime();
                 return worldOrganizationMemberships;
             }
         }
@@ -832,13 +819,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldOrganizationAuthority == null)
-                {
-                    worldOrganizationAuthority = new OrganizationAuthorityRuntime();
-                }
-
-                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
-                worldOrganizationAuthority.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetPrototypeOrganizations());
+                EnsureGroup10InstitutionalRuntime();
                 return worldOrganizationAuthority;
             }
         }
@@ -846,12 +827,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldOrganizationResources == null)
-                {
-                    worldOrganizationResources = new OrganizationResourceRuntime();
-                }
-
-                worldOrganizationResources.Configure(GetDefinitionRegistry(), Organizations, OrganizationAuthority, Economy, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, Properties, Businesses, ItemIdentities, ContractEconomy, Payroll);
+                EnsureGroup10InstitutionalRuntime();
                 return worldOrganizationResources;
             }
         }
@@ -859,13 +835,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldOrganizationDecisions == null)
-                {
-                    worldOrganizationDecisions = new OrganizationDecisionRuntime();
-                }
-
-                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
-                worldOrganizationDecisions.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, OrganizationAuthority, OrganizationResources, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), Economy);
+                EnsureGroup10InstitutionalRuntime();
                 return worldOrganizationDecisions;
             }
         }
@@ -873,13 +843,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldFactions == null)
-                {
-                    worldFactions = new FactionRuntime();
-                }
-
-                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
-                worldFactions.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, OrganizationAuthority, OrganizationResources, OrganizationDecisions, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId));
+                EnsureGroup10InstitutionalRuntime();
                 return worldFactions;
             }
         }
@@ -887,13 +851,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldDiplomacy == null)
-                {
-                    worldDiplomacy = new DiplomacyRuntime();
-                }
-
-                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
-                worldDiplomacy.Configure(GetDefinitionRegistry(), Organizations, Factions, OrganizationAuthority, OrganizationDecisions, OrganizationResources, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId));
+                EnsureGroup10InstitutionalRuntime();
                 return worldDiplomacy;
             }
         }
@@ -901,13 +859,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldGovernments == null)
-                {
-                    worldGovernments = new GovernmentRuntime();
-                }
-
-                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
-                worldGovernments.Configure(GetDefinitionRegistry(), Organizations, OrganizationMemberships, OrganizationAuthority, OrganizationDecisions, OrganizationResources, Factions, Diplomacy, Properties, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
+                EnsureGroup10InstitutionalRuntime();
                 return worldGovernments;
             }
         }
@@ -915,13 +867,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldLaws == null)
-                {
-                    worldLaws = new LegalRuntime();
-                }
-
-                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
-                worldLaws.Configure(GetDefinitionRegistry(), Governments, Organizations, OrganizationAuthority, OrganizationDecisions, Diplomacy, Properties, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
+                EnsureGroup10InstitutionalRuntime();
                 return worldLaws;
             }
         }
@@ -929,13 +875,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldCrimes == null)
-                {
-                    worldCrimes = new CrimeRuntime();
-                }
-
-                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
-                worldCrimes.Configure(GetDefinitionRegistry(), Governments, Laws, OrganizationAuthority, Diplomacy, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
+                EnsureGroup10InstitutionalRuntime();
                 return worldCrimes;
             }
         }
@@ -943,13 +883,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                if (worldJustice == null)
-                {
-                    worldJustice = new JusticeRuntime();
-                }
-
-                string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
-                worldJustice.Configure(GetDefinitionRegistry(), Governments, Laws, Organizations, OrganizationAuthority, Crimes, playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId, GetPrototypeSocialPersonIds(personId), GetKnownPlaceIds());
+                EnsureGroup10InstitutionalRuntime();
                 return worldJustice;
             }
         }
@@ -964,6 +898,7 @@ namespace UnityIsekaiGame.Gameplay
         public ExperimentationRuntime Experimentation => playerExperimentation ??= new ExperimentationRuntime();
         public DefinitionRegistry ItemQualityDefinitionRegistry => GetDefinitionRegistry();
         public DefinitionRegistry ItemDurabilityDefinitionRegistry => GetDefinitionRegistry();
+        public CharacterSkillCollection PlayerSkills => playerSkills;
 
         private void Awake()
         {
@@ -976,6 +911,7 @@ namespace UnityIsekaiGame.Gameplay
             SynchronizeProfessionLifecycle();
             AdvancePrototypeEconomy();
             AdvanceGroup9SocialSimulation();
+            AdvanceGroup10InstitutionalSimulation();
 
             if (memoryMaintenance == null || playTimeTracker == null)
             {
@@ -1582,6 +1518,17 @@ namespace UnityIsekaiGame.Gameplay
                 TravelJourneyPersistenceParticipant.Key,
                 TravelConditionPersistenceParticipant.Key,
                 PoliticalTravelPersistenceParticipant.Key,
+                OrganizationPersistenceParticipant.Key,
+                OrganizationMembershipPersistenceParticipant.Key,
+                OrganizationAuthorityPersistenceParticipant.Key,
+                OrganizationResourcePersistenceParticipant.Key,
+                OrganizationDecisionPersistenceParticipant.Key,
+                FactionPersistenceParticipant.Key,
+                DiplomacyPersistenceParticipant.Key,
+                GovernmentPersistenceParticipant.Key,
+                LegalPersistenceParticipant.Key,
+                CrimePersistenceParticipant.Key,
+                JusticePersistenceParticipant.Key,
                 QuestRuntimePersistenceParticipant.Key,
                 QuestParticipationRuntimePersistenceParticipant.Key,
                 QuestObjectiveProgressPersistenceParticipant.Key,
@@ -2317,8 +2264,8 @@ namespace UnityIsekaiGame.Gameplay
                 Organizations,
                 GetDefinitionRegistry,
                 playerService.WorldId,
-                () => GetPrototypeSocialPersonIds(playerService.PlayerId),
-                () => Array.Empty<string>());
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
+                GetKnownPlaceIds);
 
             RegisterParticipant(organizationParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -2347,7 +2294,7 @@ namespace UnityIsekaiGame.Gameplay
                 GetDefinitionRegistry,
                 () => Organizations,
                 playerService.WorldId,
-                () => GetPrototypeSocialPersonIds(playerService.PlayerId),
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 GetPrototypeOrganizations);
 
             RegisterParticipant(organizationMembershipParticipant, out string failureReason);
@@ -2378,7 +2325,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => Organizations,
                 () => OrganizationMemberships,
                 playerService.WorldId,
-                () => GetPrototypeSocialPersonIds(playerService.PlayerId),
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 GetPrototypeOrganizations);
 
             RegisterParticipant(organizationAuthorityParticipant, out string failureReason);
@@ -2438,7 +2385,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             organizationDecisionParticipant = new OrganizationDecisionPersistenceParticipant(
                 OrganizationDecisions,
                 GetDefinitionRegistry,
@@ -2447,7 +2393,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => OrganizationAuthority,
                 () => OrganizationResources,
                 playerService.WorldId,
-                () => GetPrototypeSocialPersonIds(personId));
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()));
 
             RegisterParticipant(organizationDecisionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -2471,7 +2417,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             factionParticipant = new FactionPersistenceParticipant(
                 Factions,
                 GetDefinitionRegistry,
@@ -2481,7 +2426,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => OrganizationResources,
                 () => OrganizationDecisions,
                 playerService.WorldId,
-                () => GetPrototypeSocialPersonIds(personId));
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()));
 
             RegisterParticipant(factionParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -2505,7 +2450,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             diplomacyParticipant = new DiplomacyPersistenceParticipant(
                 Diplomacy,
                 GetDefinitionRegistry,
@@ -2515,7 +2459,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => OrganizationDecisions,
                 () => OrganizationResources,
                 playerService.WorldId,
-                () => GetPrototypeSocialPersonIds(personId));
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()));
 
             RegisterParticipant(diplomacyParticipant, out string failureReason);
             if (!string.IsNullOrWhiteSpace(failureReason))
@@ -2539,7 +2483,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             governmentParticipant = new GovernmentPersistenceParticipant(
                 Governments,
                 GetDefinitionRegistry,
@@ -2552,7 +2495,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => Diplomacy,
                 () => Properties,
                 playerService.WorldId,
-                () => GetPrototypeSocialPersonIds(personId),
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 GetKnownPlaceIds);
 
             RegisterParticipant(governmentParticipant, out string failureReason);
@@ -2577,7 +2520,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             legalParticipant = new LegalPersistenceParticipant(
                 Laws,
                 GetDefinitionRegistry,
@@ -2588,7 +2530,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => Diplomacy,
                 () => Properties,
                 playerService.WorldId,
-                () => GetPrototypeSocialPersonIds(personId),
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 GetKnownPlaceIds);
 
             RegisterParticipant(legalParticipant, out string failureReason);
@@ -2613,7 +2555,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             crimeParticipant = new CrimePersistenceParticipant(
                 Crimes,
                 GetDefinitionRegistry,
@@ -2622,7 +2563,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => OrganizationAuthority,
                 () => Diplomacy,
                 playerService.WorldId,
-                () => GetPrototypeSocialPersonIds(personId),
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 GetKnownPlaceIds);
 
             RegisterParticipant(crimeParticipant, out string failureReason);
@@ -2647,7 +2588,6 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            string personId = playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId;
             justiceParticipant = new JusticePersistenceParticipant(
                 Justice,
                 GetDefinitionRegistry,
@@ -2657,7 +2597,7 @@ namespace UnityIsekaiGame.Gameplay
                 () => OrganizationAuthority,
                 () => Crimes,
                 playerService.WorldId,
-                () => GetPrototypeSocialPersonIds(personId),
+                () => GetPrototypeSocialPersonIds(ResolvePlayerPersonId()),
                 GetKnownPlaceIds);
 
             RegisterParticipant(justiceParticipant, out string failureReason);
@@ -4935,6 +4875,12 @@ namespace UnityIsekaiGame.Gameplay
             if (result.ResultingState == ActorLifecycleState.Dead)
             {
                 knowledgeHistoryEventBridge?.RecordDeath(result.TransactionId, result.Trigger.ToString());
+                worldGovernments?.ReportPersonUnavailable(
+                    ResolvePlayerPersonId(),
+                    GovernmentOfficeVacancyCause.Death,
+                    playTimeTracker == null ? 0d : playTimeTracker.CumulativeSeconds,
+                    $"government-office-death.{result.TransactionId}",
+                    result.TransactionId);
             }
             else if (result.Transition == LifecycleTransitionKind.Revival)
             {
@@ -5075,6 +5021,7 @@ namespace UnityIsekaiGame.Gameplay
             string personId = ResolvePlayerPersonId();
             string worldTime = playTimeTracker.CumulativeSeconds.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
             bool changed = ProfessionCoordinator.SynchronizeCareerLifecycle(personId, worldTime, $"tx.career-lifecycle.{personId}.{worldTime}");
+            changed |= SynchronizeEmploymentOrganizationMemberships(personId, playTimeTracker.CumulativeSeconds);
             synchronizedProfessionRevision = Professions.Revision;
             synchronizedTrainingRevision = Training.Revision;
             synchronizedCredentialRevision = Credentials.Revision;
@@ -5253,11 +5200,7 @@ namespace UnityIsekaiGame.Gameplay
                 }
             }
 
-            definitionRegistry = PrototypeOrganizationDefinitionFactory.AddMissingPrototypeOrganizationDefinitions(new DefinitionRegistry(definitions));
-            definitionRegistry = PrototypeOrganizationMembershipDefinitionFactory.AddMissingPrototypeOrganizationMembershipDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeOrganizationAuthorityDefinitionFactory.AddMissingPrototypeOrganizationAuthorityDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeOrganizationResourceDefinitionFactory.AddMissingPrototypeOrganizationResourceDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeOrganizationDecisionDefinitionFactory.AddMissingPrototypeOrganizationDecisionDefinitions(definitionRegistry);
+            definitionRegistry = new DefinitionRegistry(definitions);
             definitionRegistry = PrototypeRelationshipDefinitionFactory.AddMissingPrototypeRelationshipDefinitions(definitionRegistry);
             definitionRegistry = PrototypeAttitudeDefinitionFactory.AddMissingPrototypeAttitudeDefinitions(definitionRegistry);
             definitionRegistry = PrototypeReputationDefinitionFactory.AddMissingPrototypeReputationDefinitions(definitionRegistry);
@@ -5269,12 +5212,6 @@ namespace UnityIsekaiGame.Gameplay
             definitionRegistry = PrototypeSocialInfluenceDefinitionFactory.AddMissingPrototypeSocialInfluenceDefinitions(definitionRegistry);
             definitionRegistry = PrototypeSocialEmotionDefinitionFactory.AddMissingPrototypeSocialEmotionDefinitions(definitionRegistry);
             definitionRegistry = PrototypeFamilyRelationshipDefinitionFactory.AddMissingPrototypeFamilyRelationshipDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeFactionDefinitionFactory.AddMissingPrototypeFactionDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeDiplomacyDefinitionFactory.AddMissingPrototypeDiplomacyDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeGovernmentDefinitionFactory.AddMissingPrototypeGovernmentDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeLegalDefinitionFactory.AddMissingPrototypeLegalDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeCrimeDefinitionFactory.AddMissingPrototypeCrimeDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeJusticeDefinitionFactory.AddMissingPrototypeJusticeDefinitions(definitionRegistry);
             definitionRegistry = PrototypeLocationDefinitionFactory.AddMissingPrototypeLocationDefinitions(definitionRegistry);
             definitionRegistry = PrototypeInteractionPointDefinitionFactory.AddMissingPrototypeInteractionDefinitions(definitionRegistry);
             definitionRegistry = PrototypeLocationConnectionDefinitionFactory.AddMissingPrototypeConnectionDefinitions(definitionRegistry);
@@ -5420,16 +5357,25 @@ namespace UnityIsekaiGame.Gameplay
             IEnumerable<string> authoredPeople = PersonRegistry.Registered
                 .Where(identity => identity != null && identity.HasValidIdentity)
                 .Select(identity => identity.PersonId);
+            IEnumerable<string> catalogPeople = GetDefinitionRegistry()?.DefinitionsById.Values
+                .OfType<PersonDefinition>()
+                .Select(definition => definition.Id) ?? Array.Empty<string>();
             IEnumerable<string> persistentPeople = WorldEntityRegistry.RegisteredEntities
                 .Where(identity => identity != null
                     && (string.Equals(identity.ExpectedEntityType, "Person", StringComparison.OrdinalIgnoreCase)
                         || identity.EntityId.StartsWith("person.", StringComparison.Ordinal)))
                 .Select(identity => identity.EntityId);
+            IEnumerable<string> itemOwners = playerItemIdentities?.Snapshots
+                .Where(item => item.OwnershipKind == ItemOwnershipKind.PersonOwned)
+                .Select(item => item.OwnerPersonId) ?? Array.Empty<string>();
 
             return new[] { primaryPersonId, playerService == null ? PersistenceService.LocalPlayerId : playerService.PlayerId }
                 .Concat(scenePeople)
                 .Concat(authoredPeople)
+                .Concat(catalogPeople)
                 .Concat(persistentPeople)
+                .Concat(itemOwners)
+                .Concat(institutionalObservedPersonIds)
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .Select(value => value.Trim())
                 .Distinct(StringComparer.Ordinal)
@@ -5463,7 +5409,7 @@ namespace UnityIsekaiGame.Gameplay
             {
                 "authority.guild.prototype",
                 "authority.medical.prototype",
-                "organization.prototype.guild",
+                "organization.prototype.adventurers-guild",
                 "authority.government.prototype",
                 "authority.school.prototype",
                 ProfessionContentIds.PositionAppointAuthorityId,
@@ -5476,15 +5422,20 @@ namespace UnityIsekaiGame.Gameplay
                 "organization.prototype.temple",
                 "organization.prototype.university",
                 "organization.prototype.government",
-                "organization.prototype.independent",
+                PrototypeInstitutionalContentIds.ManorAdministrationOrganization,
+                PrototypeInstitutionalContentIds.DuchyAdministrationOrganization,
+                PrototypeInstitutionalContentIds.CrownAdministrationOrganization,
                 PersistenceService.LocalPlayerId
             };
         }
 
-        private static string[] GetPrototypeOrganizations()
+        private string[] GetPrototypeOrganizations()
         {
             return PrototypeOrganizationDefinitionFactory.PrototypeOrganizationIds
-                .Concat(new[] { PersistenceService.LocalPlayerId })
+                .Concat(worldOrganizations?.Snapshots.Select(snapshot => snapshot.OrganizationId) ?? Array.Empty<string>())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(value => value, StringComparer.Ordinal)
                 .ToArray();
         }
     }

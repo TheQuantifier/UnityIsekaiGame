@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1af761e81c7421cb653a9c34b730877, type: 3}
+  m_Name: faction_prototype_cross_guild_reform
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Factions.FactionDefinition
+  factionId: faction.prototype.cross-guild-reform
+  displayName: Cross Guild Reform Movement
+  description: 
+  primaryCategory: {fileID: 0}
+  tags: []
+  icon: {fileID: 0}
+  kind: 11
+  parentFaction: {fileID: 0}
+  homePlace: {fileID: 0}
+  headquartersPlace: {fileID: 0}
+  defaultJurisdictionPlace: {fileID: 0}
+  foundingPlace: {fileID: 0}
+  defaultLeader: {fileID: 0}
+  authority: 0
+  visibility: 0
+  politicalCategory: 15
+  supportedHostContext: 4
+  formalMembershipSupported: 1
+  publicSupportWithoutMembershipSupported: 1
+  secretMembershipSupported: 0
+  organizationMembershipRequired: 0
+  maySpanOrganizations: 1
+  internalRolesSupported: 1
+  splitOrMergeSupported: 1
+  mayBecomeIndependent: 1
+  lifecyclePolicy: 0
+  alignmentAxisIds:
+  - faction-axis.prototype.central-local
+  - faction-axis.prototype.reform-tradition
+  platformTemplateIds:
+  - faction-position.prototype.organization-policy
+  - faction-position.prototype.organization-proposal
+  presentationColor: {r: 1, g: 1, b: 1, a: 1}
+  cultureId: 
+  foundingMetadata: 

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acca3e9eba69d11489634c748c24256e, type: 3}
+  m_Name: government_permit_prototype_craft_license
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Governments:GovernmentPermitDefinition
+  permitDefinitionId: government-permit.prototype.craft-license
+  displayName: Craft License
+  description: 
+  category: 2
+  allowedHolderCategories: 010000000200000003000000
+  permittedActionIds:
+  - government.action.operate-regulated-workshop
+  - government.action.sell-crafted-goods
+  renewable: 1
+  revocable: 1
+  defaultDuration: -1
+  feeRevenueDefinitionId: 
+  tags:
+  - government
+  - permit
+  - prototype
+  version: 1

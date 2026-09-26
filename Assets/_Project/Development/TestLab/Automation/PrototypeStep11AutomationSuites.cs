@@ -625,7 +625,7 @@ namespace UnityIsekaiGame.Development.Automation
                 businessId = businessId,
                 businessDefinitionId = "business.prototype-merchant-shop",
                 displayName = "Prototype Merchant Shop",
-                linkedOrganizationId = "organization.prototype.independent",
+                linkedOrganizationId = "organization.prototype.royal-forge",
                 founderSubjectIds = new[] { context.ScenarioContext.Runtimes.PersonId },
                 operatingCurrencyIds = new[] { gold.Id },
                 createdWorldTime = 10d,
@@ -1684,8 +1684,8 @@ namespace UnityIsekaiGame.Development.Automation
             DefinitionRegistry registry = new DefinitionRegistry(runtimes.DefinitionRegistry.DefinitionsById.Values.Concat(new IGameDefinition[] { compensation, deduction, position }));
             runtimes.Economy.Configure(registry, runtimes.WorldId);
             runtimes.Payroll.Configure(registry, runtimes.WorldId);
-            runtimes.PositionEmployment.Configure(registry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, new[] { runtimes.PersonId, "person.prototype.payroll-worker" }, new[] { "organization.prototype.guild" }, new[] { ProfessionContentIds.PositionAppointAuthorityId, "organization.prototype.guild" });
-            runtimes.Economy.CreateAccount(employerAccount, currency, "organization.prototype.guild", EconomyAccountKind.OrganizationAccount, 1000L, Tx(context, "payroll-employer-open"));
+            runtimes.PositionEmployment.Configure(registry, runtimes.Professions, runtimes.Training, runtimes.ProfessionalActivities, runtimes.Credentials, runtimes.ProfessionalRanks, new[] { runtimes.PersonId, "person.prototype.payroll-worker" }, new[] { "organization.prototype.adventurers-guild" }, new[] { ProfessionContentIds.PositionAppointAuthorityId, "organization.prototype.adventurers-guild" });
+            runtimes.Economy.CreateAccount(employerAccount, currency, "organization.prototype.adventurers-guild", EconomyAccountKind.OrganizationAccount, 1000L, Tx(context, "payroll-employer-open"));
             runtimes.Economy.CreateAccount(employeeAccount, currency, "person.prototype.payroll-worker", EconomyAccountKind.PersonWallet, 0L, Tx(context, "payroll-employee-open"));
             runtimes.Economy.CreateAccount(deductionAccount, currency, "organization.prototype.tax", EconomyAccountKind.OrganizationAccount, 0L, Tx(context, "payroll-tax-open"));
 
@@ -1694,7 +1694,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 positionInstanceId = positionInstanceId,
                 positionDefinitionId = position.Id,
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 state = PositionInstanceState.Vacant,
                 maximumHolders = 4,
                 vacancyAllowed = true,
@@ -1756,7 +1756,7 @@ namespace UnityIsekaiGame.Development.Automation
             public string ObligationId { get; private set; }
             public string PayRunId { get; private set; }
             public string EmployeePersonId => employeePersonId;
-            public string EmployerId => "organization.prototype.guild";
+            public string EmployerId => "organization.prototype.adventurers-guild";
             public string AuthorityId => ProfessionContentIds.PositionAppointAuthorityId;
 
             public PayrollOperationResult CreateAgreement(string slug, double start = 0d, double end = -1d)
@@ -2244,7 +2244,7 @@ namespace UnityIsekaiGame.Development.Automation
                 businessId = businessId,
                 businessDefinitionId = "business.prototype-merchant-shop",
                 displayName = "Prototype Fixture Shop",
-                linkedOrganizationId = "organization.prototype.independent",
+                linkedOrganizationId = "organization.prototype.royal-forge",
                 founderSubjectIds = new[] { context.ScenarioContext.Runtimes.PersonId },
                 operatingCurrencyIds = new[] { gold.Id },
                 accessPolicyId = BusinessId(context, "fixture-policy"),

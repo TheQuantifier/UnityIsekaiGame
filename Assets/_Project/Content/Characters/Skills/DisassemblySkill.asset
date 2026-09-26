@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Skills.SkillDefinition
   skillId: skill.disassembly
   displayName: Disassembly
+  skillTypes: 132
   description: Learned proficiency at dismantling crafted goods and salvaging broken
     items while preserving useful components.
   primaryCategory: {fileID: 11400000, guid: 53200000000000000000000000000053, type: 2}

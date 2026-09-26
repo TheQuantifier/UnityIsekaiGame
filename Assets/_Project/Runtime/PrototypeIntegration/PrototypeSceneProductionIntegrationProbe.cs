@@ -68,7 +68,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
 
         public PrototypeSceneProductionProbeResult RunGuildFlow()
         {
-            QuestRuntimeOperationResult quest = CreateQuest("guild", PrototypeQuestDefinitionFactory.GuildPostingDefinitionId, "organization.prototype.guild", "location.prototype.adventurers-guild", PrototypeInteractionPointDefinitionFactory.QuestBoardPointId, QuestSourceChannel.QuestBoard);
+            QuestRuntimeOperationResult quest = CreateQuest("guild", PrototypeQuestDefinitionFactory.GuildPostingDefinitionId, "organization.prototype.adventurers-guild", "location.prototype.adventurers-guild", PrototypeInteractionPointDefinitionFactory.QuestBoardPointId, QuestSourceChannel.QuestBoard);
             if (!quest.Succeeded) return Fail($"GuildQuest={quest.Status} {quest.Message}");
 
             QuestSourceOperationResult listing = Publish(PrototypeSceneIntegrationIds.AdventurerGuildBoardSourceId, quest.Snapshot.QuestId, "guild-board");
@@ -80,7 +80,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
             {
                 transactionId = $"tx.{suffix}.guild.membership",
                 membershipId = $"organization-membership.{suffix}.guild.player",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 personId = PrototypeEntityLocationFactory.PlayerPersonId,
                 membershipDefinitionId = PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId,
                 sourceKind = OrganizationMembershipSourceKind.WorldSetup,
@@ -287,7 +287,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
                 privilegedDiagnostics = true,
                 worldTime = 2d,
                 facts = new QuestEligibilityFactSet(
-                    organizationMemberships: new[] { "organization.prototype.adventurers-guild", "organization.prototype.guild" },
+                    organizationMemberships: new[] { "organization.prototype.adventurers-guild", "organization.prototype.adventurers-guild" },
                     offices: new[] { "office.prototype.city-investigator", "office.prototype.mayor" },
                     authorityGrants: new[] { "authority.prototype.guild.quest-offer", "authority.prototype.city.quest-assign", "authority.prototype.merchant.quest-offer" },
                     citizenships: new[] { "government.prototype.city" })

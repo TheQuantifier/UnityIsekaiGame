@@ -390,7 +390,7 @@ namespace UnityIsekaiGame.Development.Automation
             Step13InstitutionalIntegrationFacade facade = CreateIntegrationFacade(context);
             Step13InstitutionalActionContext validContext = new Step13InstitutionalActionContext(
                 PrimaryAuthorityActorId(context),
-                "organization.prototype.guild",
+                "organization.prototype.adventurers-guild",
                 "government.prototype.village",
                 $"office-assignment.testlab.integration.{context.RunId}",
                 $"authority-grant.testlab.integration.{context.RunId}",
@@ -667,7 +667,7 @@ namespace UnityIsekaiGame.Development.Automation
                 worldTime = 4d,
                 parties = new[]
                 {
-                    Party($"{agreementId}.party.guild", Org("organization.prototype.guild")),
+                    Party($"{agreementId}.party.guild", Org("organization.prototype.adventurers-guild")),
                     Party($"{agreementId}.party.forge", Org("organization.prototype.royal-forge"))
                 },
                 clauses = new[]
@@ -805,7 +805,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             CrimeFixture fixture = PrepareCrimeFixture(context, "wanted");
             CreateCrimeCoreRecords(context, fixture, "wanted");
-            CrimeOperationResult wanted = fixture.Crimes.CreateWantedStatus(new WantedStatusRequest { transactionId = CrimeTx(context, "wanted"), wantedStatusId = fixture.WantedId, wantedDefinitionId = PrototypeCrimeDefinitionFactory.WantedForQuestioningDefinitionId, incidentId = fixture.IncidentId, subjectId = fixture.ActorId, jurisdictionId = fixture.JurisdictionId, territoryId = fixture.TerritoryId, risk = WantedRiskAssessment.Nonviolent, activeWorldTime = 18d, expirationWorldTime = 24d, visibility = PoliticalVisibility.Restricted });
+            CrimeOperationResult wanted = fixture.Crimes.CreateWantedStatus(new WantedStatusRequest { transactionId = CrimeTx(context, "wanted"), wantedStatusId = fixture.WantedId, wantedDefinitionId = PrototypeCrimeDefinitionFactory.WantedForQuestioningDefinitionId, incidentIds = new[] { fixture.IncidentId }, subjectId = fixture.ActorId, jurisdictionId = fixture.JurisdictionId, territoryId = fixture.TerritoryId, risk = WantedRiskAssessment.Nonviolent, activeWorldTime = 18d, expirationWorldTime = 24d, visibility = PoliticalVisibility.Restricted });
             CrimeOperationResult notice = fixture.Crimes.PublishWantedNotice(new WantedNoticeRequest { transactionId = CrimeTx(context, "notice"), noticeId = fixture.NoticeId, wantedStatusId = fixture.WantedId, issuingGovernmentId = fixture.GovernmentId, text = "Wanted for questioning in a reported assault.", publishedWorldTime = 19d, visibility = PoliticalVisibility.Public });
             CrimeOperationResult corrected = fixture.Crimes.TransitionWantedStatus(new WantedStatusTransitionRequest { transactionId = CrimeTx(context, "wanted-clear"), wantedStatusId = fixture.WantedId, targetState = WantedStatusLifecycleState.Cleared, correctionReason = "Questioning completed.", worldTime = 20d });
             fixture.Crimes.TryGetWantedStatus(fixture.WantedId, out WantedStatusRecordData status);
@@ -817,7 +817,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             CrimeFixture fixture = PrepareCrimeFixture(context, "projection");
             CreateCrimeCoreRecords(context, fixture, "projection");
-            fixture.Crimes.CreateWantedStatus(new WantedStatusRequest { transactionId = CrimeTx(context, "projection-wanted"), wantedStatusId = fixture.WantedId, wantedDefinitionId = PrototypeCrimeDefinitionFactory.WantedForLocationDefinitionId, incidentId = fixture.IncidentId, subjectId = fixture.ActorId, jurisdictionId = fixture.JurisdictionId, territoryId = fixture.TerritoryId, activeWorldTime = 18d, visibility = PoliticalVisibility.Restricted });
+            fixture.Crimes.CreateWantedStatus(new WantedStatusRequest { transactionId = CrimeTx(context, "projection-wanted"), wantedStatusId = fixture.WantedId, wantedDefinitionId = PrototypeCrimeDefinitionFactory.WantedForLocationDefinitionId, incidentIds = new[] { fixture.IncidentId }, subjectId = fixture.ActorId, jurisdictionId = fixture.JurisdictionId, territoryId = fixture.TerritoryId, activeWorldTime = 18d, visibility = PoliticalVisibility.Restricted });
             CrimeProjectionResult<CrimeIncidentRecordData> publicIncident = fixture.Crimes.ProjectIncident(fixture.IncidentId, privileged: false);
             CrimeProjectionResult<CrimeIncidentRecordData> privilegedIncident = fixture.Crimes.ProjectIncident(fixture.IncidentId, privileged: true);
             CrimeProjectionResult<WantedStatusRecordData> publicWanted = fixture.Crimes.ProjectWantedStatus(fixture.WantedId, privileged: false);
@@ -853,7 +853,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             CrimeFixture fixture = PrepareCrimeFixture(context, "persist");
             CreateCrimeCoreRecords(context, fixture, "persist");
-            fixture.Crimes.OpenInvestigation(new InvestigationRecordRequest { transactionId = CrimeTx(context, "investigation"), investigationId = fixture.InvestigationId, incidentId = fixture.IncidentId, responsibleGovernmentId = fixture.GovernmentId, responsibleOrganizationId = "organization.prototype.guild", reviewerPersonIds = new[] { fixture.ActorId }, openedWorldTime = 15d });
+            fixture.Crimes.OpenInvestigation(new InvestigationRecordRequest { transactionId = CrimeTx(context, "investigation"), investigationId = fixture.InvestigationId, incidentId = fixture.IncidentId, responsibleGovernmentId = fixture.GovernmentId, responsibleOrganizationId = "organization.prototype.adventurers-guild", reviewerPersonIds = new[] { fixture.ActorId }, openedWorldTime = 15d });
             CrimeRuntimeSaveData save = fixture.Crimes.CreateSaveData();
             CrimeRuntime restored = new CrimeRuntime();
             TestLabRuntimeBundle bundle = context.ScenarioContext.Runtimes;
@@ -913,7 +913,7 @@ namespace UnityIsekaiGame.Development.Automation
             JusticeFixture fixture = PrepareJusticeFixture(context, "arrest");
             JusticeOperationResult arrest = fixture.Justice.Arrest(JusticeArrestRequest(context, fixture, "arrest"));
             JusticeOperationResult duplicate = fixture.Justice.Arrest(JusticeArrestRequest(context, fixture, "arrest"));
-            JusticeOperationResult transfer = fixture.Justice.TransferCustody(new CustodyTransferRequest { transactionId = JusticeTx(context, "transfer-arrest"), custodyId = fixture.CustodyId, targetHolderGovernmentId = fixture.Crime.GovernmentId, targetHolderOrganizationId = "organization.prototype.guild", targetFacilityPlaceId = "place.testlab.detention", worldTime = 18d });
+            JusticeOperationResult transfer = fixture.Justice.TransferCustody(new CustodyTransferRequest { transactionId = JusticeTx(context, "transfer-arrest"), custodyId = fixture.CustodyId, targetHolderGovernmentId = fixture.Crime.GovernmentId, targetHolderOrganizationId = "organization.prototype.adventurers-guild", targetFacilityPlaceId = "place.testlab.detention", worldTime = 18d });
             JusticeOperationResult release = fixture.Justice.OrderRelease(new ReleaseOrderRequest { transactionId = JusticeTx(context, "release-arrest"), releaseOrderId = fixture.ReleaseOrderId, custodyId = fixture.CustodyId, category = ReleaseCategory.PendingTrial, orderedByCourtId = fixture.CourtId, orderedWorldTime = 19d, effectiveWorldTime = 19d, conditions = new[] { "appear-at-next-hearing" } });
             fixture.Justice.TryGetCustody(fixture.CustodyId, out CustodyRecordData custody);
             bool valid = arrest.Succeeded
@@ -1161,22 +1161,23 @@ namespace UnityIsekaiGame.Development.Automation
             DefinitionRegistry registry = context.ScenarioContext.Runtimes.DefinitionRegistry;
             bool full = registry.TryGet(PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, out OrganizationMembershipDefinition fullMember);
             bool invitee = registry.TryGet(PrototypeOrganizationMembershipDefinitionFactory.GuildInviteeId, out OrganizationMembershipDefinition inviteeMember);
-            bool track = registry.TryGet(PrototypeOrganizationMembershipDefinitionFactory.GuildCraftTrackId, out OrganizationRankTrackDefinition craftTrack);
-            bool master = registry.TryGet(PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId, out OrganizationRankDefinition masterRank);
+            bool track = registry.TryGet(PrototypeOrganizationMembershipDefinitionFactory.GuildRatingTrackId, out OrganizationRankTrackDefinition ratingTrack);
+            bool topRank = registry.TryGet(PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId, out OrganizationRankDefinition sssRank);
             bool office = registry.TryGet(PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, out OrganizationOfficeDefinition guildmasterOffice);
             bool valid = runtime != null
                 && full
                 && invitee
                 && track
-                && master
+                && topRank
                 && office
                 && fullMember.SupportsRanks
                 && fullMember.SupportsOffices
                 && inviteeMember.InitialStatus == OrganizationMembershipStatus.Invited
-                && craftTrack.SupportedMembershipDefinitionIds.Contains(PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId)
-                && guildmasterOffice.RequiredRankDefinitionIds.Contains(PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId);
+                && ratingTrack.SupportedMembershipDefinitionIds.Contains(PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId)
+                && sssRank.TerminalRank
+                && guildmasterOffice.RequiredRankDefinitionIds.Contains(PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId);
 
-            return TestLabAssertions.True("step13-membership-readiness", "Resolve organization membership definitions", valid, $"Definitions={full}/{invitee}/{track}/{master}/{office} Runtime={runtime.MembershipCount}/{runtime.OfficeCount}");
+            return TestLabAssertions.True("step13-membership-readiness", "Resolve organization membership definitions", valid, $"Definitions={full}/{invitee}/{track}/{topRank}/{office} Runtime={runtime.MembershipCount}/{runtime.OfficeCount}");
         }
 
         private static TestLabAutomationStepResult ApplicationInvitationConsent(TestLabAutomationContext context)
@@ -1190,7 +1191,7 @@ namespace UnityIsekaiGame.Development.Automation
             string inviteeId = "person.prototype.rival";
             OrganizationMembershipOperationResult application = runtime.ApplyMembership(MembershipRequest(
                 $"organization-membership.testlab.application.{context.RunId}",
-                "organization.prototype.guild",
+                "organization.prototype.adventurers-guild",
                 applicantId,
                 PrototypeOrganizationMembershipDefinitionFactory.GuildApplicantId,
                 OrganizationMembershipStatus.Applied,
@@ -1198,7 +1199,7 @@ namespace UnityIsekaiGame.Development.Automation
                 $"testlab.membership.application.{context.RunId}"));
             OrganizationMembershipOperationResult invitation = runtime.ApplyMembership(MembershipRequest(
                 $"organization-membership.testlab.invitation.{context.RunId}",
-                "organization.prototype.guild",
+                "organization.prototype.adventurers-guild",
                 inviteeId,
                 PrototypeOrganizationMembershipDefinitionFactory.GuildInviteeId,
                 OrganizationMembershipStatus.Invited,
@@ -1206,7 +1207,7 @@ namespace UnityIsekaiGame.Development.Automation
                 $"testlab.membership.invitation.{context.RunId}"));
             OrganizationMembershipOperationResult denied = runtime.ApplyMembership(MembershipRequest(
                 invitation.Membership?.MembershipId,
-                "organization.prototype.guild",
+                "organization.prototype.adventurers-guild",
                 inviteeId,
                 PrototypeOrganizationMembershipDefinitionFactory.GuildInviteeId,
                 OrganizationMembershipStatus.Active,
@@ -1214,7 +1215,7 @@ namespace UnityIsekaiGame.Development.Automation
                 $"testlab.membership.invitation.denied.{context.RunId}"));
             OrganizationMembershipRequest accept = MembershipRequest(
                 invitation.Membership?.MembershipId,
-                "organization.prototype.guild",
+                "organization.prototype.adventurers-guild",
                 inviteeId,
                 PrototypeOrganizationMembershipDefinitionFactory.GuildInviteeId,
                 OrganizationMembershipStatus.Active,
@@ -1259,7 +1260,7 @@ namespace UnityIsekaiGame.Development.Automation
             OrganizationOperationResult link = organizations.LinkOrganizations(new OrganizationLinkRequest
             {
                 sourceOrganizationId = branchId,
-                targetOrganizationId = "organization.prototype.guild",
+                targetOrganizationId = "organization.prototype.adventurers-guild",
                 kind = OrganizationLinkKind.Parent,
                 transactionId = $"testlab.organization.branch.link.{context.RunId}"
             });
@@ -1275,7 +1276,7 @@ namespace UnityIsekaiGame.Development.Automation
                 consent: true));
             OrganizationMembershipOperationResult parent = memberships.ApplyMembership(MembershipRequest(
                 $"organization-membership.testlab.parent.{context.RunId}",
-                "organization.prototype.guild",
+                "organization.prototype.adventurers-guild",
                 personId,
                 PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId,
                 OrganizationMembershipStatus.Active,
@@ -1314,24 +1315,24 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             string membershipId = $"organization-membership.testlab.rank.{context.RunId}";
-            OrganizationMembershipOperationResult member = runtime.ApplyMembership(MembershipRequest(membershipId, "organization.prototype.guild", "person.prototype.mentor", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.membership.rank.member.{context.RunId}", consent: true));
-            OrganizationMembershipOperationResult novice = runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.novice.{context.RunId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildNoviceRankId, $"testlab.membership.rank.novice.{context.RunId}"));
-            OrganizationMembershipOperationResult journeyman = runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.journeyman.{context.RunId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildJourneymanRankId, $"testlab.membership.rank.journeyman.{context.RunId}"));
-            OrganizationMembershipOperationResult master = runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.master.{context.RunId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId, $"testlab.membership.rank.master.{context.RunId}"));
-            OrganizationMembershipOperationResult duplicate = runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.master.{context.RunId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId, $"testlab.membership.rank.master.{context.RunId}"));
+            OrganizationMembershipOperationResult member = runtime.ApplyMembership(MembershipRequest(membershipId, "organization.prototype.adventurers-guild", "person.prototype.mentor", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.membership.rank.member.{context.RunId}", consent: true));
+            OrganizationMembershipOperationResult skipped = runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.skipped.{context.RunId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildERankId, $"testlab.membership.rank.skipped.{context.RunId}"));
+            OrganizationMembershipOperationResult[] progression = PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds
+                .Select((rankId, index) => runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.rating.{index}.{context.RunId}", membershipId, rankId, $"testlab.membership.rank.rating.{index}.{context.RunId}")))
+                .ToArray();
+            OrganizationMembershipOperationResult duplicate = runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.rating.8.{context.RunId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId, $"testlab.membership.rank.rating.8.{context.RunId}"));
             runtime.TryGetMembership(membershipId, out OrganizationMembershipSnapshot snapshot);
 
             bool valid = member.Succeeded
-                && novice.Succeeded
-                && journeyman.Succeeded
-                && master.Succeeded
+                && skipped.Status == OrganizationMembershipOperationStatus.InvalidTransition
+                && progression.All(result => result.Succeeded)
                 && duplicate.Duplicate
-                && runtime.CompareRanks(PrototypeOrganizationMembershipDefinitionFactory.GuildNoviceRankId, PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId) < 0
-                && snapshot.RankAssignments.Count == 3
+                && runtime.CompareRanks(PrototypeOrganizationMembershipDefinitionFactory.GuildFRankId, PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId) < 0
+                && snapshot.RankAssignments.Count == 9
                 && snapshot.RankAssignments.Count(item => item.state == OrganizationRankAssignmentState.Active) == 1
-                && snapshot.RankAssignments.Single(item => item.state == OrganizationRankAssignmentState.Active).rankDefinitionId == PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId;
+                && snapshot.RankAssignments.Single(item => item.state == OrganizationRankAssignmentState.Active).rankDefinitionId == PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId;
 
-            return TestLabAssertions.True("step13-membership-ranks", "Assign and compare organization ranks", valid, $"Member={member.Status} Novice={novice.Status} Journey={journeyman.Status} Master={master.Status} Duplicate={duplicate.Status}/{duplicate.Duplicate} Active={snapshot?.RankAssignments.Count(item => item.state == OrganizationRankAssignmentState.Active)}");
+            return TestLabAssertions.True("step13-membership-ranks", "Assign and compare organization ranks", valid, $"Member={member.Status} Skipped={skipped.Status} Progression={string.Join(",", progression.Select(result => result.Status))} Duplicate={duplicate.Status}/{duplicate.Duplicate} Active={snapshot?.RankAssignments.Count(item => item.state == OrganizationRankAssignmentState.Active)}");
         }
 
         private static TestLabAutomationStepResult OfficeAppointments(TestLabAutomationContext context)
@@ -1344,17 +1345,18 @@ namespace UnityIsekaiGame.Development.Automation
             string masterMembershipId = $"organization-membership.testlab.office.master.{context.RunId}";
             string associateOneId = $"organization-membership.testlab.office.associate1.{context.RunId}";
             string associateTwoId = $"organization-membership.testlab.office.associate2.{context.RunId}";
-            OrganizationMembershipOperationResult masterMember = runtime.ApplyMembership(MembershipRequest(masterMembershipId, "organization.prototype.guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.office.member.master.{context.RunId}", consent: true));
-            runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.office.novice.{context.RunId}", masterMembershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildNoviceRankId, $"testlab.office.rank.novice.{context.RunId}"));
-            runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.office.journey.{context.RunId}", masterMembershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildJourneymanRankId, $"testlab.office.rank.journey.{context.RunId}"));
-            runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.office.master.{context.RunId}", masterMembershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId, $"testlab.office.rank.master.{context.RunId}"));
-            OrganizationMembershipOperationResult guildmaster = runtime.CreateOffice(OfficeRequest($"organization-office-record.testlab.guildmaster.{context.RunId}", "organization.prototype.guild", PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, $"testlab.office.guildmaster.{context.RunId}"));
+            OrganizationMembershipOperationResult masterMember = runtime.ApplyMembership(MembershipRequest(masterMembershipId, "organization.prototype.adventurers-guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.office.member.master.{context.RunId}", consent: true));
+            for (int index = 0; index < PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds.Count; index++)
+            {
+                runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.office.rating.{index}.{context.RunId}", masterMembershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds[index], $"testlab.office.rank.rating.{index}.{context.RunId}"));
+            }
+            OrganizationMembershipOperationResult guildmaster = runtime.CreateOffice(OfficeRequest($"organization-office-record.testlab.guildmaster.{context.RunId}", "organization.prototype.adventurers-guild", PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, $"testlab.office.guildmaster.{context.RunId}"));
             OrganizationMembershipOperationResult assignGuildmaster = runtime.AssignOffice(OfficeAssignmentRequest($"organization-office-assignment.testlab.guildmaster.{context.RunId}", guildmaster.Office?.OfficeId, masterMembershipId, $"testlab.office.assign.guildmaster.{context.RunId}"));
             OrganizationMembershipOperationResult duplicateGuildmaster = runtime.AssignOffice(OfficeAssignmentRequest($"organization-office-assignment.testlab.guildmaster.duplicate.{context.RunId}", guildmaster.Office?.OfficeId, masterMembershipId, $"testlab.office.assign.guildmaster.duplicate.{context.RunId}"));
 
-            OrganizationMembershipOperationResult associateOne = runtime.ApplyMembership(MembershipRequest(associateOneId, "organization.prototype.guild", "person.prototype.cousin", PrototypeOrganizationMembershipDefinitionFactory.GuildAssociateId, OrganizationMembershipStatus.Provisional, OrganizationMembershipSourceKind.WorldSetup, $"testlab.office.member.associate1.{context.RunId}", consent: true));
-            OrganizationMembershipOperationResult associateTwo = runtime.ApplyMembership(MembershipRequest(associateTwoId, "organization.prototype.guild", "person.prototype.student", PrototypeOrganizationMembershipDefinitionFactory.GuildAssociateId, OrganizationMembershipStatus.Provisional, OrganizationMembershipSourceKind.WorldSetup, $"testlab.office.member.associate2.{context.RunId}", consent: true));
-            OrganizationMembershipOperationResult treasurer = runtime.CreateOffice(OfficeRequest($"organization-office-record.testlab.treasurer.{context.RunId}", "organization.prototype.guild", PrototypeOrganizationMembershipDefinitionFactory.GuildTreasurerOfficeId, $"testlab.office.treasurer.{context.RunId}", maximumHolders: 2));
+            OrganizationMembershipOperationResult associateOne = runtime.ApplyMembership(MembershipRequest(associateOneId, "organization.prototype.adventurers-guild", "person.prototype.cousin", PrototypeOrganizationMembershipDefinitionFactory.GuildAssociateId, OrganizationMembershipStatus.Provisional, OrganizationMembershipSourceKind.WorldSetup, $"testlab.office.member.associate1.{context.RunId}", consent: true));
+            OrganizationMembershipOperationResult associateTwo = runtime.ApplyMembership(MembershipRequest(associateTwoId, "organization.prototype.adventurers-guild", "person.prototype.student", PrototypeOrganizationMembershipDefinitionFactory.GuildAssociateId, OrganizationMembershipStatus.Provisional, OrganizationMembershipSourceKind.WorldSetup, $"testlab.office.member.associate2.{context.RunId}", consent: true));
+            OrganizationMembershipOperationResult treasurer = runtime.CreateOffice(OfficeRequest($"organization-office-record.testlab.treasurer.{context.RunId}", "organization.prototype.adventurers-guild", PrototypeOrganizationMembershipDefinitionFactory.GuildTreasurerOfficeId, $"testlab.office.treasurer.{context.RunId}", maximumHolders: 2));
             OrganizationMembershipOperationResult assignOne = runtime.AssignOffice(OfficeAssignmentRequest($"organization-office-assignment.testlab.treasurer1.{context.RunId}", treasurer.Office?.OfficeId, associateOneId, $"testlab.office.assign.treasurer1.{context.RunId}", acting: true));
             OrganizationMembershipOperationResult assignTwo = runtime.AssignOffice(OfficeAssignmentRequest($"organization-office-assignment.testlab.treasurer2.{context.RunId}", treasurer.Office?.OfficeId, associateTwoId, $"testlab.office.assign.treasurer2.{context.RunId}"));
             runtime.TryGetOffice(treasurer.Office?.OfficeId, out OrganizationOfficeSnapshot treasurerSnapshot);
@@ -1383,13 +1385,13 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             string membershipId = $"organization-membership.testlab.end.{context.RunId}";
-            OrganizationMembershipOperationResult member = runtime.ApplyMembership(MembershipRequest(membershipId, "organization.prototype.guild", "person.prototype.dependent", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.membership.end.member.{context.RunId}", consent: true));
-            runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.end.novice.{context.RunId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildNoviceRankId, $"testlab.membership.end.rank.{context.RunId}"));
-            OrganizationMembershipOperationResult office = runtime.CreateOffice(OfficeRequest($"organization-office-record.testlab.end.treasurer.{context.RunId}", "organization.prototype.guild", PrototypeOrganizationMembershipDefinitionFactory.GuildTreasurerOfficeId, $"testlab.membership.end.office.{context.RunId}", maximumHolders: 2));
+            OrganizationMembershipOperationResult member = runtime.ApplyMembership(MembershipRequest(membershipId, "organization.prototype.adventurers-guild", "person.prototype.dependent", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.membership.end.member.{context.RunId}", consent: true));
+            runtime.AssignRank(RankRequest($"organization-rank-assignment.testlab.end.f.{context.RunId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildFRankId, $"testlab.membership.end.rank.{context.RunId}"));
+            OrganizationMembershipOperationResult office = runtime.CreateOffice(OfficeRequest($"organization-office-record.testlab.end.treasurer.{context.RunId}", "organization.prototype.adventurers-guild", PrototypeOrganizationMembershipDefinitionFactory.GuildTreasurerOfficeId, $"testlab.membership.end.office.{context.RunId}", maximumHolders: 2));
             runtime.AssignOffice(OfficeAssignmentRequest($"organization-office-assignment.testlab.end.treasurer.{context.RunId}", office.Office?.OfficeId, membershipId, $"testlab.membership.end.office.assign.{context.RunId}"));
-            OrganizationMembershipRequest blockedRequest = MembershipRequest(membershipId, "organization.prototype.guild", "person.prototype.dependent", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Resigned, OrganizationMembershipSourceKind.ScriptedEvent, $"testlab.membership.end.blocked.{context.RunId}");
+            OrganizationMembershipRequest blockedRequest = MembershipRequest(membershipId, "organization.prototype.adventurers-guild", "person.prototype.dependent", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Resigned, OrganizationMembershipSourceKind.ScriptedEvent, $"testlab.membership.end.blocked.{context.RunId}");
             OrganizationMembershipOperationResult blocked = runtime.ApplyMembership(blockedRequest);
-            OrganizationMembershipRequest endRequest = MembershipRequest(membershipId, "organization.prototype.guild", "person.prototype.dependent", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Resigned, OrganizationMembershipSourceKind.ScriptedEvent, $"testlab.membership.end.apply.{context.RunId}");
+            OrganizationMembershipRequest endRequest = MembershipRequest(membershipId, "organization.prototype.adventurers-guild", "person.prototype.dependent", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Resigned, OrganizationMembershipSourceKind.ScriptedEvent, $"testlab.membership.end.apply.{context.RunId}");
             endRequest.endingPolicy = OrganizationMembershipEndingPolicy.EndActiveAssignments;
             OrganizationMembershipOperationResult ended = runtime.ApplyMembership(endRequest);
             OrganizationMembershipOperationResult duplicate = runtime.ApplyMembership(endRequest);
@@ -1415,8 +1417,8 @@ namespace UnityIsekaiGame.Development.Automation
 
             string visibleMembershipId = $"organization-membership.testlab.persist.visible.{context.RunId}";
             string hiddenMembershipId = $"organization-membership.testlab.persist.hidden.{context.RunId}";
-            OrganizationMembershipOperationResult visible = runtime.ApplyMembership(MembershipRequest(visibleMembershipId, "organization.prototype.guild", "person.prototype.partner", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.membership.persist.visible.{context.RunId}", consent: true));
-            OrganizationMembershipRequest hiddenRequest = MembershipRequest(hiddenMembershipId, "organization.prototype.guild", "person.prototype.spouse", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.membership.persist.hidden.{context.RunId}", consent: true);
+            OrganizationMembershipOperationResult visible = runtime.ApplyMembership(MembershipRequest(visibleMembershipId, "organization.prototype.adventurers-guild", "person.prototype.partner", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.membership.persist.visible.{context.RunId}", consent: true));
+            OrganizationMembershipRequest hiddenRequest = MembershipRequest(hiddenMembershipId, "organization.prototype.adventurers-guild", "person.prototype.spouse", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.membership.persist.hidden.{context.RunId}", consent: true);
             hiddenRequest.visibility = OrganizationVisibility.Hidden;
             OrganizationMembershipOperationResult hidden = runtime.ApplyMembership(hiddenRequest);
             OrganizationMembershipProjection publicProjection = runtime.ProjectMembership(visibleMembershipId, "person.prototype.friend");
@@ -1464,8 +1466,8 @@ namespace UnityIsekaiGame.Development.Automation
             bool binding = registry.TryGet(PrototypeOrganizationAuthorityDefinitionFactory.GuildmasterOfficeBindingId, out OrganizationAuthorityBindingDefinition bindingDefinition)
                 && bindingDefinition.AuthorityRoleDefinitionId == PrototypeOrganizationAuthorityDefinitionFactory.GuildmasterRoleId;
             string actorId = PrimaryAuthorityActorId(context);
-            OrganizationEffectiveAuthoritySnapshot first = runtime.QueryEffectiveAuthority(actorId, "organization.prototype.guild", 10d);
-            OrganizationEffectiveAuthoritySnapshot second = runtime.QueryEffectiveAuthority(actorId, "organization.prototype.guild", 10d);
+            OrganizationEffectiveAuthoritySnapshot first = runtime.QueryEffectiveAuthority(actorId, "organization.prototype.adventurers-guild", 10d);
+            OrganizationEffectiveAuthoritySnapshot second = runtime.QueryEffectiveAuthority(actorId, "organization.prototype.adventurers-guild", 10d);
 
             bool valid = permission
                 && action
@@ -1489,11 +1491,11 @@ namespace UnityIsekaiGame.Development.Automation
 
             string actorId = PrimaryAuthorityActorId(context);
             CreateAuthorityGuildmaster(context, actorId, "master");
-            memberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.authority.general.{context.RunId}", "organization.prototype.guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.member.general.{context.RunId}", consent: true));
+            memberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.authority.general.{context.RunId}", "organization.prototype.adventurers-guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.member.general.{context.RunId}", consent: true));
 
-            OrganizationAuthorizationResult guildmaster = authority.EvaluateAuthorization(AuthorityRequest(actorId, "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholderActionId, $"testlab.authority.auth.guildmaster.{context.RunId}"));
-            OrganizationAuthorizationResult general = authority.EvaluateAuthorization(AuthorityRequest("person.prototype.friend", "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholderActionId, $"testlab.authority.auth.general.{context.RunId}"));
-            OrganizationEffectiveAuthoritySnapshot effective = authority.QueryEffectiveAuthority(actorId, "organization.prototype.guild", 100d);
+            OrganizationAuthorizationResult guildmaster = authority.EvaluateAuthorization(AuthorityRequest(actorId, "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholderActionId, $"testlab.authority.auth.guildmaster.{context.RunId}"));
+            OrganizationAuthorizationResult general = authority.EvaluateAuthorization(AuthorityRequest("person.prototype.friend", "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholderActionId, $"testlab.authority.auth.general.{context.RunId}"));
+            OrganizationEffectiveAuthoritySnapshot effective = authority.QueryEffectiveAuthority(actorId, "organization.prototype.adventurers-guild", 100d);
 
             bool valid = guildmaster.Succeeded
                 && general.Status == OrganizationAuthorizationStatus.MissingPermission
@@ -1512,15 +1514,15 @@ namespace UnityIsekaiGame.Development.Automation
 
             string actorId = PrimaryAuthorityActorId(context);
             CreateAuthorityGuildmaster(context, actorId, "master");
-            context.ScenarioContext.Runtimes.OrganizationMemberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.authority.direct.friend.{context.RunId}", "organization.prototype.guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.direct.friend.member.{context.RunId}", consent: true));
+            context.ScenarioContext.Runtimes.OrganizationMemberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.authority.direct.friend.{context.RunId}", "organization.prototype.adventurers-guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.direct.friend.member.{context.RunId}", consent: true));
             OrganizationAuthorityOperationResult direct = authority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
             {
                 grantId = $"organization-authority-grant.testlab.direct.{context.RunId}",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 granteePersonId = "person.prototype.friend",
                 grantorPersonId = actorId,
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.IssueOrdersPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 startWorldTime = 20d,
                 expirationWorldTime = 40d,
                 delegationPolicy = OrganizationAuthorityDelegationPolicy.DelegableNoRedelegation,
@@ -1529,26 +1531,26 @@ namespace UnityIsekaiGame.Development.Automation
             OrganizationAuthorityOperationResult duplicate = authority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
             {
                 grantId = direct.Grant?.GrantId,
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 granteePersonId = "person.prototype.friend",
                 grantorPersonId = actorId,
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.IssueOrdersPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 startWorldTime = 20d,
                 expirationWorldTime = 40d,
                 transactionId = $"testlab.authority.direct.{context.RunId}"
             });
-            OrganizationAuthorizationResult authorized = authority.EvaluateAuthorization(AuthorityRequest("person.prototype.friend", "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, $"testlab.authority.friend.orders.{context.RunId}", 30d));
-            OrganizationAuthorizationResult expired = authority.EvaluateAuthorization(AuthorityRequest("person.prototype.friend", "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, $"testlab.authority.friend.orders.expired.{context.RunId}", 50d));
+            OrganizationAuthorizationResult authorized = authority.EvaluateAuthorization(AuthorityRequest("person.prototype.friend", "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, $"testlab.authority.friend.orders.{context.RunId}", 30d));
+            OrganizationAuthorizationResult expired = authority.EvaluateAuthorization(AuthorityRequest("person.prototype.friend", "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, $"testlab.authority.friend.orders.expired.{context.RunId}", 50d));
             OrganizationAuthorityOperationResult delegated = authority.DelegateAuthority(new OrganizationDelegationRequest
             {
                 delegationGrantId = $"organization-authority-grant.testlab.delegated.{context.RunId}",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 delegatorPersonId = "person.prototype.friend",
                 recipientPersonId = "person.prototype.student",
                 sourceAuthorityId = direct.Grant?.GrantId,
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.IssueOrdersPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 startWorldTime = 25d,
                 expirationWorldTime = 35d,
                 transactionId = $"testlab.authority.delegate.{context.RunId}"
@@ -1556,12 +1558,12 @@ namespace UnityIsekaiGame.Development.Automation
             OrganizationAuthorityOperationResult redelegated = authority.DelegateAuthority(new OrganizationDelegationRequest
             {
                 delegationGrantId = $"organization-authority-grant.testlab.redelegated.{context.RunId}",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 delegatorPersonId = "person.prototype.student",
                 recipientPersonId = "person.prototype.rival",
                 sourceAuthorityId = delegated.Grant?.GrantId,
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.IssueOrdersPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 startWorldTime = 26d,
                 expirationWorldTime = 30d,
                 transactionId = $"testlab.authority.redelegate.{context.RunId}"
@@ -1601,13 +1603,13 @@ namespace UnityIsekaiGame.Development.Automation
             organizations.LinkOrganizations(new OrganizationLinkRequest
             {
                 sourceOrganizationId = branchId,
-                targetOrganizationId = "organization.prototype.guild",
+                targetOrganizationId = "organization.prototype.adventurers-guild",
                 kind = OrganizationLinkKind.Parent,
                 transactionId = $"testlab.authority.branch.link.{context.RunId}"
             });
             authority.Configure(context.ScenarioContext.Runtimes.DefinitionRegistry, organizations, memberships, context.ScenarioContext.Runtimes.WorldId, context.ScenarioContext.Runtimes.KnownPersonIds, organizations.Snapshots.Select(snapshot => snapshot.OrganizationId));
             string actorId = PrimaryAuthorityActorId(context);
-            OrganizationMembershipOperationResult parentMembership = memberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.branch.parent.{context.RunId}", "organization.prototype.guild", actorId, PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.branch.parent.member.{context.RunId}", consent: true));
+            OrganizationMembershipOperationResult parentMembership = memberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.branch.parent.{context.RunId}", "organization.prototype.adventurers-guild", actorId, PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.branch.parent.member.{context.RunId}", consent: true));
             AssignGuildMasterRank(memberships, parentMembership.Membership?.MembershipId, context.RunId, "branch-parent");
             OrganizationMembershipRequest branchRequest = MembershipRequest($"organization-membership.testlab.branch.member.{context.RunId}", branchId, "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.BranchMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.branch.member.{context.RunId}", consent: true);
             branchRequest.parentMembershipId = parentMembership.Membership?.MembershipId;
@@ -1618,7 +1620,7 @@ namespace UnityIsekaiGame.Development.Automation
 
             OrganizationAuthorizationResult parentOnBranch = authority.EvaluateAuthorization(AuthorityRequest(actorId, branchId, PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, $"testlab.authority.parent.branch.{context.RunId}"));
             OrganizationAuthorizationResult branchOnBranch = authority.EvaluateAuthorization(AuthorityRequest("person.prototype.friend", branchId, PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, $"testlab.authority.branch.branch.{context.RunId}"));
-            OrganizationAuthorizationResult branchOnParent = authority.EvaluateAuthorization(AuthorityRequest("person.prototype.friend", "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, $"testlab.authority.branch.parent.{context.RunId}"));
+            OrganizationAuthorizationResult branchOnParent = authority.EvaluateAuthorization(AuthorityRequest("person.prototype.friend", "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, $"testlab.authority.branch.parent.{context.RunId}"));
 
             bool valid = parentMembership.Succeeded
                 && branchMembership.Succeeded
@@ -1640,16 +1642,16 @@ namespace UnityIsekaiGame.Development.Automation
 
             string actorId = PrimaryAuthorityActorId(context);
             CreateAuthorityGuildmaster(context, actorId, "approver-master");
-            context.ScenarioContext.Runtimes.OrganizationMemberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.approver.mentor.{context.RunId}", "organization.prototype.guild", "person.prototype.mentor", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.approver.mentor.{context.RunId}", consent: true));
-            context.ScenarioContext.Runtimes.OrganizationMemberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.approver.partner.{context.RunId}", "organization.prototype.guild", "person.prototype.partner", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.approver.partner.{context.RunId}", consent: true));
+            context.ScenarioContext.Runtimes.OrganizationMemberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.approver.mentor.{context.RunId}", "organization.prototype.adventurers-guild", "person.prototype.mentor", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.approver.mentor.{context.RunId}", consent: true));
+            context.ScenarioContext.Runtimes.OrganizationMemberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.approver.partner.{context.RunId}", "organization.prototype.adventurers-guild", "person.prototype.partner", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.approver.partner.{context.RunId}", consent: true));
             OrganizationAuthorityOperationResult mentorGrant = GrantGuildmasterRole(authority, actorId, "person.prototype.mentor", context.RunId, "mentor");
             OrganizationAuthorityOperationResult partnerGrant = GrantGuildmasterRole(authority, actorId, "person.prototype.partner", context.RunId, "partner");
             string operationId = $"testlab.authority.operation.headquarters.{context.RunId}";
             OrganizationAuthorityOperationResult approvalOne = authority.RecordApproval(ApprovalRequest($"organization-authority-approval.testlab.one.{context.RunId}", operationId, "person.prototype.mentor"));
             OrganizationAuthorityOperationResult approvalTwo = authority.RecordApproval(ApprovalRequest($"organization-authority-approval.testlab.two.{context.RunId}", operationId, "person.prototype.partner"));
-            OrganizationAuthorizationRequest deniedRequest = AuthorityRequest("person.prototype.friend", "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.ChangeHeadquartersActionId, operationId);
+            OrganizationAuthorizationRequest deniedRequest = AuthorityRequest("person.prototype.friend", "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.ChangeHeadquartersActionId, operationId);
             deniedRequest.consumeApprovals = true;
-            OrganizationAuthorizationRequest authorizedRequest = AuthorityRequest(actorId, "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.ChangeHeadquartersActionId, operationId);
+            OrganizationAuthorizationRequest authorizedRequest = AuthorityRequest(actorId, "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.ChangeHeadquartersActionId, operationId);
             authorizedRequest.consumeApprovals = true;
 
             OrganizationAuthorizationResult denied = authority.EvaluateAuthorization(deniedRequest);
@@ -1684,11 +1686,11 @@ namespace UnityIsekaiGame.Development.Automation
             OrganizationAuthorityOperationResult grant = authority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
             {
                 grantId = $"organization-authority-grant.testlab.persist.{context.RunId}",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 granteePersonId = "person.prototype.friend",
                 grantorPersonId = PrimaryAuthorityActorId(context),
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.ViewRestrictedInformationPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 startWorldTime = 0d,
                 transactionId = $"testlab.authority.persist.{context.RunId}"
             });
@@ -1735,8 +1737,8 @@ namespace UnityIsekaiGame.Development.Automation
         {
             bool prepared = PrepareResourceAccounts(context, 500L, out OrganizationResourceRuntime resources, out CurrencyDefinition currency, out string actorId, out string failure);
             bool queried = prepared
-                && resources.QueryTreasuries("organization.prototype.guild", activeOnly: true).Count == 1
-                && resources.QueryAccounts("organization.prototype.guild").Count == 2
+                && resources.QueryTreasuries("organization.prototype.adventurers-guild", activeOnly: true).Count == 1
+                && resources.QueryAccounts("organization.prototype.adventurers-guild").Count == 2
                 && resources.GetBalance(ResourceOperatingAccountId(context), 10d)?.BalanceUnits == 500L
                 && resources.GetBalance(ResourceReserveAccountId(context), 10d)?.BalanceUnits == 0L;
             return TestLabAssertions.True("step13-resources-treasury", "Create treasury and organization accounts", prepared && queried, $"Prepared={prepared}:{failure} Actor={actorId} Currency={currency?.Id} Treasuries={resources?.TreasuryCount} Accounts={resources?.AccountCount}");
@@ -1749,7 +1751,7 @@ namespace UnityIsekaiGame.Development.Automation
             string depositId = $"testlab.resources.deposit.{context.RunId}";
             OrganizationResourceOperationResult deposit = resources.DepositFunds(new OrganizationFinancialTransactionRequest
             {
-                transactionId = depositId, organizationId = "organization.prototype.guild", destinationAccountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id,
+                transactionId = depositId, organizationId = "organization.prototype.adventurers-guild", destinationAccountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id,
                 units = 50L, actorPersonId = actorId, relatedRecordId = $"revenue.testlab.{context.RunId}", purpose = "test revenue", worldTime = 10d
             });
             OrganizationFinancialTransactionRequest transferRequest = ResourceTransferRequest(context, currency.Id, actorId, 40L, $"testlab.resources.transfer.{context.RunId}", 11d);
@@ -1772,7 +1774,7 @@ namespace UnityIsekaiGame.Development.Automation
             long before = resources.GetBalance(ResourceOperatingAccountId(context), 10d).BalanceUnits;
             OrganizationFinancialTransactionRequest deniedRequest = new OrganizationFinancialTransactionRequest
             {
-                transactionId = $"testlab.resources.withdraw.denied.{context.RunId}", organizationId = "organization.prototype.guild", sourceAccountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id,
+                transactionId = $"testlab.resources.withdraw.denied.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", sourceAccountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id,
                 units = 10L, actorPersonId = "person.prototype.friend", relatedRecordId = $"settlement.denied.{context.RunId}", purpose = "unauthorized", worldTime = 10d
             };
             OrganizationResourceOperationResult denied = resources.WithdrawFunds(deniedRequest);
@@ -1792,7 +1794,7 @@ namespace UnityIsekaiGame.Development.Automation
             string restrictionId = $"organization-restriction.testlab.{context.RunId}";
             OrganizationResourceOperationResult restriction = resources.AddFundRestriction(new OrganizationFundRestrictionRequest
             {
-                transactionId = $"testlab.resources.restrict.{context.RunId}", restrictionId = restrictionId, organizationId = "organization.prototype.guild", accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id,
+                transactionId = $"testlab.resources.restrict.{context.RunId}", restrictionId = restrictionId, organizationId = "organization.prototype.adventurers-guild", accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id,
                 units = 700L, allowedPurpose = "healing", sourceReferenceId = $"donation.testlab.{context.RunId}", actorPersonId = actorId, startWorldTime = 10d
             });
             OrganizationResourceOperationResult blocked = resources.TransferFunds(ResourceTransferRequest(context, currency.Id, actorId, 400L, $"testlab.resources.restricted.blocked.{context.RunId}", 11d));
@@ -1803,13 +1805,13 @@ namespace UnityIsekaiGame.Development.Automation
             string reservationId = $"organization-reservation.testlab.{context.RunId}";
             OrganizationResourceOperationResult reservation = resources.ReserveResource(new OrganizationReservationRequest
             {
-                transactionId = $"testlab.resources.reserve.{context.RunId}", reservationId = reservationId, organizationId = "organization.prototype.guild", accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id,
+                transactionId = $"testlab.resources.reserve.{context.RunId}", reservationId = reservationId, organizationId = "organization.prototype.adventurers-guild", accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id,
                 amountUnits = 100L, category = OrganizationReservationCategory.Contract, purpose = "contract", requestingOperationId = $"contract.testlab.{context.RunId}", actorPersonId = actorId, startWorldTime = 13d, expirationWorldTime = 30d
             });
             string budgetId = $"organization-budget.testlab.{context.RunId}";
             OrganizationResourceOperationResult budget = resources.CreateBudget(new OrganizationBudgetRequest
             {
-                transactionId = $"testlab.resources.budget.{context.RunId}", budgetId = budgetId, organizationId = "organization.prototype.guild", treasuryId = ResourceTreasuryId(context), accountId = ResourceOperatingAccountId(context),
+                transactionId = $"testlab.resources.budget.{context.RunId}", budgetId = budgetId, organizationId = "organization.prototype.adventurers-guild", treasuryId = ResourceTreasuryId(context), accountId = ResourceOperatingAccountId(context),
                 category = OrganizationBudgetCategory.Procurement, enforcementPolicy = OrganizationBudgetEnforcementPolicy.HardMaximum, currencyDefinitionId = currency.Id, authorizedUnits = 50L, purpose = "procurement", actorPersonId = actorId, startWorldTime = 13d
             });
             OrganizationFinancialTransactionRequest overBudgetRequest = ResourceTransferRequest(context, currency.Id, actorId, 51L, $"testlab.resources.budget.blocked.{context.RunId}", 14d);
@@ -1828,7 +1830,7 @@ namespace UnityIsekaiGame.Development.Automation
             if (!prepared) return TestLabAssertions.Fail("step13-resources-custody", "Associate inventory and track item custody", "ResourceFixture", "Prepared", "Failed", failure);
             OrganizationResourceOperationResult inventory = resources.AssociateInventory(new OrganizationAssociationRequest
             {
-                transactionId = $"testlab.resources.inventory.{context.RunId}", associationId = $"organization-inventory-association.testlab.{context.RunId}", organizationId = "organization.prototype.guild", resourceId = $"inventory.organization.testlab.{context.RunId}",
+                transactionId = $"testlab.resources.inventory.{context.RunId}", associationId = $"organization-inventory-association.testlab.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", resourceId = $"inventory.organization.testlab.{context.RunId}",
                 category = (int)OrganizationInventoryCategory.Armory, actorPersonId = actorId, startWorldTime = 10d
             });
             ItemDefinition itemDefinition = context.ScenarioContext.Runtimes.DefinitionRegistry.DefinitionsById.Values.OfType<ItemDefinition>().FirstOrDefault();
@@ -1836,7 +1838,7 @@ namespace UnityIsekaiGame.Development.Automation
             string itemId = created?.Snapshot?.ItemInstanceId;
             OrganizationResourceOperationResult custody = resources.AssignCustody(new OrganizationCustodyRequest
             {
-                transactionId = $"testlab.resources.custody.{context.RunId}", custodyId = $"organization-custody.testlab.{context.RunId}", organizationId = "organization.prototype.guild",
+                transactionId = $"testlab.resources.custody.{context.RunId}", custodyId = $"organization-custody.testlab.{context.RunId}", organizationId = "organization.prototype.adventurers-guild",
                 asset = new OrganizationAssetReferenceData { kind = OrganizationAssetReferenceKind.ItemInstance, resourceId = itemId, definitionId = itemDefinition?.Id, worldId = context.ScenarioContext.Runtimes.WorldId },
                 custodianPersonId = "person.prototype.student", actorPersonId = actorId, sourceInventoryId = $"inventory.organization.testlab.{context.RunId}", destinationInventoryId = "person.prototype.student", startWorldTime = 11d
             });
@@ -1853,7 +1855,7 @@ namespace UnityIsekaiGame.Development.Automation
             string reservationId = $"organization-reservation.testlab.explicit.{context.RunId}";
             OrganizationResourceOperationResult reserve = resources.ReserveResource(new OrganizationReservationRequest
             {
-                transactionId = $"testlab.resources.reservation.explicit.{context.RunId}", reservationId = reservationId, organizationId = "organization.prototype.guild",
+                transactionId = $"testlab.resources.reservation.explicit.{context.RunId}", reservationId = reservationId, organizationId = "organization.prototype.adventurers-guild",
                 accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id, amountUnits = 75L, category = OrganizationReservationCategory.Contract,
                 purpose = "contract", requestingOperationId = $"contract.testlab.{context.RunId}", actorPersonId = actorId, startWorldTime = 10d, expirationWorldTime = 20d
             });
@@ -1874,8 +1876,8 @@ namespace UnityIsekaiGame.Development.Automation
             string operationId = $"testlab.resources.joint.transfer.{context.RunId}";
             Func<string, string, OrganizationApprovalRequest> approval = (id, approver) => new OrganizationApprovalRequest
             {
-                approvalId = id, operationId = operationId, organizationId = "organization.prototype.guild", actionDefinitionId = PrototypeOrganizationAuthorityDefinitionFactory.LargeOrganizationTransferActionId,
-                approverPersonId = approver, scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"), approvedWorldTime = 10d, transactionId = $"tx.{id}"
+                approvalId = id, operationId = operationId, organizationId = "organization.prototype.adventurers-guild", actionDefinitionId = PrototypeOrganizationAuthorityDefinitionFactory.LargeOrganizationTransferActionId,
+                approverPersonId = approver, scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"), approvedWorldTime = 10d, transactionId = $"tx.{id}"
             };
             OrganizationAuthorityOperationResult first = authority.RecordApproval(approval($"organization-approval.resources.first.{context.RunId}", "person.prototype.mentor"));
             OrganizationAuthorityOperationResult second = authority.RecordApproval(approval($"organization-approval.resources.second.{context.RunId}", "person.prototype.partner"));
@@ -1895,13 +1897,13 @@ namespace UnityIsekaiGame.Development.Automation
             string sourceId = $"business-revenue.testlab.{context.RunId}";
             OrganizationResourceOperationResult rule = resources.CreateRevenueRoutingRule(new OrganizationRevenueRoutingRequest
             {
-                transactionId = $"testlab.resources.route.rule.{context.RunId}", routingRuleId = $"organization-routing.testlab.{context.RunId}", organizationId = "organization.prototype.guild",
+                transactionId = $"testlab.resources.route.rule.{context.RunId}", routingRuleId = $"organization-routing.testlab.{context.RunId}", organizationId = "organization.prototype.adventurers-guild",
                 revenueSourceId = sourceId, destinationAccountId = ResourceReserveAccountId(context), percentageBasisPoints = 2500L, priority = 10,
                 purpose = "institutional reserve", actorPersonId = actorId, startWorldTime = 10d
             });
             OrganizationResourceOperationResult routed = resources.ApplyRevenueRouting(new OrganizationRevenueRoutingExecutionRequest
             {
-                transactionId = $"testlab.resources.route.execute.{context.RunId}", organizationId = "organization.prototype.guild", revenueSourceId = sourceId,
+                transactionId = $"testlab.resources.route.execute.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", revenueSourceId = sourceId,
                 sourceAccountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id, grossUnits = 200L, actorPersonId = actorId, worldTime = 11d
             });
             bool valid = rule.Succeeded && routed.Succeeded && resources.GetBalance(ResourceOperatingAccountId(context), 11d)?.BalanceUnits == 350L && resources.GetBalance(ResourceReserveAccountId(context), 11d)?.BalanceUnits == 50L;
@@ -1914,22 +1916,22 @@ namespace UnityIsekaiGame.Development.Automation
             if (!prepared) return TestLabAssertions.Fail("step13-resources-payroll", "Expose payroll funding without duplicating payroll state", "ResourceFixture", "Prepared", "Failed", failure);
             OrganizationResourceOperationResult reservation = resources.ReserveResource(new OrganizationReservationRequest
             {
-                transactionId = $"testlab.resources.payroll.reserve.{context.RunId}", reservationId = $"organization-reservation.payroll.{context.RunId}", organizationId = "organization.prototype.guild",
+                transactionId = $"testlab.resources.payroll.reserve.{context.RunId}", reservationId = $"organization-reservation.payroll.{context.RunId}", organizationId = "organization.prototype.adventurers-guild",
                 accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id, amountUnits = 80L, category = OrganizationReservationCategory.Payroll,
                 purpose = "payroll", requestingOperationId = $"payroll-run.testlab.{context.RunId}", actorPersonId = actorId, startWorldTime = 10d
             });
             OrganizationAccountBalanceSnapshot balance = resources.GetBalance(ResourceOperatingAccountId(context), 10d);
-            bool valid = context.ScenarioContext.Runtimes.Payroll != null && reservation.Succeeded && balance.ReservedUnits == 80L && resources.QueryLiabilities("organization.prototype.guild").Count == 0;
-            return TestLabAssertions.True("step13-resources-payroll", "Expose payroll funding without duplicating payroll state", valid, $"PayrollReady={context.ScenarioContext.Runtimes.Payroll != null} Reservation={reservation.Code} Reserved={balance?.ReservedUnits} DelegatedLiabilities={resources.QueryLiabilities("organization.prototype.guild").Count}");
+            bool valid = context.ScenarioContext.Runtimes.Payroll != null && reservation.Succeeded && balance.ReservedUnits == 80L && resources.QueryLiabilities("organization.prototype.adventurers-guild").Count == 0;
+            return TestLabAssertions.True("step13-resources-payroll", "Expose payroll funding without duplicating payroll state", valid, $"PayrollReady={context.ScenarioContext.Runtimes.Payroll != null} Reservation={reservation.Code} Reserved={balance?.ReservedUnits} DelegatedLiabilities={resources.QueryLiabilities("organization.prototype.adventurers-guild").Count}");
         }
 
         private static TestLabAutomationStepResult ResourceBranchFinances(TestLabAutomationContext context)
         {
             bool prepared = PrepareResourceAccounts(context, 150L, out OrganizationResourceRuntime resources, out CurrencyDefinition currency, out string actorId, out string failure);
             if (!prepared) return TestLabAssertions.Fail("step13-resources-branch", "Query branch and parent finances", "ResourceFixture", "Prepared", "Failed", failure);
-            OrganizationConsolidatedResourceSnapshot view = resources.GetConsolidatedView("organization.prototype.guild", 10d);
+            OrganizationConsolidatedResourceSnapshot view = resources.GetConsolidatedView("organization.prototype.adventurers-guild", 10d);
             bool separate = view.AccountBalances.Select(item => item.Account.accountId).Distinct(StringComparer.Ordinal).Count() == view.AccountBalances.Count;
-            bool valid = separate && view.OrganizationIds.Contains("organization.prototype.guild") && view.Total(currency.Id) == 150L && resources.QueryAccounts("organization.prototype.guild").Count == 2;
+            bool valid = separate && view.OrganizationIds.Contains("organization.prototype.adventurers-guild") && view.Total(currency.Id) == 150L && resources.QueryAccounts("organization.prototype.adventurers-guild").Count == 2;
             return TestLabAssertions.True("step13-resources-branch", "Query branch and parent finances", valid, $"Organizations=[{string.Join(",", view.OrganizationIds)}] Accounts={view.AccountBalances.Count} Separate={separate} Total={view.Total(currency.Id)} Actor={actorId}");
         }
 
@@ -1940,7 +1942,7 @@ namespace UnityIsekaiGame.Development.Automation
             string planId = $"organization-dissolution-plan.testlab.{context.RunId}";
             OrganizationResourceOperationResult create = resources.CreateDissolutionResourcePlan(new OrganizationDissolutionResourcePlanRequest
             {
-                transactionId = $"testlab.resources.dissolution.create.{context.RunId}", planId = planId, organizationId = "organization.prototype.guild",
+                transactionId = $"testlab.resources.dissolution.create.{context.RunId}", planId = planId, organizationId = "organization.prototype.adventurers-guild",
                 accountIdsToFreeze = new[] { ResourceOperatingAccountId(context), ResourceReserveAccountId(context) }, preservedObligationIds = new[] { $"obligation.unresolved.{context.RunId}" }, actorPersonId = actorId, worldTime = 20d
             });
             OrganizationResourceOperationResult execute = resources.ExecuteDissolutionResourcePlan(planId, $"testlab.resources.dissolution.execute.{context.RunId}", actorId, Array.Empty<string>(), 21d);
@@ -1969,34 +1971,34 @@ namespace UnityIsekaiGame.Development.Automation
             string propertyOwnershipId = $"property-ownership.testlab.organization.{context.RunId}";
             PropertyOperationResult propertyOwner = property?.Succeeded == true ? runtimes.Properties.CreateOwnership(new PropertyOwnershipInterestData
             {
-                ownershipInterestId = propertyOwnershipId, propertyId = propertyId, owner = new PropertySubjectReferenceData { kind = PropertySubjectKind.Organization, subjectId = "organization.prototype.guild" }, ownershipModel = PropertyOwnershipModel.Sole,
+                ownershipInterestId = propertyOwnershipId, propertyId = propertyId, owner = new PropertySubjectReferenceData { kind = PropertySubjectKind.Organization, subjectId = "organization.prototype.adventurers-guild" }, ownershipModel = PropertyOwnershipModel.Sole,
                 ownershipShare = PropertyShareData.Full(), votingShare = PropertyShareData.Full(), economicBenefitShare = PropertyShareData.Full(), effectiveStartWorldTime = 1d
             }, 1d) : null;
             OrganizationResourceOperationResult propertyAssociation = resources.AssociateProperty(new OrganizationAssociationRequest
             {
-                transactionId = $"testlab.resources.property.{context.RunId}", associationId = $"organization-property-association.testlab.{context.RunId}", organizationId = "organization.prototype.guild", resourceId = propertyId,
+                transactionId = $"testlab.resources.property.{context.RunId}", associationId = $"organization-property-association.testlab.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", resourceId = propertyId,
                 sourceRecordId = propertyOwnershipId, category = (int)OrganizationPropertyAssociationCategory.Owner, actorPersonId = actorId, startWorldTime = 10d
             });
 
             string businessId = $"business.testlab.organization.{context.RunId}";
             BusinessOperationResult business = runtimes.Businesses.CreateBusiness(new BusinessInstanceData
             {
-                businessId = businessId, businessDefinitionId = businessDefinition.Id, displayName = "Test Lab Guild Business", linkedOrganizationId = "organization.prototype.guild", founderSubjectIds = new[] { actorId }, operatingCurrencyIds = new[] { currency.Id }, state = BusinessState.Active, createdWorldTime = 1d
+                businessId = businessId, businessDefinitionId = businessDefinition.Id, displayName = "Test Lab Guild Business", linkedOrganizationId = "organization.prototype.adventurers-guild", founderSubjectIds = new[] { actorId }, operatingCurrencyIds = new[] { currency.Id }, state = BusinessState.Active, createdWorldTime = 1d
             });
             string businessOwnershipId = $"business-ownership.testlab.organization.{context.RunId}";
             BusinessOperationResult businessOwner = business?.Succeeded == true ? runtimes.Businesses.AddOwnership(new BusinessOwnershipRecordData
             {
-                ownershipRecordId = businessOwnershipId, businessId = businessId, owner = new BusinessSubjectReferenceData { kind = BusinessOwnerSubjectKind.Organization, subjectId = "organization.prototype.guild" }, category = BusinessOwnershipCategory.SoleOwner,
+                ownershipRecordId = businessOwnershipId, businessId = businessId, owner = new BusinessSubjectReferenceData { kind = BusinessOwnerSubjectKind.Organization, subjectId = "organization.prototype.adventurers-guild" }, category = BusinessOwnershipCategory.SoleOwner,
                 economicShare = new BusinessRationalData { numerator = 10000L, denominator = 10000L }, votingShare = new BusinessRationalData { numerator = 10000L, denominator = 10000L }, effectiveStartWorldTime = 1d
             }, 1d) : null;
             OrganizationResourceOperationResult businessAssociation = resources.AssociateBusiness(new OrganizationAssociationRequest
             {
-                transactionId = $"testlab.resources.business.{context.RunId}", associationId = $"organization-business-association.testlab.{context.RunId}", organizationId = "organization.prototype.guild", resourceId = businessId,
+                transactionId = $"testlab.resources.business.{context.RunId}", associationId = $"organization-business-association.testlab.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", resourceId = businessId,
                 sourceRecordId = businessOwnershipId, category = (int)OrganizationBusinessAssociationCategory.Owner, shareBasisPoints = 10000L, actorPersonId = actorId, startWorldTime = 10d
             });
             OrganizationResourceOperationResult fabricated = resources.AssociateProperty(new OrganizationAssociationRequest
             {
-                transactionId = $"testlab.resources.property.fabricated.{context.RunId}", associationId = $"organization-property-association.testlab.fabricated.{context.RunId}", organizationId = "organization.prototype.guild", resourceId = propertyId,
+                transactionId = $"testlab.resources.property.fabricated.{context.RunId}", associationId = $"organization-property-association.testlab.fabricated.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", resourceId = propertyId,
                 sourceRecordId = "property-ownership.missing", category = (int)OrganizationPropertyAssociationCategory.Owner, actorPersonId = actorId, startWorldTime = 10d
             });
             bool valid = property?.Succeeded == true && propertyOwner?.Succeeded == true && propertyAssociation.Succeeded && business?.Succeeded == true && businessOwner?.Succeeded == true && businessAssociation.Succeeded && !fabricated.Succeeded;
@@ -2024,8 +2026,8 @@ namespace UnityIsekaiGame.Development.Automation
             bool prepared = PrepareResourceAccounts(context, 250L, out OrganizationResourceRuntime resources, out _, out _, out string failure);
             if (!prepared) return TestLabAssertions.Fail("step13-resources-reconcile", "Reconcile and project resource state", "ResourceFixture", "Prepared", "Failed", failure);
             long revision = resources.Revision;
-            OrganizationReconciliationResult first = resources.Reconcile("organization.prototype.guild", 10d);
-            OrganizationReconciliationResult second = resources.Reconcile("organization.prototype.guild", 10d);
+            OrganizationReconciliationResult first = resources.Reconcile("organization.prototype.adventurers-guild", 10d);
+            OrganizationReconciliationResult second = resources.Reconcile("organization.prototype.adventurers-guild", 10d);
             OrganizationResourceProjection redacted = resources.ProjectAccount(ResourceOperatingAccountId(context), OrganizationResourceProjectionAccess.Redacted, 10d);
             OrganizationResourceProjection full = resources.ProjectAccount(ResourceOperatingAccountId(context), OrganizationResourceProjectionAccess.Full, 10d);
             bool valid = first.IsReconciled && second.IsReconciled && first.Discrepancies.Count == second.Discrepancies.Count && redacted.Redacted && redacted.Balance.BalanceUnits == 0L && full.Balance.BalanceUnits == 250L && resources.Revision == revision;
@@ -2037,11 +2039,11 @@ namespace UnityIsekaiGame.Development.Automation
             bool prepared = PrepareResourceAccounts(context, 300L, out OrganizationResourceRuntime resources, out CurrencyDefinition currency, out string actorId, out string failure);
             if (!prepared) return TestLabAssertions.Fail("step13-resources-persistence", "Save, restore, and reject resource graph drift", "ResourceFixture", "Prepared", "Failed", failure);
             TestLabRuntimeBundle runtimes = context.ScenarioContext.Runtimes;
-            resources.AddFundRestriction(new OrganizationFundRestrictionRequest { transactionId = $"testlab.resources.persist.restriction.{context.RunId}", restrictionId = $"restriction.persist.{context.RunId}", organizationId = "organization.prototype.guild", accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id, units = 25L, allowedPurpose = "preserved", actorPersonId = actorId, startWorldTime = 5d });
-            resources.CreateBudget(new OrganizationBudgetRequest { transactionId = $"testlab.resources.persist.budget.{context.RunId}", budgetId = $"budget.persist.{context.RunId}", organizationId = "organization.prototype.guild", treasuryId = ResourceTreasuryId(context), accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id, authorizedUnits = 50L, purpose = "preserved", actorPersonId = actorId, startWorldTime = 5d });
-            resources.ReserveResource(new OrganizationReservationRequest { transactionId = $"testlab.resources.persist.reservation.{context.RunId}", reservationId = $"reservation.persist.{context.RunId}", organizationId = "organization.prototype.guild", accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id, amountUnits = 20L, category = OrganizationReservationCategory.Contract, actorPersonId = actorId, startWorldTime = 5d });
-            resources.CreateRevenueRoutingRule(new OrganizationRevenueRoutingRequest { transactionId = $"testlab.resources.persist.routing.{context.RunId}", routingRuleId = $"routing.persist.{context.RunId}", organizationId = "organization.prototype.guild", revenueSourceId = $"revenue.persist.{context.RunId}", destinationAccountId = ResourceReserveAccountId(context), fixedUnits = 1L, actorPersonId = actorId, startWorldTime = 5d });
-            resources.CreateDissolutionResourcePlan(new OrganizationDissolutionResourcePlanRequest { transactionId = $"testlab.resources.persist.dissolution.{context.RunId}", planId = $"dissolution.persist.{context.RunId}", organizationId = "organization.prototype.guild", accountIdsToFreeze = new[] { ResourceOperatingAccountId(context) }, actorPersonId = actorId, worldTime = 5d });
+            resources.AddFundRestriction(new OrganizationFundRestrictionRequest { transactionId = $"testlab.resources.persist.restriction.{context.RunId}", restrictionId = $"restriction.persist.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id, units = 25L, allowedPurpose = "preserved", actorPersonId = actorId, startWorldTime = 5d });
+            resources.CreateBudget(new OrganizationBudgetRequest { transactionId = $"testlab.resources.persist.budget.{context.RunId}", budgetId = $"budget.persist.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", treasuryId = ResourceTreasuryId(context), accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id, authorizedUnits = 50L, purpose = "preserved", actorPersonId = actorId, startWorldTime = 5d });
+            resources.ReserveResource(new OrganizationReservationRequest { transactionId = $"testlab.resources.persist.reservation.{context.RunId}", reservationId = $"reservation.persist.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", accountId = ResourceOperatingAccountId(context), currencyDefinitionId = currency.Id, amountUnits = 20L, category = OrganizationReservationCategory.Contract, actorPersonId = actorId, startWorldTime = 5d });
+            resources.CreateRevenueRoutingRule(new OrganizationRevenueRoutingRequest { transactionId = $"testlab.resources.persist.routing.{context.RunId}", routingRuleId = $"routing.persist.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", revenueSourceId = $"revenue.persist.{context.RunId}", destinationAccountId = ResourceReserveAccountId(context), fixedUnits = 1L, actorPersonId = actorId, startWorldTime = 5d });
+            resources.CreateDissolutionResourcePlan(new OrganizationDissolutionResourcePlanRequest { transactionId = $"testlab.resources.persist.dissolution.{context.RunId}", planId = $"dissolution.persist.{context.RunId}", organizationId = "organization.prototype.adventurers-guild", accountIdsToFreeze = new[] { ResourceOperatingAccountId(context) }, actorPersonId = actorId, worldTime = 5d });
             OrganizationResourceRuntimeSaveData save = resources.CreateSaveData();
             long economyRevision = runtimes.Economy.Revision;
             OrganizationResourceRuntime restored = new OrganizationResourceRuntime();
@@ -2082,7 +2084,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 transactionId = $"testlab.decisions.goal.{context.RunId}",
                 goalId = $"organization-goal-record.testlab.recruit.{context.RunId}",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 goalDefinitionId = PrototypeOrganizationDecisionDefinitionFactory.RecruitmentGoalId,
                 targetValue = 3L,
                 priority = 25,
@@ -2097,9 +2099,9 @@ namespace UnityIsekaiGame.Development.Automation
             OrganizationDecisionOperationResult replacement = decisions.CreatePolicy(replacementRequest);
             OrganizationPolicyResolutionResult resolved = decisions.ResolvePolicies(new OrganizationPolicyQuery
             {
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 policyDefinitionId = PrototypeOrganizationDecisionDefinitionFactory.ConfidentialityPolicyId,
-                scope = OrganizationPolicyScopeData.EntireOrganization("organization.prototype.guild"),
+                scope = OrganizationPolicyScopeData.EntireOrganization("organization.prototype.adventurers-guild"),
                 worldTime = 15d
             });
             OrganizationPolicyRecordData supersededPolicy = decisions.Policies.FirstOrDefault(item => item.policyId == policy.Policy?.policyId);
@@ -2127,7 +2129,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 transactionId = $"testlab.decisions.proposal.submit.{context.RunId}",
                 proposalId = proposalId,
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 proposalDefinitionId = PrototypeOrganizationDecisionDefinitionFactory.EstablishGoalProposalId,
                 title = "Create recruitment goal",
                 proposerPersonId = actorId,
@@ -2184,7 +2186,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 transactionId = $"testlab.decisions.execute.submit.{context.RunId}",
                 proposalId = proposalId,
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 proposalDefinitionId = PrototypeOrganizationDecisionDefinitionFactory.ApproveBudgetProposalId,
                 title = "Approve training budget",
                 proposerPersonId = actorId,
@@ -2265,9 +2267,9 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             long before = runtime.Revision;
-            FactionOperationResult preview = runtime.CreateFaction(FactionCreate(context, "preview", PrototypeFactionDefinitionFactory.ReformFactionId, "Preview Reformists", FactionHostContextData.ForOrganization("organization.prototype.guild"), preview: true));
-            FactionOperationResult create = runtime.CreateFaction(FactionCreate(context, "identity", PrototypeFactionDefinitionFactory.ReformFactionId, "Guild Reform Bloc", FactionHostContextData.ForOrganization("organization.prototype.guild")));
-            FactionOperationResult duplicate = runtime.CreateFaction(FactionCreate(context, "identity", PrototypeFactionDefinitionFactory.ReformFactionId, "Guild Reform Bloc", FactionHostContextData.ForOrganization("organization.prototype.guild")));
+            FactionOperationResult preview = runtime.CreateFaction(FactionCreate(context, "preview", PrototypeFactionDefinitionFactory.ReformFactionId, "Preview Reformists", FactionHostContextData.ForOrganization("organization.prototype.adventurers-guild"), preview: true));
+            FactionOperationResult create = runtime.CreateFaction(FactionCreate(context, "identity", PrototypeFactionDefinitionFactory.ReformFactionId, "Guild Reform Bloc", FactionHostContextData.ForOrganization("organization.prototype.adventurers-guild")));
+            FactionOperationResult duplicate = runtime.CreateFaction(FactionCreate(context, "identity", PrototypeFactionDefinitionFactory.ReformFactionId, "Guild Reform Bloc", FactionHostContextData.ForOrganization("organization.prototype.adventurers-guild")));
             FactionOperationResult independent = runtime.CreateFaction(FactionCreate(context, "independent", PrototypeFactionDefinitionFactory.IndependentMovementFactionId, "Free Company Voice", FactionHostContextData.Independent()));
             FactionOperationResult rename = runtime.RenameFaction(Tx(context, "faction-rename"), create.Faction?.factionId, $"faction-name.testlab.rename.{context.RunId}", "Guild Reform Caucus", FactionNameCategory.Public, 2d);
             FactionOperationResult transition = runtime.TransitionFaction(new FactionLifecycleRequest { transactionId = Tx(context, "faction-dormant"), factionId = independent.Faction?.factionId, targetState = FactionLifecycleState.Dormant, worldTime = 3d });
@@ -2293,14 +2295,14 @@ namespace UnityIsekaiGame.Development.Automation
 
             string actorId = PrimaryAuthorityActorId(context);
             string factionId = $"faction.testlab.affiliation.{context.RunId}";
-            FactionOperationResult faction = runtime.CreateFaction(FactionCreate(context, "affiliation", PrototypeFactionDefinitionFactory.ReformFactionId, "Affiliation Reformists", FactionHostContextData.ForOrganization("organization.prototype.guild")));
+            FactionOperationResult faction = runtime.CreateFaction(FactionCreate(context, "affiliation", PrototypeFactionDefinitionFactory.ReformFactionId, "Affiliation Reformists", FactionHostContextData.ForOrganization("organization.prototype.adventurers-guild")));
             FactionOperationResult denied = runtime.ApplyAffiliation(FactionAffiliation(context, "denied", factionId, "person.prototype.friend", PrototypeFactionDefinitionFactory.FormalMemberAffiliationId, consent: true));
-            OrganizationMembershipOperationResult membership = context.ScenarioContext.Runtimes.OrganizationMemberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.faction.actor.{context.RunId}", "organization.prototype.guild", actorId, PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, Tx(context, "faction-org-member"), consent: true));
+            OrganizationMembershipOperationResult membership = context.ScenarioContext.Runtimes.OrganizationMemberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.faction.actor.{context.RunId}", "organization.prototype.adventurers-guild", actorId, PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, Tx(context, "faction-org-member"), consent: true));
             FactionEligibilityResult eligibility = runtime.EvaluateAffiliationEligibility(FactionAffiliation(context, "eligible", factionId, actorId, PrototypeFactionDefinitionFactory.FormalMemberAffiliationId, consent: true));
             FactionOperationResult affiliation = runtime.ApplyAffiliation(FactionAffiliation(context, "actor", factionId, actorId, PrototypeFactionDefinitionFactory.FormalMemberAffiliationId, consent: true));
             FactionOperationResult role = runtime.AssignRole(new FactionRoleAssignmentRequest { transactionId = Tx(context, "faction-role"), roleAssignmentId = $"faction-role-assignment.testlab.organizer.{context.RunId}", affiliationId = affiliation.Affiliation?.affiliationId, roleDefinitionId = PrototypeFactionDefinitionFactory.OrganizerRoleId, worldTime = 2d });
             FactionOperationResult supporter = runtime.ApplyAffiliation(FactionAffiliation(context, "supporter", factionId, "person.prototype.friend", PrototypeFactionDefinitionFactory.SupporterAffiliationId, consent: false));
-            bool membershipNotGranted = !context.ScenarioContext.Runtimes.OrganizationMemberships.Memberships.Any(item => item.PersonId == "person.prototype.friend" && item.OrganizationId == "organization.prototype.guild" && item.IsActive);
+            bool membershipNotGranted = !context.ScenarioContext.Runtimes.OrganizationMemberships.Memberships.Any(item => item.PersonId == "person.prototype.friend" && item.OrganizationId == "organization.prototype.adventurers-guild" && item.IsActive);
             bool valid = faction.Succeeded
                 && !denied.Succeeded
                 && membership.Succeeded
@@ -2325,7 +2327,7 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             string factionId = $"faction.testlab.cohesion.{context.RunId}";
-            FactionOperationResult faction = runtime.CreateFaction(FactionCreate(context, "cohesion", PrototypeFactionDefinitionFactory.ReformFactionId, "Cohesion Reformists", FactionHostContextData.ForOrganization("organization.prototype.guild")));
+            FactionOperationResult faction = runtime.CreateFaction(FactionCreate(context, "cohesion", PrototypeFactionDefinitionFactory.ReformFactionId, "Cohesion Reformists", FactionHostContextData.ForOrganization("organization.prototype.adventurers-guild")));
             FactionOperationResult actorAffiliation = runtime.ApplyAffiliation(FactionAffiliation(context, "cohesion-actor", factionId, actorId, PrototypeFactionDefinitionFactory.FormalMemberAffiliationId, consent: true));
             FactionOperationResult friendAffiliation = runtime.ApplyAffiliation(FactionAffiliation(context, "cohesion-friend", factionId, "person.prototype.friend", PrototypeFactionDefinitionFactory.FormalMemberAffiliationId, consent: true));
             string proposalId = $"organization-proposal.testlab.faction.{context.RunId}";
@@ -2333,7 +2335,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 transactionId = Tx(context, "faction-proposal-submit"),
                 proposalId = proposalId,
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 proposalDefinitionId = PrototypeOrganizationDecisionDefinitionFactory.EstablishGoalProposalId,
                 title = "Faction backed recruitment goal",
                 proposerPersonId = actorId,
@@ -2347,7 +2349,7 @@ namespace UnityIsekaiGame.Development.Automation
             OrganizationDecisionOperationResult voteActor = decisions.CastVote(VoteRequest(context, proposalId, actorId, "faction-actor", OrganizationVoteChoice.Approve));
             OrganizationDecisionOperationResult voteFriend = decisions.CastVote(VoteRequest(context, proposalId, "person.prototype.friend", "faction-friend", OrganizationVoteChoice.Reject));
             FactionVoteCohesionReport cohesion = runtime.CreateVoteCohesionReport(factionId, proposalId, 13d);
-            FactionInfluenceReport influence = runtime.CreateInfluenceReport(factionId, "organization.prototype.guild", 13d);
+            FactionInfluenceReport influence = runtime.CreateInfluenceReport(factionId, "organization.prototype.adventurers-guild", 13d);
             bool voteRuntimeOwner = decisions.VoteCount == 2;
             bool valid = faction.Succeeded
                 && actorAffiliation.Succeeded
@@ -2373,18 +2375,18 @@ namespace UnityIsekaiGame.Development.Automation
 
             string sourceId = $"faction.testlab.source.{context.RunId}";
             string rivalId = $"faction.testlab.rival.{context.RunId}";
-            FactionOperationResult source = runtime.CreateFaction(FactionCreate(context, "source", PrototypeFactionDefinitionFactory.CrossOrgMovementFactionId, "Source Coalition", new FactionHostContextData { contextKind = FactionHostContextKind.MultipleOrganizations, organizationIds = new[] { "organization.prototype.guild", "organization.prototype.royal-forge" } }));
-            FactionOperationResult rival = runtime.CreateFaction(FactionCreate(context, "rival", PrototypeFactionDefinitionFactory.TraditionalistFactionId, "Traditionalist Rival", FactionHostContextData.ForOrganization("organization.prototype.guild")));
+            FactionOperationResult source = runtime.CreateFaction(FactionCreate(context, "source", PrototypeFactionDefinitionFactory.CrossOrgMovementFactionId, "Source Coalition", new FactionHostContextData { contextKind = FactionHostContextKind.MultipleOrganizations, organizationIds = new[] { "organization.prototype.adventurers-guild", "organization.prototype.royal-forge" } }));
+            FactionOperationResult rival = runtime.CreateFaction(FactionCreate(context, "rival", PrototypeFactionDefinitionFactory.TraditionalistFactionId, "Traditionalist Rival", FactionHostContextData.ForOrganization("organization.prototype.adventurers-guild")));
             FactionOperationResult disposition = runtime.SetDisposition(new FactionDispositionRequest { transactionId = Tx(context, "faction-disposition"), dispositionId = $"faction-disposition.testlab.{context.RunId}", sourceFactionId = sourceId, targetFactionId = rivalId, disposition = FactionDispositionKind.Competitive, intensity = 60, worldTime = 2d });
-            FactionOperationResult secret = runtime.CreateFaction(FactionCreate(context, "secret", PrototypeFactionDefinitionFactory.SecretFactionId, "Hidden Lantern Society", FactionHostContextData.ForOrganization("organization.prototype.guild"), visibility: FactionVisibility.Secret));
+            FactionOperationResult secret = runtime.CreateFaction(FactionCreate(context, "secret", PrototypeFactionDefinitionFactory.SecretFactionId, "Hidden Lantern Society", FactionHostContextData.ForOrganization("organization.prototype.adventurers-guild"), visibility: FactionVisibility.Secret));
             FactionProjection concealed = runtime.GetFactionProjection(secret.Faction?.factionId, new FactionProjectionContext());
             FactionProjection development = runtime.GetFactionProjection(secret.Faction?.factionId, new FactionProjectionContext { developmentView = true, privileged = true });
             FactionOperationResult split = runtime.SplitFaction(Tx(context, "faction-split"), sourceId, new[]
             {
-                FactionCreate(context, "split-a", PrototypeFactionDefinitionFactory.MerchantInterestFactionId, "Merchant Successor", new FactionHostContextData { contextKind = FactionHostContextKind.MultipleOrganizations, organizationIds = new[] { "organization.prototype.guild", "organization.prototype.royal-forge" } }),
+                FactionCreate(context, "split-a", PrototypeFactionDefinitionFactory.MerchantInterestFactionId, "Merchant Successor", new FactionHostContextData { contextKind = FactionHostContextKind.MultipleOrganizations, organizationIds = new[] { "organization.prototype.adventurers-guild", "organization.prototype.royal-forge" } }),
                 FactionCreate(context, "split-b", PrototypeFactionDefinitionFactory.ReligiousInterestFactionId, "Sanctuary Successor", new FactionHostContextData { contextKind = FactionHostContextKind.PlaceOrRegion, placeOrRegionId = "place.prototype.region" })
             }, Array.Empty<string>(), 3d);
-            FactionOperationResult merge = runtime.MergeFactions(Tx(context, "faction-merge"), new[] { rivalId, secret.Faction?.factionId }, FactionCreate(context, "merged", PrototypeFactionDefinitionFactory.LeaderSupportFactionId, "Merged Loyalists", FactionHostContextData.ForOrganization("organization.prototype.guild")), 4d);
+            FactionOperationResult merge = runtime.MergeFactions(Tx(context, "faction-merge"), new[] { rivalId, secret.Faction?.factionId }, FactionCreate(context, "merged", PrototypeFactionDefinitionFactory.LeaderSupportFactionId, "Merged Loyalists", FactionHostContextData.ForOrganization("organization.prototype.adventurers-guild")), 4d);
             FactionRuntimeSaveData save = runtime.CreateSaveData();
             FactionRuntime restored = new FactionRuntime();
             restored.Configure(context.ScenarioContext.Runtimes.DefinitionRegistry, context.ScenarioContext.Runtimes.Organizations, context.ScenarioContext.Runtimes.OrganizationMemberships, context.ScenarioContext.Runtimes.OrganizationAuthority, context.ScenarioContext.Runtimes.OrganizationResources, context.ScenarioContext.Runtimes.OrganizationDecisions, context.ScenarioContext.Runtimes.WorldId, context.ScenarioContext.Runtimes.KnownPersonIds);
@@ -2417,17 +2419,17 @@ namespace UnityIsekaiGame.Development.Automation
             CreateAuthorityGuildmaster(context, actorId, "resources");
             OrganizationResourceOperationResult treasury = resources.CreateTreasury(new OrganizationTreasuryRequest
             {
-                transactionId = $"testlab.resources.treasury.{context.RunId}", treasuryId = ResourceTreasuryId(context), organizationId = "organization.prototype.guild", resourceTypeDefinitionId = PrototypeOrganizationResourceDefinitionFactory.CurrencyResourceTypeId,
+                transactionId = $"testlab.resources.treasury.{context.RunId}", treasuryId = ResourceTreasuryId(context), organizationId = "organization.prototype.adventurers-guild", resourceTypeDefinitionId = PrototypeOrganizationResourceDefinitionFactory.CurrencyResourceTypeId,
                 officialName = "Test Lab Guild Treasury", actorPersonId = actorId, worldTime = 1d
             });
             OrganizationResourceOperationResult operating = resources.CreateAccount(new OrganizationAccountRequest
             {
-                transactionId = $"testlab.resources.account.operating.{context.RunId}", accountId = ResourceOperatingAccountId(context), treasuryId = ResourceTreasuryId(context), organizationId = "organization.prototype.guild", economyAccountId = ResourceOperatingEconomyAccountId(context),
+                transactionId = $"testlab.resources.account.operating.{context.RunId}", accountId = ResourceOperatingAccountId(context), treasuryId = ResourceTreasuryId(context), organizationId = "organization.prototype.adventurers-guild", economyAccountId = ResourceOperatingEconomyAccountId(context),
                 officialName = "Test Lab Operating", currencyDefinitionId = currency.Id, openingBalanceUnits = openingBalance, actorPersonId = actorId, worldTime = 2d
             });
             OrganizationResourceOperationResult reserve = resources.CreateAccount(new OrganizationAccountRequest
             {
-                transactionId = $"testlab.resources.account.reserve.{context.RunId}", accountId = ResourceReserveAccountId(context), treasuryId = ResourceTreasuryId(context), organizationId = "organization.prototype.guild", economyAccountId = ResourceReserveEconomyAccountId(context),
+                transactionId = $"testlab.resources.account.reserve.{context.RunId}", accountId = ResourceReserveAccountId(context), treasuryId = ResourceTreasuryId(context), organizationId = "organization.prototype.adventurers-guild", economyAccountId = ResourceReserveEconomyAccountId(context),
                 officialName = "Test Lab Reserve", category = OrganizationAccountCategory.Reserve, currencyDefinitionId = currency.Id, openingBalanceUnits = 0L, actorPersonId = actorId, worldTime = 2d
             });
             if (!treasury.Succeeded || !operating.Succeeded || !reserve.Succeeded)
@@ -2446,7 +2448,7 @@ namespace UnityIsekaiGame.Development.Automation
 
         private static OrganizationFinancialTransactionRequest ResourceTransferRequest(TestLabAutomationContext context, string currencyId, string actorId, long units, string transactionId, double worldTime) => new OrganizationFinancialTransactionRequest
         {
-            transactionId = transactionId, organizationId = "organization.prototype.guild", sourceAccountId = ResourceOperatingAccountId(context), destinationAccountId = ResourceReserveAccountId(context), currencyDefinitionId = currencyId,
+            transactionId = transactionId, organizationId = "organization.prototype.adventurers-guild", sourceAccountId = ResourceOperatingAccountId(context), destinationAccountId = ResourceReserveAccountId(context), currencyDefinitionId = currencyId,
             units = units, transactionKind = EconomyTransactionKind.Transfer, actorPersonId = actorId, purpose = "reserve allocation", worldTime = worldTime
         };
 
@@ -2472,8 +2474,8 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             OrganizationMembershipRuntime memberships = context.ScenarioContext.Runtimes.OrganizationMemberships;
-            memberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.decision.friend.{context.RunId}", "organization.prototype.guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.decision.member.friend.{context.RunId}", consent: true));
-            memberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.decision.mentor.{context.RunId}", "organization.prototype.guild", "person.prototype.mentor", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.decision.member.mentor.{context.RunId}", consent: true));
+            memberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.decision.friend.{context.RunId}", "organization.prototype.adventurers-guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.decision.member.friend.{context.RunId}", consent: true));
+            memberships.ApplyMembership(MembershipRequest($"organization-membership.testlab.decision.mentor.{context.RunId}", "organization.prototype.adventurers-guild", "person.prototype.mentor", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.decision.member.mentor.{context.RunId}", consent: true));
             decisions.Configure(context.ScenarioContext.Runtimes.DefinitionRegistry, context.ScenarioContext.Runtimes.Organizations, memberships, context.ScenarioContext.Runtimes.OrganizationAuthority, resources, context.ScenarioContext.Runtimes.WorldId, context.ScenarioContext.Runtimes.KnownPersonIds, context.ScenarioContext.Runtimes.Economy);
             return true;
         }
@@ -2482,9 +2484,9 @@ namespace UnityIsekaiGame.Development.Automation
         {
             transactionId = $"testlab.decisions.policy.{policyId}.{context.RunId}",
             policyId = policyId,
-            organizationId = "organization.prototype.guild",
+            organizationId = "organization.prototype.adventurers-guild",
             policyDefinitionId = PrototypeOrganizationDecisionDefinitionFactory.ConfidentialityPolicyId,
-            scope = OrganizationPolicyScopeData.EntireOrganization("organization.prototype.guild"),
+            scope = OrganizationPolicyScopeData.EntireOrganization("organization.prototype.adventurers-guild"),
             parameters = new[]
             {
                 PolicyParam("visibility", OrganizationPolicyParameterType.EnumValue, stringValue: OrganizationVisibility.Restricted.ToString()),
@@ -2525,7 +2527,7 @@ namespace UnityIsekaiGame.Development.Automation
             goalPayload = new OrganizationGoalRecordData
             {
                 goalId = goalId,
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 goalDefinitionId = PrototypeOrganizationDecisionDefinitionFactory.RecruitmentGoalId,
                 displayName = $"Recruitment Goal {suffix}",
                 targetValue = targetValue,
@@ -2593,10 +2595,17 @@ namespace UnityIsekaiGame.Development.Automation
                     PrototypeOrganizationMembershipDefinitionFactory.GuildInviteeId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildAssociateId,
                     PrototypeOrganizationMembershipDefinitionFactory.BranchMemberId,
-                    PrototypeOrganizationMembershipDefinitionFactory.GuildCraftTrackId,
-                    PrototypeOrganizationMembershipDefinitionFactory.GuildNoviceRankId,
-                    PrototypeOrganizationMembershipDefinitionFactory.GuildJourneymanRankId,
-                    PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildRatingTrackId,
+                    PrototypeOrganizationMembershipDefinitionFactory.AdventurerGuildEntryRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildFRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildERankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildDRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildCRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildBRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildARankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildSRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildSSRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildTreasurerOfficeId
                 });
@@ -2620,8 +2629,8 @@ namespace UnityIsekaiGame.Development.Automation
                     PrototypeOrganizationDefinitionFactory.BranchDefinitionId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId,
                     PrototypeOrganizationMembershipDefinitionFactory.BranchMemberId,
-                    PrototypeOrganizationMembershipDefinitionFactory.GuildCraftTrackId,
-                    PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildRatingTrackId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId,
                     PrototypeOrganizationMembershipDefinitionFactory.BranchChapterMasterOfficeId,
                     PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholdersPermissionId,
@@ -2652,7 +2661,7 @@ namespace UnityIsekaiGame.Development.Automation
                 {
                     PrototypeOrganizationDefinitionFactory.GuildDefinitionId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId,
-                    PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId,
                     PrototypeOrganizationAuthorityDefinitionFactory.GuildmasterRoleId,
                     PrototypeOrganizationAuthorityDefinitionFactory.CreateTreasuryActionId,
@@ -2680,7 +2689,7 @@ namespace UnityIsekaiGame.Development.Automation
                 {
                     PrototypeOrganizationDefinitionFactory.GuildDefinitionId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId,
-                    PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId,
                     PrototypeOrganizationAuthorityDefinitionFactory.GuildmasterRoleId,
                     PrototypeOrganizationAuthorityDefinitionFactory.SubmitDecisionProposalActionId,
@@ -2718,7 +2727,7 @@ namespace UnityIsekaiGame.Development.Automation
                 {
                     PrototypeOrganizationDefinitionFactory.GuildDefinitionId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId,
-                    PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId,
                     PrototypeOrganizationAuthorityDefinitionFactory.GuildmasterRoleId,
                     PrototypeOrganizationAuthorityDefinitionFactory.SubmitDecisionProposalActionId,
@@ -2916,7 +2925,7 @@ namespace UnityIsekaiGame.Development.Automation
                     PrototypeOrganizationDefinitionFactory.GuildDefinitionId,
                     PrototypeOrganizationDefinitionFactory.CompanyDefinitionId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId,
-                    PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId,
+                    PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId,
                     PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId,
                     PrototypeOrganizationAuthorityDefinitionFactory.GuildmasterRoleId,
                     PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId,
@@ -2947,7 +2956,7 @@ namespace UnityIsekaiGame.Development.Automation
             territoryId = $"political-territory.testlab.legal.{context.RunId}";
             jurisdictionId = $"jurisdiction.testlab.legal.{context.RunId}";
             governments.CreatePolity(new PolityCreateRequest { transactionId = LegalTx(context, "polity"), polityId = polityId, polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Legal Test Polity", worldTime = 1d });
-            governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = LegalTx(context, "government"), governmentId = governmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = polityId, officialName = "Legal Test Government", primaryGoverningOrganizationId = "organization.prototype.guild", governingOrganizationIds = new[] { "organization.prototype.guild" }, level = GovernmentLevel.Central, worldTime = 2d });
+            governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = LegalTx(context, "government"), governmentId = governmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = polityId, officialName = "Legal Test Government", primaryGoverningOrganizationId = "organization.prototype.adventurers-guild", governingOrganizationIds = new[] { "organization.prototype.adventurers-guild" }, level = GovernmentLevel.Central, worldTime = 2d });
             governments.CreateTerritory(new TerritoryCreateRequest { transactionId = LegalTx(context, "territory"), territoryId = territoryId, territoryDefinitionId = PrototypeGovernmentDefinitionFactory.RealmTerritoryDefinitionId, displayName = "Legal Test Territory", polityId = polityId, primaryGovernmentId = governmentId, placeIds = new[] { "place.testlab.capital" }, worldTime = 3d });
             governments.CreateJurisdiction(new JurisdictionCreateRequest { transactionId = LegalTx(context, "jurisdiction"), jurisdictionId = jurisdictionId, jurisdictionDefinitionId = PrototypeGovernmentDefinitionFactory.GeneralJurisdictionDefinitionId, governmentId = governmentId, category = JurisdictionCategory.GeneralGovernment, scopeDimensions = JurisdictionScopeDimension.Territory | JurisdictionScopeDimension.SubjectMatter, subjectMatters = new[] { JurisdictionSubjectMatter.GeneralAdministration }, territoryIds = new[] { territoryId }, priority = 100, worldTime = 4d });
         }
@@ -2972,7 +2981,7 @@ namespace UnityIsekaiGame.Development.Automation
                 authorityDefinitionId = PrototypeLegalDefinitionFactory.SovereignAuthorityId,
                 title = $"Test Lab {suffix} Law",
                 governmentId = governmentId,
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 jurisdictionIds = new[] { jurisdictionId },
                 enactmentWorldTime = 5d,
                 publicationWorldTime = 5d,
@@ -3094,7 +3103,7 @@ namespace UnityIsekaiGame.Development.Automation
             potentialOffenseId = fixture.OffenseId,
             requestedByPersonId = fixture.VictimId,
             issuingGovernmentId = fixture.GovernmentId,
-            issuingOrganizationId = "organization.prototype.guild",
+            issuingOrganizationId = "organization.prototype.adventurers-guild",
             scope = new WarrantScopeData { kind = WarrantScopeKind.Person, targetId = fixture.ActorId, jurisdictionIds = new[] { fixture.JurisdictionId }, territoryIds = new[] { fixture.TerritoryId }, purpose = "arrest for reported assault" },
             assertedThreshold = assertedThreshold,
             requestedWorldTime = 15d,
@@ -3182,7 +3191,7 @@ namespace UnityIsekaiGame.Development.Automation
             arrestedPersonId = fixture.Crime.ActorId,
             executingPersonId = fixture.Crime.VictimId,
             executingGovernmentId = fixture.Crime.GovernmentId,
-            executingOrganizationId = "organization.prototype.guild",
+            executingOrganizationId = "organization.prototype.adventurers-guild",
             legalBasis = new JusticeLegalBasisData { kind = ArrestLegalBasisKind.ActiveArrestWarrant, warrantId = fixture.Crime.WarrantId, incidentId = fixture.Crime.IncidentId, potentialOffenseId = fixture.Crime.OffenseId, effectiveWorldTime = 16d, expirationWorldTime = 40d },
             jurisdictionId = fixture.Crime.JurisdictionId,
             territoryId = fixture.Crime.TerritoryId,
@@ -3206,7 +3215,7 @@ namespace UnityIsekaiGame.Development.Automation
                 parties = new[]
                 {
                     new JusticePartyData { partyId = fixture.DefendantPartyId, personId = fixture.Crime.ActorId, role = CasePartyRole.Defendant, visibility = PoliticalVisibility.Restricted },
-                    new JusticePartyData { partyId = fixture.ProsecutorPartyId, organizationId = "organization.prototype.guild", role = CasePartyRole.Prosecutor, visibility = PoliticalVisibility.Public }
+                    new JusticePartyData { partyId = fixture.ProsecutorPartyId, organizationId = "organization.prototype.adventurers-guild", role = CasePartyRole.Prosecutor, visibility = PoliticalVisibility.Public }
                 },
                 filedWorldTime = 21d,
                 visibility = PoliticalVisibility.Restricted
@@ -3369,7 +3378,7 @@ namespace UnityIsekaiGame.Development.Automation
             string governmentId = $"government.testlab.royal.{suffix}";
             string territoryId = $"political-territory.testlab.realm.{suffix}";
             PoliticalOperationResult polity = runtime.CreatePolity(new PolityCreateRequest { transactionId = GovernmentTx(context, "polity"), polityId = polityId, polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Test Lab Kingdom", worldTime = 1d });
-            PoliticalOperationResult government = runtime.RegisterGovernment(new GovernmentRegisterRequest { transactionId = GovernmentTx(context, "government"), governmentId = governmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = polityId, officialName = "Test Lab Royal Government", primaryGoverningOrganizationId = "organization.prototype.guild", governingOrganizationIds = new[] { "organization.prototype.guild" }, level = GovernmentLevel.Central, worldTime = 2d });
+            PoliticalOperationResult government = runtime.RegisterGovernment(new GovernmentRegisterRequest { transactionId = GovernmentTx(context, "government"), governmentId = governmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = polityId, officialName = "Test Lab Royal Government", primaryGoverningOrganizationId = "organization.prototype.adventurers-guild", governingOrganizationIds = new[] { "organization.prototype.adventurers-guild" }, level = GovernmentLevel.Central, worldTime = 2d });
             PoliticalOperationResult territory = runtime.CreateTerritory(new TerritoryCreateRequest { transactionId = GovernmentTx(context, "territory"), territoryId = territoryId, territoryDefinitionId = PrototypeGovernmentDefinitionFactory.RealmTerritoryDefinitionId, displayName = "Test Lab Realm", polityId = polityId, primaryGovernmentId = governmentId, placeIds = new[] { "place.testlab.capital" }, worldTime = 3d });
             PoliticalOperationResult duplicate = runtime.CreateTerritory(new TerritoryCreateRequest { transactionId = GovernmentTx(context, "territory"), territoryId = territoryId, territoryDefinitionId = PrototypeGovernmentDefinitionFactory.RealmTerritoryDefinitionId, displayName = "Test Lab Realm", polityId = polityId, primaryGovernmentId = governmentId, placeIds = new[] { "place.testlab.capital" }, worldTime = 3d });
             bool valid = polity.Succeeded && government.Succeeded && territory.Succeeded && duplicate.Succeeded && duplicate.Code == PoliticalOperationCode.Duplicate
@@ -3426,7 +3435,7 @@ namespace UnityIsekaiGame.Development.Automation
             governmentId = $"government.testlab.fixture.{context.RunId}";
             territoryId = $"political-territory.testlab.fixture.{context.RunId}";
             runtime.CreatePolity(new PolityCreateRequest { transactionId = GovernmentTx(context, "fixture-polity"), polityId = polityId, polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Fixture Kingdom", worldTime = 1d, visibility = visibility });
-            runtime.RegisterGovernment(new GovernmentRegisterRequest { transactionId = GovernmentTx(context, "fixture-government"), governmentId = governmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = polityId, officialName = "Fixture Government", primaryGoverningOrganizationId = "organization.prototype.guild", governingOrganizationIds = new[] { "organization.prototype.guild" }, level = GovernmentLevel.Central, worldTime = 2d, visibility = visibility });
+            runtime.RegisterGovernment(new GovernmentRegisterRequest { transactionId = GovernmentTx(context, "fixture-government"), governmentId = governmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = polityId, officialName = "Fixture Government", primaryGoverningOrganizationId = "organization.prototype.adventurers-guild", governingOrganizationIds = new[] { "organization.prototype.adventurers-guild" }, level = GovernmentLevel.Central, worldTime = 2d, visibility = visibility });
             runtime.CreateTerritory(new TerritoryCreateRequest { transactionId = GovernmentTx(context, "fixture-territory"), territoryId = territoryId, territoryDefinitionId = PrototypeGovernmentDefinitionFactory.RealmTerritoryDefinitionId, displayName = "Fixture Realm", polityId = polityId, primaryGovernmentId = governmentId, placeIds = new[] { "place.testlab.capital" }, worldTime = 3d, visibility = visibility });
         }
 
@@ -3464,15 +3473,15 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             FactionRuntime factions = context.ScenarioContext.Runtimes.Factions;
-            FactionOperationResult internalFaction = factions.CreateFaction(FactionCreate(context, "diplomacy-internal", PrototypeFactionDefinitionFactory.ReformFactionId, "Internal Diplomacy Reformists", FactionHostContextData.ForOrganization("organization.prototype.guild")));
-            FactionOperationResult crossFaction = factions.CreateFaction(FactionCreate(context, "diplomacy-cross", PrototypeFactionDefinitionFactory.CrossOrgMovementFactionId, "Cross Organization Diplomats", new FactionHostContextData { contextKind = FactionHostContextKind.MultipleOrganizations, organizationIds = new[] { "organization.prototype.guild", "organization.prototype.royal-forge" } }));
+            FactionOperationResult internalFaction = factions.CreateFaction(FactionCreate(context, "diplomacy-internal", PrototypeFactionDefinitionFactory.ReformFactionId, "Internal Diplomacy Reformists", FactionHostContextData.ForOrganization("organization.prototype.adventurers-guild")));
+            FactionOperationResult crossFaction = factions.CreateFaction(FactionCreate(context, "diplomacy-cross", PrototypeFactionDefinitionFactory.CrossOrgMovementFactionId, "Cross Organization Diplomats", new FactionHostContextData { contextKind = FactionHostContextKind.MultipleOrganizations, organizationIds = new[] { "organization.prototype.adventurers-guild", "organization.prototype.royal-forge" } }));
 
-            DiplomacyOperationResult preview = runtime.CreateRelation(Relation(context, "preview", PrototypeDiplomacyDefinitionFactory.RecognitionRelationId, Org("organization.prototype.guild"), Org("organization.prototype.royal-forge"), preview: true));
-            DiplomacyOperationResult recognition = runtime.CreateRelation(Relation(context, "recognition", PrototypeDiplomacyDefinitionFactory.RecognitionRelationId, Org("organization.prototype.guild"), Org("organization.prototype.royal-forge")));
-            DiplomacyOperationResult duplicate = runtime.CreateRelation(Relation(context, "recognition", PrototypeDiplomacyDefinitionFactory.RecognitionRelationId, Org("organization.prototype.guild"), Org("organization.prototype.royal-forge")));
-            DiplomacyOperationResult alliance = runtime.CreateRelation(Relation(context, "alliance", PrototypeDiplomacyDefinitionFactory.AllianceRelationId, Org("organization.prototype.guild"), Org("organization.prototype.royal-forge")));
-            DiplomacyOperationResult rivalry = runtime.CreateRelation(Relation(context, "rivalry", PrototypeDiplomacyDefinitionFactory.RivalryRelationId, Org("organization.prototype.guild"), Faction(crossFaction.Faction?.factionId)));
-            DiplomacyOperationResult rejected = runtime.CreateRelation(Relation(context, "rejected-internal", PrototypeDiplomacyDefinitionFactory.AllianceRelationId, Org("organization.prototype.guild"), Faction(internalFaction.Faction?.factionId)));
+            DiplomacyOperationResult preview = runtime.CreateRelation(Relation(context, "preview", PrototypeDiplomacyDefinitionFactory.RecognitionRelationId, Org("organization.prototype.adventurers-guild"), Org("organization.prototype.royal-forge"), preview: true));
+            DiplomacyOperationResult recognition = runtime.CreateRelation(Relation(context, "recognition", PrototypeDiplomacyDefinitionFactory.RecognitionRelationId, Org("organization.prototype.adventurers-guild"), Org("organization.prototype.royal-forge")));
+            DiplomacyOperationResult duplicate = runtime.CreateRelation(Relation(context, "recognition", PrototypeDiplomacyDefinitionFactory.RecognitionRelationId, Org("organization.prototype.adventurers-guild"), Org("organization.prototype.royal-forge")));
+            DiplomacyOperationResult alliance = runtime.CreateRelation(Relation(context, "alliance", PrototypeDiplomacyDefinitionFactory.AllianceRelationId, Org("organization.prototype.adventurers-guild"), Org("organization.prototype.royal-forge")));
+            DiplomacyOperationResult rivalry = runtime.CreateRelation(Relation(context, "rivalry", PrototypeDiplomacyDefinitionFactory.RivalryRelationId, Org("organization.prototype.adventurers-guild"), Faction(crossFaction.Faction?.factionId)));
+            DiplomacyOperationResult rejected = runtime.CreateRelation(Relation(context, "rejected-internal", PrototypeDiplomacyDefinitionFactory.AllianceRelationId, Org("organization.prototype.adventurers-guild"), Faction(internalFaction.Faction?.factionId)));
 
             bool mirrored = runtime.QueryRelationsForActor(Org("organization.prototype.royal-forge"), activeOnly: true).Any(item => item.relationId.EndsWith(".reciprocal", StringComparison.Ordinal));
             bool valid = internalFaction.Succeeded
@@ -3508,7 +3517,7 @@ namespace UnityIsekaiGame.Development.Automation
                 initialState = DiplomaticAgreementLifecycleState.Draft,
                 visibility = DiplomaticVisibility.Restricted,
                 worldTime = 10d,
-                parties = new[] { Party(guildParty, Org("organization.prototype.guild")), Party(forgeParty, Org("organization.prototype.royal-forge")) },
+                parties = new[] { Party(guildParty, Org("organization.prototype.adventurers-guild")), Party(forgeParty, Org("organization.prototype.royal-forge")) },
                 clauses = new[] { Clause(clauseId, PrototypeDiplomacyDefinitionFactory.DefenseAssistanceClauseId, DiplomaticClauseCategory.DefenseAssistance, DiplomaticVisibility.Restricted) }
             });
             DiplomacyOperationResult signA = runtime.SignAgreement(new DiplomaticSignatureRequest { transactionId = DiplomacyTx(context, "agreement-sign-a"), agreementId = agreementId, partyId = guildParty, signerPersonId = PrimaryAuthorityActorId(context), worldTime = 11d });
@@ -3554,7 +3563,7 @@ namespace UnityIsekaiGame.Development.Automation
                 warId = warId,
                 warDefinitionId = PrototypeDiplomacyDefinitionFactory.FormalWarDefinitionId,
                 title = "Guild Forge War",
-                sideA = new[] { Org("organization.prototype.guild") },
+                sideA = new[] { Org("organization.prototype.adventurers-guild") },
                 sideB = new[] { Org("organization.prototype.royal-forge") },
                 worldTime = 20d,
                 declarationRecordId = $"diplomatic-record.testlab.war.declaration.{context.RunId}"
@@ -3564,7 +3573,7 @@ namespace UnityIsekaiGame.Development.Automation
                 transactionId = DiplomacyTx(context, "war-declare"),
                 warId = warId,
                 warDefinitionId = PrototypeDiplomacyDefinitionFactory.FormalWarDefinitionId,
-                sideA = new[] { Org("organization.prototype.guild") },
+                sideA = new[] { Org("organization.prototype.adventurers-guild") },
                 sideB = new[] { Org("organization.prototype.royal-forge") },
                 worldTime = 20d
             });
@@ -3574,7 +3583,7 @@ namespace UnityIsekaiGame.Development.Automation
                 incidentId = $"diplomatic-incident.testlab.border.{context.RunId}",
                 warId = warId,
                 category = DiplomaticIncidentCategory.BorderIncident,
-                sourceActor = Org("organization.prototype.guild"),
+                sourceActor = Org("organization.prototype.adventurers-guild"),
                 targetActor = Org("organization.prototype.royal-forge"),
                 worldTime = 21d,
                 publicSummary = "Border clash reported."
@@ -3603,7 +3612,7 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             string relationId = $"diplomatic-relation.testlab.secret.{context.RunId}";
-            DiplomacyOperationResult relation = runtime.CreateRelation(Relation(context, "secret", PrototypeDiplomacyDefinitionFactory.CooperativeRelationId, Org("organization.prototype.guild"), Org("organization.prototype.royal-forge"), visibility: DiplomaticVisibility.Secret));
+            DiplomacyOperationResult relation = runtime.CreateRelation(Relation(context, "secret", PrototypeDiplomacyDefinitionFactory.CooperativeRelationId, Org("organization.prototype.adventurers-guild"), Org("organization.prototype.royal-forge"), visibility: DiplomaticVisibility.Secret));
             DiplomaticProjection redacted = runtime.GetProjection(relationId, privileged: false);
             DiplomaticProjection privileged = runtime.GetProjection(relationId, privileged: true);
             DiplomacyRuntimeSaveData save = runtime.CreateSaveData();
@@ -3654,7 +3663,7 @@ namespace UnityIsekaiGame.Development.Automation
                 personId = personId,
                 affiliationDefinitionId = definitionId,
                 explicitConsent = consent,
-                organizationContextId = "organization.prototype.guild",
+                organizationContextId = "organization.prototype.adventurers-guild",
                 worldTime = 2d,
                 visibility = definitionId == PrototypeFactionDefinitionFactory.SecretMemberAffiliationId ? FactionVisibility.Secret : FactionVisibility.Public
             };
@@ -3817,10 +3826,10 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 approvalId = approvalId,
                 operationId = operationId,
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 actionDefinitionId = PrototypeOrganizationAuthorityDefinitionFactory.ChangeHeadquartersActionId,
                 approverPersonId = approverId,
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 approvedWorldTime = 90d,
                 transactionId = $"tx.{approvalId}"
             };
@@ -3830,9 +3839,9 @@ namespace UnityIsekaiGame.Development.Automation
         {
             OrganizationMembershipRuntime memberships = context.ScenarioContext.Runtimes.OrganizationMemberships;
             string membershipId = $"organization-membership.testlab.authority.guildmaster.{suffix}.{context.RunId}";
-            OrganizationMembershipOperationResult member = memberships.ApplyMembership(MembershipRequest(membershipId, "organization.prototype.guild", personId, PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.guildmaster.member.{suffix}.{context.RunId}", consent: true));
+            OrganizationMembershipOperationResult member = memberships.ApplyMembership(MembershipRequest(membershipId, "organization.prototype.adventurers-guild", personId, PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, $"testlab.authority.guildmaster.member.{suffix}.{context.RunId}", consent: true));
             AssignGuildMasterRank(memberships, member.Membership?.MembershipId, context.RunId, suffix);
-            OrganizationMembershipOperationResult office = memberships.CreateOffice(OfficeRequest($"organization-office-record.testlab.guildmaster.{suffix}.{context.RunId}", "organization.prototype.guild", PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, $"testlab.authority.guildmaster.office.{suffix}.{context.RunId}"));
+            OrganizationMembershipOperationResult office = memberships.CreateOffice(OfficeRequest($"organization-office-record.testlab.guildmaster.{suffix}.{context.RunId}", "organization.prototype.adventurers-guild", PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, $"testlab.authority.guildmaster.office.{suffix}.{context.RunId}"));
             memberships.AssignOffice(OfficeAssignmentRequest($"organization-office-assignment.testlab.guildmaster.{suffix}.{context.RunId}", office.Office?.OfficeId, member.Membership?.MembershipId, $"testlab.authority.guildmaster.office.assign.{suffix}.{context.RunId}"));
         }
 
@@ -3843,9 +3852,10 @@ namespace UnityIsekaiGame.Development.Automation
                 return;
             }
 
-            memberships.AssignRank(RankRequest($"organization-rank-assignment.testlab.novice.{suffix}.{runId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildNoviceRankId, $"testlab.authority.rank.novice.{suffix}.{runId}"));
-            memberships.AssignRank(RankRequest($"organization-rank-assignment.testlab.journeyman.{suffix}.{runId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildJourneymanRankId, $"testlab.authority.rank.journeyman.{suffix}.{runId}"));
-            memberships.AssignRank(RankRequest($"organization-rank-assignment.testlab.master.{suffix}.{runId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId, $"testlab.authority.rank.master.{suffix}.{runId}"));
+            for (int index = 0; index < PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds.Count; index++)
+            {
+                memberships.AssignRank(RankRequest($"organization-rank-assignment.testlab.rating.{index}.{suffix}.{runId}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds[index], $"testlab.authority.rank.rating.{index}.{suffix}.{runId}"));
+            }
         }
 
         private static OrganizationAuthorityOperationResult GrantGuildmasterRole(OrganizationAuthorityRuntime authority, string grantorPersonId, string granteePersonId, string runId, string suffix)
@@ -3853,11 +3863,11 @@ namespace UnityIsekaiGame.Development.Automation
             return authority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
             {
                 grantId = $"organization-authority-grant.testlab.guildmaster.{suffix}.{runId}",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 granteePersonId = granteePersonId,
                 grantorPersonId = grantorPersonId,
                 authorityRoleDefinitionId = PrototypeOrganizationAuthorityDefinitionFactory.GuildmasterRoleId,
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 transactionId = $"testlab.authority.guildmaster.grant.{suffix}.{runId}"
             });
         }

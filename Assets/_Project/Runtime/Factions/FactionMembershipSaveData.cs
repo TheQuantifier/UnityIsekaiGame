@@ -10,6 +10,6 @@ namespace UnityIsekaiGame.Factions
         public string rankId;
         public string[] roleIds;
         public string membershipState;
-        public int reputationPlaceholder;
+        public int reputation;
     }
 }

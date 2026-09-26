@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1196b017ac5377549b31560561425344, type: 3}
+  m_Name: organization_membership_prototype_branch_member
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Organizations.OrganizationMembershipDefinition
+  membershipDefinitionId: organization-membership.prototype.branch.member
+  displayName: Branch Member
+  description: 
+  category: 1
+  applicableOrganizationDefinitionIds:
+  - organization-definition.branch
+  applicableOrganizationCategories: 
+  initialStatus: 5
+  multiplicityPolicy: 0
+  supportsRanks: 1
+  requiresRank: 0
+  supportsOffices: 1
+  allowApplication: 1
+  allowInvitation: 1
+  requiresExplicitAcceptance: 1
+  allowSuspension: 1
+  allowReinstatement: 1
+  allowResignation: 1
+  allowRemoval: 1
+  retainHistory: 1
+  allowBranchMembership: 1
+  requireParentMembershipForBranch: 1
+  inheritParentMembership: 0
+  visibility: 0
+  accessPolicyId: 
+  requiredCredentialDefinitionIds: []
+  requiredProfessionalRankDefinitionIds: []
+  requiredCapabilityIds: []
+  tags:
+  - organization
+  - prototype
+  version: 1

@@ -78,7 +78,7 @@ namespace UnityIsekaiGame.Factions
     }
 
     [CreateAssetMenu(fileName = "FactionRoleDefinition", menuName = "Unity Isekai Game/Factions/Role Definition")]
-    public sealed class FactionRoleDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class FactionRoleDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string roleDefinitionId;
         [SerializeField] private string displayName;
@@ -129,7 +129,7 @@ namespace UnityIsekaiGame.Factions
     }
 
     [CreateAssetMenu(fileName = "FactionPositionDefinition", menuName = "Unity Isekai Game/Factions/Position Definition")]
-    public sealed class FactionPositionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class FactionPositionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string positionDefinitionId;
         [SerializeField] private string displayName;
@@ -174,7 +174,7 @@ namespace UnityIsekaiGame.Factions
     }
 
     [CreateAssetMenu(fileName = "FactionAlignmentAxisDefinition", menuName = "Unity Isekai Game/Factions/Alignment Axis Definition")]
-    public sealed class FactionAlignmentAxisDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class FactionAlignmentAxisDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string axisDefinitionId;
         [SerializeField] private string displayName;

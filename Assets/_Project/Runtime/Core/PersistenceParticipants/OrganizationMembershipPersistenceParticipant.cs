@@ -36,10 +36,10 @@ namespace UnityIsekaiGame.Persistence
 
         public string ParticipantKey => Key;
         public int ParticipantSchemaVersion => CurrentParticipantSchemaVersion;
-        public bool IsRequired => false;
+        public bool IsRequired => true;
         public PersistenceScope Scope => PersistenceScope.SharedWorld;
         public string OwnerId => ownerId;
-        public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.IdentityAndProgression;
+        public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Institutions;
         public int LoadPriority => 41;
         public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { OrganizationPersistenceParticipant.Key };
         public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => new[]

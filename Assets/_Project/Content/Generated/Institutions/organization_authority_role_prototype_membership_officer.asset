@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b46e94f943f56d4cadd263cb8723b7c, type: 3}
+  m_Name: organization_authority_role_prototype_membership_officer
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:OrganizationAuthorityRoleDefinition
+  roleDefinitionId: organization-authority-role.prototype.membership-officer
+  displayName: Membership Officer Authority
+  description: 
+  grantedPermissionIds:
+  - organization-permission.prototype.admit-members
+  - organization-permission.prototype.invite-members
+  - organization-permission.prototype.reinstate-members
+  - organization-permission.prototype.remove-members
+  - organization-permission.prototype.review-membership-applications
+  - organization-permission.prototype.suspend-members
+  - organization-permission.prototype.view-public-information
+  deniedPermissionIds: []
+  supportedOrganizationDefinitionIds: []
+  supportedOrganizationCategories: 
+  defaultScopeType: 10
+  delegationPolicy: 20
+  defaultDuration: -1
+  priority: 80
+  conflictPolicy: 20
+  visibility: 0
+  tags:
+  - authority
+  - organization
+  - prototype
+  version: 1

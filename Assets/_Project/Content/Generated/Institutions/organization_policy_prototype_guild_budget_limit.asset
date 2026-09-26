@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da2184aea94a25e48b839686a7920555, type: 3}
+  m_Name: organization_policy_prototype_guild_budget_limit
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:OrganizationPolicyDefinition
+  policyDefinitionId: organization-policy.prototype.guild.budget-limit
+  displayName: Guild Budget Limit Policy
+  description: 
+  category: 70
+  validOrganizationDefinitionIds: []
+  validOrganizationCategories: 
+  parameterSchema:
+  - parameterId: currency
+    type: 110
+    required: 1
+    defaultValue: currency.gold
+    allowedValues: []
+  - parameterId: limit_units
+    type: 120
+    required: 1
+    defaultValue: 100
+    allowedValues: []
+  allowedScopes: 0a000000500000006e00000046000000
+  allowMultipleScopedInstances: 1
+  amendmentAllowed: 1
+  revocationAllowed: 1
+  expirationAllowed: 1
+  priority: 180
+  visibility: 1
+  tags:
+  - decisions
+  - organization
+  - prototype
+  version: 1

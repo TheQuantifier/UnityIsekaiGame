@@ -19,6 +19,7 @@ namespace UnityIsekaiGame.Tests
     {
         private const string ActorId = "person.prototype.player";
         private const string VictimId = "person.prototype.friend";
+        private const string WitnessId = "person.prototype.mentor";
         private const string TerritoryId = "political-territory.test.justice.realm";
         private const string JurisdictionId = "jurisdiction.test.justice.general";
         private const string GovernmentId = "government.test.justice.royal";
@@ -64,6 +65,29 @@ namespace UnityIsekaiGame.Tests
             Assert.That(custody.lifecycleState, Is.EqualTo(CustodyLifecycleState.Active));
             Assert.That(custody.personId, Is.EqualTo(ActorId));
             Assert.That(fixture.Justice.Judgments, Is.Empty);
+            Assert.That(fixture.Crimes.WantedStatuses.Single().lifecycleState, Is.EqualTo(WantedStatusLifecycleState.Suspended), "A completed arrest must suspend every wanted notice supporting that arrest, including warrant-derived notices.");
+        }
+
+        [Test]
+        public void ExoneratingJudgmentClearsWantedStatusForTheIncident()
+        {
+            RuntimeFixture fixture = CreateFixture();
+            CreateCoreCrimeAndWarrant(fixture, "exonerated");
+            RegisterCourt(fixture, CourtId);
+            Assert.That(FileCase(fixture, "case.test.justice.exonerated").Succeeded, Is.True);
+            Assert.That(FileCharge(fixture, "case.test.justice.exonerated", "charge.test.justice.exonerated", "exonerated").Succeeded, Is.True);
+
+            JusticeOperationResult judgment = fixture.Justice.EnterJudgment(new JudgmentRequest
+            {
+                transactionId = "tx.justice.judgment.exonerated",
+                judgmentId = "judgment.test.justice.exonerated",
+                caseId = "case.test.justice.exonerated",
+                chargeOutcomes = new[] { new JusticeChargeOutcomeData { chargeId = "charge.test.justice.exonerated", outcome = JudgmentOutcome.Acquitted, reason = "The charge was not proven." } },
+                enteredWorldTime = 22d
+            });
+
+            Assert.That(judgment.Succeeded, Is.True, judgment.Message);
+            Assert.That(fixture.Crimes.WantedStatuses.Single().lifecycleState, Is.EqualTo(WantedStatusLifecycleState.Cleared));
         }
 
         [Test]
@@ -128,7 +152,7 @@ namespace UnityIsekaiGame.Tests
         {
             RuntimeFixture fixture = CreateFixture();
             CreateJudgedCase(fixture, "persist");
-            JusticePersistenceParticipant participant = new JusticePersistenceParticipant(fixture.Justice, () => fixture.Registry, () => fixture.Governments, () => fixture.Laws, () => fixture.Organizations, () => fixture.Authority, () => fixture.Crimes, PersistenceService.LocalWorldId, () => new[] { ActorId, VictimId }, () => Array.Empty<string>());
+            JusticePersistenceParticipant participant = new JusticePersistenceParticipant(fixture.Justice, () => fixture.Registry, () => fixture.Governments, () => fixture.Laws, () => fixture.Organizations, () => fixture.Authority, () => fixture.Crimes, PersistenceService.LocalWorldId, () => new[] { ActorId, VictimId, WitnessId }, () => Array.Empty<string>());
             PersistenceParticipantSaveResult captured = participant.CapturePayload();
             JusticeRuntimeSaveData corrupt = fixture.Justice.CreateSaveData();
             corrupt.cases[0].courtId = "court.test.missing";
@@ -227,7 +251,7 @@ namespace UnityIsekaiGame.Tests
                 parties = new[]
                 {
                     new JusticePartyData { partyId = "party.test.defendant", personId = ActorId, role = CasePartyRole.Defendant, visibility = PoliticalVisibility.Restricted },
-                    new JusticePartyData { partyId = "party.test.prosecutor", organizationId = "organization.prototype.guild", role = CasePartyRole.Prosecutor, visibility = PoliticalVisibility.Public }
+                    new JusticePartyData { partyId = "party.test.prosecutor", organizationId = "organization.prototype.adventurers-guild", role = CasePartyRole.Prosecutor, visibility = PoliticalVisibility.Public }
                 },
                 filedWorldTime = 17d,
                 visibility = PoliticalVisibility.Restricted
@@ -260,7 +284,7 @@ namespace UnityIsekaiGame.Tests
             arrestedPersonId = ActorId,
             executingPersonId = VictimId,
             executingGovernmentId = GovernmentId,
-            executingOrganizationId = "organization.prototype.guild",
+            executingOrganizationId = "organization.prototype.adventurers-guild",
             legalBasis = new JusticeLegalBasisData { kind = ArrestLegalBasisKind.ActiveArrestWarrant, warrantId = $"warrant.test.{suffix}", incidentId = $"crime-incident.test.{suffix}", potentialOffenseId = $"potential-offense.test.{suffix}", effectiveWorldTime = 16d, expirationWorldTime = 40d },
             jurisdictionId = JurisdictionId,
             territoryId = TerritoryId,
@@ -277,21 +301,22 @@ namespace UnityIsekaiGame.Tests
             DefinitionRegistry registry = CreateRegistry();
             OrganizationRuntime organizations = new OrganizationRuntime();
             PrototypeOrganizationDefinitionFactory.SeedPrototypeOrganizations(organizations, registry, PersistenceService.LocalWorldId);
-            organizations.Configure(registry, PersistenceService.LocalWorldId, new[] { ActorId, VictimId }, Array.Empty<string>());
-            OrganizationMembershipRuntime memberships = new OrganizationMembershipRuntime(); memberships.Configure(registry, organizations, PersistenceService.LocalWorldId, new[] { ActorId, VictimId }, PrototypeOrganizationDefinitionFactory.PrototypeOrganizationIds);
-            OrganizationAuthorityRuntime authority = new OrganizationAuthorityRuntime(); authority.Configure(registry, organizations, memberships, PersistenceService.LocalWorldId, new[] { ActorId, VictimId }, PrototypeOrganizationDefinitionFactory.PrototypeOrganizationIds);
+            string[] knownPersons = { ActorId, VictimId, WitnessId };
+            organizations.Configure(registry, PersistenceService.LocalWorldId, knownPersons, Array.Empty<string>());
+            OrganizationMembershipRuntime memberships = new OrganizationMembershipRuntime(); memberships.Configure(registry, organizations, PersistenceService.LocalWorldId, knownPersons, PrototypeOrganizationDefinitionFactory.PrototypeOrganizationIds);
+            OrganizationAuthorityRuntime authority = new OrganizationAuthorityRuntime(); authority.Configure(registry, organizations, memberships, PersistenceService.LocalWorldId, knownPersons, PrototypeOrganizationDefinitionFactory.PrototypeOrganizationIds);
             OrganizationResourceRuntime resources = new OrganizationResourceRuntime(); resources.Configure(registry, organizations, authority, null, PersistenceService.LocalWorldId);
-            OrganizationDecisionRuntime decisions = new OrganizationDecisionRuntime(); decisions.Configure(registry, organizations, memberships, authority, resources, PersistenceService.LocalWorldId, new[] { ActorId, VictimId }, null);
-            FactionRuntime factions = new FactionRuntime(); factions.Configure(registry, organizations, memberships, authority, resources, decisions, PersistenceService.LocalWorldId, new[] { ActorId, VictimId });
-            DiplomacyRuntime diplomacy = new DiplomacyRuntime(); diplomacy.Configure(registry, organizations, factions, authority, decisions, resources, PersistenceService.LocalWorldId, new[] { ActorId, VictimId });
-            GovernmentRuntime governments = new GovernmentRuntime(); governments.Configure(registry, organizations, memberships, authority, decisions, resources, factions, diplomacy, null, PersistenceService.LocalWorldId, new[] { ActorId, VictimId }, Array.Empty<string>());
+            OrganizationDecisionRuntime decisions = new OrganizationDecisionRuntime(); decisions.Configure(registry, organizations, memberships, authority, resources, PersistenceService.LocalWorldId, knownPersons, null);
+            FactionRuntime factions = new FactionRuntime(); factions.Configure(registry, organizations, memberships, authority, resources, decisions, PersistenceService.LocalWorldId, knownPersons);
+            DiplomacyRuntime diplomacy = new DiplomacyRuntime(); diplomacy.Configure(registry, organizations, factions, authority, decisions, resources, PersistenceService.LocalWorldId, knownPersons);
+            GovernmentRuntime governments = new GovernmentRuntime(); governments.Configure(registry, organizations, memberships, authority, decisions, resources, factions, diplomacy, null, PersistenceService.LocalWorldId, knownPersons, Array.Empty<string>());
             Assert.That(governments.CreatePolity(new PolityCreateRequest { transactionId = "tx.justice.polity", polityId = "polity.test.justice.kingdom", polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Justice Test Kingdom", worldTime = 1d }).Succeeded, Is.True);
-            Assert.That(governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.justice.government", governmentId = GovernmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = "polity.test.justice.kingdom", officialName = "Justice Test Government", primaryGoverningOrganizationId = "organization.prototype.guild", governingOrganizationIds = new[] { "organization.prototype.guild" }, level = GovernmentLevel.Central, worldTime = 2d }).Succeeded, Is.True);
+            Assert.That(governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.justice.government", governmentId = GovernmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = "polity.test.justice.kingdom", officialName = "Justice Test Government", primaryGoverningOrganizationId = "organization.prototype.adventurers-guild", governingOrganizationIds = new[] { "organization.prototype.adventurers-guild" }, level = GovernmentLevel.Central, worldTime = 2d }).Succeeded, Is.True);
             Assert.That(governments.CreateTerritory(new TerritoryCreateRequest { transactionId = "tx.justice.territory", territoryId = TerritoryId, territoryDefinitionId = PrototypeGovernmentDefinitionFactory.RealmTerritoryDefinitionId, displayName = "Justice Test Realm", polityId = "polity.test.justice.kingdom", primaryGovernmentId = GovernmentId, placeIds = new[] { "place.test.capital" }, worldTime = 3d }).Succeeded, Is.True);
             Assert.That(governments.CreateJurisdiction(new JurisdictionCreateRequest { transactionId = "tx.justice.jurisdiction", jurisdictionId = JurisdictionId, jurisdictionDefinitionId = PrototypeGovernmentDefinitionFactory.GeneralJurisdictionDefinitionId, governmentId = GovernmentId, category = JurisdictionCategory.GeneralGovernment, scopeDimensions = JurisdictionScopeDimension.Territory | JurisdictionScopeDimension.SubjectMatter, subjectMatters = new[] { JurisdictionSubjectMatter.GeneralAdministration }, territoryIds = new[] { TerritoryId }, priority = 100, worldTime = 4d }).Succeeded, Is.True);
-            LegalRuntime laws = new LegalRuntime(); laws.Configure(registry, governments, organizations, authority, decisions, diplomacy, null, PersistenceService.LocalWorldId, new[] { ActorId, VictimId }, Array.Empty<string>());
-            CrimeRuntime crimes = new CrimeRuntime(); crimes.Configure(registry, governments, laws, authority, diplomacy, PersistenceService.LocalWorldId, new[] { ActorId, VictimId }, Array.Empty<string>());
-            JusticeRuntime justice = new JusticeRuntime(); justice.Configure(registry, governments, laws, organizations, authority, crimes, PersistenceService.LocalWorldId, new[] { ActorId, VictimId }, Array.Empty<string>());
+            LegalRuntime laws = new LegalRuntime(); laws.Configure(registry, governments, organizations, authority, decisions, diplomacy, null, PersistenceService.LocalWorldId, knownPersons, Array.Empty<string>());
+            CrimeRuntime crimes = new CrimeRuntime(); crimes.Configure(registry, governments, laws, authority, diplomacy, PersistenceService.LocalWorldId, knownPersons, Array.Empty<string>());
+            JusticeRuntime justice = new JusticeRuntime(); justice.Configure(registry, governments, laws, organizations, authority, crimes, PersistenceService.LocalWorldId, knownPersons, Array.Empty<string>());
             return new RuntimeFixture(registry, organizations, authority, diplomacy, governments, laws, crimes, justice);
         }
 
@@ -321,7 +346,7 @@ namespace UnityIsekaiGame.Tests
                 authorityDefinitionId = PrototypeLegalDefinitionFactory.SovereignAuthorityId,
                 title = "Justice Test Crime Law",
                 governmentId = GovernmentId,
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 jurisdictionIds = new[] { JurisdictionId },
                 enactmentWorldTime = 5d,
                 publicationWorldTime = 5d,
@@ -357,13 +382,13 @@ namespace UnityIsekaiGame.Tests
             jurisdictionIds = new[] { JurisdictionId },
             involvedSubjects = new[] { CrimeSubjectReferenceData.Person(ActorId, "alleged-actor"), CrimeSubjectReferenceData.Person(VictimId, "victim") },
             victimIds = new[] { VictimId },
-            witnessIds = new[] { "person.prototype.mentor" },
+            witnessIds = new[] { WitnessId },
             visibility = PoliticalVisibility.Restricted
         };
 
         private static CrimeReportRequest ReportRequest(string suffix) => new CrimeReportRequest { transactionId = $"tx.justice.report.{suffix}", reportId = $"crime-report.test.{suffix}", incidentId = $"crime-incident.test.{suffix}", category = CrimeReportCategory.VictimReport, reporterSubjectId = VictimId, reporterSubjectType = "Person", firstHand = true, submittedWorldTime = 13d, reporterReliabilityBasisPoints = 8000, visibility = PoliticalVisibility.Restricted };
         private static PotentialOffenseEvaluationRequest OffenseRequest(string suffix) => new PotentialOffenseEvaluationRequest { transactionId = $"tx.justice.offense.{suffix}", potentialOffenseId = $"potential-offense.test.{suffix}", incidentId = $"crime-incident.test.{suffix}", offenseDefinitionId = PrototypeCrimeDefinitionFactory.UnlawfulPhysicalAttackOffenseId, allegedActorIds = new[] { ActorId }, victimOrTargetIds = new[] { VictimId }, actionId = "crime.attack", stage = OffenseStage.Completed, participation = ParticipationCategory.PrincipalActor, evidenceSufficiency = EvidenceSufficiencyState.Substantial, elementEvaluations = new[] { new OffenseElementEvaluationData { kind = OffenseElementKind.ActorConduct, key = "conduct", expectedValue = "crime.attack", observedValue = "crime.attack", supported = true, evidenceId = $"evidence.test.justice.{suffix}" } }, visibility = PoliticalVisibility.Restricted };
-        private static WarrantRequestCreateRequest WarrantRequest(string suffix, EvidenceSufficiencyState threshold) => new WarrantRequestCreateRequest { transactionId = $"tx.justice.warrant-request.{suffix}", warrantRequestId = $"warrant-request.test.{suffix}", warrantDefinitionId = PrototypeCrimeDefinitionFactory.ArrestWarrantDefinitionId, incidentId = $"crime-incident.test.{suffix}", potentialOffenseId = $"potential-offense.test.{suffix}", requestedByPersonId = VictimId, issuingGovernmentId = GovernmentId, issuingOrganizationId = "organization.prototype.guild", scope = new WarrantScopeData { kind = WarrantScopeKind.Person, targetId = ActorId, territoryIds = new[] { TerritoryId }, jurisdictionIds = new[] { JurisdictionId } }, assertedThreshold = threshold, requestedWorldTime = 15d, visibility = PoliticalVisibility.Restricted };
+        private static WarrantRequestCreateRequest WarrantRequest(string suffix, EvidenceSufficiencyState threshold) => new WarrantRequestCreateRequest { transactionId = $"tx.justice.warrant-request.{suffix}", warrantRequestId = $"warrant-request.test.{suffix}", warrantDefinitionId = PrototypeCrimeDefinitionFactory.ArrestWarrantDefinitionId, incidentId = $"crime-incident.test.{suffix}", potentialOffenseId = $"potential-offense.test.{suffix}", requestedByPersonId = VictimId, issuingGovernmentId = GovernmentId, issuingOrganizationId = "organization.prototype.adventurers-guild", scope = new WarrantScopeData { kind = WarrantScopeKind.Person, targetId = ActorId, territoryIds = new[] { TerritoryId }, jurisdictionIds = new[] { JurisdictionId } }, assertedThreshold = threshold, requestedWorldTime = 15d, visibility = PoliticalVisibility.Restricted };
 
         private sealed class RuntimeFixture
         {

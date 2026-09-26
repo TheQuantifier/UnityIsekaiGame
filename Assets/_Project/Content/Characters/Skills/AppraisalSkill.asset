@@ -12,6 +12,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Skills.SkillDefinition
   skillId: skill.appraisal
   displayName: Appraisal
+  skillTypes: 160
   description: Learned proficiency at evaluating objects and clues.
   primaryCategory: {fileID: 11400000, guid: 53200000000000000000000000000053, type: 2}
   tags: []

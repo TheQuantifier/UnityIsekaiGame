@@ -187,6 +187,7 @@ namespace UnityIsekaiGame.Organizations
         public string transactionId;
         public string operation;
         public string organizationId;
+        public long revision;
 
         public OrganizationTransactionRecordData Clone()
         {
@@ -194,7 +195,8 @@ namespace UnityIsekaiGame.Organizations
             {
                 transactionId = transactionId ?? string.Empty,
                 operation = operation ?? string.Empty,
-                organizationId = organizationId ?? string.Empty
+                organizationId = organizationId ?? string.Empty,
+                revision = revision
             };
         }
     }

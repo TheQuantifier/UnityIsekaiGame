@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Skills.SkillDefinition
   skillId: skill.unarmed-combat
   displayName: Unarmed Combat
+  skillTypes: 1
   description: Learned proficiency with unarmed attacks.
   primaryCategory: {fileID: 11400000, guid: 53200000000000000000000000000053, type: 2}
   tags: []

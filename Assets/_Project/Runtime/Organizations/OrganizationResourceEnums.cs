@@ -185,7 +185,7 @@ namespace UnityIsekaiGame.Organizations
         MedicalSupplies = 70,
         FoodStores = 80,
         RestrictedArchive = 90,
-        EvidenceStoragePlaceholder = 100,
+        EvidenceStorage = 100,
         BranchInventory = 110,
         Custom = 1000
     }

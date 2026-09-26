@@ -10,7 +10,7 @@ namespace UnityIsekaiGame.Crimes
     public static class PrototypeCrimeDefinitionFactory
     {
         public const string UnlawfulPhysicalAttackOffenseId = "legal-offense.prototype.unlawful-physical-attack";
-        public const string UnlawfulKillingPlaceholderOffenseId = "legal-offense.prototype.unlawful-killing-placeholder";
+        public const string UnlawfulKillingOffenseId = "legal-offense.prototype.unlawful-killing";
         public const string ThreatCoercionOffenseId = "legal-offense.prototype.threat-coercion";
         public const string TheftOffenseId = "legal-offense.prototype.theft";
         public const string PropertyDamageOffenseId = "legal-offense.prototype.property-damage";
@@ -40,7 +40,7 @@ namespace UnityIsekaiGame.Crimes
             void Add(IGameDefinition definition) { if (definition != null && ids.Add(definition.Id)) all.Add(definition); }
 
             Add(Offense(UnlawfulPhysicalAttackOffenseId, "Unlawful Physical Attack", OffenseCategory.ViolenceAgainstPerson, OffenseSeverityCategory.Serious, "crime.attack", EvidenceSufficiencyState.Partial, EvidenceSufficiencyState.Substantial));
-            Add(Offense(UnlawfulKillingPlaceholderOffenseId, "Unlawful Killing Placeholder", OffenseCategory.ViolenceAgainstPerson, OffenseSeverityCategory.Grave, "crime.killing", EvidenceSufficiencyState.Substantial, EvidenceSufficiencyState.ThresholdMet));
+            Add(Offense(UnlawfulKillingOffenseId, "Unlawful Killing", OffenseCategory.ViolenceAgainstPerson, OffenseSeverityCategory.Grave, "crime.killing", EvidenceSufficiencyState.Substantial, EvidenceSufficiencyState.ThresholdMet));
             Add(Offense(ThreatCoercionOffenseId, "Threat or Coercion", OffenseCategory.ThreatOrCoercion, OffenseSeverityCategory.Moderate, "crime.threat", EvidenceSufficiencyState.Partial, EvidenceSufficiencyState.Substantial));
             Add(Offense(TheftOffenseId, "Theft", OffenseCategory.TheftOrUnlawfulTaking, OffenseSeverityCategory.Moderate, "crime.theft", EvidenceSufficiencyState.Partial, EvidenceSufficiencyState.Substantial));
             Add(Offense(PropertyDamageOffenseId, "Property Damage", OffenseCategory.PropertyDamage, OffenseSeverityCategory.Moderate, "crime.property-damage", EvidenceSufficiencyState.Partial, EvidenceSufficiencyState.Substantial));

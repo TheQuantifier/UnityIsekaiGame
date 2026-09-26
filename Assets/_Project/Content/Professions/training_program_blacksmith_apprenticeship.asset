@@ -38,7 +38,7 @@ MonoBehaviour:
     maximumLearnerCapacity: 1
   minimumLearners: 1
   maximumLearners: 1
-  requiredOrganizationId: organization.prototype.guild
+  requiredOrganizationId: organization.prototype.adventurers-guild
   requiredLocationIds: []
   requiredToolIds: []
   requiredStationIds:

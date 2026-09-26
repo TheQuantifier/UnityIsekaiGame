@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d118e11b50ad934d839e8a54235a1b7, type: 3}
+  m_Name: polity_prototype_republic
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Governments.PolityDefinition
+  polityDefinitionId: polity.prototype.republic
+  displayName: Prototype Republic
+  description: 
+  category: 3
+  supportedGovernmentCategories: 03000000
+  supportsTerritorialSovereignty: 1
+  supportsNonTerritorialIdentity: 0
+  allowsCompetingGovernments: 1
+  supportsSubordinateGovernments: 1
+  supportsSuccession: 1
+  supportsDissolution: 1
+  requiresRecognitionForExternalClaims: 0
+  defaultVisibility: 0
+  tags:
+  - government
+  - polity
+  - prototype
+  version: 1

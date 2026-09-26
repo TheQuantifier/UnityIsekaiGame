@@ -79,7 +79,7 @@ namespace UnityIsekaiGame.Governments
     }
 
     [CreateAssetMenu(fileName = "GovernmentDefinition", menuName = "Unity Isekai Game/Governments/Government Definition")]
-    public sealed class GovernmentDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class GovernmentDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string governmentDefinitionId;
         [SerializeField] private string displayName;
@@ -158,7 +158,7 @@ namespace UnityIsekaiGame.Governments
     }
 
     [CreateAssetMenu(fileName = "PoliticalTerritoryDefinition", menuName = "Unity Isekai Game/Governments/Territory Definition")]
-    public sealed class PoliticalTerritoryDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class PoliticalTerritoryDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string territoryDefinitionId;
         [SerializeField] private string displayName;
@@ -204,7 +204,7 @@ namespace UnityIsekaiGame.Governments
     }
 
     [CreateAssetMenu(fileName = "TerritorialClaimDefinition", menuName = "Unity Isekai Game/Governments/Territorial Claim Definition")]
-    public sealed class TerritorialClaimDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class TerritorialClaimDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string claimDefinitionId;
         [SerializeField] private string displayName;
@@ -250,7 +250,7 @@ namespace UnityIsekaiGame.Governments
     }
 
     [CreateAssetMenu(fileName = "JurisdictionDefinition", menuName = "Unity Isekai Game/Governments/Jurisdiction Definition")]
-    public sealed class JurisdictionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class JurisdictionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string jurisdictionDefinitionId;
         [SerializeField] private string displayName;
@@ -301,6 +301,74 @@ namespace UnityIsekaiGame.Governments
             if (!Enum.IsDefined(typeof(JurisdictionConflictPolicy), defaultConflictPolicy) || defaultConflictPolicy == JurisdictionConflictPolicy.Unknown) report.AddError($"Jurisdiction definition '{DisplayName}' has invalid conflict policy.");
             foreach (JurisdictionSubjectMatter subject in AllowedSubjectMatters) if (!Enum.IsDefined(typeof(JurisdictionSubjectMatter), subject) || subject == JurisdictionSubjectMatter.Unknown) report.AddError($"Jurisdiction definition '{DisplayName}' has invalid subject matter.");
             foreach (string id in RequiredAuthorityPermissionIds) if (definitionsById != null && !definitionsById.ContainsKey(id)) report.AddError($"Jurisdiction definition '{DisplayName}' references missing authority permission definition '{id}'.");
+        }
+    }
+
+    [CreateAssetMenu(fileName = "GovernmentOrganizationCharterDefinition", menuName = "Unity Isekai Game/Governments/Organization Charter Definition")]
+    public class GovernmentOrganizationCharterDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    {
+        [SerializeField] private string charterDefinitionId;
+        [SerializeField] private string displayName;
+        [SerializeField, TextArea] private string description;
+        [SerializeField] private GovernmentOrganizationCharterCategory category = GovernmentOrganizationCharterCategory.RecognizedInstitution;
+        [SerializeField] private string governmentId;
+        [SerializeField] private string organizationId;
+        [SerializeField] private string supervisingOrganizationId;
+        [SerializeField] private string legalInstrumentId;
+        [SerializeField] private string[] jurisdictionIds = Array.Empty<string>();
+        [SerializeField] private string[] grantedPowerIds = Array.Empty<string>();
+        [SerializeField] private string[] dutyIds = Array.Empty<string>();
+        [SerializeField] private bool revocable = true;
+        [SerializeField] private PoliticalVisibility defaultVisibility = PoliticalVisibility.Public;
+        [SerializeField] private string[] tags = Array.Empty<string>();
+        [SerializeField] private int version = 1;
+
+        public string Id => charterDefinitionId ?? string.Empty;
+        public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? Id : displayName;
+        public string Description => description ?? string.Empty;
+        public GovernmentOrganizationCharterCategory Category => category;
+        public string GovernmentId => PoliticalModelUtility.Normalize(governmentId);
+        public string OrganizationId => PoliticalModelUtility.Normalize(organizationId);
+        public string SupervisingOrganizationId => PoliticalModelUtility.Normalize(supervisingOrganizationId);
+        public string LegalInstrumentId => PoliticalModelUtility.Normalize(legalInstrumentId);
+        public IReadOnlyList<string> JurisdictionIds => PoliticalModelUtility.Clean(jurisdictionIds);
+        public IReadOnlyList<string> GrantedPowerIds => PoliticalModelUtility.Clean(grantedPowerIds);
+        public IReadOnlyList<string> DutyIds => PoliticalModelUtility.Clean(dutyIds);
+        public bool Revocable => revocable;
+        public PoliticalVisibility DefaultVisibility => defaultVisibility;
+        public IReadOnlyList<string> TagIds => PoliticalModelUtility.Clean(tags);
+        public int Version => Math.Max(1, version);
+
+        public void DevelopmentConfigure(string id, string name, GovernmentOrganizationCharterCategory charterCategory, string issuingGovernmentId, string targetOrganizationId, string supervisorOrganizationId, string instrumentId, IEnumerable<string> jurisdictions, IEnumerable<string> grantedPowers, IEnumerable<string> duties, bool canRevoke = true, PoliticalVisibility visibility = PoliticalVisibility.Public, IEnumerable<string> tagIds = null)
+        {
+            charterDefinitionId = PoliticalModelUtility.Normalize(id);
+            displayName = string.IsNullOrWhiteSpace(name) ? charterDefinitionId : name.Trim();
+            description = string.Empty;
+            category = charterCategory;
+            governmentId = PoliticalModelUtility.Normalize(issuingGovernmentId);
+            organizationId = PoliticalModelUtility.Normalize(targetOrganizationId);
+            supervisingOrganizationId = PoliticalModelUtility.Normalize(supervisorOrganizationId);
+            legalInstrumentId = PoliticalModelUtility.Normalize(instrumentId);
+            jurisdictionIds = PoliticalModelUtility.Clean(jurisdictions);
+            grantedPowerIds = PoliticalModelUtility.Clean(grantedPowers);
+            dutyIds = PoliticalModelUtility.Clean(duties);
+            revocable = canRevoke;
+            defaultVisibility = visibility;
+            tags = PoliticalModelUtility.Clean(tagIds);
+            version = 1;
+        }
+
+        public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
+        {
+            if (report == null) return;
+            if (string.IsNullOrWhiteSpace(Id)) report.AddError("Government organization charter definition has no stable ID.");
+            else if (!Id.StartsWith("government-charter.", StringComparison.Ordinal)) report.AddWarning($"Government organization charter definition '{DisplayName}' should use the 'government-charter.' namespace prefix.");
+            if (!Enum.IsDefined(typeof(GovernmentOrganizationCharterCategory), category) || category == GovernmentOrganizationCharterCategory.Unknown) report.AddError($"Government organization charter definition '{DisplayName}' has an invalid category.");
+            if (string.IsNullOrWhiteSpace(GovernmentId)) report.AddError($"Government organization charter definition '{DisplayName}' has no issuing government.");
+            if (string.IsNullOrWhiteSpace(OrganizationId)) report.AddError($"Government organization charter definition '{DisplayName}' has no target organization.");
+            if (string.IsNullOrWhiteSpace(LegalInstrumentId)) report.AddError($"Government organization charter definition '{DisplayName}' has no legal instrument ID.");
+            if (GrantedPowerIds.Count == 0 && DutyIds.Count == 0) report.AddError($"Government organization charter definition '{DisplayName}' grants no powers and imposes no duties.");
+            if (!Enum.IsDefined(typeof(PoliticalVisibility), defaultVisibility)) report.AddError($"Government organization charter definition '{DisplayName}' has invalid visibility.");
         }
     }
 }

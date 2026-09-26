@@ -42,7 +42,7 @@ namespace UnityIsekaiGame.Tests
             CompleteGuildObjectives(fixture, assignment);
 
             QuestCompletionEvaluationResult wrongCounter = fixture.Outcomes.EvaluateCompletion(new QuestCompletionEvaluationRequest { assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.other", worldTime = 3d });
-            QuestOutcomeOperationResult complete = fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.complete.turn-in", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", issuerId = "organization.prototype.guild", locationId = "location.prototype.adventurers-guild", worldTime = 4d });
+            QuestOutcomeOperationResult complete = fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.complete.turn-in", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", issuerId = "organization.prototype.adventurers-guild", locationId = "location.prototype.adventurers-guild", worldTime = 4d });
             QuestOutcomeOperationResult duplicate = fixture.Outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.15.4.complete.turn-in", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", worldTime = 5d });
 
             Assert.That(wrongCounter.Status, Is.EqualTo(QuestOutcomeOperationStatus.TurnInRequired));
@@ -219,7 +219,7 @@ namespace UnityIsekaiGame.Tests
                     transactionId = $"tx.15.4.guild.create.{suffix}",
                     questId = $"quest.runtime.15.4.guild.{suffix}.{++questIndex:000}",
                     questDefinitionId = PrototypeQuestDefinitionFactory.GuildPostingDefinitionId,
-                    issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
+                    issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" },
                     intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = "person.prototype.player" },
                     origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.adventurers-guild", interactionPointId = "interaction-point.prototype.adventurer-guild-counter" },
                     createdWorldTime = 1d
@@ -229,8 +229,8 @@ namespace UnityIsekaiGame.Tests
                     transactionId = $"tx.15.4.guild.offer.{suffix}",
                     questId = create.Snapshot.QuestId,
                     recipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = "person.prototype.player" },
-                    institutionalIssuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
-                    offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild", actingPersonId = "person.prototype.guild-clerk" },
+                    institutionalIssuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" },
+                    offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild", actingPersonId = "person.prototype.guild-clerk" },
                     channel = QuestOfferChannel.GuildCounter,
                     sourceInteractionPointId = "interaction-point.prototype.adventurer-guild-counter",
                     sourceLocationId = "location.prototype.adventurers-guild",

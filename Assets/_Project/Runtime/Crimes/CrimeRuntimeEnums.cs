@@ -1,14 +1,14 @@
 namespace UnityIsekaiGame.Crimes
 {
-    public enum OffenseCategory { Unknown, ViolenceAgainstPerson, ThreatOrCoercion, PropertyDamage, TheftOrUnlawfulTaking, TrespassOrUnauthorizedEntry, FraudOrDeception, ContractOrFinancialViolation, MisuseOfOffice, ConfidentialityOrInformationViolation, PublicOrderPlaceholder, MilitaryInternalViolation, ReligiousInternalViolation, RegulatoryViolation, LegalStatusViolation, WarOrDiplomaticViolationPlaceholder, Attempt, AssistanceOrParticipation, Custom = 100 }
-    public enum OffenseSeverityCategory { Unknown, Minor, Moderate, Serious, Grave, CapitalPlaceholder, InternalDiscipline, Regulatory, Custom = 100 }
+    public enum OffenseCategory { Unknown, ViolenceAgainstPerson, ThreatOrCoercion, PropertyDamage, TheftOrUnlawfulTaking, TrespassOrUnauthorizedEntry, FraudOrDeception, ContractOrFinancialViolation, MisuseOfOffice, ConfidentialityOrInformationViolation, PublicOrder, MilitaryInternalViolation, ReligiousInternalViolation, RegulatoryViolation, LegalStatusViolation, WarOrDiplomaticViolation, Attempt, AssistanceOrParticipation, Custom = 100 }
+    public enum OffenseSeverityCategory { Unknown, Minor, Moderate, Serious, Grave, Capital, InternalDiscipline, Regulatory, Custom = 100 }
     public enum OffenseElementKind { Unknown, ActorConduct, ActorStatus, TargetStatus, TargetType, HarmOccurred, ItemPossessionChanged, PropertyDamaged, LegalDutyExisted, LegalPermissionAbsent, ConsentAbsent, JurisdictionApplied, MentalState, Circumstance, ResultOccurred, Custom = 100 }
-    public enum CrimeMentalState { Unknown, NotRequired, Intentional, Knowing, RecklessPlaceholder, NegligentPlaceholder, StrictLiabilityPlaceholder }
-    public enum OffenseStage { Unknown, PlannedPlaceholder, Attempted, Interrupted, Completed, Continuing }
-    public enum ParticipationCategory { Unknown, PrincipalActor, CoActor, Assistant, Organizer, Instigator, AccessoryPlaceholder, Beneficiary, UnknownParticipant, Custom = 100 }
-    public enum PotentialOffenseStatus { Unknown, Unreviewed, Plausible, ElementsPartiallySupported, ElementsSupported, ElementsContradicted, LegallyExcluded, Exempt, ImmunityRelevant, OutsideJurisdiction, TimeBarredPlaceholder, InsufficientInformation, Rejected, Superseded, Historical, Invalid }
+    public enum CrimeMentalState { Unknown, NotRequired, Intentional, Knowing, Reckless, Negligent, StrictLiability }
+    public enum OffenseStage { Unknown, Planned, Attempted, Interrupted, Completed, Continuing }
+    public enum ParticipationCategory { Unknown, PrincipalActor, CoActor, Assistant, Organizer, Instigator, Accessory, Beneficiary, UnknownParticipant, Custom = 100 }
+    public enum PotentialOffenseStatus { Unknown, Unreviewed, Plausible, ElementsPartiallySupported, ElementsSupported, ElementsContradicted, LegallyExcluded, Exempt, ImmunityRelevant, OutsideJurisdiction, TimeBarred, InsufficientInformation, Rejected, Superseded, Historical, Invalid }
     public enum CrimeIncidentCategory { Unknown, ReportedConduct, OfficiallyObservedConduct, DiscoveredHarm, MissingProperty, ViolentIncident, PropertyIncident, FinancialIncident, InformationIncident, OfficeMisconduct, InternalOrganizationViolation, UnknownConduct, Custom = 100 }
-    public enum CrimeIncidentLifecycleState { Unknown, Recorded, AwaitingReview, UnderReview, ActiveInvestigationPlaceholder, Inactive, Suspended, Merged, Reopened, ClosedUnresolved, ClosedNoViolation, ReferredForLegalAction, Historical, Invalid }
+    public enum CrimeIncidentLifecycleState { Unknown, Recorded, AwaitingReview, UnderReview, ActiveInvestigation, Inactive, Suspended, Merged, Reopened, ClosedUnresolved, ClosedNoViolation, ReferredForLegalAction, Historical, Invalid }
     public enum CrimeReportCategory { Unknown, VictimReport, WitnessReport, OfficialReport, OrganizationReport, AnonymousReport, RumorBasedReport, DelayedReport, Custom = 100 }
     public enum CrimeReportLifecycleState { Unknown, Submitted, Accepted, UnderReview, Verified, Incomplete, Mistaken, FalseReport, MaliciousFalsehood, Withdrawn, Merged, Rejected, Closed, Historical, Invalid }
     public enum AllegationLifecycleState { Unknown, Recorded, Supported, Contradicted, Disputed, Withdrawn, Rejected, Superseded, Historical, Invalid }

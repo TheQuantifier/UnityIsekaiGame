@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02c9e1b8c3402c742a637c753e6a8471, type: 3}
+  m_Name: organization_action_prototype_submit_decision_proposal
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:InstitutionalActionDefinition
+  actionDefinitionId: organization-action.prototype.submit-decision-proposal
+  displayName: Submit Decision Proposal
+  description: 
+  category: 90
+  requiredPermissionIds:
+  - organization-permission.prototype.submit-decision-proposal
+  permissionPolicy: 20
+  targetType: organization-proposal
+  defaultScopeType: 10
+  requiredMembershipState: 0
+  requiredApprovalCount: 1
+  requiredCapabilityIds: []
+  requiredQualificationIds: []
+  selfAuthorizationAllowed: 1
+  delegationMaySatisfy: 1
+  externalActorsMayBeAuthorized: 0
+  visibility: 0
+  auditPolicy: 10
+  tags:
+  - authority
+  - organization
+  - prototype
+  version: 1

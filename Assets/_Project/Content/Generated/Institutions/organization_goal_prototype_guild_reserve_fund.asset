@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37903c607e5b0b24b968160e2284af84, type: 3}
+  m_Name: organization_goal_prototype_guild_reserve_fund
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:OrganizationGoalDefinition
+  goalDefinitionId: organization-goal.prototype.guild.reserve-fund
+  displayName: Guild Reserve Fund Goal
+  description: 
+  category: 30
+  validOrganizationDefinitionIds: []
+  validOrganizationCategories: 01000000
+  targetSubjectTypes:
+  - organization-resource-type.prototype.currency
+  progressSourceKind: 30
+  targetValue: 100
+  completionPolicy: 10
+  allowMultipleActiveInstances: 0
+  suspensionAllowed: 1
+  deadlineAllowed: 1
+  minimumPriority: 0
+  maximumPriority: 100
+  visibility: 1
+  auditPolicy: 10
+  tags:
+  - decisions
+  - organization
+  - prototype
+  version: 1

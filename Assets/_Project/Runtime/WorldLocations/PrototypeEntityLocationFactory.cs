@@ -9,10 +9,14 @@ namespace UnityIsekaiGame.WorldLocations
         public const string PlayerPersonId = "person.prototype.player";
         public const string GuildMasterPersonId = "person.prototype.guildmaster";
         public const string MerchantPersonId = "person.prototype.merchant";
+        public const string AdventurersGuildReceptionistPersonId = "person.prototype.adventurers-guild-receptionist";
+        public const string MerchantGuildReceptionistPersonId = "person.prototype.merchant-guild-receptionist";
         public const string PrisonerPersonId = "person.prototype.prisoner";
         public const string PlayerBodyId = "body.prototype.player";
         public const string GuildMasterBodyId = "body.prototype.guildmaster";
         public const string MerchantBodyId = "body.prototype.merchant";
+        public const string AdventurersGuildReceptionistBodyId = "body.prototype.adventurers-guild-receptionist";
+        public const string MerchantGuildReceptionistBodyId = "body.prototype.merchant-guild-receptionist";
         public const string PrisonerBodyId = "body.prototype.prisoner";
         public const string SwordItemInstanceId = "item-instance.prototype.sword.world";
         public const string ArrowItemInstanceId = "item-instance.prototype.arrow.world";
@@ -27,10 +31,14 @@ namespace UnityIsekaiGame.WorldLocations
                 Person(PlayerPersonId, world),
                 Person(GuildMasterPersonId, world),
                 Person(MerchantPersonId, world),
+                Person(AdventurersGuildReceptionistPersonId, world),
+                Person(MerchantGuildReceptionistPersonId, world),
                 Person(PrisonerPersonId, world),
                 Body(PlayerBodyId, world),
                 Body(GuildMasterBodyId, world),
                 Body(MerchantBodyId, world),
+                Body(AdventurersGuildReceptionistBodyId, world),
+                Body(MerchantGuildReceptionistBodyId, world),
                 Body(PrisonerBodyId, world),
                 Item(SwordItemInstanceId, world),
                 Item(ArrowItemInstanceId, world),
@@ -46,6 +54,8 @@ namespace UnityIsekaiGame.WorldLocations
                 new EntityPersonBodyBindingData { personId = PlayerPersonId, activeBodyId = PlayerBodyId, sourceId = "prototype.entity-location.bootstrap" },
                 new EntityPersonBodyBindingData { personId = GuildMasterPersonId, activeBodyId = GuildMasterBodyId, sourceId = "prototype.entity-location.bootstrap" },
                 new EntityPersonBodyBindingData { personId = MerchantPersonId, activeBodyId = MerchantBodyId, sourceId = "prototype.entity-location.bootstrap" },
+                new EntityPersonBodyBindingData { personId = AdventurersGuildReceptionistPersonId, activeBodyId = AdventurersGuildReceptionistBodyId, sourceId = "prototype.entity-location.bootstrap" },
+                new EntityPersonBodyBindingData { personId = MerchantGuildReceptionistPersonId, activeBodyId = MerchantGuildReceptionistBodyId, sourceId = "prototype.entity-location.bootstrap" },
                 new EntityPersonBodyBindingData { personId = PrisonerPersonId, activeBodyId = PrisonerBodyId, sourceId = "prototype.entity-location.bootstrap" }
             };
         }
@@ -62,6 +72,8 @@ namespace UnityIsekaiGame.WorldLocations
             Place(runtime, Body(PlayerBodyId, world), "location.prototype.village", EntityPlacementCategory.Present, 1d);
             Place(runtime, Body(GuildMasterBodyId, world), "location.prototype.guildmaster-office", EntityPlacementCategory.WorkingPlaceholder, 1d);
             Place(runtime, Body(MerchantBodyId, world), "location.prototype.merchant-counter", EntityPlacementCategory.WorkingPlaceholder, 1d);
+            Place(runtime, Body(AdventurersGuildReceptionistBodyId, world), "location.prototype.adventurers-guild", EntityPlacementCategory.WorkingPlaceholder, 1d);
+            Place(runtime, Body(MerchantGuildReceptionistBodyId, world), "location.prototype.merchant-counter", EntityPlacementCategory.WorkingPlaceholder, 1d);
             Place(runtime, Body(PrisonerBodyId, world), "location.prototype.basement-prison", EntityPlacementCategory.Detained, 1d);
             Place(runtime, Item(SwordItemInstanceId, world), "location.prototype.dungeon-entry", EntityPlacementCategory.Dropped, 1d);
             Place(runtime, Item(ArrowItemInstanceId, world), "location.prototype.market-district", EntityPlacementCategory.Dropped, 1d);

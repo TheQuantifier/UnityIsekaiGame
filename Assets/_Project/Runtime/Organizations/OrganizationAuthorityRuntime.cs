@@ -605,7 +605,7 @@ namespace UnityIsekaiGame.Organizations
                 grants = grantsById.Values.OrderBy(item => item.grantId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
                 approvals = approvalsById.Values.OrderBy(item => item.approvalId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
                 audits = auditsById.Values.OrderBy(item => item.auditId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
-                transactions = transactionsById.Values.OrderBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToList()
+                transactions = transactionsById.Values.OrderBy(item => item.revision).ThenBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).RetainNewestTransactions().ToList()
             };
         }
 
@@ -1255,7 +1255,8 @@ namespace UnityIsekaiGame.Organizations
                 {
                     transactionId = transactionId,
                     operation = operation ?? string.Empty,
-                    subjectId = subjectId ?? string.Empty
+                    subjectId = subjectId ?? string.Empty,
+                    revision = Revision + 1L
                 };
             }
         }

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Skills.SkillDefinition
   skillId: skill.arcane-magic
   displayName: Arcane Magic
+  skillTypes: 3
   description: Learned proficiency with arcane spellcasting.
   primaryCategory: {fileID: 11400000, guid: 53200000000000000000000000000053, type: 2}
   tags:

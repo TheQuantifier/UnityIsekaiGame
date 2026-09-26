@@ -7,6 +7,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Skills;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -42,6 +43,24 @@ namespace UnityIsekaiGame.Tests
             AssertResolves(registry, "skill.appraisal");
             AssertResolves(registry, "skill.trading");
             AssertResolves(registry, "skill.smithing");
+        }
+
+        [Test]
+        public void PrototypeSkills_DeclareSemanticTypesForEligibilityRules()
+        {
+            DefinitionRegistry registry = LoadPrototypeRegistry();
+            Assert.That(registry.DefinitionsById.Values.OfType<SkillDefinition>().All(skill => skill.SkillTypes != SkillType.Unknown), Is.True);
+            Assert.That(registry.TryGet("skill.swordsmanship", out SkillDefinition swordsmanship), Is.True);
+            Assert.That(registry.TryGet("skill.unarmed-combat", out SkillDefinition unarmed), Is.True);
+            Assert.That(registry.TryGet("skill.arcane-magic", out SkillDefinition arcane), Is.True);
+            Assert.That(registry.TryGet("skill.healing-magic", out SkillDefinition healing), Is.True);
+            Assert.That(registry.TryGet("skill.appraisal", out SkillDefinition appraisal), Is.True);
+            Assert.That(swordsmanship.HasAnyType(SkillType.Combat), Is.True);
+            Assert.That(unarmed.HasAnyType(SkillType.Combat), Is.True);
+            Assert.That(arcane.HasAnyType(SkillType.Combat), Is.True);
+            Assert.That(arcane.HasAnyType(SkillType.Magic), Is.True);
+            Assert.That(healing.HasAnyType(SkillType.Combat), Is.True, "Combat-support skills should qualify adventurers.");
+            Assert.That(appraisal.HasAnyType(SkillType.Combat), Is.False);
         }
 
         [Test]

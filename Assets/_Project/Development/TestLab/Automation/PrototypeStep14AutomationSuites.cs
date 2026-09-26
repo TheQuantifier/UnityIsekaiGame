@@ -316,7 +316,7 @@ namespace UnityIsekaiGame.Development.Automation
             bool hasGuild = runtime.TryGetSnapshot("location.prototype.adventurers-guild", out LocationSnapshot guild);
             bool seeded = hasVillage && hasGuild;
             LocationValidationReport report = runtime.ValidateRuntime();
-            bool valid = definitions && seeded && report.Succeeded && settlement.Category == LocationCategory.Settlement && guildHall.SupportsOrganizationAssociation && detention.SupportsVisibility(LocationVisibility.Restricted) && village.WorldId == context.ScenarioContext.Runtimes.WorldId && guild.AssociatedOrganizationId == "organization.prototype.guild";
+            bool valid = definitions && seeded && report.Succeeded && settlement.Category == LocationCategory.Settlement && guildHall.SupportsOrganizationAssociation && detention.SupportsVisibility(LocationVisibility.Restricted) && village.WorldId == context.ScenarioContext.Runtimes.WorldId && guild.AssociatedOrganizationId == "organization.prototype.adventurers-guild";
             return TestLabAssertions.True("step14-location-readiness", "Location definitions and seeded records resolve", valid, $"Definitions={definitions} Seeded={seeded} Validation={report.Summary}");
         }
 
@@ -422,7 +422,7 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult PersistenceValidation(TestLabAutomationContext context)
         {
             LocationRuntime runtime = Runtime(context);
-            Create(context, "persist", PrototypeLocationDefinitionFactory.GuildHallDefinitionId, "Persistent Guild Hall", organizationId: "organization.prototype.guild");
+            Create(context, "persist", PrototypeLocationDefinitionFactory.GuildHallDefinitionId, "Persistent Guild Hall", organizationId: "organization.prototype.adventurers-guild");
             LocationPersistenceParticipant participant = new LocationPersistenceParticipant(runtime, () => context.ScenarioContext.Runtimes.DefinitionRegistry, context.ScenarioContext.Runtimes.WorldId);
             var save = participant.CapturePayload();
             var prepared = participant.PreparePayload(save.PayloadJson, LocationPersistenceParticipant.CurrentParticipantSchemaVersion);
@@ -903,7 +903,7 @@ namespace UnityIsekaiGame.Development.Automation
                 serviceDefinitionId = PrototypeInteractionPointDefinitionFactory.AdventurerInformationServiceId,
                 requirementKind = InteractionProviderRequirementKind.AssignedPerson,
                 providerEntity = Person(PrototypeEntityLocationFactory.GuildMasterPersonId, context),
-                providerOrganizationId = "organization.prototype.guild",
+                providerOrganizationId = "organization.prototype.adventurers-guild",
                 presencePolicy = InteractionPhysicalPresencePolicy.WithinHostLocation,
                 worldTime = 90d
             });
@@ -1114,7 +1114,7 @@ namespace UnityIsekaiGame.Development.Automation
                 worldTime = 19d
             });
             long entityBefore = entities.Revision;
-            LocationConnectionOperationResult locked = runtime.Traverse(Traversal(context, PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guildmaster-office", AccessContext(context, actor, organizations: new[] { "organization.prototype.guild" })));
+            LocationConnectionOperationResult locked = runtime.Traverse(Traversal(context, PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guildmaster-office", AccessContext(context, actor, organizations: new[] { "organization.prototype.adventurers-guild" })));
             long entityAfterLocked = entities.Revision;
             LocationConnectionOperationResult unlock = UnlockConnection(context, PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId);
             LocationConnectionOperationResult block = runtime.MutateState(new LocationConnectionStateMutationRequest
@@ -2450,12 +2450,12 @@ namespace UnityIsekaiGame.Development.Automation
                 failure = string.Empty;
                 PoliticalOperationResult originPolity = Runtimes.Governments.CreatePolity(new PolityCreateRequest { transactionId = Tx("polity-origin"), polityId = OriginPolityId, polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Origin Realm", worldTime = 0d });
                 PoliticalOperationResult destinationPolity = Runtimes.Governments.CreatePolity(new PolityCreateRequest { transactionId = Tx("polity-destination"), polityId = DestinationPolityId, polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Destination Realm", worldTime = 0d });
-                PoliticalOperationResult originGovernment = Runtimes.Governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = Tx("government-origin"), governmentId = OriginGovernmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = OriginPolityId, officialName = "Origin Government", primaryGoverningOrganizationId = "organization.prototype.guild", governingOrganizationIds = new[] { "organization.prototype.guild" }, level = GovernmentLevel.Central, worldTime = 0d });
-                PoliticalOperationResult destinationGovernment = Runtimes.Governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = Tx("government-destination"), governmentId = DestinationGovernmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = DestinationPolityId, officialName = "Destination Government", primaryGoverningOrganizationId = "organization.prototype.guild", governingOrganizationIds = new[] { "organization.prototype.guild" }, level = GovernmentLevel.Central, worldTime = 0d });
+                PoliticalOperationResult originGovernment = Runtimes.Governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = Tx("government-origin"), governmentId = OriginGovernmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = OriginPolityId, officialName = "Origin Government", primaryGoverningOrganizationId = "organization.prototype.adventurers-guild", governingOrganizationIds = new[] { "organization.prototype.adventurers-guild" }, level = GovernmentLevel.Central, worldTime = 0d });
+                PoliticalOperationResult destinationGovernment = Runtimes.Governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = Tx("government-destination"), governmentId = DestinationGovernmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = DestinationPolityId, officialName = "Destination Government", primaryGoverningOrganizationId = "organization.prototype.adventurers-guild", governingOrganizationIds = new[] { "organization.prototype.adventurers-guild" }, level = GovernmentLevel.Central, worldTime = 0d });
                 PoliticalOperationResult originTerritory = Runtimes.Governments.CreateTerritory(new TerritoryCreateRequest { transactionId = Tx("territory-origin"), territoryId = OriginTerritoryId, territoryDefinitionId = PrototypeGovernmentDefinitionFactory.RealmTerritoryDefinitionId, displayName = "Origin Territory", polityId = OriginPolityId, primaryGovernmentId = OriginGovernmentId, placeIds = new[] { OriginLocationId }, worldTime = 0d });
                 PoliticalOperationResult destinationTerritory = Runtimes.Governments.CreateTerritory(new TerritoryCreateRequest { transactionId = Tx("territory-destination"), territoryId = DestinationTerritoryId, territoryDefinitionId = PrototypeGovernmentDefinitionFactory.RealmTerritoryDefinitionId, displayName = "Destination Territory", polityId = DestinationPolityId, primaryGovernmentId = DestinationGovernmentId, placeIds = new[] { DestinationLocationId }, worldTime = 0d });
-                PoliticalOperationResult originJurisdiction = Runtimes.Governments.CreateJurisdiction(new JurisdictionCreateRequest { transactionId = Tx("jurisdiction-origin"), jurisdictionId = OriginJurisdictionId, jurisdictionDefinitionId = PrototypeGovernmentDefinitionFactory.GeneralJurisdictionDefinitionId, governmentId = OriginGovernmentId, category = JurisdictionCategory.GeneralGovernment, scopeDimensions = JurisdictionScopeDimension.Territory | JurisdictionScopeDimension.SubjectMatter, subjectMatters = new[] { JurisdictionSubjectMatter.BorderAdministrationPlaceholder }, territoryIds = new[] { OriginTerritoryId }, priority = 100, worldTime = 0d });
-                PoliticalOperationResult destinationJurisdiction = Runtimes.Governments.CreateJurisdiction(new JurisdictionCreateRequest { transactionId = Tx("jurisdiction-destination"), jurisdictionId = DestinationJurisdictionId, jurisdictionDefinitionId = PrototypeGovernmentDefinitionFactory.GeneralJurisdictionDefinitionId, governmentId = DestinationGovernmentId, category = JurisdictionCategory.GeneralGovernment, scopeDimensions = JurisdictionScopeDimension.Territory | JurisdictionScopeDimension.SubjectMatter, subjectMatters = new[] { JurisdictionSubjectMatter.BorderAdministrationPlaceholder }, territoryIds = new[] { DestinationTerritoryId }, priority = 100, worldTime = 0d });
+                PoliticalOperationResult originJurisdiction = Runtimes.Governments.CreateJurisdiction(new JurisdictionCreateRequest { transactionId = Tx("jurisdiction-origin"), jurisdictionId = OriginJurisdictionId, jurisdictionDefinitionId = PrototypeGovernmentDefinitionFactory.GeneralJurisdictionDefinitionId, governmentId = OriginGovernmentId, category = JurisdictionCategory.GeneralGovernment, scopeDimensions = JurisdictionScopeDimension.Territory | JurisdictionScopeDimension.SubjectMatter, subjectMatters = new[] { JurisdictionSubjectMatter.BorderAdministration }, territoryIds = new[] { OriginTerritoryId }, priority = 100, worldTime = 0d });
+                PoliticalOperationResult destinationJurisdiction = Runtimes.Governments.CreateJurisdiction(new JurisdictionCreateRequest { transactionId = Tx("jurisdiction-destination"), jurisdictionId = DestinationJurisdictionId, jurisdictionDefinitionId = PrototypeGovernmentDefinitionFactory.GeneralJurisdictionDefinitionId, governmentId = DestinationGovernmentId, category = JurisdictionCategory.GeneralGovernment, scopeDimensions = JurisdictionScopeDimension.Territory | JurisdictionScopeDimension.SubjectMatter, subjectMatters = new[] { JurisdictionSubjectMatter.BorderAdministration }, territoryIds = new[] { DestinationTerritoryId }, priority = 100, worldTime = 0d });
 
                 PoliticalOperationResult[] results = { originPolity, destinationPolity, originGovernment, destinationGovernment, originTerritory, destinationTerritory, originJurisdiction, destinationJurisdiction };
                 if (results.All(result => result.Succeeded)) return true;
@@ -2542,7 +2542,7 @@ namespace UnityIsekaiGame.Development.Automation
                     authorityDefinitionId = PrototypeLegalDefinitionFactory.SovereignAuthorityId,
                     title = "Political Travel Law",
                     governmentId = DestinationGovernmentId,
-                    organizationId = "organization.prototype.guild",
+                    organizationId = "organization.prototype.adventurers-guild",
                     jurisdictionIds = new[] { DestinationJurisdictionId },
                     enactmentWorldTime = 1d,
                     publicationWorldTime = 1d,

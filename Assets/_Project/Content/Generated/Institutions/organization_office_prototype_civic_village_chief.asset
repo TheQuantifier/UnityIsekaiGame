@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 947d4c85224c1b94090596677a054217, type: 3}
+  m_Name: organization_office_prototype_civic_village_chief
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:OrganizationOfficeDefinition
+  officeDefinitionId: organization-office.prototype.civic.village-chief
+  displayName: Village Chief
+  organizationDefinitionId: organization-definition.civic-body
+  linkedPositionDefinitionId: 
+  requiredMembershipDefinitionIds:
+  - organization-membership.prototype.civic.official
+  requiredRankDefinitionIds: []
+  maximumActiveHolders: 1
+  allowVacancy: 1
+  allowActingHolders: 1
+  allowJointHolders: 0
+  allowTermEnd: 1
+  secret: 0
+  version: 1

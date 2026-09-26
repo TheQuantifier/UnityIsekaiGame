@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d92b5841c66be140a240c8d30c8e26e, type: 3}
+  m_Name: organization_decision_procedure_prototype_emergency_executive
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:OrganizationDecisionProcedureDefinition
+  procedureDefinitionId: organization-decision-procedure.prototype.emergency-executive
+  displayName: Emergency Executive Procedure
+  description: 
+  kind: 10
+  voterEligibility: 40
+  voteWeight: 10
+  quorumKind: 10
+  quorumCount: 1
+  quorumPercentageBasisPoints: 5000
+  thresholdKind: 10
+  thresholdBasisPoints: 10000
+  fixedWeightThreshold: 0
+  tiePolicy: 0
+  snapshotVoterRoll: 1
+  secretBallot: 0
+  allowVoteReplacement: 0
+  allowVeto: 1
+  allowOverride: 1
+  overrideThresholdBasisPoints: 6667
+  vetoWindowDuration: -1
+  emergencyDurationLimit: -1
+  eligibleOfficeDefinitionIds: []
+  eligibleRankDefinitionIds: []
+  eligiblePermissionDefinitionIds:
+  - organization-permission.prototype.issue-emergency-decision
+  visibility: 1
+  tags:
+  - decisions
+  - organization
+  - prototype
+  version: 1

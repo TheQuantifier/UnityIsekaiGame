@@ -14,7 +14,7 @@ namespace UnityIsekaiGame.Persistence
     public sealed class CrimePersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const string Key = "world.crimes";
-        public const int CurrentParticipantSchemaVersion = 1;
+        public const int CurrentParticipantSchemaVersion = 2;
 
         private readonly CrimeRuntime runtime;
         private readonly Func<DefinitionRegistry> registryProvider;
@@ -51,10 +51,10 @@ namespace UnityIsekaiGame.Persistence
 
         public string ParticipantKey => Key;
         public int ParticipantSchemaVersion => CurrentParticipantSchemaVersion;
-        public bool IsRequired => false;
+        public bool IsRequired => true;
         public PersistenceScope Scope => PersistenceScope.SharedWorld;
         public string OwnerId => ownerId;
-        public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Inventory;
+        public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.Institutions;
         public int LoadPriority => 70;
         public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { GovernmentPersistenceParticipant.Key, LegalPersistenceParticipant.Key };
         public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => new[]

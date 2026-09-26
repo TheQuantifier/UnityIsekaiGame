@@ -15,7 +15,7 @@ namespace UnityIsekaiGame.Tests
         private const string PersonId = "person.life-path.prototype";
         private const string OtherPersonId = "person.life-path.other";
         private const string GuildAuthority = "authority.guild.prototype";
-        private const string GuildOrganization = "organization.prototype.guild";
+        private const string GuildOrganization = "organization.prototype.adventurers-guild";
 
         [Test]
         public void PrototypeLifePathDefinitionsValidateAndInvalidReferencesAreRejected()
@@ -431,7 +431,7 @@ namespace UnityIsekaiGame.Tests
             return runtime;
         }
 
-        private static string[] Organizations() => new[] { GuildOrganization, "organization.prototype.royal-forge", "organization.prototype.independent" };
+        private static string[] Organizations() => new[] { GuildOrganization, "organization.prototype.royal-forge" };
 
         private static string[] Authorities() => new[] { GuildAuthority, ProfessionContentIds.PositionAppointAuthorityId, ProfessionContentIds.PositionDutyAssignAuthorityId, GuildOrganization };
     }

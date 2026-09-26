@@ -52,11 +52,11 @@ namespace UnityIsekaiGame.Tests
         {
             RuntimeFixture fixture = CreateFixture();
             CreateGuildmaster(fixture, PersonId, "master");
-            fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.general", "organization.prototype.guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, "tx.member.general"));
+            fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.general", "organization.prototype.adventurers-guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, "tx.member.general"));
 
-            OrganizationAuthorizationResult guildmaster = fixture.Authority.EvaluateAuthorization(AuthRequest(PersonId, "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholderActionId, "auth.guildmaster.appoint"));
-            OrganizationAuthorizationResult generalMember = fixture.Authority.EvaluateAuthorization(AuthRequest("person.prototype.friend", "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholderActionId, "auth.general.appoint"));
-            OrganizationEffectiveAuthoritySnapshot effective = fixture.Authority.QueryEffectiveAuthority(PersonId, "organization.prototype.guild", 100d);
+            OrganizationAuthorizationResult guildmaster = fixture.Authority.EvaluateAuthorization(AuthRequest(PersonId, "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholderActionId, "auth.guildmaster.appoint"));
+            OrganizationAuthorizationResult generalMember = fixture.Authority.EvaluateAuthorization(AuthRequest("person.prototype.friend", "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholderActionId, "auth.general.appoint"));
+            OrganizationEffectiveAuthoritySnapshot effective = fixture.Authority.QueryEffectiveAuthority(PersonId, "organization.prototype.adventurers-guild", 100d);
 
             Assert.That(guildmaster.Succeeded, Is.True, guildmaster.Message);
             Assert.That(generalMember.Status, Is.EqualTo(OrganizationAuthorizationStatus.MissingPermission));
@@ -69,16 +69,16 @@ namespace UnityIsekaiGame.Tests
         {
             RuntimeFixture fixture = CreateFixture();
             CreateGuildmaster(fixture, PersonId, "master");
-            fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.friend", "organization.prototype.guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, "tx.member.friend"));
+            fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.friend", "organization.prototype.adventurers-guild", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, "tx.member.friend"));
 
             OrganizationAuthorityOperationResult direct = fixture.Authority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
             {
                 grantId = "organization-authority-grant.test.friend.records",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 granteePersonId = "person.prototype.friend",
                 grantorPersonId = PersonId,
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.IssueOrdersPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 startWorldTime = 20d,
                 expirationWorldTime = 40d,
                 delegationPolicy = OrganizationAuthorityDelegationPolicy.DelegableNoRedelegation,
@@ -87,26 +87,26 @@ namespace UnityIsekaiGame.Tests
             OrganizationAuthorityOperationResult duplicate = fixture.Authority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
             {
                 grantId = "organization-authority-grant.test.friend.records",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 granteePersonId = "person.prototype.friend",
                 grantorPersonId = PersonId,
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.IssueOrdersPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 startWorldTime = 20d,
                 expirationWorldTime = 40d,
                 transactionId = "tx.authority.direct"
             });
-            OrganizationAuthorizationResult authorized = fixture.Authority.EvaluateAuthorization(AuthRequest("person.prototype.friend", "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, "auth.friend.orders", 30d));
-            OrganizationAuthorizationResult expired = fixture.Authority.EvaluateAuthorization(AuthRequest("person.prototype.friend", "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, "auth.friend.orders.expired", 50d));
+            OrganizationAuthorizationResult authorized = fixture.Authority.EvaluateAuthorization(AuthRequest("person.prototype.friend", "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, "auth.friend.orders", 30d));
+            OrganizationAuthorizationResult expired = fixture.Authority.EvaluateAuthorization(AuthRequest("person.prototype.friend", "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, "auth.friend.orders.expired", 50d));
             OrganizationAuthorityOperationResult delegated = fixture.Authority.DelegateAuthority(new OrganizationDelegationRequest
             {
                 delegationGrantId = "organization-authority-grant.test.friend.delegate",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 delegatorPersonId = "person.prototype.friend",
                 recipientPersonId = "person.prototype.student",
                 sourceAuthorityId = direct.Grant.GrantId,
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.IssueOrdersPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 startWorldTime = 25d,
                 expirationWorldTime = 35d,
                 transactionId = "tx.authority.delegate"
@@ -114,12 +114,12 @@ namespace UnityIsekaiGame.Tests
             OrganizationAuthorityOperationResult redelegated = fixture.Authority.DelegateAuthority(new OrganizationDelegationRequest
             {
                 delegationGrantId = "organization-authority-grant.test.student.redelegate",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 delegatorPersonId = "person.prototype.student",
                 recipientPersonId = "person.prototype.rival",
                 sourceAuthorityId = delegated.Grant?.GrantId,
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.IssueOrdersPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 startWorldTime = 26d,
                 expirationWorldTime = 30d,
                 transactionId = "tx.authority.redelegate"
@@ -149,20 +149,20 @@ namespace UnityIsekaiGame.Tests
             fixture.Organizations.LinkOrganizations(new OrganizationLinkRequest
             {
                 sourceOrganizationId = "organization.test.branch",
-                targetOrganizationId = "organization.prototype.guild",
+                targetOrganizationId = "organization.prototype.adventurers-guild",
                 kind = OrganizationLinkKind.Parent,
                 transactionId = "tx.org.branch.parent"
             });
             fixture.Authority.Configure(fixture.Registry, fixture.Organizations, fixture.Memberships, PersistenceService.LocalWorldId, KnownPersons, fixture.Organizations.Snapshots.Select(snapshot => snapshot.OrganizationId));
-            OrganizationMembershipOperationResult parentMembership = fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.parent.master", "organization.prototype.guild", PersonId, PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, "tx.parent.master"));
-            RankToMaster(fixture.Memberships, parentMembership.Membership.MembershipId, "parent");
+            OrganizationMembershipOperationResult parentMembership = fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.parent.master", "organization.prototype.adventurers-guild", PersonId, PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, "tx.parent.master"));
+            RankToSSS(fixture.Memberships, parentMembership.Membership.MembershipId, "parent");
             OrganizationMembershipOperationResult branchMembership = fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.branch.master", "organization.test.branch", "person.prototype.friend", PrototypeOrganizationMembershipDefinitionFactory.BranchMemberId, "tx.branch.master", parentMembership.Membership.MembershipId));
             OrganizationMembershipOperationResult branchOffice = fixture.Memberships.CreateOffice(OfficeRequest("organization-office-record.test.branch.master", "organization.test.branch", PrototypeOrganizationMembershipDefinitionFactory.BranchChapterMasterOfficeId, "tx.branch.office"));
             fixture.Memberships.AssignOffice(OfficeAssignmentRequest("organization-office-assignment.test.branch.master", branchOffice.Office.OfficeId, branchMembership.Membership.MembershipId, "tx.branch.office.assign"));
 
             OrganizationAuthorizationResult parentOnBranch = fixture.Authority.EvaluateAuthorization(AuthRequest(PersonId, "organization.test.branch", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, "auth.parent.branch"));
             OrganizationAuthorizationResult branchOnBranch = fixture.Authority.EvaluateAuthorization(AuthRequest("person.prototype.friend", "organization.test.branch", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, "auth.branch.branch"));
-            OrganizationAuthorizationResult branchOnParent = fixture.Authority.EvaluateAuthorization(AuthRequest("person.prototype.friend", "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, "auth.branch.parent"));
+            OrganizationAuthorizationResult branchOnParent = fixture.Authority.EvaluateAuthorization(AuthRequest("person.prototype.friend", "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.IssueOrderActionId, "auth.branch.parent"));
 
             Assert.That(parentOnBranch.Status, Is.EqualTo(OrganizationAuthorizationStatus.MissingPermission));
             Assert.That(branchOnBranch.Succeeded, Is.True, branchOnBranch.Message);
@@ -174,35 +174,35 @@ namespace UnityIsekaiGame.Tests
         {
             RuntimeFixture fixture = CreateFixture();
             CreateGuildmaster(fixture, PersonId, "master");
-            fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.mentor.approver", "organization.prototype.guild", "person.prototype.mentor", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, "tx.member.mentor.approver"));
-            fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.partner.approver", "organization.prototype.guild", "person.prototype.partner", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, "tx.member.partner.approver"));
+            fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.mentor.approver", "organization.prototype.adventurers-guild", "person.prototype.mentor", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, "tx.member.mentor.approver"));
+            fixture.Memberships.ApplyMembership(MembershipRequest("organization-membership.test.partner.approver", "organization.prototype.adventurers-guild", "person.prototype.partner", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, "tx.member.partner.approver"));
             OrganizationAuthorityOperationResult mentorGrant = fixture.Authority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
             {
                 grantId = "organization-authority-grant.test.mentor.guildmaster",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 granteePersonId = "person.prototype.mentor",
                 grantorPersonId = PersonId,
                 authorityRoleDefinitionId = PrototypeOrganizationAuthorityDefinitionFactory.GuildmasterRoleId,
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 transactionId = "tx.authority.approval.mentor"
             });
             OrganizationAuthorityOperationResult partnerGrant = fixture.Authority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
             {
                 grantId = "organization-authority-grant.test.partner.guildmaster",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 granteePersonId = "person.prototype.partner",
                 grantorPersonId = PersonId,
                 authorityRoleDefinitionId = PrototypeOrganizationAuthorityDefinitionFactory.GuildmasterRoleId,
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 transactionId = "tx.authority.approval.partner"
             });
             OrganizationAuthorityOperationResult approvalOne = fixture.Authority.RecordApproval(ApprovalRequest("organization-authority-approval.test.one", "operation.headquarters", "person.prototype.mentor"));
             OrganizationAuthorityOperationResult approvalTwo = fixture.Authority.RecordApproval(ApprovalRequest("organization-authority-approval.test.two", "operation.headquarters", "person.prototype.partner"));
-            OrganizationAuthorizationRequest request = AuthRequest("person.prototype.friend", "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.ChangeHeadquartersActionId, "operation.headquarters");
+            OrganizationAuthorizationRequest request = AuthRequest("person.prototype.friend", "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.ChangeHeadquartersActionId, "operation.headquarters");
             request.consumeApprovals = true;
 
             OrganizationAuthorizationResult denied = fixture.Authority.EvaluateAuthorization(request);
-            OrganizationAuthorizationRequest actorRequest = AuthRequest(PersonId, "organization.prototype.guild", PrototypeOrganizationAuthorityDefinitionFactory.ChangeHeadquartersActionId, "operation.headquarters");
+            OrganizationAuthorizationRequest actorRequest = AuthRequest(PersonId, "organization.prototype.adventurers-guild", PrototypeOrganizationAuthorityDefinitionFactory.ChangeHeadquartersActionId, "operation.headquarters");
             actorRequest.consumeApprovals = true;
             OrganizationAuthorizationResult authorized = fixture.Authority.EvaluateAuthorization(actorRequest);
             OrganizationAuthorityOperationResult audit = fixture.Authority.RecordAuthorizationAudit(authorized, "organization-authority-audit.test.headquarters", 120d);
@@ -226,11 +226,11 @@ namespace UnityIsekaiGame.Tests
             OrganizationAuthorityOperationResult grant = fixture.Authority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
             {
                 grantId = "organization-authority-grant.test.persist",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 granteePersonId = "person.prototype.friend",
                 grantorPersonId = PersonId,
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.ViewRestrictedInformationPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 startWorldTime = 0d,
                 transactionId = "tx.authority.persist"
             });
@@ -256,11 +256,11 @@ namespace UnityIsekaiGame.Tests
             OrganizationAuthorityOperationResult grant = fixture.Authority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
             {
                 grantId = "organization-authority-grant.test.hidden",
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 granteePersonId = "person.prototype.friend",
                 grantorPersonId = PersonId,
                 permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.ViewSecretInformationPermissionId },
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 visibility = OrganizationVisibility.Hidden,
                 startWorldTime = 0d,
                 transactionId = "tx.authority.hidden"
@@ -280,17 +280,18 @@ namespace UnityIsekaiGame.Tests
 
         private static void CreateGuildmaster(RuntimeFixture fixture, string personId, string suffix)
         {
-            OrganizationMembershipOperationResult member = fixture.Memberships.ApplyMembership(MembershipRequest($"organization-membership.test.guildmaster.{suffix}", "organization.prototype.guild", personId, PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, $"tx.member.guildmaster.{suffix}"));
-            RankToMaster(fixture.Memberships, member.Membership.MembershipId, suffix);
-            OrganizationMembershipOperationResult office = fixture.Memberships.CreateOffice(OfficeRequest($"organization-office-record.test.guildmaster.{suffix}", "organization.prototype.guild", PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, $"tx.office.guildmaster.{suffix}"));
+            OrganizationMembershipOperationResult member = fixture.Memberships.ApplyMembership(MembershipRequest($"organization-membership.test.guildmaster.{suffix}", "organization.prototype.adventurers-guild", personId, PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, $"tx.member.guildmaster.{suffix}"));
+            RankToSSS(fixture.Memberships, member.Membership.MembershipId, suffix);
+            OrganizationMembershipOperationResult office = fixture.Memberships.CreateOffice(OfficeRequest($"organization-office-record.test.guildmaster.{suffix}", "organization.prototype.adventurers-guild", PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, $"tx.office.guildmaster.{suffix}"));
             fixture.Memberships.AssignOffice(OfficeAssignmentRequest($"organization-office-assignment.test.guildmaster.{suffix}", office.Office.OfficeId, member.Membership.MembershipId, $"tx.office.guildmaster.assign.{suffix}"));
         }
 
-        private static void RankToMaster(OrganizationMembershipRuntime memberships, string membershipId, string suffix)
+        private static void RankToSSS(OrganizationMembershipRuntime memberships, string membershipId, string suffix)
         {
-            memberships.AssignRank(RankRequest($"organization-rank-assignment.test.novice.{suffix}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildNoviceRankId, $"tx.rank.novice.{suffix}"));
-            memberships.AssignRank(RankRequest($"organization-rank-assignment.test.journey.{suffix}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildJourneymanRankId, $"tx.rank.journey.{suffix}"));
-            memberships.AssignRank(RankRequest($"organization-rank-assignment.test.master.{suffix}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId, $"tx.rank.master.{suffix}"));
+            for (int index = 0; index < PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds.Count; index++)
+            {
+                memberships.AssignRank(RankRequest($"organization-rank-assignment.test.guild-rating.{index}.{suffix}", membershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds[index], $"tx.rank.guild-rating.{index}.{suffix}"));
+            }
         }
 
         private static OrganizationAuthorizationRequest AuthRequest(string actorId, string organizationId, string actionId, string operationId, double worldTime = 100d)
@@ -313,10 +314,10 @@ namespace UnityIsekaiGame.Tests
                 approvalId = approvalId,
                 operationId = operationId,
                 actionDefinitionId = PrototypeOrganizationAuthorityDefinitionFactory.ChangeHeadquartersActionId,
-                organizationId = "organization.prototype.guild",
+                organizationId = "organization.prototype.adventurers-guild",
                 approverPersonId = approverId,
                 targetPersonId = "person.prototype.friend",
-                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.guild"),
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
                 approvedWorldTime = 90d,
                 expirationWorldTime = 130d,
                 transactionId = $"tx.approval.{approvalId}"

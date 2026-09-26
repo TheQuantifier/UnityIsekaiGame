@@ -399,6 +399,7 @@ namespace UnityIsekaiGame.Factions
         public string transactionId;
         public string operation;
         public string subjectId;
+        public long revision;
 
         public FactionTransactionRecordData Clone()
         {
@@ -406,7 +407,8 @@ namespace UnityIsekaiGame.Factions
             {
                 transactionId = transactionId ?? string.Empty,
                 operation = operation ?? string.Empty,
-                subjectId = subjectId ?? string.Empty
+                subjectId = subjectId ?? string.Empty,
+                revision = revision
             };
         }
     }

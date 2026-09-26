@@ -44,7 +44,16 @@ namespace UnityIsekaiGame.Tests
             Assert.That(member.SupportsRanks, Is.True);
             Assert.That(member.SupportsOffices, Is.True);
             Assert.That(registry.TryGet(PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, out OrganizationOfficeDefinition office), Is.True);
-            Assert.That(office.RequiredRankDefinitionIds, Does.Contain(PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId));
+            Assert.That(office.RequiredRankDefinitionIds, Does.Contain(PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId));
+            Assert.That(registry.TryGet(PrototypeOrganizationMembershipDefinitionFactory.AdventurerGuildEntryRankId, out OrganizationRankDefinition entryRank), Is.True);
+            Assert.That(registry.TryGet(PrototypeOrganizationMembershipDefinitionFactory.GuildFRankId, out OrganizationRankDefinition fRank), Is.True);
+            Assert.That(entryRank.DisplayName, Is.EqualTo("G Rank"));
+            Assert.That(entryRank.RankOrder, Is.LessThan(fRank.RankOrder));
+            Assert.That(entryRank.AppliesToOrganization(PrototypeInstitutionalContentIds.AdventurersGuild), Is.True);
+            Assert.That(entryRank.AppliesToOrganization(PrototypeInstitutionalContentIds.MerchantGuild), Is.False);
+            Assert.That(PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds.Count, Is.EqualTo(9));
+            Assert.That(PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds.First(), Is.EqualTo(PrototypeOrganizationMembershipDefinitionFactory.GuildFRankId));
+            Assert.That(PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds.Last(), Is.EqualTo(PrototypeOrganizationMembershipDefinitionFactory.GuildSSSRankId));
             Assert.That(report.ErrorCount, Is.EqualTo(0), report.ToString());
         }
 
@@ -54,7 +63,7 @@ namespace UnityIsekaiGame.Tests
             OrganizationMembershipRuntime runtime = CreateMembershipRuntime();
             OrganizationMembershipOperationResult invited = runtime.ApplyMembership(MembershipRequest(
                 "organization-membership.test.invited",
-                "organization.prototype.guild",
+                "organization.prototype.adventurers-guild",
                 "person.prototype.friend",
                 PrototypeOrganizationMembershipDefinitionFactory.GuildInviteeId,
                 OrganizationMembershipStatus.Invited,
@@ -67,7 +76,7 @@ namespace UnityIsekaiGame.Tests
 
             OrganizationMembershipOperationResult denied = runtime.ApplyMembership(MembershipRequest(
                 invited.Membership.MembershipId,
-                "organization.prototype.guild",
+                "organization.prototype.adventurers-guild",
                 "person.prototype.friend",
                 PrototypeOrganizationMembershipDefinitionFactory.GuildInviteeId,
                 OrganizationMembershipStatus.Active,
@@ -75,7 +84,7 @@ namespace UnityIsekaiGame.Tests
                 "tx.membership.invited.denied"));
             OrganizationMembershipRequest acceptedRequest = MembershipRequest(
                 invited.Membership.MembershipId,
-                "organization.prototype.guild",
+                "organization.prototype.adventurers-guild",
                 "person.prototype.friend",
                 PrototypeOrganizationMembershipDefinitionFactory.GuildInviteeId,
                 OrganizationMembershipStatus.Active,
@@ -111,19 +120,19 @@ namespace UnityIsekaiGame.Tests
             organizations.LinkOrganizations(new OrganizationLinkRequest
             {
                 sourceOrganizationId = "organization.test.branch",
-                targetOrganizationId = "organization.prototype.guild",
+                targetOrganizationId = "organization.prototype.adventurers-guild",
                 kind = OrganizationLinkKind.Parent,
                 transactionId = "tx.organization.branch.parent"
             });
             runtime.Configure(registry, organizations, PersistenceService.LocalWorldId, KnownPersons, organizations.Snapshots.Select(snapshot => snapshot.OrganizationId));
 
             OrganizationMembershipOperationResult missingParent = runtime.ApplyMembership(MembershipRequest("organization-membership.test.branch.missing", "organization.test.branch", "person.prototype.student", PrototypeOrganizationMembershipDefinitionFactory.BranchMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, "tx.membership.branch.missing", consent: true));
-            OrganizationMembershipOperationResult parent = runtime.ApplyMembership(MembershipRequest("organization-membership.test.guild.parent", "organization.prototype.guild", "person.prototype.student", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, "tx.membership.guild.parent", consent: true));
+            OrganizationMembershipOperationResult parent = runtime.ApplyMembership(MembershipRequest("organization-membership.test.guild.parent", "organization.prototype.adventurers-guild", "person.prototype.student", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, "tx.membership.guild.parent", consent: true));
             OrganizationMembershipRequest branchRequest = MembershipRequest("organization-membership.test.branch", "organization.test.branch", "person.prototype.student", PrototypeOrganizationMembershipDefinitionFactory.BranchMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, "tx.membership.branch", consent: true);
             branchRequest.parentMembershipId = parent.Membership.MembershipId;
             OrganizationMembershipOperationResult branch = runtime.ApplyMembership(branchRequest);
-            OrganizationMembershipOperationResult rank = runtime.AssignRank(RankRequest("organization-rank-assignment.test.novice", parent.Membership.MembershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildNoviceRankId, "tx.rank.novice"));
-            OrganizationMembershipOperationResult office = runtime.CreateOffice(OfficeRequest("organization-office-record.test.treasurer", "organization.prototype.guild", PrototypeOrganizationMembershipDefinitionFactory.GuildTreasurerOfficeId, "tx.office.treasurer", 2));
+            OrganizationMembershipOperationResult rank = runtime.AssignRank(RankRequest("organization-rank-assignment.test.f", parent.Membership.MembershipId, PrototypeOrganizationMembershipDefinitionFactory.GuildFRankId, "tx.rank.f"));
+            OrganizationMembershipOperationResult office = runtime.CreateOffice(OfficeRequest("organization-office-record.test.treasurer", "organization.prototype.adventurers-guild", PrototypeOrganizationMembershipDefinitionFactory.GuildTreasurerOfficeId, "tx.office.treasurer", 2));
             OrganizationMembershipOperationResult appointment = runtime.AssignOffice(OfficeAssignmentRequest("organization-office-assignment.test.treasurer", office.Office.OfficeId, parent.Membership.MembershipId, "tx.office.treasurer.assign", acting: true));
 
             Assert.That(missingParent.Status, Is.EqualTo(OrganizationMembershipOperationStatus.InvalidDependency));
@@ -142,7 +151,7 @@ namespace UnityIsekaiGame.Tests
             DefinitionRegistry registry = CreateRegistry();
             OrganizationRuntime organizations = CreateOrganizationRuntime(registry);
             OrganizationMembershipRuntime runtime = CreateMembershipRuntime(registry, organizations);
-            runtime.ApplyMembership(MembershipRequest("organization-membership.test.persist", "organization.prototype.guild", "person.prototype.mentor", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, "tx.membership.persist", consent: true));
+            runtime.ApplyMembership(MembershipRequest("organization-membership.test.persist", "organization.prototype.adventurers-guild", "person.prototype.mentor", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, "tx.membership.persist", consent: true));
             OrganizationMembershipPersistenceParticipant participant = new OrganizationMembershipPersistenceParticipant(runtime, () => registry, () => organizations, PersistenceService.LocalWorldId, () => KnownPersons, () => organizations.Snapshots.Select(snapshot => snapshot.OrganizationId).ToArray());
             PersistenceParticipantSaveResult save = participant.CapturePayload();
             OrganizationMembershipRuntimeSaveData corrupt = JsonUtility.FromJson<OrganizationMembershipRuntimeSaveData>(save.PayloadJson);
@@ -161,7 +170,7 @@ namespace UnityIsekaiGame.Tests
         public void ProjectionsExposeAffiliationSubjectWithoutLeakingHiddenMembership()
         {
             OrganizationMembershipRuntime runtime = CreateMembershipRuntime();
-            OrganizationMembershipRequest hiddenRequest = MembershipRequest("organization-membership.test.hidden", "organization.prototype.guild", "person.prototype.rival", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, "tx.membership.hidden", consent: true);
+            OrganizationMembershipRequest hiddenRequest = MembershipRequest("organization-membership.test.hidden", "organization.prototype.adventurers-guild", "person.prototype.rival", PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId, OrganizationMembershipStatus.Active, OrganizationMembershipSourceKind.WorldSetup, "tx.membership.hidden", consent: true);
             hiddenRequest.visibility = OrganizationVisibility.Hidden;
             runtime.ApplyMembership(hiddenRequest);
 

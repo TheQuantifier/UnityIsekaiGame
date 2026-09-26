@@ -246,8 +246,8 @@ namespace UnityIsekaiGame.Tests
                     transactionId = $"tx.quest.offer.{suffix}",
                     questId = create.Snapshot.QuestId,
                     recipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = "person.prototype.player" },
-                    institutionalIssuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
-                    offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild", actingPersonId = "person.prototype.guild-clerk" },
+                    institutionalIssuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" },
+                    offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild", actingPersonId = "person.prototype.guild-clerk" },
                     channel = QuestOfferChannel.GuildCounter,
                     sourceInteractionPointId = "interaction-point.prototype.adventurer-guild-counter",
                     sourceLocationId = "location.prototype.adventurers-guild",
@@ -322,7 +322,7 @@ namespace UnityIsekaiGame.Tests
                     transactionId = $"tx.quest.bounty.{suffix}",
                     questDefinitionId = PrototypeQuestDefinitionFactory.DynamicBountyDefinitionId,
                     repeatInstanceKey = suffix,
-                    issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
+                    issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" },
                     intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Open },
                     origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, interactionPointId = "interaction-point.prototype.bounty-board" },
                     createdWorldTime = 1d
@@ -349,7 +349,7 @@ namespace UnityIsekaiGame.Tests
                     transactionId = $"tx.quest.create.{suffix}",
                     questId = $"quest.runtime.{suffix}.{questIndex:000}",
                     questDefinitionId = definitionId,
-                    issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
+                    issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" },
                     intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Open },
                     origin = new QuestOriginReferenceData { sourceChannel = sourceChannel, locationId = "location.prototype.adventurers-guild", interactionPointId = interactionPointId },
                     createdWorldTime = 1d

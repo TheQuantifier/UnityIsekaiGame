@@ -181,6 +181,19 @@ namespace UnityIsekaiGame.Organizations
                 return Fail(OrganizationMembershipOperationStatus.Ineligible, "Membership definition is not supported by the requested rank track.", before);
             }
 
+            if (!rankDefinition.AppliesToOrganization(membership.organizationId))
+            {
+                return Fail(OrganizationMembershipOperationStatus.Ineligible, "Organization rank is not available in this organization.", before);
+            }
+
+            if (rankDefinition.PriorRankDefinitionIds.Count > 0
+                && !rankAssignmentsById.Values.Any(item =>
+                    string.Equals(item.membershipId, membership.membershipId, StringComparison.Ordinal)
+                    && rankDefinition.PriorRankDefinitionIds.Contains(item.rankDefinitionId)))
+            {
+                return Fail(OrganizationMembershipOperationStatus.InvalidTransition, "The immediately preceding organization rank must be earned before this rank can be assigned.", before);
+            }
+
             OrganizationMembershipRuntimeSaveData rollback = CreateSaveData();
             OrganizationRankAssignmentRecordData previous = rankAssignmentsById.Values
                 .Where(item => item.IsActive && string.Equals(item.membershipId, membership.membershipId, StringComparison.Ordinal) && string.Equals(item.rankTrackDefinitionId, rankDefinition.RankTrackDefinitionId, StringComparison.Ordinal))
@@ -352,17 +365,22 @@ namespace UnityIsekaiGame.Organizations
                 return Fail(OrganizationMembershipOperationStatus.MissingDefinition, $"Office definition '{office.officeDefinitionId}' is missing.", before);
             }
 
+            if (request.acting && request.proposed)
+            {
+                return Fail(OrganizationMembershipOperationStatus.InvalidRequest, "An office assignment cannot be both proposed and acting.", before);
+            }
+
             if (request.acting && !definition.AllowActingHolders)
             {
                 return Fail(OrganizationMembershipOperationStatus.InvalidRequest, "Office definition does not allow acting holders.", before);
             }
 
-            if (!definition.AllowJointHolders && ActiveOfficeHolderCount(office.officeId) > 0)
+            if (!request.proposed && !definition.AllowJointHolders && ActiveOfficeHolderCount(office.officeId) > 0)
             {
                 return Fail(OrganizationMembershipOperationStatus.CapacityFull, "Office does not allow joint holders.", before);
             }
 
-            if (ActiveOfficeHolderCount(office.officeId) >= office.maximumActiveHolders)
+            if (!request.proposed && ActiveOfficeHolderCount(office.officeId) >= office.maximumActiveHolders)
             {
                 return Fail(OrganizationMembershipOperationStatus.CapacityFull, "Office holder capacity is full.", before);
             }
@@ -385,7 +403,7 @@ namespace UnityIsekaiGame.Organizations
                 membershipId = membership.membershipId,
                 organizationId = membership.organizationId,
                 personId = membership.personId,
-                state = request.acting ? OrganizationOfficeAssignmentState.Acting : OrganizationOfficeAssignmentState.Active,
+                state = request.proposed ? OrganizationOfficeAssignmentState.Proposed : request.acting ? OrganizationOfficeAssignmentState.Acting : OrganizationOfficeAssignmentState.Active,
                 acting = request.acting,
                 assignedWorldTime = request.worldTime,
                 effectiveStartWorldTime = request.worldTime,
@@ -419,6 +437,50 @@ namespace UnityIsekaiGame.Organizations
             CompleteTransaction(request.transactionId, "office-assignment", assignmentId);
             Touch();
             return Succeed(BuildMembershipSnapshot(membership), BuildOfficeSnapshot(office), null, assignment, "Office assigned.", before, Revision);
+        }
+
+        public OrganizationMembershipOperationResult TransitionOfficeAssignment(OrganizationOfficeAssignmentTransitionRequest request)
+        {
+            request ??= new OrganizationOfficeAssignmentTransitionRequest();
+            long before = Revision;
+            string assignmentId = Normalize(request.officeAssignmentId);
+            if (TryDuplicate(Normalize(request.transactionId), assignmentId, "office-assignment-transition", before, out OrganizationMembershipOperationResult duplicate)) return duplicate;
+            if (!officeAssignmentsById.TryGetValue(assignmentId, out OrganizationOfficeAssignmentRecordData assignment)) return Fail(OrganizationMembershipOperationStatus.InvalidDependency, $"Office assignment '{assignmentId}' is missing.", before);
+            if (request.targetState is OrganizationOfficeAssignmentState.Unknown or OrganizationOfficeAssignmentState.Proposed) return Fail(OrganizationMembershipOperationStatus.InvalidRequest, "Office assignment transition target is invalid.", before);
+            if (assignment.state == request.targetState) return Succeed(null, null, null, assignment, "Office assignment already has the requested state.", before, before, preview: request.preview, duplicate: true);
+            if (!officesById.TryGetValue(assignment.officeId, out OrganizationOfficeRecordData office) || !membershipsById.TryGetValue(assignment.membershipId, out OrganizationMembershipRecordData membership)) return Fail(OrganizationMembershipOperationStatus.InvalidDependency, "Office assignment dependencies are missing.", before);
+
+            bool activating = request.targetState is OrganizationOfficeAssignmentState.Active or OrganizationOfficeAssignmentState.Acting;
+            if (activating)
+            {
+                if (!office.IsActive || !membership.IsActive) return Fail(OrganizationMembershipOperationStatus.InvalidDependency, "An active office and membership are required to activate an assignment.", before);
+                if (!TryGetDefinition(office.officeDefinitionId, out OrganizationOfficeDefinition definition)) return Fail(OrganizationMembershipOperationStatus.MissingDefinition, $"Office definition '{office.officeDefinitionId}' is missing.", before);
+                if (request.targetState == OrganizationOfficeAssignmentState.Acting && !definition.AllowActingHolders) return Fail(OrganizationMembershipOperationStatus.InvalidRequest, "Office definition does not allow acting holders.", before);
+                int otherActiveHolders = officeAssignmentsById.Values.Count(item => item.officeId == office.officeId && item.officeAssignmentId != assignmentId && item.IsActive);
+                if (!definition.AllowJointHolders && otherActiveHolders > 0 || otherActiveHolders >= office.maximumActiveHolders) return Fail(OrganizationMembershipOperationStatus.CapacityFull, "Office holder capacity is full.", before);
+            }
+
+            OrganizationMembershipRuntimeSaveData rollback = CreateSaveData();
+            assignment.state = request.targetState;
+            assignment.acting = request.targetState == OrganizationOfficeAssignmentState.Acting;
+            if (activating) assignment.effectiveStartWorldTime = request.worldTime;
+            if (request.targetState is OrganizationOfficeAssignmentState.Ended or OrganizationOfficeAssignmentState.Removed or OrganizationOfficeAssignmentState.Historical) assignment.endWorldTime = request.worldTime;
+            if (!string.IsNullOrWhiteSpace(request.sourceEventId)) assignment.sourceEventId = request.sourceEventId.Trim();
+            assignment.revision++; office.revision++; membership.revision++;
+            if (!ValidateCurrent(out string validationFailure))
+            {
+                RestoreInternal(rollback);
+                return Fail(OrganizationMembershipOperationStatus.PersistenceInvalid, validationFailure, before);
+            }
+            if (request.preview)
+            {
+                OrganizationOfficeAssignmentRecordData projected = assignment.Clone();
+                RestoreInternal(rollback);
+                return Succeed(null, null, null, projected, "Office assignment transition previewed.", before, before, preview: true);
+            }
+            CompleteTransaction(request.transactionId, "office-assignment-transition", assignmentId);
+            Touch();
+            return Succeed(BuildMembershipSnapshot(membership), BuildOfficeSnapshot(office), null, assignment, "Office assignment transitioned.", before, Revision);
         }
 
         public int CompareRanks(string leftRankDefinitionId, string rightRankDefinitionId)
@@ -512,7 +574,7 @@ namespace UnityIsekaiGame.Organizations
                 ranks = rankAssignmentsById.Values.OrderBy(item => item.rankAssignmentId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
                 offices = officesById.Values.OrderBy(item => item.officeId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
                 officeAssignments = officeAssignmentsById.Values.OrderBy(item => item.officeAssignmentId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
-                transactions = transactionsById.Values.OrderBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToList()
+                transactions = transactionsById.Values.OrderBy(item => item.revision).ThenBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).RetainNewestTransactions().ToList()
             };
         }
 
@@ -973,7 +1035,8 @@ namespace UnityIsekaiGame.Organizations
                 {
                     transactionId = transactionId,
                     operation = operation ?? string.Empty,
-                    subjectId = subjectId ?? string.Empty
+                    subjectId = subjectId ?? string.Empty,
+                    revision = Revision + 1L
                 };
             }
         }

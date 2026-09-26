@@ -186,7 +186,7 @@ namespace UnityIsekaiGame.Tests
             ProfessionalRankRuntime ranks = new ProfessionalRankRuntime();
             InformationTransferRuntime transfers = new InformationTransferRuntime();
             string[] persons = { PersonId };
-            string[] authorities = { AuthorityId, "organization.prototype.guild" };
+            string[] authorities = { AuthorityId, "organization.prototype.adventurers-guild" };
 
             professions.Configure(registry, persons);
             transfers.Configure(registry, PersonId);

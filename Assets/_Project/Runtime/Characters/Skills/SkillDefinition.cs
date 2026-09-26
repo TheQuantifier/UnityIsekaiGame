@@ -10,6 +10,7 @@ namespace UnityIsekaiGame.Skills
         [SerializeField] private string skillId;
         [SerializeField] private string displayName;
         [SerializeField, TextArea] private string description;
+        [SerializeField] private SkillType skillTypes;
         [SerializeField] private CategoryDefinition primaryCategory;
         [SerializeField] private TagDefinition[] tags;
         [SerializeField] private bool alphaEnabled = true;
@@ -24,6 +25,7 @@ namespace UnityIsekaiGame.Skills
         public string Id => skillId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public string Description => description;
+        public SkillType SkillTypes => skillTypes;
         public CategoryDefinition PrimaryCategory => primaryCategory;
         public CategoryDomain ClassificationDomain => CategoryDomain.Skill;
         public IReadOnlyList<TagDefinition> Tags => tags ?? System.Array.Empty<TagDefinition>();
@@ -34,6 +36,11 @@ namespace UnityIsekaiGame.Skills
         public IReadOnlyList<SkillGradeEffectPackageDefinition> GradePackages => gradePackages ?? System.Array.Empty<SkillGradeEffectPackageDefinition>();
         public IReadOnlyList<SkillAbilityUnlockDefinition> AbilityUnlocks => abilityUnlocks ?? System.Array.Empty<SkillAbilityUnlockDefinition>();
         public SkillGrade DirectGrantDefaultGrade => SkillGradeUtility.Clamp(directGrantDefaultGrade);
+
+        public bool HasAnyType(SkillType types)
+        {
+            return types != SkillType.Unknown && (skillTypes & types) != 0;
+        }
 
         private void OnValidate()
         {

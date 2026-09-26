@@ -415,8 +415,23 @@ namespace UnityIsekaiGame.WorldLocations
             if (visible.Length == 0) return new BorderCheckpointEvaluationResult(BorderCheckpointEvaluationState.NoCheckpoint, Array.Empty<BorderCheckpointSnapshot>(), Array.Empty<string>(), string.Empty, "No applicable checkpoint.");
             if (visible.Any(item => item.policy == BorderCheckpointPolicy.ClosedToOrdinaryTravel)) return new BorderCheckpointEvaluationResult(BorderCheckpointEvaluationState.Closed, visible.Select(item => new BorderCheckpointSnapshot(item)), Array.Empty<string>(), string.Empty, "Checkpoint is closed to ordinary travel.");
             string[] required = C(visible.SelectMany(item => item.requiredActionIds ?? Array.Empty<string>()));
+            string[] requiredPermitDefinitions = C(visible.SelectMany(item => item.requiredPermitIds ?? Array.Empty<string>()));
+            foreach (BorderCheckpointRecordData checkpoint in visible)
+            {
+                foreach (string actionId in checkpoint.requiredActionIds ?? Array.Empty<string>())
+                {
+                    GovernmentPermitCheckResult permitCheck = governments.EvaluateRegulatedAction(travelerId, GovernmentPermitHolderCategory.Person, actionId, checkpoint.jurisdictionId, request.worldTime);
+                    if (!permitCheck.Allowed) return new BorderCheckpointEvaluationResult(BorderCheckpointEvaluationState.AuthorizationMissing, visible.Select(item => new BorderCheckpointSnapshot(item)), required, string.Empty, permitCheck.Message);
+                }
+            }
+            foreach (string permitDefinitionId in requiredPermitDefinitions)
+            {
+                bool found = visible.Any(checkpoint => governments.HasActivePermitDefinition(travelerId, GovernmentPermitHolderCategory.Person, permitDefinitionId, checkpoint.jurisdictionId, request.worldTime));
+                if (!found) return new BorderCheckpointEvaluationResult(BorderCheckpointEvaluationState.AuthorizationMissing, visible.Select(item => new BorderCheckpointSnapshot(item)), required, string.Empty, $"Required government permit '{permitDefinitionId}' is missing.");
+            }
             if (visible.Any(item => item.policy == BorderCheckpointPolicy.RequireAuthorization))
             {
+                if (requiredPermitDefinitions.Length > 0) return new BorderCheckpointEvaluationResult(BorderCheckpointEvaluationState.PassAllowed, visible.Select(item => new BorderCheckpointSnapshot(item)), Array.Empty<string>(), string.Empty, "Government travel permit accepted.");
                 TravelCrossingAuthorizationRecordData authorization = FindAuthorization(travelerId, visible, destinationTerritoryId, required, request.worldTime);
                 if (authorization == null) return new BorderCheckpointEvaluationResult(BorderCheckpointEvaluationState.AuthorizationMissing, visible.Select(item => new BorderCheckpointSnapshot(item)), required, string.Empty, "Checkpoint authorization is missing.");
                 return new BorderCheckpointEvaluationResult(BorderCheckpointEvaluationState.PassAllowed, visible.Select(item => new BorderCheckpointSnapshot(item)), Array.Empty<string>(), authorization.authorizationId, "Checkpoint authorization accepted.");
@@ -429,11 +444,14 @@ namespace UnityIsekaiGame.WorldLocations
         {
             if (crimes == null) return new PoliticalTravelWantedSummary(Array.Empty<string>(), Array.Empty<string>(), false);
             string[] territoryIds = C(new[] { origin?.TerritoryId, destination?.TerritoryId });
+            string[] placeIds = C(LocationAncestry(origin?.LocationId).Concat(LocationAncestry(destination?.LocationId)));
             bool hidden = false;
             List<string> wantedIds = new List<string>();
             foreach (WantedStatusRecordData wanted in crimes.WantedStatuses.Where(item => item.subjectId == travelerId && item.subjectType == "Person" && item.lifecycleState == WantedStatusLifecycleState.Active && PoliticalTravelModelUtility.Active(item.activeWorldTime, item.expirationWorldTime, worldTime)).OrderBy(item => item.wantedStatusId, StringComparer.Ordinal))
             {
-                bool applies = string.IsNullOrWhiteSpace(wanted.territoryId) || territoryIds.Contains(wanted.territoryId);
+                bool territoryApplies = string.IsNullOrWhiteSpace(wanted.territoryId) || territoryIds.Contains(wanted.territoryId);
+                bool placeApplies = wanted.placeIds == null || wanted.placeIds.Length == 0 || wanted.placeIds.Any(placeIds.Contains);
+                bool applies = territoryApplies && placeApplies;
                 if (!applies) continue;
                 if (CanSee(wanted.visibility, mode)) wantedIds.Add(wanted.wantedStatusId);
                 else hidden = true;
@@ -483,7 +501,7 @@ namespace UnityIsekaiGame.WorldLocations
                 territoryId = territory.TerritoryId,
                 placeId = placeId,
                 personId = travelerId,
-                subjectMatter = JurisdictionSubjectMatter.BorderAdministrationPlaceholder,
+                subjectMatter = JurisdictionSubjectMatter.BorderAdministration,
                 worldTime = worldTime
             });
         }

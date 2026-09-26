@@ -91,6 +91,14 @@ namespace UnityIsekaiGame.Skills
             return skill != null;
         }
 
+        public bool TryGetLearnedSkillOfType(SkillType type, out SkillDefinition definition)
+        {
+            definition = learnedSkills
+                .Select(record => definitionsById.TryGetValue(record.skillDefinitionId, out SkillDefinition found) ? found : null)
+                .FirstOrDefault(skill => skill != null && skill.HasAnyType(type));
+            return definition != null;
+        }
+
         public SkillGrade GetGrade(string skillId)
         {
             RuntimeSkillRecord skill = learnedSkills.FirstOrDefault(record => string.Equals(record.skillDefinitionId, skillId, StringComparison.Ordinal));

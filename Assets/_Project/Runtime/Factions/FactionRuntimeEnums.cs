@@ -135,7 +135,7 @@ namespace UnityIsekaiGame.Factions
         Spokesperson,
         Strategist,
         Coordinator,
-        TreasurerPlaceholder,
+        Treasurer,
         Recruiter,
         LocalLeader,
         SeniorLeader,

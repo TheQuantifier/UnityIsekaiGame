@@ -53,6 +53,183 @@ namespace UnityIsekaiGame.Governments
         SplitOrMergePolity = 13
     }
 
+    public enum GovernmentOfficeSelectionMethod
+    {
+        Unknown = 0,
+        HereditarySuccession = 1,
+        SovereignAppointment = 2,
+        TitleGrant = 3,
+        InternalPromotion = 4,
+        CouncilSelection = 5,
+        GuildSelection = 6,
+        ReligiousInvestiture = 7,
+        PopularElection = 8,
+        NobleElection = 9,
+        Acclamation = 10,
+        Regency = 11,
+        TemporaryAppointment = 12,
+        Conquest = 13,
+        Custom = 100
+    }
+
+    public enum GovernmentOfficeTenureState
+    {
+        Unknown = 0,
+        Designated = 1,
+        Active = 2,
+        Acting = 3,
+        Suspended = 4,
+        Ended = 5,
+        Removed = 6,
+        Deceased = 7,
+        Historical = 8
+    }
+
+    public enum GovernmentAuthorityTier
+    {
+        Unknown = 0,
+        Noble = 10,
+        Village = 20,
+        Town = 30,
+        Manor = 40,
+        Duchy = 50,
+        Kingdom = 60,
+        Custom = 100
+    }
+
+    public enum GovernmentOfficeEligibilityRule
+    {
+        None = 0,
+        DirectDescendantOfReigningMonarch = 1,
+        Custom = 100
+    }
+
+    public enum GovernmentElectionState
+    {
+        Unknown = 0,
+        Scheduled = 1,
+        NominationsOpen = 2,
+        VotingOpen = 3,
+        Counting = 4,
+        Certified = 5,
+        Disputed = 6,
+        Cancelled = 7,
+        Historical = 8
+    }
+
+    public enum GovernmentPermitCategory
+    {
+        Unknown = 0,
+        TradeLicense = 1,
+        CraftLicense = 2,
+        TravelWrit = 3,
+        ResourceGatheringWrit = 4,
+        ConstructionLicense = 5,
+        WeaponPrivilege = 6,
+        HuntingWrit = 7,
+        SpellPracticeLicense = 8,
+        OrganizationCharterPrivilege = 9,
+        Custom = 100
+    }
+
+    public enum GovernmentPermitHolderCategory
+    {
+        Unknown = 0,
+        Person = 1,
+        Organization = 2,
+        Business = 3,
+        Property = 4
+    }
+
+    public enum GovernmentPermitState
+    {
+        Unknown = 0,
+        Pending = 1,
+        Active = 2,
+        Suspended = 3,
+        Revoked = 4,
+        Expired = 5,
+        Denied = 6,
+        Historical = 7
+    }
+
+    public enum GovernmentLegitimacyComponent
+    {
+        Unknown = 0,
+        Inheritance = 1,
+        SovereignRecognition = 2,
+        OathsAndCustom = 3,
+        TerritorialControl = 4,
+        InstitutionalSupport = 5,
+        ReligiousRecognition = 6,
+        PublicSupport = 7,
+        AdministrativePerformance = 8,
+        MilitarySuccess = 9,
+        ElectionMandate = 10,
+        Custom = 100
+    }
+
+    public enum GovernmentLegitimacyBand
+    {
+        Unknown = 0,
+        Rejected = 1,
+        Contested = 2,
+        Fragile = 3,
+        Accepted = 4,
+        Strong = 5,
+        Revered = 6
+    }
+
+    public enum GovernmentFiscalMandateState
+    {
+        Unknown = 0,
+        Proposed = 1,
+        Active = 2,
+        Suspended = 3,
+        Repealed = 4,
+        Expired = 5,
+        Historical = 6
+    }
+
+    public enum GovernmentRemittancePolicyState
+    {
+        Unknown = 0,
+        Active = 1,
+        Suspended = 2,
+        Repealed = 3,
+        Expired = 4
+    }
+
+    public enum GovernmentRemittanceSettlementState
+    {
+        Unknown = 0,
+        Paid = 1,
+        PartiallyPaid = 2,
+        InArrears = 3,
+        Waived = 4,
+        OutstandingInGracePeriod = 5
+    }
+
+    public enum GovernmentOfficeVacancyCause
+    {
+        Unknown = 0,
+        TermEnded = 1,
+        Resignation = 2,
+        Removal = 3,
+        Death = 4,
+        Incapacity = 5,
+        Succession = 6
+    }
+
+    public enum GovernmentOfficeVacancyState
+    {
+        Unknown = 0,
+        Open = 1,
+        ActingHolderInstalled = 2,
+        SuccessorInstalled = 3,
+        Closed = 4
+    }
+
     public enum PolityCategory
     {
         Unknown = 0,
@@ -103,7 +280,7 @@ namespace UnityIsekaiGame.Governments
         Claimed = 6,
         Disputed = 7,
         Abbreviation = 8,
-        DemonymPlaceholder = 9,
+        Demonym = 9,
         Secret = 10,
         Provisional = 11
     }
@@ -115,7 +292,7 @@ namespace UnityIsekaiGame.Governments
         ImperialGovernment = 2,
         RepublicanGovernment = 3,
         CouncilGovernment = 4,
-        ParliamentaryPlaceholder = 5,
+        Parliamentary = 5,
         ExecutiveGovernment = 6,
         TribalCouncil = 7,
         ReligiousGovernment = 8,
@@ -168,13 +345,35 @@ namespace UnityIsekaiGame.Governments
         Executive = 1,
         Council = 2,
         Ministry = 3,
-        CourtPlaceholder = 4,
+        Court = 4,
         MilitaryAdministration = 5,
         Treasury = 6,
         LocalAdministration = 7,
         DiplomaticMission = 8,
         ReligiousAdministration = 9,
         Custom = 100
+    }
+
+    public enum GovernmentOrganizationCharterCategory
+    {
+        Unknown = 0,
+        GovernmentAgency = 1,
+        CharteredGuild = 2,
+        RecognizedInstitution = 3,
+        PublicEnterprise = 4,
+        ReligiousInstitution = 5,
+        Custom = 100
+    }
+
+    public enum GovernmentOrganizationCharterLifecycleState
+    {
+        Unknown = 0,
+        Active = 1,
+        Suspended = 2,
+        Revoked = 3,
+        Expired = 4,
+        Superseded = 5,
+        Historical = 6
     }
 
     public enum PoliticalTerritoryCategory
@@ -347,8 +546,8 @@ namespace UnityIsekaiGame.Governments
         ReligiousInternalAffairs = 4,
         TradeRegulation = 5,
         PropertyAdministration = 6,
-        PublicOrderPlaceholder = 7,
-        BorderAdministrationPlaceholder = 8,
+        PublicOrder = 7,
+        BorderAdministration = 8,
         EmergencyAdministration = 9,
         Custom = 100
     }

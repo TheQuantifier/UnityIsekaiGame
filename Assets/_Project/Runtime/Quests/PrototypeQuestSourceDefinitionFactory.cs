@@ -58,7 +58,7 @@ namespace UnityIsekaiGame.Quests
                 QuestListingDiscoveryPolicy.BrowseRevealsListing,
                 QuestEligibilityDisplayPolicy.VisibleIneligibleWithPublicReason,
                 new QuestSourcePublicationPolicyData { maxActiveListings = 12, duplicatePolicy = QuestListingDuplicatePolicy.RejectActiveDuplicate, expirationPolicy = QuestListingExpirationPolicy.NeverExpires, acceptedListingPolicy = QuestAcceptedListingDisplayPolicy.HideWhenAccepted, repeatableListingPolicy = QuestRepeatableListingDisplayPolicy.KeepListed },
-                new QuestSourceFilterData { allowedQuestCategories = new[] { QuestCategory.GuildQuest, QuestCategory.BountyPlaceholder }, requiredQuestTagIds = Array.Empty<string>(), allowedIssuerIds = new[] { "organization.prototype.guild" }, allowedRepeatabilityPolicies = Array.Empty<QuestDefinitionRepeatabilityPolicy>() },
+                new QuestSourceFilterData { allowedQuestCategories = new[] { QuestCategory.GuildQuest, QuestCategory.BountyPlaceholder }, requiredQuestTagIds = Array.Empty<string>(), allowedIssuerIds = new[] { "organization.prototype.adventurers-guild" }, allowedRepeatabilityPolicies = Array.Empty<QuestDefinitionRepeatabilityPolicy>() },
                 authority: new[] { "authority.prototype.guild.board-post" },
                 roles: new[] { QuestSourceRole.Discovery, QuestSourceRole.Listing, QuestSourceRole.Offer, QuestSourceRole.Acceptance, QuestSourceRole.TurnIn, QuestSourceRole.RewardClaim },
                 tags: new[] { "guild", "board", "public", "prototype" });
@@ -74,7 +74,7 @@ namespace UnityIsekaiGame.Quests
                 QuestListingDiscoveryPolicy.InspectRevealsDetails,
                 QuestEligibilityDisplayPolicy.VisibleIneligibleWithPublicReason,
                 new QuestSourcePublicationPolicyData { maxActiveListings = 6, duplicatePolicy = QuestListingDuplicatePolicy.RejectActiveDuplicate, expirationPolicy = QuestListingExpirationPolicy.SourceDefaultDuration, defaultListingDuration = 7d, acceptedListingPolicy = QuestAcceptedListingDisplayPolicy.ShowAsTaken, repeatableListingPolicy = QuestRepeatableListingDisplayPolicy.KeepListed },
-                new QuestSourceFilterData { allowedQuestCategories = new[] { QuestCategory.GuildQuest }, requiredQuestTagIds = new[] { "guild" }, allowedIssuerIds = new[] { "organization.prototype.guild" }, allowedRepeatabilityPolicies = Array.Empty<QuestDefinitionRepeatabilityPolicy>() },
+                new QuestSourceFilterData { allowedQuestCategories = new[] { QuestCategory.GuildQuest }, requiredQuestTagIds = new[] { "guild" }, allowedIssuerIds = new[] { "organization.prototype.adventurers-guild" }, allowedRepeatabilityPolicies = Array.Empty<QuestDefinitionRepeatabilityPolicy>() },
                 providerRequirements: new[] { Requirement(QuestSourceProviderRequirementKind.OrganizationMembership, "organization.prototype.adventurers-guild") },
                 authority: new[] { "authority.prototype.guild.quest-offer" },
                 roles: new[] { QuestSourceRole.Discovery, QuestSourceRole.Listing, QuestSourceRole.Offer, QuestSourceRole.Acceptance, QuestSourceRole.TurnIn, QuestSourceRole.RewardClaim },

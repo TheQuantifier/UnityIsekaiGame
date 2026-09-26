@@ -64,7 +64,7 @@ namespace UnityIsekaiGame.Laws
         public long Revision { get; }
         public LegalOperationResult Result { get; }
     }
-    public sealed class LegalApplicabilityRequest { public string personId; public string organizationId; public string territoryId; public string placeId; public string propertyId; public string officeId; public string professionId; public string actionId; public string subjectMatterId; public string[] legalStatusDefinitionIds = Array.Empty<string>(); public double worldTime; }
+    public sealed class LegalApplicabilityRequest { public string personId; public string organizationId; public string governmentId; public string jurisdictionId; public string[] jurisdictionIds = Array.Empty<string>(); public string territoryId; public string placeId; public string propertyId; public string officeId; public string professionId; public string actionId; public string subjectMatterId; public string[] legalStatusDefinitionIds = Array.Empty<string>(); public double worldTime; }
     public sealed class LegalApplicabilityResult
     {
         public LegalApplicabilityStatus Status { get; private set; } public IReadOnlyList<LegalProvisionRecordData> ApplicableProvisions { get; private set; } public IReadOnlyList<string> ConflictProvisionIds { get; private set; } public string Message { get; private set; }

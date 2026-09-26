@@ -14,11 +14,10 @@ namespace UnityIsekaiGame.Organizations
         RepresentOrganization = 70,
         ManageAccess = 80,
         ManagePropertyAssociation = 90,
-        ManageResourcesPlaceholder = 100,
-        ManageResources = 105,
-        ManagePolicyPlaceholder = 110,
-        ParticipateInGovernancePlaceholder = 120,
-        ExerciseLegalAuthorityPlaceholder = 130,
+        ManageResources = 100,
+        ManagePolicy = 110,
+        ParticipateInGovernance = 120,
+        ExerciseLegalAuthority = 130,
         Custom = 1000
     }
 
@@ -34,8 +33,8 @@ namespace UnityIsekaiGame.Organizations
         Delegation = 70,
         Command = 80,
         Financial = 85,
-        GovernancePlaceholder = 90,
-        LegalPlaceholder = 100,
+        Governance = 90,
+        Legal = 100,
         Custom = 1000
     }
 
@@ -47,7 +46,7 @@ namespace UnityIsekaiGame.Organizations
         OneOfEachPermissionGroup = 30,
         ExplicitApprovalSet = 40,
         JointApproval = 50,
-        QuorumPlaceholder = 60,
+        Quorum = 60,
         Custom = 1000
     }
 
@@ -62,8 +61,8 @@ namespace UnityIsekaiGame.Organizations
         Delegation = 60,
         TemporaryAppointment = 70,
         ParentOrganizationGrant = 80,
-        ExternalContractPlaceholder = 90,
-        GovernmentOrLawPlaceholder = 100,
+        ExternalContract = 90,
+        GovernmentOrLaw = 100,
         Custom = 1000
     }
 

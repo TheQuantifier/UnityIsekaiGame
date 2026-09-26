@@ -19,7 +19,7 @@ namespace UnityIsekaiGame.Tests
 {
     public sealed class OrganizationResourcesTreasuriesPropertyTests
     {
-        private const string GuildId = "organization.prototype.guild";
+        private const string GuildId = "organization.prototype.adventurers-guild";
         private const string ActorId = PersistenceService.LocalPlayerId;
 
         [Test]
@@ -553,7 +553,7 @@ namespace UnityIsekaiGame.Tests
                     worldTime = 0d,
                     transactionId = "tx.resources.guildmaster"
                 });
-                string[] ranks = { PrototypeOrganizationMembershipDefinitionFactory.GuildNoviceRankId, PrototypeOrganizationMembershipDefinitionFactory.GuildJourneymanRankId, PrototypeOrganizationMembershipDefinitionFactory.GuildMasterRankId };
+                string[] ranks = PrototypeOrganizationMembershipDefinitionFactory.GuildRatingRankIds.ToArray();
                 for (int index = 0; index < ranks.Length; index++) Memberships.AssignRank(new OrganizationRankAssignmentRequest
                 {
                     rankAssignmentId = $"organization-rank-assignment.test.resources.{index}", membershipId = member.Membership.MembershipId, rankDefinitionId = ranks[index], worldTime = index + 1d, assignedById = ActorId, transactionId = $"tx.resources.rank.{index}"

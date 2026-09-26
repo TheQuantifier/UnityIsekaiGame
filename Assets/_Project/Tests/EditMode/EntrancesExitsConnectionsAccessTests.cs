@@ -68,7 +68,7 @@ namespace UnityIsekaiGame.Tests
                 worldTime = 9d
             });
             long entityBefore = fixture.EntityLocations.Revision;
-            LocationConnectionOperationResult lockedDenied = fixture.Connections.Traverse(Traversal(fixture, PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guildmaster-office", AccessContext(fixture, actor, organizations: new[] { "organization.prototype.guild" })));
+            LocationConnectionOperationResult lockedDenied = fixture.Connections.Traverse(Traversal(fixture, PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guildmaster-office", AccessContext(fixture, actor, organizations: new[] { "organization.prototype.adventurers-guild" })));
             long entityAfterLockedDenied = fixture.EntityLocations.Revision;
             LocationConnectionOperationResult unlocked = fixture.Connections.MutateState(new LocationConnectionStateMutationRequest
             {

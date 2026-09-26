@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6f4cd59b6d6f6a45aa39f14e85bf943, type: 3}
+  m_Name: legal_authority_prototype_emergency_rulemaking
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Laws:LegalAuthorityDefinition
+  definitionId: legal-authority.prototype.emergency-rulemaking
+  displayName: Emergency Rulemaking Authority
+  description: 
+  visibility: 0
+  tags:
+  - authority
+  - law
+  version: 1
+  category: 6
+  governmentLevels: 010000000200000005000000
+  jurisdictionCategories: 01000000020000000300000004000000050000000600000007000000080000000900000064000000
+  instrumentCategories: 0100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d00000064000000
+  requiredPermissionIds: []
+  allowsDelegation: 1
+  allowsEmergencyLaw: 1

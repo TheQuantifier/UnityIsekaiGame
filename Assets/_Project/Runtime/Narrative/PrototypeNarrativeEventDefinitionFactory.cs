@@ -67,7 +67,7 @@ namespace UnityIsekaiGame.Narrative
                 conditions = new[] { Condition("condition.guild-member", NarrativeConditionCategory.OrganizationState, "organization.prototype.adventurers-guild") },
                 actions = new[]
                 {
-                    Action("action.create-guild-quest", NarrativeActionCategory.InstantiateQuest, PrototypeQuestDefinitionFactory.GuildPostingDefinitionId, outputSlot: "createdQuest", secondaryTargetId: "organization.prototype.guild", order: 10),
+                    Action("action.create-guild-quest", NarrativeActionCategory.InstantiateQuest, PrototypeQuestDefinitionFactory.GuildPostingDefinitionId, outputSlot: "createdQuest", secondaryTargetId: "organization.prototype.adventurers-guild", order: 10),
                     Action("action.publish-guild-quest", NarrativeActionCategory.PublishQuestListing, "quest-source.prototype.guild-board", inputSlot: "createdQuest", secondaryTargetId: "authority.prototype.guild.board-post", requirement: NarrativeActionRequirement.OptionalBestEffort, order: 20)
                 },
                 tagIds = new[] { "prototype", "location", "quest" }

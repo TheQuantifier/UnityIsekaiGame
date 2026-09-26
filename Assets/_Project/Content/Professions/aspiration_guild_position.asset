@@ -24,7 +24,7 @@ MonoBehaviour:
   relatedPositionDefinitionIds:
   - position.prototype.guild.clerk
   relatedOrganizationFoundationIds:
-  - organization.prototype.guild
+  - organization.prototype.adventurers-guild
   suggestedGoalDefinitionIds:
   - goal.guild.obtain-clerk-position
   completionPolicy: 0

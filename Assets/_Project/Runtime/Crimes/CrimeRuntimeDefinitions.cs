@@ -61,7 +61,7 @@ namespace UnityIsekaiGame.Crimes
     }
 
     [CreateAssetMenu(fileName = "LegalOffenseDefinition", menuName = "Unity Isekai Game/Crimes/Legal Offense Definition")]
-    public sealed class LegalOffenseDefinition : CrimeDefinitionBase
+    public class LegalOffenseDefinition : CrimeDefinitionBase
     {
         [SerializeField] private OffenseCategory category;
         [SerializeField] private OffenseSeverityCategory severity;
@@ -128,7 +128,7 @@ namespace UnityIsekaiGame.Crimes
     }
 
     [CreateAssetMenu(fileName = "WarrantDefinition", menuName = "Unity Isekai Game/Crimes/Warrant Definition")]
-    public sealed class WarrantDefinition : CrimeDefinitionBase
+    public class WarrantDefinition : CrimeDefinitionBase
     {
         [SerializeField] private WarrantCategory category;
         [SerializeField] private WarrantScopeKind[] allowedScopes = Array.Empty<WarrantScopeKind>();
@@ -164,7 +164,7 @@ namespace UnityIsekaiGame.Crimes
     }
 
     [CreateAssetMenu(fileName = "WantedStatusDefinition", menuName = "Unity Isekai Game/Crimes/Wanted Status Definition")]
-    public sealed class WantedStatusDefinition : CrimeDefinitionBase
+    public class WantedStatusDefinition : CrimeDefinitionBase
     {
         [SerializeField] private WantedPurposeCategory purpose;
         [SerializeField] private bool mayBePublic = true;
