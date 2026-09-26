@@ -163,18 +163,65 @@ namespace UnityIsekaiGame.Organizations.Integration
                 && (string.IsNullOrWhiteSpace(request.Target.WorldId) || string.IsNullOrWhiteSpace(worldId) || string.Equals(request.Target.WorldId, worldId, StringComparison.Ordinal));
             gates.Add(new Step13ActionGateResult(Step13ActionGate.Identity, identities, identities ? "identity-valid" : "identity-invalid", identities ? "Actor, target, and world scope are valid." : "Actor, target, or world scope is missing or incompatible.", request.Target.SourceRuntime, request.Target.StableId));
 
-            bool hasInstitutionalContext = !string.IsNullOrWhiteSpace(request.RepresentedOrganizationId)
-                || !string.IsNullOrWhiteSpace(request.RepresentedGovernmentId)
-                || !string.IsNullOrWhiteSpace(request.AuthorityGrantId)
-                || !string.IsNullOrWhiteSpace(request.OfficeAssignmentId);
-            gates.Add(new Step13ActionGateResult(Step13ActionGate.Authority, authority != null && hasInstitutionalContext, authority != null && hasInstitutionalContext ? "authority-context" : "authority-missing", authority != null && hasInstitutionalContext ? "Institutional authority context is present." : "Protected Step 13 actions require explicit institutional authority context.", nameof(OrganizationAuthorityRuntime), request.AuthorityGrantId, authority?.Revision ?? 0L));
+            bool authorityOk = false;
+            string authorityCode = "authority-missing";
+            string authorityMessage = "Protected Step 13 actions require verified institutional authority.";
+            if (authority != null && !string.IsNullOrWhiteSpace(request.RepresentedOrganizationId) && !string.IsNullOrWhiteSpace(request.ActionDefinitionId))
+            {
+                OrganizationAuthorityScopeData scope = OrganizationAuthorityScopeData.ForOrganization(request.RepresentedOrganizationId);
+                scope.placeId = request.PlaceId;
+                scope.recordId = request.Target.StableId;
+                scope.actionDefinitionId = request.ActionDefinitionId;
+                OrganizationAuthorizationResult authorization = authority.EvaluateAuthorization(new OrganizationAuthorizationRequest
+                {
+                    actorPersonId = request.ActingPersonId,
+                    organizationId = request.RepresentedOrganizationId,
+                    actionDefinitionId = request.ActionDefinitionId,
+                    scope = scope,
+                    targetPersonId = request.Target.SubjectType == Step13InstitutionalSubjectType.Person ? request.Target.StableId : string.Empty,
+                    targetRecordId = request.Target.StableId,
+                    allowDelegatedAuthority = true,
+                    worldTime = request.WorldTime
+                });
+                authorityOk = authorization.Succeeded;
+                authorityCode = authorization.Status.ToString();
+                authorityMessage = authorization.Message;
+            }
+            else if (authority != null && !string.IsNullOrWhiteSpace(request.AuthorityGrantId) && authority.TryGetGrant(request.AuthorityGrantId, out OrganizationAuthoritySnapshot grant))
+            {
+                authorityOk = grant.LifecycleState == OrganizationAuthorityGrantLifecycleState.Active
+                    && string.Equals(grant.GranteePersonId, request.ActingPersonId, StringComparison.Ordinal)
+                    && (string.IsNullOrWhiteSpace(request.RepresentedOrganizationId) || string.Equals(grant.OrganizationId, request.RepresentedOrganizationId, StringComparison.Ordinal));
+                authorityCode = authorityOk ? "active-authority-grant" : "authority-grant-mismatch";
+                authorityMessage = authorityOk ? "The supplied active authority grant belongs to the actor and represented organization." : "The supplied authority grant is inactive or belongs to another actor or organization.";
+            }
+            gates.Add(new Step13ActionGateResult(Step13ActionGate.Authority, authorityOk, authorityCode, authorityMessage, nameof(OrganizationAuthorityRuntime), request.AuthorityGrantId, authority?.Revision ?? 0L));
 
             bool jurisdictionRequired = !string.IsNullOrWhiteSpace(request.JurisdictionId)
                 || !string.IsNullOrWhiteSpace(request.TerritoryId)
                 || !string.IsNullOrWhiteSpace(request.PlaceId)
                 || !string.IsNullOrWhiteSpace(request.RepresentedGovernmentId);
-            bool jurisdictionOk = !jurisdictionRequired || governments != null;
-            gates.Add(new Step13ActionGateResult(Step13ActionGate.Jurisdiction, jurisdictionOk, jurisdictionOk ? "jurisdiction-available" : "jurisdiction-runtime-missing", jurisdictionOk ? "Jurisdiction can be evaluated or is not required by this request." : "Government and jurisdiction runtime is required for this request.", nameof(GovernmentRuntime), FirstNonEmpty(request.JurisdictionId, request.TerritoryId, request.PlaceId), governments?.Revision ?? 0L));
+            bool jurisdictionOk = !jurisdictionRequired;
+            string jurisdictionCode = jurisdictionOk ? "jurisdiction-not-required" : "jurisdiction-runtime-missing";
+            string jurisdictionMessage = jurisdictionOk ? "This request has no jurisdictional scope." : "Government and jurisdiction runtime is required for this request.";
+            if (jurisdictionRequired && governments != null)
+            {
+                if (!string.IsNullOrWhiteSpace(request.JurisdictionId))
+                {
+                    jurisdictionOk = governments.TryGetJurisdiction(request.JurisdictionId, out JurisdictionRecordData jurisdiction)
+                        && (string.IsNullOrWhiteSpace(request.RepresentedGovernmentId) || string.Equals(jurisdiction.governmentId, request.RepresentedGovernmentId, StringComparison.Ordinal))
+                        && (jurisdiction.territoryIds.Length == 0 || jurisdiction.territoryIds.Contains(request.TerritoryId, StringComparer.Ordinal))
+                        && (jurisdiction.placeIds.Length == 0 || jurisdiction.placeIds.Contains(request.PlaceId, StringComparer.Ordinal));
+                }
+                else
+                {
+                    JurisdictionResolutionResult resolution = governments.ResolveJurisdiction(new JurisdictionResolutionRequest { requesterGovernmentId = request.RepresentedGovernmentId, territoryId = request.TerritoryId, placeId = request.PlaceId, organizationId = request.RepresentedOrganizationId, subjectMatter = JurisdictionSubjectMatter.GeneralAdministration, worldTime = request.WorldTime });
+                    jurisdictionOk = resolution.Status == JurisdictionResolutionStatus.Applicable || resolution.Status == JurisdictionResolutionStatus.Shared;
+                }
+                jurisdictionCode = jurisdictionOk ? "jurisdiction-applicable" : "jurisdiction-mismatch";
+                jurisdictionMessage = jurisdictionOk ? "An active jurisdiction applies to the requested government and location." : "No active jurisdiction applies to the requested government and location.";
+            }
+            gates.Add(new Step13ActionGateResult(Step13ActionGate.Jurisdiction, jurisdictionOk, jurisdictionCode, jurisdictionMessage, nameof(GovernmentRuntime), FirstNonEmpty(request.JurisdictionId, request.TerritoryId, request.PlaceId), governments?.Revision ?? 0L));
 
             bool legalRequired = !string.IsNullOrWhiteSpace(request.LegalSubjectMatterId)
                 || !string.IsNullOrWhiteSpace(request.SourceWarrantId)
@@ -216,6 +263,11 @@ namespace UnityIsekaiGame.Organizations.Integration
             List<Step13ContextRecordReference> records = new List<Step13ContextRecordReference>();
             List<string> diagnostics = new List<string>();
             bool truncated = false;
+            HashSet<string> contextJurisdictionIds = new HashSet<string>((governments?.Jurisdictions ?? Array.Empty<JurisdictionRecordData>())
+                .Where(item => (string.IsNullOrWhiteSpace(governmentId) || Matches(item.governmentId, governmentId))
+                    && (item.placeIds.Length == 0 || Includes(item.placeIds, placeId))
+                    && (item.territoryIds.Length == 0 || governments.Territories.Any(territory => item.territoryIds.Contains(territory.territoryId, StringComparer.Ordinal) && territory.placeIds.Contains(placeId, StringComparer.Ordinal))))
+                .Select(item => item.jurisdictionId), StringComparer.Ordinal);
 
             OrganizationRuntimeSaveData organizationSave = organizations?.CreateSaveData();
             AddLimited(records, diagnostics, ref truncated, "organizations", resolved.MaxOrganizations,
@@ -260,18 +312,22 @@ namespace UnityIsekaiGame.Organizations.Integration
 
             AddLimited(records, diagnostics, ref truncated, "laws", resolved.MaxLaws,
                 laws?.CreateSaveData()?.instruments
-                    .Where(item => Matches(item.governmentId, governmentId) || Matches(item.organizationId, organizationId) || Includes(item.jurisdictionIds, placeId))
+                    .Where(item => Matches(item.governmentId, governmentId) || Matches(item.organizationId, organizationId) || item.jurisdictionIds.Any(contextJurisdictionIds.Contains))
                     .Select(item => Reference(nameof(LegalRuntime), item.instrumentId, Step13InstitutionalProjectionState.Authoritative, MapVisibility(item.visibility), item.instrumentDefinitionId)));
 
             AddLimited(records, diagnostics, ref truncated, "crimes", resolved.MaxCrimes,
                 crimes?.CreateSaveData()?.incidents
-                    .Where(item => Matches(item.primaryPlaceId, placeId) || Includes(item.jurisdictionIds, governmentId))
+                    .Where(item => Matches(item.primaryPlaceId, placeId) || item.jurisdictionIds.Any(contextJurisdictionIds.Contains))
                     .Select(item => Reference(nameof(CrimeRuntime), item.incidentId, Step13InstitutionalProjectionState.Authoritative, MapVisibility(item.visibility), item.category.ToString())));
 
             AddLimited(records, diagnostics, ref truncated, "justice", resolved.MaxJustice,
                 justice?.CreateSaveData()?.cases
                     .Where(item => !string.IsNullOrWhiteSpace(item.caseId))
                     .Select(item => Reference(nameof(JusticeRuntime), item.caseId, Step13InstitutionalProjectionState.Authoritative, MapVisibility(item.visibility), item.category.ToString())));
+
+            bool participant = resolved.Privileged || string.Equals(requesterPersonId, actorPersonId, StringComparison.Ordinal) || memberships != null && memberships.QueryMemberships(requesterPersonId, organizationId, activeOnly: true).Any();
+            int hidden = records.RemoveAll(item => !CanProject(item.Visibility, resolved.Privileged, participant));
+            if (hidden > 0) diagnostics.Add($"privacy filtered {hidden} institutional record reference(s)");
 
             string fingerprint = Fingerprint(records.Select(item => $"{item.RuntimeName}:{item.RecordId}:{item.ProjectionState}:{item.Visibility}:{item.Summary}")
                 .Concat(CreateRuntimeSummaries().Select(item => $"{item.RuntimeName}:{item.Revision}:{item.PrimaryCount}:{item.SecondaryCount}:{item.TertiaryCount}")));
@@ -464,6 +520,19 @@ namespace UnityIsekaiGame.Organizations.Integration
         private static Step13ContextRecordReference Reference(string runtimeName, string recordId, Step13InstitutionalProjectionState projectionState, Step13ProjectionVisibility visibility, string summary)
         {
             return new Step13ContextRecordReference(runtimeName, recordId, projectionState, visibility, summary);
+        }
+
+        private static bool CanProject(Step13ProjectionVisibility visibility, bool privileged, bool participant)
+        {
+            if (privileged) return true;
+            return visibility switch
+            {
+                Step13ProjectionVisibility.Public => true,
+                Step13ProjectionVisibility.KnowledgeSafe => true,
+                Step13ProjectionVisibility.Participant => participant,
+                Step13ProjectionVisibility.Official => participant,
+                _ => false
+            };
         }
 
         private static void AddLimited(List<Step13ContextRecordReference> records, List<string> diagnostics, ref bool truncated, string label, int limit, IEnumerable<Step13ContextRecordReference> candidates)

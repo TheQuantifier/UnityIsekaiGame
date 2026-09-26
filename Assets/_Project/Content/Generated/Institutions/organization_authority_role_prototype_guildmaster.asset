@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b46e94f943f56d4cadd263cb8723b7c, type: 3}
+  m_Name: organization_authority_role_prototype_guildmaster
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:OrganizationAuthorityRoleDefinition
+  roleDefinitionId: organization-authority-role.prototype.guildmaster
+  displayName: Guildmaster Authority
+  description: 
+  grantedPermissionIds:
+  - organization-permission.prototype.admit-members
+  - organization-permission.prototype.amend-decision-proposal
+  - organization-permission.prototype.appoint-officeholders
+  - organization-permission.prototype.approve-organization-expense
+  - organization-permission.prototype.assign-acting-officeholders
+  - organization-permission.prototype.assign-asset-custody
+  - organization-permission.prototype.assign-ranks
+  - organization-permission.prototype.authorize-headquarters-change
+  - organization-permission.prototype.cast-organization-vote
+  - organization-permission.prototype.close-organization-vote
+  - organization-permission.prototype.close-treasury-account
+  - organization-permission.prototype.create-offices
+  - organization-permission.prototype.create-treasury-account
+  - organization-permission.prototype.delegate-permissions
+  - organization-permission.prototype.demote-members
+  - organization-permission.prototype.deposit-organization-funds
+  - organization-permission.prototype.execute-organization-resolution
+  - organization-permission.prototype.invite-members
+  - organization-permission.prototype.issue-emergency-decision
+  - organization-permission.prototype.issue-orders
+  - organization-permission.prototype.manage-aliases
+  - organization-permission.prototype.manage-business-association
+  - organization-permission.prototype.manage-organization-inventory
+  - organization-permission.prototype.manage-resource-reservations
+  - organization-permission.prototype.manage-restricted-funds
+  - organization-permission.prototype.override-organization-veto
+  - organization-permission.prototype.perform-financial-correction
+  - organization-permission.prototype.promote-members
+  - organization-permission.prototype.propose-headquarters-change
+  - organization-permission.prototype.reinstate-members
+  - organization-permission.prototype.remove-members
+  - organization-permission.prototype.remove-officeholders
+  - organization-permission.prototype.represent-externally
+  - organization-permission.prototype.review-membership-applications
+  - organization-permission.prototype.revoke-delegations
+  - organization-permission.prototype.submit-decision-proposal
+  - organization-permission.prototype.suspend-members
+  - organization-permission.prototype.transfer-organization-funds
+  - organization-permission.prototype.veto-organization-resolution
+  - organization-permission.prototype.view-confidential-decisions
+  - organization-permission.prototype.view-financial-audit
+  - organization-permission.prototype.view-public-information
+  - organization-permission.prototype.view-restricted-information
+  - organization-permission.prototype.view-restricted-treasury
+  - organization-permission.prototype.view-treasury
+  - organization-permission.prototype.withdraw-organization-funds
+  deniedPermissionIds: []
+  supportedOrganizationDefinitionIds: []
+  supportedOrganizationCategories: 
+  defaultScopeType: 10
+  delegationPolicy: 30
+  defaultDuration: -1
+  priority: 150
+  conflictPolicy: 20
+  visibility: 0
+  tags:
+  - authority
+  - organization
+  - prototype
+  version: 1

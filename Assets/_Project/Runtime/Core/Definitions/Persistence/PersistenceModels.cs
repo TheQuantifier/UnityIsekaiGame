@@ -14,6 +14,7 @@ namespace UnityIsekaiGame.GameData.Persistence
         Equipment = 300,
         Statuses = 400,
         Vitals = 500,
+        Institutions = 550,
         QuestsAndContracts = 600,
         PositionAndPlace = 700,
         Notification = 800

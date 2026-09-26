@@ -83,7 +83,7 @@ namespace UnityIsekaiGame.Diplomacy
     }
 
     [CreateAssetMenu(fileName = "DiplomaticAgreementDefinition", menuName = "Unity Isekai Game/Diplomacy/Agreement Definition")]
-    public sealed class DiplomaticAgreementDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class DiplomaticAgreementDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string agreementDefinitionId;
         [SerializeField] private string displayName;
@@ -156,7 +156,7 @@ namespace UnityIsekaiGame.Diplomacy
     }
 
     [CreateAssetMenu(fileName = "DiplomaticClauseDefinition", menuName = "Unity Isekai Game/Diplomacy/Clause Definition")]
-    public sealed class DiplomaticClauseDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class DiplomaticClauseDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string clauseDefinitionId;
         [SerializeField] private string displayName;
@@ -203,7 +203,7 @@ namespace UnityIsekaiGame.Diplomacy
     }
 
     [CreateAssetMenu(fileName = "DiplomaticWarDefinition", menuName = "Unity Isekai Game/Diplomacy/War Definition")]
-    public sealed class DiplomaticWarDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class DiplomaticWarDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string warDefinitionId;
         [SerializeField] private string displayName;

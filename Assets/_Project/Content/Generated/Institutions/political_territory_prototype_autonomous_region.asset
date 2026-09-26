@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e64ea17ae3d1cb46b34093a42ff7835, type: 3}
+  m_Name: political_territory_prototype_autonomous_region
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Governments:PoliticalTerritoryDefinition
+  territoryDefinitionId: political-territory.prototype.autonomous-region
+  displayName: Prototype Autonomous Region
+  category: 11
+  requiresAtLeastOnePlace: 1
+  allowsSubordinateTerritories: 1
+  mayBeNonContiguous: 0
+  mayBeNonTerritorial: 0
+  defaultVisibility: 0
+  tags:
+  - government
+  - prototype
+  - territory

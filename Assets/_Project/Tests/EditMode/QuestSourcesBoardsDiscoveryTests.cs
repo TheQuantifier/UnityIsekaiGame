@@ -201,7 +201,7 @@ namespace UnityIsekaiGame.Tests
                     questSourceDefinitionId = PrototypeQuestSourceDefinitionFactory.AdventurerGuildCounterDefinitionId,
                     hostLocationId = "location.prototype.adventurers-guild",
                     interactionPointId = "interaction-point.prototype.adventurer-guild-counter",
-                    operatingOrganizationId = "organization.prototype.guild",
+                    operatingOrganizationId = "organization.prototype.adventurers-guild",
                     sceneBindingKey = "scene.prototype.guild.counter",
                     worldTime = 1d
                 });
@@ -233,7 +233,7 @@ namespace UnityIsekaiGame.Tests
                     transactionId = $"tx.15.5.guild.create.{suffix}",
                     questId = $"quest.runtime.15.5.guild.{suffix}",
                     questDefinitionId = PrototypeQuestDefinitionFactory.GuildPostingDefinitionId,
-                    issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
+                    issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" },
                     intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Open },
                     origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.adventurers-guild", interactionPointId = "interaction-point.prototype.adventurer-guild-counter" },
                     subjectLinks = new[] { Subject("location.prototype.dungeon-entry", QuestSubjectRole.Location, InformationSubjectType.Location) },

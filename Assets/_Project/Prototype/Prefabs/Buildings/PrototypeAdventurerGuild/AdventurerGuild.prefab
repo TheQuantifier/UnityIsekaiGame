@@ -428,6 +428,7 @@ GameObject:
   - component: {fileID: 1579357740786537673}
   - component: {fileID: 2337156612698705796}
   - component: {fileID: 6554014699357663676}
+  - component: {fileID: 5917682319005689966}
   m_Layer: 0
   m_Name: AdventurerGuildCounter
   m_TagString: Untagged
@@ -467,7 +468,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
   instanceId: InteractionPointSceneBinding.0eba08f3c90a43ec8ea9ca28f7f01cb1
   worldId: local-world
@@ -502,6 +503,19 @@ MonoBehaviour:
   hostLocationId: location.prototype.adventurers-guild
   interactionPointId: interaction-point.prototype.adventurer-guild-counter
   required: 1
+--- !u!114 &5917682319005689966
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2916788286511085146}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49346fcca181e10489931c4ee88cbce3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Gameplay.PrototypeAdventurerGuildRegistrationDesk
+  services: {fileID: 0}
 --- !u!1 &3046396287148874832
 GameObject:
   m_ObjectHideFlags: 0

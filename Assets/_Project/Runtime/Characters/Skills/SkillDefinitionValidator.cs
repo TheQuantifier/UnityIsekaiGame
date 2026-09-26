@@ -20,6 +20,16 @@ namespace UnityIsekaiGame.Skills
                 report.AddWarning($"Skill '{skill.DisplayName}' should use the 'skill.' namespace prefix.");
             }
 
+            const SkillType knownTypes = SkillType.Combat | SkillType.Magic | SkillType.Crafting | SkillType.Gathering | SkillType.Commerce | SkillType.Knowledge | SkillType.Support | SkillType.Utility;
+            if (skill.SkillTypes == SkillType.Unknown)
+            {
+                report.AddError($"Skill '{skill.DisplayName}' must declare at least one Skill type.");
+            }
+            else if ((skill.SkillTypes & ~knownTypes) != 0)
+            {
+                report.AddError($"Skill '{skill.DisplayName}' declares an unknown Skill type flag.");
+            }
+
             ValidateNaturalLearning(skill, report);
             ValidateThresholds(skill, report);
             ValidateGradePackages(skill, definitionsById, report);

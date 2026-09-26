@@ -118,12 +118,14 @@ namespace UnityIsekaiGame.Organizations
             if (request.openingBalanceUnits < 0L) return Fail(OrganizationResourceOperationCode.InvalidRequest, "Opening balance cannot be negative.", request.preview);
             if (accountsById.TryGetValue(request.accountId, out OrganizationAccountRecordData existing)) return DuplicateOrConflict(request.transactionId, "create-account", request.accountId, existing.treasuryId == request.treasuryId && existing.currencyDefinitionId == request.currencyDefinitionId, before, request.preview, account: existing);
             string economyAccountId = string.IsNullOrWhiteSpace(request.economyAccountId) ? $"economy.organization.{request.organizationId}.{request.accountId}" : request.economyAccountId.Trim();
-            if (economy.TryGetAccount(economyAccountId, out _)) return Fail(OrganizationResourceOperationCode.ValidationFailed, $"Economy account '{economyAccountId}' already exists without this organization account record.", request.preview);
+            bool adoptEconomyAccount = economy.TryGetAccount(economyAccountId, out EconomyAccountSnapshot existingEconomyAccount);
+            if (adoptEconomyAccount && (!string.Equals(existingEconomyAccount.OwnerId, request.organizationId, StringComparison.Ordinal) || !string.Equals(existingEconomyAccount.CurrencyId, request.currencyDefinitionId, StringComparison.Ordinal))) return Fail(OrganizationResourceOperationCode.ValidationFailed, $"Economy account '{economyAccountId}' belongs to another owner or currency and cannot be adopted.", request.preview);
+            if (adoptEconomyAccount && request.openingBalanceUnits != 0L) return Fail(OrganizationResourceOperationCode.ValidationFailed, "An existing economy account can only be adopted with a zero opening balance.", request.preview);
             string action = Action(request.actionDefinitionId, PrototypeOrganizationAuthorityDefinitionFactory.CreateTreasuryAccountActionId);
             OrganizationAuthorizationResult authorization = Authorize(request.transactionId, request.actorPersonId, request.organizationId, action, request.accountId, request.approvalPersonIds, request.worldTime, true, false);
             if (!authorization.Succeeded) return Unauthorized(authorization, request.preview);
-            EconomyOperationResult economyPreview = economy.CreateAccount(economyAccountId, currency, request.organizationId, EconomyAccountKind.OrganizationAccount, request.openingBalanceUnits, $"{request.transactionId}.opening", preview: true);
-            if (!economyPreview.Succeeded) return FinancialFailure(economyPreview, request.preview, authorization);
+            EconomyOperationResult economyPreview = adoptEconomyAccount ? null : economy.CreateAccount(economyAccountId, currency, request.organizationId, EconomyAccountKind.OrganizationAccount, request.openingBalanceUnits, $"{request.transactionId}.opening", preview: true);
+            if (!adoptEconomyAccount && !economyPreview.Succeeded) return FinancialFailure(economyPreview, request.preview, authorization);
             OrganizationAccountRecordData record = new OrganizationAccountRecordData
             {
                 accountId = request.accountId.Trim(), treasuryId = request.treasuryId.Trim(), organizationId = request.organizationId.Trim(), economyAccountId = economyAccountId,
@@ -136,15 +138,15 @@ namespace UnityIsekaiGame.Organizations
             OrganizationAuthorityRuntimeSaveData authorityRollback = authority.CreateSaveData();
             authorization = Authorize(request.transactionId, request.actorPersonId, request.organizationId, action, request.accountId, request.approvalPersonIds, request.worldTime, false, true);
             if (!authorization.Succeeded) return Unauthorized(authorization, false);
-            EconomyOperationResult economyResult = economy.CreateAccount(economyAccountId, currency, request.organizationId, EconomyAccountKind.OrganizationAccount, request.openingBalanceUnits, $"{request.transactionId}.opening", preview: false);
-            if (!economyResult.Succeeded)
+            EconomyOperationResult economyResult = adoptEconomyAccount ? null : economy.CreateAccount(economyAccountId, currency, request.organizationId, EconomyAccountKind.OrganizationAccount, request.openingBalanceUnits, $"{request.transactionId}.opening", preview: false);
+            if (!adoptEconomyAccount && !economyResult.Succeeded)
             {
                 RestoreDependencies(economyRollback, authorityRollback);
                 return FinancialFailure(economyResult, false, authorization);
             }
             accountsById.Add(record.accountId, record);
-            Commit(request.transactionId, "create-account", record.accountId, economyResult.Transaction?.TransactionId, request.organizationId, destinationAccountId: record.accountId, units: request.openingBalanceUnits, currencyId: request.currencyDefinitionId, worldTime: request.worldTime);
-            return OrganizationResourceOperationResult.Success("Organization account created.", before, Revision, authorization: authorization, account: record, destinationBalance: GetBalance(record.accountId, request.worldTime), transaction: economyResult.Transaction, subjectId: record.accountId);
+            Commit(request.transactionId, adoptEconomyAccount ? "adopt-account" : "create-account", record.accountId, economyResult?.Transaction?.TransactionId, request.organizationId, destinationAccountId: record.accountId, units: request.openingBalanceUnits, currencyId: request.currencyDefinitionId, worldTime: request.worldTime);
+            return OrganizationResourceOperationResult.Success(adoptEconomyAccount ? "Existing economy account adopted by the organization treasury." : "Organization account created.", before, Revision, authorization: authorization, account: record, destinationBalance: GetBalance(record.accountId, request.worldTime), transaction: economyResult?.Transaction, subjectId: record.accountId);
         }
 
         public OrganizationResourceOperationResult ChangeAccountLifecycle(OrganizationAccountLifecycleRequest request)
@@ -842,7 +844,7 @@ namespace UnityIsekaiGame.Organizations
                 worldId = worldId, revision = Revision,
                 treasuries = Treasuries.ToList(), accounts = Accounts.ToList(), restrictions = Restrictions.ToList(), budgets = Budgets.ToList(), reservations = Reservations.ToList(),
                 inventoryAssociations = InventoryAssociations.ToList(), propertyAssociations = PropertyAssociations.ToList(), businessAssociations = BusinessAssociations.ToList(), custodyRecords = CustodyRecords.ToList(), revenueRoutingRules = RevenueRoutingRules.ToList(),
-                transactions = transactionsById.Values.OrderBy(item => item.worldTime).ThenBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
+                transactions = transactionsById.Values.OrderBy(item => item.worldTime).ThenBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).RetainNewestTransactions().ToList(),
                 dissolutionPlans = DissolutionPlans.ToList()
             };
         }

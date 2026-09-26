@@ -17,7 +17,7 @@ namespace UnityIsekaiGame.Organizations
         Security = 120,
         Service = 130,
         ReligiousMission = 140,
-        PoliticalPlaceholder = 150,
+        Political = 150,
         MilitaryPreparedness = 160,
         Custom = 1000
     }
@@ -74,7 +74,7 @@ namespace UnityIsekaiGame.Organizations
         InventoryAccess = 120,
         BranchAdministration = 130,
         ProfessionalConduct = 140,
-        DisciplinePlaceholder = 150,
+        Discipline = 150,
         GovernanceProcedure = 160,
         ExternalRepresentation = 170,
         Custom = 1000

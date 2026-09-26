@@ -1,15 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using UnityIsekaiGame.Diplomacy;
+using UnityIsekaiGame.Economy;
+using UnityIsekaiGame.Economy.InstitutionalRevenue;
 using UnityIsekaiGame.Economy.Properties;
 using UnityIsekaiGame.Factions;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Organizations;
+using UnityIsekaiGame.Social.Family;
 
 namespace UnityIsekaiGame.Governments
 {
-    public sealed class GovernmentRuntime : IDisposable
+    public sealed partial class GovernmentRuntime : IDisposable
     {
         private readonly Dictionary<string, PolityRecordData> politiesById = new Dictionary<string, PolityRecordData>(StringComparer.Ordinal);
         private readonly Dictionary<string, PoliticalNameRecordData> namesById = new Dictionary<string, PoliticalNameRecordData>(StringComparer.Ordinal);
@@ -23,6 +27,7 @@ namespace UnityIsekaiGame.Governments
         private readonly Dictionary<string, GovernmentSeatRecordData> seatsById = new Dictionary<string, GovernmentSeatRecordData>(StringComparer.Ordinal);
         private readonly Dictionary<string, SovereigntyClaimRecordData> sovereigntyClaimsById = new Dictionary<string, SovereigntyClaimRecordData>(StringComparer.Ordinal);
         private readonly Dictionary<string, JurisdictionRecordData> jurisdictionsById = new Dictionary<string, JurisdictionRecordData>(StringComparer.Ordinal);
+        private readonly Dictionary<string, GovernmentOrganizationCharterRecordData> organizationChartersById = new Dictionary<string, GovernmentOrganizationCharterRecordData>(StringComparer.Ordinal);
         private readonly Dictionary<string, PoliticalTransitionPlanRecordData> transitionsById = new Dictionary<string, PoliticalTransitionPlanRecordData>(StringComparer.Ordinal);
         private readonly Dictionary<string, PoliticalTransactionRecordData> transactionsById = new Dictionary<string, PoliticalTransactionRecordData>(StringComparer.Ordinal);
 
@@ -35,6 +40,7 @@ namespace UnityIsekaiGame.Governments
         private FactionRuntime factions;
         private DiplomacyRuntime diplomacy;
         private PropertyRuntime properties;
+        private FamilyRelationshipRuntime familyRelationships;
         private string worldId = string.Empty;
         private HashSet<string> knownPersonIds = new HashSet<string>(StringComparer.Ordinal);
         private HashSet<string> knownPlaceIds = new HashSet<string>(StringComparer.Ordinal);
@@ -46,6 +52,7 @@ namespace UnityIsekaiGame.Governments
         public int TerritoryCount => territoriesById.Count;
         public int ClaimCount => claimsById.Count;
         public int JurisdictionCount => jurisdictionsById.Count;
+        public int OrganizationCharterCount => organizationChartersById.Count;
 
         public event Action<PoliticalOperationResult> OperationCommitted;
 
@@ -53,6 +60,7 @@ namespace UnityIsekaiGame.Governments
         public IReadOnlyList<GovernmentRecordData> Governments => governmentsById.Values.OrderBy(item => item.establishedWorldTime).ThenBy(item => item.governmentId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<PoliticalTerritoryRecordData> Territories => territoriesById.Values.OrderBy(item => item.createdWorldTime).ThenBy(item => item.territoryId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<JurisdictionRecordData> Jurisdictions => jurisdictionsById.Values.OrderByDescending(item => item.priority).ThenBy(item => item.effectiveWorldTime).ThenBy(item => item.jurisdictionId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
+        public IReadOnlyList<GovernmentOrganizationCharterRecordData> OrganizationCharters => organizationChartersById.Values.OrderBy(item => item.effectiveWorldTime).ThenBy(item => item.charterId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<PoliticalNameRecordData> Names => namesById.Values.OrderBy(item => item.effectiveStartWorldTime).ThenBy(item => item.nameRecordId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<GovernmentInstitutionRoleRecordData> InstitutionRoles => institutionRolesById.Values.OrderBy(item => item.effectiveWorldTime).ThenBy(item => item.roleId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<TerritoryPlaceMembershipRecordData> TerritoryPlaceMemberships => territoryPlaceMembershipsById.Values.OrderBy(item => item.effectiveWorldTime).ThenBy(item => item.membershipId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
@@ -67,6 +75,8 @@ namespace UnityIsekaiGame.Governments
         public IReadOnlyList<PoliticalTerritoryRecordData> GetTerritoriesForPolity(string polityId) => territoriesById.Values.Where(item => string.Equals(item.polityId, PoliticalModelUtility.Normalize(polityId), StringComparison.Ordinal)).OrderBy(item => item.createdWorldTime).ThenBy(item => item.territoryId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<TerritorialClaimRecordData> GetClaimsForTerritory(string territoryId) => claimsById.Values.Where(item => string.Equals(item.territoryId, PoliticalModelUtility.Normalize(territoryId), StringComparison.Ordinal)).OrderBy(item => item.assertedWorldTime).ThenBy(item => item.claimId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<JurisdictionRecordData> GetJurisdictionsForGovernment(string governmentId) => jurisdictionsById.Values.Where(item => string.Equals(item.governmentId, PoliticalModelUtility.Normalize(governmentId), StringComparison.Ordinal)).OrderByDescending(item => item.priority).ThenBy(item => item.effectiveWorldTime).ThenBy(item => item.jurisdictionId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
+        public IReadOnlyList<GovernmentOrganizationCharterRecordData> GetOrganizationChartersForGovernment(string governmentId) => organizationChartersById.Values.Where(item => string.Equals(item.governmentId, PoliticalModelUtility.Normalize(governmentId), StringComparison.Ordinal)).OrderBy(item => item.category).ThenBy(item => item.organizationId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
+        public IReadOnlyList<GovernmentOrganizationCharterRecordData> GetAgenciesForGovernment(string governmentId) => organizationChartersById.Values.Where(item => string.Equals(item.governmentId, PoliticalModelUtility.Normalize(governmentId), StringComparison.Ordinal) && item.category == GovernmentOrganizationCharterCategory.GovernmentAgency && item.lifecycleState == GovernmentOrganizationCharterLifecycleState.Active).OrderBy(item => item.organizationId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
 
         public void Configure(
             DefinitionRegistry definitionRegistry,
@@ -80,7 +90,10 @@ namespace UnityIsekaiGame.Governments
             PropertyRuntime propertyRuntime,
             string runtimeWorldId,
             IEnumerable<string> personIds,
-            IEnumerable<string> placeIds)
+            IEnumerable<string> placeIds,
+            FamilyRelationshipRuntime familyRelationshipRuntime = null,
+            EconomyRuntime economyRuntime = null,
+            InstitutionalRevenueRuntime institutionalRevenueRuntime = null)
         {
             registry = definitionRegistry ?? registry;
             organizations = organizationRuntime;
@@ -91,6 +104,8 @@ namespace UnityIsekaiGame.Governments
             factions = factionRuntime;
             diplomacy = diplomacyRuntime;
             properties = propertyRuntime;
+            familyRelationships = familyRelationshipRuntime ?? familyRelationships;
+            ConfigureFiscalDependencies(economyRuntime, institutionalRevenueRuntime);
             worldId = PoliticalModelUtility.Normalize(runtimeWorldId);
             knownPersonIds = new HashSet<string>(PoliticalModelUtility.Clean(personIds), StringComparer.Ordinal);
             knownPlaceIds = new HashSet<string>(PoliticalModelUtility.Clean(placeIds), StringComparer.Ordinal);
@@ -153,6 +168,18 @@ namespace UnityIsekaiGame.Governments
             }
 
             jurisdiction = null;
+            return false;
+        }
+
+        public bool TryGetOrganizationCharter(string charterId, out GovernmentOrganizationCharterRecordData charter)
+        {
+            if (organizationChartersById.TryGetValue(PoliticalModelUtility.Normalize(charterId), out GovernmentOrganizationCharterRecordData found))
+            {
+                charter = found.Clone();
+                return true;
+            }
+
+            charter = null;
             return false;
         }
 
@@ -370,6 +397,124 @@ namespace UnityIsekaiGame.Governments
             return PublishCommit(PoliticalOperationResult.Success("Jurisdiction transitioned.", before, Revision, subjectId: jurisdictionId, jurisdiction: changed));
         }
 
+        public PoliticalOperationResult RegisterOrganizationCharter(GovernmentOrganizationCharterRequest request)
+        {
+            request ??= new GovernmentOrganizationCharterRequest();
+            long before = Revision;
+            if (!Ready(out PoliticalOperationResult readyFailure)) return readyFailure;
+            string charterId = PoliticalModelUtility.Normalize(request.charterId);
+            if (TryDuplicate(request.transactionId, charterId, "register-organization-charter", before, out PoliticalOperationResult duplicate)) return duplicate;
+            if (string.IsNullOrEmpty(charterId)) return Fail(PoliticalOperationCode.InvalidRequest, "Government organization charter ID is required.", before);
+            if (organizationChartersById.ContainsKey(charterId)) return Fail(PoliticalOperationCode.Conflict, $"Government organization charter '{charterId}' already exists.", before);
+            if (!TryGetDefinition(request.charterDefinitionId, out GovernmentOrganizationCharterDefinition definition)) return Fail(PoliticalOperationCode.MissingDefinition, $"Government organization charter definition '{request.charterDefinitionId}' is missing.", before);
+
+            string governmentId = string.IsNullOrWhiteSpace(request.governmentId) ? definition.GovernmentId : PoliticalModelUtility.Normalize(request.governmentId);
+            string organizationId = string.IsNullOrWhiteSpace(request.organizationId) ? definition.OrganizationId : PoliticalModelUtility.Normalize(request.organizationId);
+            string supervisorId = string.IsNullOrWhiteSpace(request.supervisingOrganizationId) ? definition.SupervisingOrganizationId : PoliticalModelUtility.Normalize(request.supervisingOrganizationId);
+            string instrumentId = string.IsNullOrWhiteSpace(request.legalInstrumentId) ? definition.LegalInstrumentId : PoliticalModelUtility.Normalize(request.legalInstrumentId);
+            string[] jurisdictionIds = PoliticalModelUtility.Clean(request.jurisdictionIds == null || request.jurisdictionIds.Length == 0 ? definition.JurisdictionIds : request.jurisdictionIds);
+
+            if (!governmentsById.ContainsKey(governmentId)) return Fail(PoliticalOperationCode.MissingGovernment, $"Government '{governmentId}' is missing.", before);
+            if (organizations == null || !organizations.TryGetSnapshot(organizationId, out _)) return Fail(PoliticalOperationCode.InvalidReference, $"Chartered organization '{organizationId}' is missing.", before);
+            if (!string.IsNullOrEmpty(supervisorId) && !organizations.TryGetSnapshot(supervisorId, out _)) return Fail(PoliticalOperationCode.InvalidReference, $"Supervising organization '{supervisorId}' is missing.", before);
+            if (string.IsNullOrEmpty(instrumentId)) return Fail(PoliticalOperationCode.InvalidReference, "A charter legal instrument ID is required.", before);
+            foreach (string jurisdictionId in jurisdictionIds)
+            {
+                if (!jurisdictionsById.TryGetValue(jurisdictionId, out JurisdictionRecordData jurisdiction)) return Fail(PoliticalOperationCode.MissingJurisdiction, $"Charter jurisdiction '{jurisdictionId}' is missing.", before);
+                if (!string.Equals(jurisdiction.governmentId, governmentId, StringComparison.Ordinal)) return Fail(PoliticalOperationCode.InvalidReference, $"Charter jurisdiction '{jurisdictionId}' does not belong to government '{governmentId}'.", before);
+            }
+
+            GovernmentOrganizationCharterRecordData record = new GovernmentOrganizationCharterRecordData
+            {
+                charterId = charterId,
+                charterDefinitionId = definition.Id,
+                governmentId = governmentId,
+                organizationId = organizationId,
+                supervisingOrganizationId = supervisorId,
+                legalInstrumentId = instrumentId,
+                jurisdictionIds = jurisdictionIds,
+                grantedPowerIds = PoliticalModelUtility.Clean(definition.GrantedPowerIds),
+                dutyIds = PoliticalModelUtility.Clean(definition.DutyIds),
+                category = definition.Category,
+                lifecycleState = GovernmentOrganizationCharterLifecycleState.Active,
+                revocable = definition.Revocable,
+                effectiveWorldTime = request.worldTime,
+                sourceAuthorityGrantId = PoliticalModelUtility.Normalize(request.sourceAuthorityGrantId),
+                sourceDecisionId = PoliticalModelUtility.Normalize(request.sourceDecisionId),
+                visibility = request.visibilityOverride ?? definition.DefaultVisibility,
+                provenanceId = PoliticalModelUtility.Normalize(request.provenanceId),
+                revision = 1L
+            };
+            if (request.preview) return PoliticalOperationResult.Success("Government organization charter previewed.", before, before, preview: true, subjectId: charterId, organizationCharter: record);
+            organizationChartersById[charterId] = record;
+            CompleteTransaction(request.transactionId, "register-organization-charter", charterId);
+            Revision++;
+            return PublishCommit(PoliticalOperationResult.Success("Government organization charter registered.", before, Revision, subjectId: charterId, organizationCharter: record));
+        }
+
+        public PoliticalOperationResult TransitionOrganizationCharter(GovernmentOrganizationCharterTransitionRequest request)
+        {
+            request ??= new GovernmentOrganizationCharterTransitionRequest();
+            long before = Revision;
+            if (!Ready(out PoliticalOperationResult readyFailure)) return readyFailure;
+            string charterId = PoliticalModelUtility.Normalize(request.charterId);
+            if (TryDuplicate(request.transactionId, charterId, "transition-organization-charter", before, out PoliticalOperationResult duplicate)) return duplicate;
+            if (!organizationChartersById.TryGetValue(charterId, out GovernmentOrganizationCharterRecordData current)) return Fail(PoliticalOperationCode.InvalidReference, $"Government organization charter '{charterId}' is missing.", before);
+            if (request.targetState == GovernmentOrganizationCharterLifecycleState.Unknown || request.targetState == GovernmentOrganizationCharterLifecycleState.Active && current.lifecycleState == GovernmentOrganizationCharterLifecycleState.Revoked) return Fail(PoliticalOperationCode.InvalidState, "Government organization charter transition is invalid.", before);
+            if (request.targetState == GovernmentOrganizationCharterLifecycleState.Revoked && !current.revocable) return Fail(PoliticalOperationCode.InvalidState, $"Government organization charter '{charterId}' is irrevocable.", before);
+            GovernmentOrganizationCharterRecordData changed = current.Clone();
+            changed.lifecycleState = request.targetState;
+            changed.sourceAuthorityGrantId = string.IsNullOrWhiteSpace(request.sourceAuthorityGrantId) ? changed.sourceAuthorityGrantId : request.sourceAuthorityGrantId.Trim();
+            changed.sourceDecisionId = string.IsNullOrWhiteSpace(request.sourceDecisionId) ? changed.sourceDecisionId : request.sourceDecisionId.Trim();
+            if (request.targetState == GovernmentOrganizationCharterLifecycleState.Revoked || request.targetState == GovernmentOrganizationCharterLifecycleState.Expired || request.targetState == GovernmentOrganizationCharterLifecycleState.Superseded || request.targetState == GovernmentOrganizationCharterLifecycleState.Historical) changed.endedWorldTime = request.worldTime;
+            changed.revision++;
+            if (request.preview) return PoliticalOperationResult.Success("Government organization charter transition previewed.", before, before, preview: true, subjectId: charterId, organizationCharter: changed);
+            organizationChartersById[charterId] = changed;
+            CompleteTransaction(request.transactionId, "transition-organization-charter", charterId);
+            Revision++;
+            return PublishCommit(PoliticalOperationResult.Success("Government organization charter transitioned.", before, Revision, subjectId: charterId, organizationCharter: changed));
+        }
+
+        public PoliticalOperationResult SynchronizeOrganizationCharter(GovernmentOrganizationCharterSynchronizationRequest request)
+        {
+            request ??= new GovernmentOrganizationCharterSynchronizationRequest();
+            long before = Revision;
+            if (!Ready(out PoliticalOperationResult readyFailure)) return readyFailure;
+            string charterId = PoliticalModelUtility.Normalize(request.charterId);
+            if (TryDuplicate(request.transactionId, charterId, "synchronize-organization-charter", before, out PoliticalOperationResult duplicate)) return duplicate;
+            if (!organizationChartersById.TryGetValue(charterId, out GovernmentOrganizationCharterRecordData current)) return Fail(PoliticalOperationCode.InvalidReference, $"Government organization charter '{charterId}' is missing.", before);
+            string definitionId = string.IsNullOrWhiteSpace(request.charterDefinitionId) ? current.charterDefinitionId : request.charterDefinitionId;
+            if (!TryGetDefinition(definitionId, out GovernmentOrganizationCharterDefinition definition)) return Fail(PoliticalOperationCode.MissingDefinition, $"Government organization charter definition '{definitionId}' is missing.", before);
+            if (!governmentsById.ContainsKey(definition.GovernmentId)) return Fail(PoliticalOperationCode.MissingGovernment, $"Government '{definition.GovernmentId}' is missing.", before);
+            if (organizations == null || !organizations.TryGetSnapshot(definition.OrganizationId, out _)) return Fail(PoliticalOperationCode.InvalidReference, $"Chartered organization '{definition.OrganizationId}' is missing.", before);
+            if (!string.IsNullOrEmpty(definition.SupervisingOrganizationId) && !organizations.TryGetSnapshot(definition.SupervisingOrganizationId, out _)) return Fail(PoliticalOperationCode.InvalidReference, $"Supervising organization '{definition.SupervisingOrganizationId}' is missing.", before);
+            foreach (string jurisdictionId in definition.JurisdictionIds)
+            {
+                if (!jurisdictionsById.TryGetValue(jurisdictionId, out JurisdictionRecordData jurisdiction)) return Fail(PoliticalOperationCode.MissingJurisdiction, $"Charter jurisdiction '{jurisdictionId}' is missing.", before);
+                if (!string.Equals(jurisdiction.governmentId, definition.GovernmentId, StringComparison.Ordinal)) return Fail(PoliticalOperationCode.InvalidReference, $"Charter jurisdiction '{jurisdictionId}' does not belong to government '{definition.GovernmentId}'.", before);
+            }
+
+            GovernmentOrganizationCharterRecordData changed = current.Clone();
+            changed.charterDefinitionId = definition.Id;
+            changed.governmentId = definition.GovernmentId;
+            changed.organizationId = definition.OrganizationId;
+            changed.supervisingOrganizationId = definition.SupervisingOrganizationId;
+            changed.legalInstrumentId = definition.LegalInstrumentId;
+            changed.jurisdictionIds = PoliticalModelUtility.Clean(definition.JurisdictionIds);
+            changed.grantedPowerIds = PoliticalModelUtility.Clean(definition.GrantedPowerIds);
+            changed.dutyIds = PoliticalModelUtility.Clean(definition.DutyIds);
+            changed.category = definition.Category;
+            changed.revocable = definition.Revocable;
+            changed.visibility = definition.DefaultVisibility;
+            changed.provenanceId = string.IsNullOrWhiteSpace(request.provenanceId) ? definition.Id : PoliticalModelUtility.Normalize(request.provenanceId);
+            changed.revision++;
+            if (request.preview) return PoliticalOperationResult.Success("Government organization charter synchronization previewed.", before, before, preview: true, subjectId: charterId, organizationCharter: changed);
+            organizationChartersById[charterId] = changed;
+            CompleteTransaction(request.transactionId, "synchronize-organization-charter", charterId);
+            Revision++;
+            return PublishCommit(PoliticalOperationResult.Success("Government organization charter synchronized with its authored definition.", before, Revision, subjectId: charterId, organizationCharter: changed));
+        }
+
         public PoliticalOperationResult CreateTransitionPlan(PoliticalTransitionPlanRequest request)
         {
             request ??= new PoliticalTransitionPlanRequest();
@@ -405,7 +550,9 @@ namespace UnityIsekaiGame.Governments
                 .OrderBy(item => item.expirationWorldTime)
                 .ThenBy(item => item.jurisdictionId, StringComparer.Ordinal)
                 .ToArray();
-            if (request.preview) return PoliticalOperationResult.Success($"Political time evaluation previewed; {expiring.Length} jurisdiction(s) expire.", before, before, preview: true, subjectId: boundaryId);
+            string administrationSummary = ProcessAdministrationWorldTime(request.worldTime, request.preview);
+            string fiscalSummary = ProcessFiscalHierarchyWorldTime(request.worldTime, request.preview);
+            if (request.preview) return PoliticalOperationResult.Success($"Political time evaluation previewed; {expiring.Length} jurisdiction(s) expire, {administrationSummary}, and {fiscalSummary}.", before, before, preview: true, subjectId: boundaryId);
             foreach (JurisdictionRecordData jurisdiction in expiring)
             {
                 jurisdiction.lifecycleState = JurisdictionLifecycleState.Ended;
@@ -413,7 +560,7 @@ namespace UnityIsekaiGame.Governments
             }
             CompleteTransaction(request.transactionId, "process-political-world-time", boundaryId);
             Revision++;
-            return PublishCommit(PoliticalOperationResult.Success($"Political time boundary processed deterministically; {expiring.Length} jurisdiction(s) expired.", before, Revision, subjectId: boundaryId));
+            return PublishCommit(PoliticalOperationResult.Success($"Political time boundary processed deterministically; {expiring.Length} jurisdiction(s) expired, {administrationSummary}, and {fiscalSummary}.", before, Revision, subjectId: boundaryId));
         }
 
         public PoliticalOperationResult CreatePolity(PolityCreateRequest request)
@@ -1046,8 +1193,21 @@ namespace UnityIsekaiGame.Governments
                 seats = seatsById.Values.OrderBy(item => item.seatId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
                 sovereigntyClaims = sovereigntyClaimsById.Values.OrderBy(item => item.sovereigntyClaimId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
                 jurisdictions = jurisdictionsById.Values.OrderBy(item => item.jurisdictionId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                organizationCharters = organizationChartersById.Values.OrderBy(item => item.charterId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                officeTenures = officeTenuresById.Values.OrderBy(item => item.tenureId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                elections = electionsById.Values.OrderBy(item => item.electionId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                permits = permitsById.Values.OrderBy(item => item.permitId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                fiscalMandates = fiscalMandatesById.Values.OrderBy(item => item.mandateId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                legitimacyAssessments = legitimacyAssessmentsById.Values.OrderBy(item => item.assessmentId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                remittancePolicies = remittancePoliciesById.Values.OrderBy(item => item.policyId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                remittanceSettlements = remittanceSettlementsById.Values.OrderBy(item => item.settlementId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                fiscalReliefs = fiscalReliefsById.Values.OrderBy(item => item.reliefId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                actionRegulations = actionRegulationsById.Values.OrderBy(item => item.regulationId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                officeVacancies = officeVacanciesById.Values.OrderBy(item => item.vacancyId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                legitimacyEvents = legitimacyEventsById.Values.OrderBy(item => item.eventId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
+                budgetCycles = budgetCyclesById.Values.OrderBy(item => item.cycleId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
                 transitions = transitionsById.Values.OrderBy(item => item.transitionId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray(),
-                transactions = transactionsById.Values.OrderBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray()
+                transactions = transactionsById.Values.OrderBy(item => item.revision).ThenBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).RetainNewestTransactions().ToArray()
             };
         }
 
@@ -1161,6 +1321,23 @@ namespace UnityIsekaiGame.Governments
                 foreach (string propertyId in PoliticalModelUtility.Clean(jurisdiction.propertyIds)) if (properties != null && !properties.TryGetProperty(propertyId, out _)) { failure = $"Jurisdiction '{jurisdiction.jurisdictionId}' references missing Property '{propertyId}'."; return false; }
             }
 
+            HashSet<string> charterIds = IdSet(saveData.organizationCharters?.Select(item => item?.charterId), "government organization charter", out failure); if (failure.Length > 0) return false;
+            foreach (GovernmentOrganizationCharterRecordData charter in saveData.organizationCharters ?? Array.Empty<GovernmentOrganizationCharterRecordData>())
+            {
+                if (registry != null && !registry.TryGet(charter.charterDefinitionId, out GovernmentOrganizationCharterDefinition _)) { failure = $"Government organization charter '{charter.charterId}' references missing definition '{charter.charterDefinitionId}'."; return false; }
+                if (!governmentIds.Contains(PoliticalModelUtility.Normalize(charter.governmentId))) { failure = $"Government organization charter '{charter.charterId}' references missing government '{charter.governmentId}'."; return false; }
+                if (organizations != null && !organizations.TryGetSnapshot(charter.organizationId, out _)) { failure = $"Government organization charter '{charter.charterId}' references missing organization '{charter.organizationId}'."; return false; }
+                if (!string.IsNullOrWhiteSpace(charter.supervisingOrganizationId) && organizations != null && !organizations.TryGetSnapshot(charter.supervisingOrganizationId, out _)) { failure = $"Government organization charter '{charter.charterId}' references missing supervisor '{charter.supervisingOrganizationId}'."; return false; }
+                if (!ValidateRefs(charter.jurisdictionIds, jurisdictionIds, true, out failure, "government organization charter jurisdiction")) return false;
+                foreach (string jurisdictionId in PoliticalModelUtility.Clean(charter.jurisdictionIds)) if (saveData.jurisdictions.First(item => item.jurisdictionId == jurisdictionId).governmentId != charter.governmentId) { failure = $"Government organization charter '{charter.charterId}' uses a jurisdiction owned by another government."; return false; }
+                if (string.IsNullOrWhiteSpace(charter.legalInstrumentId)) { failure = $"Government organization charter '{charter.charterId}' has no legal instrument ID."; return false; }
+                if (!Enum.IsDefined(typeof(GovernmentOrganizationCharterCategory), charter.category) || charter.category == GovernmentOrganizationCharterCategory.Unknown) { failure = $"Government organization charter '{charter.charterId}' has an invalid category."; return false; }
+                if (!Enum.IsDefined(typeof(GovernmentOrganizationCharterLifecycleState), charter.lifecycleState) || charter.lifecycleState == GovernmentOrganizationCharterLifecycleState.Unknown) { failure = $"Government organization charter '{charter.charterId}' has an invalid lifecycle state."; return false; }
+            }
+
+            if (!ValidateAdministrationSaveData(saveData, registry, organizations, governmentIds, jurisdictionIds, personSet, out failure)) return false;
+            if (!ValidateFiscalHierarchySaveData(saveData, registry, governmentIds, jurisdictionIds, out failure)) return false;
+
             if (HasCycle(saveData.governments?.ToDictionary(item => item.governmentId ?? string.Empty, item => item.parentGovernmentId ?? string.Empty, StringComparer.Ordinal), out failure, "government")) return false;
             if (HasCycle(saveData.territories?.ToDictionary(item => item.territoryId ?? string.Empty, item => item.parentTerritoryId ?? string.Empty, StringComparer.Ordinal), out failure, "territory")) return false;
             if (HasCycle(saveData.jurisdictions?.ToDictionary(item => item.jurisdictionId ?? string.Empty, item => item.sourceJurisdictionId ?? string.Empty, StringComparer.Ordinal), out failure, "jurisdiction delegation")) return false;
@@ -1181,6 +1358,19 @@ namespace UnityIsekaiGame.Governments
             seatsById.Clear();
             sovereigntyClaimsById.Clear();
             jurisdictionsById.Clear();
+            organizationChartersById.Clear();
+            officeTenuresById.Clear();
+            electionsById.Clear();
+            permitsById.Clear();
+            fiscalMandatesById.Clear();
+            legitimacyAssessmentsById.Clear();
+            remittancePoliciesById.Clear();
+            remittanceSettlementsById.Clear();
+            fiscalReliefsById.Clear();
+            actionRegulationsById.Clear();
+            officeVacanciesById.Clear();
+            legitimacyEventsById.Clear();
+            budgetCyclesById.Clear();
             transitionsById.Clear();
             transactionsById.Clear();
             Revision = 0L;
@@ -1211,6 +1401,19 @@ namespace UnityIsekaiGame.Governments
             foreach (GovernmentSeatRecordData item in clone.seats) seatsById[item.seatId] = item;
             foreach (SovereigntyClaimRecordData item in clone.sovereigntyClaims) sovereigntyClaimsById[item.sovereigntyClaimId] = item;
             foreach (JurisdictionRecordData item in clone.jurisdictions) jurisdictionsById[item.jurisdictionId] = item;
+            foreach (GovernmentOrganizationCharterRecordData item in clone.organizationCharters) organizationChartersById[item.charterId] = item;
+            foreach (GovernmentOfficeTenureRecordData item in clone.officeTenures) officeTenuresById[item.tenureId] = item;
+            foreach (GovernmentElectionRecordData item in clone.elections) electionsById[item.electionId] = item;
+            foreach (GovernmentPermitRecordData item in clone.permits) permitsById[item.permitId] = item;
+            foreach (GovernmentFiscalMandateRecordData item in clone.fiscalMandates) fiscalMandatesById[item.mandateId] = item;
+            foreach (GovernmentLegitimacyRecordData item in clone.legitimacyAssessments) legitimacyAssessmentsById[item.assessmentId] = item;
+            foreach (GovernmentRemittancePolicyRecordData item in clone.remittancePolicies) remittancePoliciesById[item.policyId] = item;
+            foreach (GovernmentRemittanceSettlementRecordData item in clone.remittanceSettlements) remittanceSettlementsById[item.settlementId] = item;
+            foreach (GovernmentFiscalReliefRecordData item in clone.fiscalReliefs) fiscalReliefsById[item.reliefId] = item;
+            foreach (GovernmentActionRegulationRecordData item in clone.actionRegulations) actionRegulationsById[item.regulationId] = item;
+            foreach (GovernmentOfficeVacancyRecordData item in clone.officeVacancies) officeVacanciesById[item.vacancyId] = item;
+            foreach (GovernmentLegitimacyEventRecordData item in clone.legitimacyEvents) legitimacyEventsById[item.eventId] = item;
+            foreach (GovernmentBudgetCycleRecordData item in clone.budgetCycles) budgetCyclesById[item.cycleId] = item;
             foreach (PoliticalTransitionPlanRecordData item in clone.transitions) transitionsById[item.transitionId] = item;
             foreach (PoliticalTransactionRecordData item in clone.transactions) transactionsById[item.transactionId] = item;
         }
@@ -1225,7 +1428,7 @@ namespace UnityIsekaiGame.Governments
                     foreach (Action<PoliticalOperationResult> handler in handlers.GetInvocationList())
                     {
                         try { handler(result); }
-                        catch { /* Observers cannot roll back or invalidate an already committed mutation. */ }
+                        catch (Exception exception) { Debug.LogException(exception); }
                     }
                 }
             }
@@ -1799,6 +2002,44 @@ namespace UnityIsekaiGame.Governments
         public JurisdictionLifecycleState targetState = JurisdictionLifecycleState.Active;
         public string sourceDecisionId;
         public double worldTime;
+        public bool preview;
+    }
+
+    public sealed class GovernmentOrganizationCharterRequest
+    {
+        public string transactionId;
+        public string charterId;
+        public string charterDefinitionId;
+        public string governmentId;
+        public string organizationId;
+        public string supervisingOrganizationId;
+        public string legalInstrumentId;
+        public string[] jurisdictionIds = Array.Empty<string>();
+        public double worldTime;
+        public string sourceAuthorityGrantId;
+        public string sourceDecisionId;
+        public PoliticalVisibility? visibilityOverride;
+        public string provenanceId;
+        public bool preview;
+    }
+
+    public sealed class GovernmentOrganizationCharterTransitionRequest
+    {
+        public string transactionId;
+        public string charterId;
+        public GovernmentOrganizationCharterLifecycleState targetState = GovernmentOrganizationCharterLifecycleState.Active;
+        public double worldTime;
+        public string sourceAuthorityGrantId;
+        public string sourceDecisionId;
+        public bool preview;
+    }
+
+    public sealed class GovernmentOrganizationCharterSynchronizationRequest
+    {
+        public string transactionId;
+        public string charterId;
+        public string charterDefinitionId;
+        public string provenanceId;
         public bool preview;
     }
 

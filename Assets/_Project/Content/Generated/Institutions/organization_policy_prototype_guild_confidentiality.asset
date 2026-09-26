@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da2184aea94a25e48b839686a7920555, type: 3}
+  m_Name: organization_policy_prototype_guild_confidentiality
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:OrganizationPolicyDefinition
+  policyDefinitionId: organization-policy.prototype.guild.confidentiality
+  displayName: Guild Confidentiality Policy
+  description: 
+  category: 40
+  validOrganizationDefinitionIds: []
+  validOrganizationCategories: 
+  parameterSchema:
+  - parameterId: visibility
+    type: 160
+    required: 1
+    defaultValue: Restricted
+    allowedValues:
+    - Hidden
+    - Public
+    - Restricted
+    - Secret
+  - parameterId: reshare_allowed
+    type: 10
+    required: 0
+    defaultValue: false
+    allowedValues: []
+  allowedScopes: 0a000000280000003c00000078000000
+  allowMultipleScopedInstances: 1
+  amendmentAllowed: 1
+  revocationAllowed: 1
+  expirationAllowed: 1
+  priority: 200
+  visibility: 1
+  tags:
+  - decisions
+  - organization
+  - prototype
+  version: 1

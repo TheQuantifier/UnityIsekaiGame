@@ -42,7 +42,7 @@ namespace UnityIsekaiGame.Justice
     }
 
     [CreateAssetMenu(fileName = "JusticeInstitutionDefinition", menuName = "Unity Isekai Game/Justice/Justice Institution Definition")]
-    public sealed class JusticeInstitutionDefinition : JusticeDefinitionBase
+    public class JusticeInstitutionDefinition : JusticeDefinitionBase
     {
         [SerializeField] private JusticeInstitutionCategory category;
         [SerializeField] private JurisdictionCategory[] supportedJurisdictions = Array.Empty<JurisdictionCategory>();
@@ -86,7 +86,7 @@ namespace UnityIsekaiGame.Justice
     }
 
     [CreateAssetMenu(fileName = "CourtDefinition", menuName = "Unity Isekai Game/Justice/Court Definition")]
-    public sealed class CourtDefinition : JusticeDefinitionBase
+    public class CourtDefinition : JusticeDefinitionBase
     {
         [SerializeField] private JusticeInstitutionCategory category;
         [SerializeField] private JusticeCaseCategory[] supportedCases = Array.Empty<JusticeCaseCategory>();
@@ -133,7 +133,7 @@ namespace UnityIsekaiGame.Justice
     }
 
     [CreateAssetMenu(fileName = "ArrestDefinition", menuName = "Unity Isekai Game/Justice/Arrest Definition")]
-    public sealed class ArrestDefinition : JusticeDefinitionBase
+    public class ArrestDefinition : JusticeDefinitionBase
     {
         [SerializeField] private ArrestCategory category;
         [SerializeField] private ArrestLegalBasisKind[] validLegalBases = Array.Empty<ArrestLegalBasisKind>();
@@ -169,7 +169,7 @@ namespace UnityIsekaiGame.Justice
     }
 
     [CreateAssetMenu(fileName = "ChargeDefinition", menuName = "Unity Isekai Game/Justice/Charge Definition")]
-    public sealed class ChargeDefinition : JusticeDefinitionBase
+    public class ChargeDefinition : JusticeDefinitionBase
     {
         [SerializeField] private ChargeCategory category;
         [SerializeField] private EvidenceSufficiencyState minimumFilingThreshold = EvidenceSufficiencyState.Substantial;
@@ -199,7 +199,7 @@ namespace UnityIsekaiGame.Justice
     }
 
     [CreateAssetMenu(fileName = "HearingDefinition", menuName = "Unity Isekai Game/Justice/Hearing Definition")]
-    public sealed class HearingDefinition : JusticeDefinitionBase
+    public class HearingDefinition : JusticeDefinitionBase
     {
         [SerializeField] private HearingCategory category;
         [SerializeField] private bool permitsEvidenceRulings;
@@ -225,7 +225,7 @@ namespace UnityIsekaiGame.Justice
     }
 
     [CreateAssetMenu(fileName = "SentenceDefinition", menuName = "Unity Isekai Game/Justice/Sentence Definition")]
-    public sealed class SentenceDefinition : JusticeDefinitionBase
+    public class SentenceDefinition : JusticeDefinitionBase
     {
         [SerializeField] private SentenceCategory category;
         [SerializeField] private bool requiresGuiltyOrLiableOutcome = true;
@@ -254,7 +254,7 @@ namespace UnityIsekaiGame.Justice
     }
 
     [CreateAssetMenu(fileName = "RemedyDefinition", menuName = "Unity Isekai Game/Justice/Remedy Definition")]
-    public sealed class RemedyDefinition : JusticeDefinitionBase
+    public class RemedyDefinition : JusticeDefinitionBase
     {
         [SerializeField] private RemedyCategory category;
         public RemedyCategory Category => category;
@@ -263,7 +263,7 @@ namespace UnityIsekaiGame.Justice
     }
 
     [CreateAssetMenu(fileName = "AppealDefinition", menuName = "Unity Isekai Game/Justice/Appeal Definition")]
-    public sealed class AppealDefinition : JusticeDefinitionBase
+    public class AppealDefinition : JusticeDefinitionBase
     {
         [SerializeField] private AppealCategory category;
         [SerializeField] private bool mayStayJudgment = true;
@@ -276,7 +276,7 @@ namespace UnityIsekaiGame.Justice
     }
 
     [CreateAssetMenu(fileName = "ClemencyDefinition", menuName = "Unity Isekai Game/Justice/Clemency Definition")]
-    public sealed class ClemencyDefinition : JusticeDefinitionBase
+    public class ClemencyDefinition : JusticeDefinitionBase
     {
         [SerializeField] private ClemencyCategory category;
         public ClemencyCategory Category => category;

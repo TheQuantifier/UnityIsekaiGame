@@ -101,7 +101,7 @@ namespace UnityIsekaiGame.Tests
                 {
                     Subject("person.prototype.witness", QuestSubjectRole.Person, InformationSubjectType.PersonIdentity),
                     Subject("item.prototype-sword", QuestSubjectRole.Item, InformationSubjectType.Custom),
-                    Subject("organization.prototype.guild", QuestSubjectRole.Organization, InformationSubjectType.Organization),
+                    Subject("organization.prototype.adventurers-guild", QuestSubjectRole.Organization, InformationSubjectType.Organization),
                     Subject("government.prototype.civic", QuestSubjectRole.Government, InformationSubjectType.Custom),
                     Subject("location.prototype.basement-prison", QuestSubjectRole.Location, InformationSubjectType.Location),
                     Subject("knowledge.prototype.quest-incident", QuestSubjectRole.Incident, InformationSubjectType.KnowledgeRecord),
@@ -256,7 +256,7 @@ namespace UnityIsekaiGame.Tests
 
         private static QuestIssuerReferenceData OrganizationIssuer()
         {
-            return new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" };
+            return new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" };
         }
 
         private static QuestRecipientReferenceData OpenRecipient()

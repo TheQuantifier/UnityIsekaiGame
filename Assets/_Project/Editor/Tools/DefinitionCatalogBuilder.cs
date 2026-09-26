@@ -50,7 +50,7 @@ namespace UnityIsekaiGame.Editor
                 .OrderBy(group => group.Key, StringComparer.Ordinal)
                 .ToArray();
             SerializedObject serialized = new SerializedObject(catalog);
-            serialized.FindProperty("contentVersion").stringValue = "phase-3.group-9.social-relationships-family";
+            serialized.FindProperty("contentVersion").stringValue = "phase-3.group-10.organizations-government-law";
             serialized.FindProperty("defaults").objectReferenceValue = defaults;
             SerializedProperty sections = serialized.FindProperty("sections");
             sections.arraySize = groups.Length;
@@ -64,7 +64,11 @@ namespace UnityIsekaiGame.Editor
                 for (int j = 0; j < values.Length; j++) definitions.GetArrayElementAtIndex(j).objectReferenceValue = values[j];
             }
 
-            string manifest = string.Join("\n", assets.Select(asset => $"{((IGameDefinition)asset).Id}|{AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset))}"));
+            string manifest = string.Join("\n", assets.Select(asset =>
+            {
+                string path = AssetDatabase.GetAssetPath(asset);
+                return $"{((IGameDefinition)asset).Id}|{AssetDatabase.AssetPathToGUID(path)}|{AssetDatabase.GetAssetDependencyHash(path)}";
+            }));
             using SHA256 sha = SHA256.Create();
             serialized.FindProperty("contentHash").stringValue = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(manifest))).Replace("-", string.Empty).ToLowerInvariant();
             serialized.ApplyModifiedPropertiesWithoutUndo();

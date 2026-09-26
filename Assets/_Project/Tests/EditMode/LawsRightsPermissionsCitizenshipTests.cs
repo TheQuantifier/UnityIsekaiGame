@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityIsekaiGame.Diplomacy;
+using UnityIsekaiGame.Crimes;
 using UnityIsekaiGame.Factions;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
@@ -29,9 +30,14 @@ namespace UnityIsekaiGame.Tests
             Assert.That(registry.TryGet(PrototypeLegalDefinitionFactory.SovereignAuthorityId, out LegalAuthorityDefinition authority), Is.True);
             Assert.That(registry.TryGet(PrototypeLegalDefinitionFactory.CentralStatuteId, out LegalInstrumentDefinition instrument), Is.True);
             Assert.That(registry.TryGet(PrototypeLegalDefinitionFactory.CitizenshipId, out CitizenshipDefinition citizenship), Is.True);
+            Assert.That(registry.TryGet(PrototypeLegalDefinitionFactory.WorldwideNoKillingRuleId, out LawRuleDefinition noKilling), Is.True);
+            Assert.That(registry.TryGet(PrototypeLegalDefinitionFactory.WorldwideNoStealingRuleId, out LawRuleDefinition noStealing), Is.True);
             Assert.That(authority.Category, Is.EqualTo(LegalAuthorityCategory.SovereignLegislative));
             Assert.That(instrument.Precedence, Is.GreaterThan(0));
             Assert.That(citizenship.Routes, Does.Contain(CitizenshipAcquisitionRoute.Grant));
+            Assert.That(noKilling.ScopeKind, Is.EqualTo(LawScopeKind.Worldwide));
+            Assert.That(noKilling.ActionId, Is.EqualTo("crime.killing"));
+            Assert.That(noStealing.ActionId, Is.EqualTo("crime.theft"));
         }
 
         [Test]
@@ -73,6 +79,52 @@ namespace UnityIsekaiGame.Tests
             Assert.That(immunity.Succeeded, Is.True, immunity.Message);
             Assert.That(immune.Status, Is.EqualTo(LegalApplicabilityStatus.Immune));
             Assert.That(fixture.Laws.Provisions.Single().versions.Single().effect, Is.EqualTo(LegalEffectCategory.Prohibition));
+        }
+
+        [Test]
+        public void WorldwideAndPlaceScopedRulesUseTheSameApplicabilityEvaluator()
+        {
+            RuntimeFixture fixture = CreateFixture();
+            EnactLegalInstrumentRequest worldwide = InstrumentRequest("worldwide", "crime.killing", LegalEffectCategory.Prohibition);
+            worldwide.jurisdictionIds = new[] { "jurisdiction.test.world" };
+            worldwide.provisions[0].version.territoryIds = Array.Empty<string>();
+            EnactLegalInstrumentRequest local = InstrumentRequest("local", "crime.restricted-place", LegalEffectCategory.Prohibition);
+            local.provisions[0].version.territoryIds = Array.Empty<string>();
+            local.provisions[0].version.placeIds = new[] { "place.test.capital" };
+            Assert.That(fixture.Laws.Enact(worldwide).Succeeded, Is.True);
+            Assert.That(fixture.Laws.Enact(local).Succeeded, Is.True);
+
+            LegalApplicabilityResult worldwideElsewhere = fixture.Laws.Evaluate(new LegalApplicabilityRequest { personId = PersonId, territoryId = "political-territory.somewhere-else", placeId = "place.somewhere-else", actionId = "crime.killing", worldTime = 11d });
+            LegalApplicabilityResult localInside = fixture.Laws.Evaluate(new LegalApplicabilityRequest { personId = PersonId, territoryId = "political-territory.test.realm", placeId = "place.test.capital", actionId = "crime.restricted-place", worldTime = 11d });
+            LegalApplicabilityResult localOutside = fixture.Laws.Evaluate(new LegalApplicabilityRequest { personId = PersonId, territoryId = "political-territory.test.realm", placeId = "place.test.road", actionId = "crime.restricted-place", worldTime = 11d });
+
+            Assert.That(worldwideElsewhere.Status, Is.EqualTo(LegalApplicabilityStatus.Prohibited));
+            Assert.That(localInside.Status, Is.EqualTo(LegalApplicabilityStatus.Prohibited));
+            Assert.That(localOutside.Status, Is.EqualTo(LegalApplicabilityStatus.NoApplicableLaw));
+        }
+
+        [Test]
+        public void InstrumentJurisdictionAndPrecedenceAreAuthoritative()
+        {
+            RuntimeFixture fixture = CreateFixture();
+            EnactLegalInstrumentRequest localPermission = InstrumentRequest("local-permission", "activity.precedence", LegalEffectCategory.Permission);
+            localPermission.instrumentDefinitionId = PrototypeLegalDefinitionFactory.MunicipalOrdinanceId;
+            EnactLegalInstrumentRequest centralProhibition = InstrumentRequest("central-prohibition", "activity.precedence", LegalEffectCategory.Prohibition);
+            Assert.That(fixture.Laws.Enact(localPermission).Succeeded, Is.True);
+            Assert.That(fixture.Laws.Enact(centralProhibition).Succeeded, Is.True);
+
+            LegalApplicabilityResult inside = fixture.Laws.Evaluate(Applicability("activity.precedence", 11d));
+            LegalApplicabilityResult wrongGovernment = fixture.Laws.Evaluate(new LegalApplicabilityRequest
+            {
+                personId = PersonId,
+                governmentId = "government.somewhere-else",
+                territoryId = "political-territory.test.realm",
+                actionId = "activity.precedence",
+                worldTime = 11d
+            });
+
+            Assert.That(inside.Status, Is.EqualTo(LegalApplicabilityStatus.Prohibited), "The higher-precedence central statute must control over a lower ordinance.");
+            Assert.That(wrongGovernment.Status, Is.EqualTo(LegalApplicabilityStatus.NoApplicableLaw), "A law must not leak into a different government merely because its provision scope matches.");
         }
 
         [Test]
@@ -239,19 +291,24 @@ namespace UnityIsekaiGame.Tests
             DiplomacyRuntime diplomacy = new DiplomacyRuntime(); diplomacy.Configure(registry, organizations, factions, authority, decisions, resources, PersistenceService.LocalWorldId, new[] { PersonId });
             GovernmentRuntime governments = new GovernmentRuntime(); governments.Configure(registry, organizations, memberships, authority, decisions, resources, factions, diplomacy, null, PersistenceService.LocalWorldId, new[] { PersonId }, Array.Empty<string>());
             Assert.That(governments.CreatePolity(new PolityCreateRequest { transactionId = "tx.polity", polityId = "polity.test.kingdom", polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Test Kingdom", worldTime = 1d }).Succeeded, Is.True);
-            Assert.That(governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.government", governmentId = "government.test.royal", governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = "polity.test.kingdom", officialName = "Test Government", primaryGoverningOrganizationId = "organization.prototype.guild", governingOrganizationIds = new[] { "organization.prototype.guild" }, level = GovernmentLevel.Central, worldTime = 2d }).Succeeded, Is.True);
+            Assert.That(governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.government", governmentId = "government.test.royal", governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = "polity.test.kingdom", officialName = "Test Government", primaryGoverningOrganizationId = "organization.prototype.adventurers-guild", governingOrganizationIds = new[] { "organization.prototype.adventurers-guild" }, level = GovernmentLevel.Central, worldTime = 2d }).Succeeded, Is.True);
             Assert.That(governments.CreateTerritory(new TerritoryCreateRequest { transactionId = "tx.territory", territoryId = "political-territory.test.realm", territoryDefinitionId = PrototypeGovernmentDefinitionFactory.RealmTerritoryDefinitionId, displayName = "Test Realm", polityId = "polity.test.kingdom", primaryGovernmentId = "government.test.royal", placeIds = new[] { "place.test.capital" }, worldTime = 3d }).Succeeded, Is.True);
             Assert.That(governments.CreateJurisdiction(new JurisdictionCreateRequest { transactionId = "tx.jurisdiction", jurisdictionId = "jurisdiction.test.general", jurisdictionDefinitionId = PrototypeGovernmentDefinitionFactory.GeneralJurisdictionDefinitionId, governmentId = "government.test.royal", category = JurisdictionCategory.GeneralGovernment, scopeDimensions = JurisdictionScopeDimension.Territory, territoryIds = new[] { "political-territory.test.realm" }, priority = 100, worldTime = 4d }).Succeeded, Is.True);
+            Assert.That(governments.CreateJurisdiction(new JurisdictionCreateRequest { transactionId = "tx.jurisdiction.world", jurisdictionId = "jurisdiction.test.world", jurisdictionDefinitionId = PrototypeGovernmentDefinitionFactory.GeneralJurisdictionDefinitionId, governmentId = "government.test.royal", category = JurisdictionCategory.GeneralGovernment, scopeDimensions = JurisdictionScopeDimension.SubjectMatter, subjectMatters = new[] { JurisdictionSubjectMatter.PublicOrder }, priority = 1000, worldTime = 4d }).Succeeded, Is.True);
             LegalRuntime laws = new LegalRuntime(); laws.Configure(registry, governments, organizations, authority, decisions, diplomacy, null, PersistenceService.LocalWorldId, new[] { PersonId }, Array.Empty<string>());
             return new RuntimeFixture(registry, organizations, authority, decisions, diplomacy, governments, laws);
         }
 
-        private static DefinitionRegistry CreateRegistry() => PrototypeLegalDefinitionFactory.AddMissingPrototypeLegalDefinitions(PrototypeGovernmentDefinitionFactory.AddMissingPrototypeGovernmentDefinitions(PrototypeDiplomacyDefinitionFactory.AddMissingPrototypeDiplomacyDefinitions(PrototypeFactionDefinitionFactory.AddMissingPrototypeFactionDefinitions(PrototypeOrganizationDecisionDefinitionFactory.AddMissingPrototypeOrganizationDecisionDefinitions(PrototypeOrganizationResourceDefinitionFactory.AddMissingPrototypeOrganizationResourceDefinitions(PrototypeOrganizationAuthorityDefinitionFactory.AddMissingPrototypeOrganizationAuthorityDefinitions(PrototypeOrganizationMembershipDefinitionFactory.AddMissingPrototypeOrganizationMembershipDefinitions(PrototypeOrganizationDefinitionFactory.AddMissingPrototypeOrganizationDefinitions(new DefinitionRegistry(Array.Empty<IGameDefinition>()))))))))));
+        private static DefinitionRegistry CreateRegistry()
+        {
+            DefinitionRegistry registry = PrototypeLegalDefinitionFactory.AddMissingPrototypeLegalDefinitions(PrototypeGovernmentDefinitionFactory.AddMissingPrototypeGovernmentDefinitions(PrototypeDiplomacyDefinitionFactory.AddMissingPrototypeDiplomacyDefinitions(PrototypeFactionDefinitionFactory.AddMissingPrototypeFactionDefinitions(PrototypeOrganizationDecisionDefinitionFactory.AddMissingPrototypeOrganizationDecisionDefinitions(PrototypeOrganizationResourceDefinitionFactory.AddMissingPrototypeOrganizationResourceDefinitions(PrototypeOrganizationAuthorityDefinitionFactory.AddMissingPrototypeOrganizationAuthorityDefinitions(PrototypeOrganizationMembershipDefinitionFactory.AddMissingPrototypeOrganizationMembershipDefinitions(PrototypeOrganizationDefinitionFactory.AddMissingPrototypeOrganizationDefinitions(new DefinitionRegistry(Array.Empty<IGameDefinition>()))))))))));
+            return PrototypeCrimeDefinitionFactory.AddMissingPrototypeCrimeDefinitions(registry);
+        }
 
         private static EnactLegalInstrumentRequest InstrumentRequest(string suffix, string actionId, LegalEffectCategory effect)
         {
             string definitionId = effect switch { LegalEffectCategory.Right => PrototypeLegalDefinitionFactory.RightProvisionId, LegalEffectCategory.Prohibition => PrototypeLegalDefinitionFactory.ProhibitionProvisionId, _ => PrototypeLegalDefinitionFactory.PermissionProvisionId };
-            return new EnactLegalInstrumentRequest { transactionId = $"tx.enact.{suffix}", instrumentId = $"legal-instrument.test.{suffix}", instrumentDefinitionId = PrototypeLegalDefinitionFactory.CentralStatuteId, authorityDefinitionId = PrototypeLegalDefinitionFactory.SovereignAuthorityId, title = "Test Law", governmentId = "government.test.royal", organizationId = "organization.prototype.guild", jurisdictionIds = new[] { "jurisdiction.test.general" }, enactmentWorldTime = 5d, publicationWorldTime = 5d, effectiveWorldTime = 10d, published = true, visibility = PoliticalVisibility.Public, trustedSystemOperation = true, provisions = new[] { new LegalProvisionCreateRequest { provisionId = $"legal-provision.test.{suffix}", provisionDefinitionId = definitionId, version = new LegalProvisionVersionData { actionId = actionId, territoryIds = new[] { "political-territory.test.realm" }, effectiveWorldTime = 10d } } } };
+            return new EnactLegalInstrumentRequest { transactionId = $"tx.enact.{suffix}", instrumentId = $"legal-instrument.test.{suffix}", instrumentDefinitionId = PrototypeLegalDefinitionFactory.CentralStatuteId, authorityDefinitionId = PrototypeLegalDefinitionFactory.SovereignAuthorityId, title = "Test Law", governmentId = "government.test.royal", organizationId = "organization.prototype.adventurers-guild", jurisdictionIds = new[] { "jurisdiction.test.general" }, enactmentWorldTime = 5d, publicationWorldTime = 5d, effectiveWorldTime = 10d, published = true, visibility = PoliticalVisibility.Public, trustedSystemOperation = true, provisions = new[] { new LegalProvisionCreateRequest { provisionId = $"legal-provision.test.{suffix}", provisionDefinitionId = definitionId, version = new LegalProvisionVersionData { actionId = actionId, territoryIds = new[] { "political-territory.test.realm" }, effectiveWorldTime = 10d } } } };
         }
 
         private static EnactLegalInstrumentRequest CloneRequest(EnactLegalInstrumentRequest source, bool preview) { EnactLegalInstrumentRequest clone = InstrumentRequest(source.instrumentId.Split('.').Last(), source.provisions[0].version.actionId, source.provisions[0].version.effect); clone.transactionId = source.transactionId; clone.preview = preview; return clone; }

@@ -103,8 +103,8 @@ namespace UnityIsekaiGame.Tests
             fixture.EnsureSeniorSmithQualified("capacity");
             PositionEmploymentOperationResult senior = fixture.Appoint("senior-capacity", PersonId, ProfessionContentIds.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", ProfessionContentIds.ForgeOrganizationTypeId, ProfessionContentIds.PositionDutyAssignAuthorityId);
             PositionEmploymentOperationResult secondFullTime = fixture.Appoint("senior-conflict", PersonId, ProfessionContentIds.RoyalForgeSeniorSmithPositionId, "organization.prototype.royal-forge", ProfessionContentIds.ForgeOrganizationTypeId, ProfessionContentIds.PositionDutyAssignAuthorityId);
-            PositionEmploymentOperationResult clerk = fixture.Appoint("guild-clerk", PersonId, ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
-            PositionEmploymentOperationResult clerkOther = fixture.Appoint("guild-clerk-other", OtherPersonId, ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId, existingPosition: clerk.Position.positionInstanceId);
+            PositionEmploymentOperationResult clerk = fixture.Appoint("guild-clerk", PersonId, ProfessionContentIds.GuildClerkPositionId, "organization.prototype.adventurers-guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
+            PositionEmploymentOperationResult clerkOther = fixture.Appoint("guild-clerk-other", OtherPersonId, ProfessionContentIds.GuildClerkPositionId, "organization.prototype.adventurers-guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId, existingPosition: clerk.Position.positionInstanceId);
             PositionEligibilityResult full = fixture.Positions.EvaluateEligibility(PersonId, clerk.Position.positionInstanceId, privilegedDiagnostics: true);
 
             Assert.That(senior.Succeeded, Is.True, senior.Message);
@@ -159,8 +159,8 @@ namespace UnityIsekaiGame.Tests
             Fixture fixture = CreateFixture();
             fixture.EnsureSeniorSmithQualified("persist");
             fixture.Promote(ProfessionContentIds.BlacksmithRankMasterId, "persist-master");
-            PositionEmploymentOperationResult supervisor = fixture.Appoint("supervisor", PersonId, ProfessionContentIds.ApprenticeSupervisorPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionAppointAuthorityId);
-            PositionEmploymentOperationResult clerk = fixture.Appoint("clerk", PersonId, ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
+            PositionEmploymentOperationResult supervisor = fixture.Appoint("supervisor", PersonId, ProfessionContentIds.ApprenticeSupervisorPositionId, "organization.prototype.adventurers-guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionAppointAuthorityId);
+            PositionEmploymentOperationResult clerk = fixture.Appoint("clerk", PersonId, ProfessionContentIds.GuildClerkPositionId, "organization.prototype.adventurers-guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
             PositionEmploymentOperationResult reporting = fixture.Positions.AssignSupervisor(clerk.Position.positionInstanceId, supervisor.Position.positionInstanceId, "tx.reporting");
             PositionEmploymentOperationResult cycle = fixture.Positions.AssignSupervisor(supervisor.Position.positionInstanceId, clerk.Position.positionInstanceId, "tx.reporting.cycle");
             PositionEmploymentOperationResult secretDuty = fixture.Positions.AssignDuty("duty-assignment.secret", clerk.Employment.employmentId, ProfessionContentIds.GuildClerkRecordDutyId, "30", "tx.secret-duty");
@@ -199,8 +199,8 @@ namespace UnityIsekaiGame.Tests
         public void TransferContractEndAndRetirementAreAtomicAndDoNotGrantSeparateProgression()
         {
             Fixture fixture = CreateFixture();
-            PositionEmploymentOperationResult clerk = fixture.Appoint("transfer-clerk", PersonId, ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
-            PositionEmploymentOperationResult contractorPosition = fixture.CreatePosition("transfer-contractor", ProfessionContentIds.IndependentContractorPositionId, "organization.prototype.independent", ProfessionContentIds.IndependentOrganizationTypeId, 4);
+            PositionEmploymentOperationResult clerk = fixture.Appoint("transfer-clerk", PersonId, ProfessionContentIds.GuildClerkPositionId, "organization.prototype.adventurers-guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
+            PositionEmploymentOperationResult contractorPosition = fixture.CreatePosition("transfer-contractor", ProfessionContentIds.IndependentContractorPositionId, "organization.prototype.royal-forge", ProfessionContentIds.IndependentOrganizationTypeId, 4);
             PositionEligibilityResult contractorEligibility = fixture.Positions.EvaluateEligibility(PersonId, contractorPosition.Position.positionInstanceId, privilegedDiagnostics: true);
             int professionCount = fixture.Professions.QueryByPerson(PersonId, activeOnly: true).Count;
             int credentialCount = fixture.Credentials.QueryByRecipient(PersonId, activeOnly: true).Count;
@@ -210,14 +210,14 @@ namespace UnityIsekaiGame.Tests
             fixture.Positions.TryGetEmployment(clerk.Employment.employmentId, out EmploymentRecordData formerClerk);
             fixture.Positions.TryGetEmployment("employment.transfer.contractor", out EmploymentRecordData transferredContractor);
             PositionEmploymentOperationResult contractEnd = fixture.Positions.EndContract(transferredContractor.employmentId, "41", "tx.position.contract-end");
-            PositionEmploymentOperationResult retirePosition = fixture.CreatePosition("retire-contractor", ProfessionContentIds.IndependentContractorPositionId, "organization.prototype.independent", ProfessionContentIds.IndependentOrganizationTypeId, 1);
+            PositionEmploymentOperationResult retirePosition = fixture.CreatePosition("retire-contractor", ProfessionContentIds.IndependentContractorPositionId, "organization.prototype.royal-forge", ProfessionContentIds.IndependentOrganizationTypeId, 1);
             PositionEligibilityResult retireEligibility = fixture.Positions.EvaluateEligibility(PersonId, retirePosition.Position.positionInstanceId, privilegedDiagnostics: true);
             PositionEmploymentOperationResult retirementAppointment = fixture.Positions.AppointPerson("employment.retire.contractor", string.Empty, PersonId, retirePosition.Position.positionInstanceId, GuildAuthority, retireEligibility.Snapshot, "42", "tx.position.retire-appoint", EmploymentClassification.IndependentServiceFoundation);
             PositionEmploymentOperationResult retirement = fixture.Positions.Retire(retirementAppointment.Employment.employmentId, "43", "tx.position.retire");
 
             Fixture atomicFixture = CreateFixture();
-            PositionEmploymentOperationResult atomicClerk = atomicFixture.Appoint("atomic-clerk", PersonId, ProfessionContentIds.GuildClerkPositionId, "organization.prototype.guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
-            PositionEmploymentOperationResult atomicTarget = atomicFixture.CreatePosition("atomic-contractor", ProfessionContentIds.IndependentContractorPositionId, "organization.prototype.independent", ProfessionContentIds.IndependentOrganizationTypeId, 1);
+            PositionEmploymentOperationResult atomicClerk = atomicFixture.Appoint("atomic-clerk", PersonId, ProfessionContentIds.GuildClerkPositionId, "organization.prototype.adventurers-guild", ProfessionContentIds.GuildOrganizationTypeId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId);
+            PositionEmploymentOperationResult atomicTarget = atomicFixture.CreatePosition("atomic-contractor", ProfessionContentIds.IndependentContractorPositionId, "organization.prototype.royal-forge", ProfessionContentIds.IndependentOrganizationTypeId, 1);
             PositionEligibilityResult atomicEligibility = atomicFixture.Positions.EvaluateEligibility(PersonId, atomicTarget.Position.positionInstanceId, privilegedDiagnostics: true);
             PositionEligibilitySnapshotData stale = atomicEligibility.Snapshot.Clone();
             stale.evaluationHash = "stale";
@@ -302,8 +302,8 @@ namespace UnityIsekaiGame.Tests
             public ProfessionalRankRuntime Ranks { get; }
             public PositionEmploymentRuntime Positions { get; }
             public string[] KnownPersons { get; } = { PersonId, OtherPersonId };
-            public string[] KnownOrganizations { get; } = { "organization.prototype.guild", "organization.prototype.royal-forge", "organization.prototype.temple", "organization.prototype.university", "organization.prototype.government", "organization.prototype.independent" };
-            public string[] KnownAuthorities { get; } = { GuildAuthority, "authority.medical.prototype", ProfessionContentIds.PositionAppointAuthorityId, ProfessionContentIds.PositionDutyAssignAuthorityId, ProfessionContentIds.PositionSuperviseAuthorityId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId, ProfessionContentIds.BlacksmithTeachPermissionId, ProfessionContentIds.ForgeRestrictedStationPermissionId, "organization.prototype.guild" };
+            public string[] KnownOrganizations { get; } = { "organization.prototype.adventurers-guild", "organization.prototype.royal-forge", "organization.prototype.temple", "organization.prototype.university", "organization.prototype.government" };
+            public string[] KnownAuthorities { get; } = { GuildAuthority, "authority.medical.prototype", ProfessionContentIds.PositionAppointAuthorityId, ProfessionContentIds.PositionDutyAssignAuthorityId, ProfessionContentIds.PositionSuperviseAuthorityId, ProfessionContentIds.PositionRestrictedRecordsAuthorityId, ProfessionContentIds.BlacksmithTeachPermissionId, ProfessionContentIds.ForgeRestrictedStationPermissionId, "organization.prototype.adventurers-guild" };
 
             public PositionEmploymentRuntime NewPositionsRuntime()
             {

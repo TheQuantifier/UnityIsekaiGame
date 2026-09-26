@@ -223,6 +223,7 @@ namespace UnityIsekaiGame.Organizations
         public string transactionId;
         public string operation;
         public string subjectId;
+        public long revision;
 
         public OrganizationMembershipTransactionRecordData Clone()
         {
@@ -230,7 +231,8 @@ namespace UnityIsekaiGame.Organizations
             {
                 transactionId = transactionId ?? string.Empty,
                 operation = operation ?? string.Empty,
-                subjectId = subjectId ?? string.Empty
+                subjectId = subjectId ?? string.Empty,
+                revision = revision
             };
         }
     }
@@ -327,6 +329,7 @@ namespace UnityIsekaiGame.Organizations
         public string officeId;
         public string membershipId;
         public bool acting;
+        public bool proposed;
         public double worldTime;
         public double expectedEndWorldTime = -1d;
         public string appointedById;
@@ -335,6 +338,16 @@ namespace UnityIsekaiGame.Organizations
         public string sourceRecordId;
         public string provenanceId;
         public string transactionId;
+        public bool preview;
+    }
+
+    public sealed class OrganizationOfficeAssignmentTransitionRequest
+    {
+        public string transactionId;
+        public string officeAssignmentId;
+        public OrganizationOfficeAssignmentState targetState;
+        public double worldTime;
+        public string sourceEventId;
         public bool preview;
     }
 

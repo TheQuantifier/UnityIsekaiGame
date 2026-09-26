@@ -172,7 +172,7 @@ namespace UnityIsekaiGame.Tests
                             questDefinitionId = "quest-definition.prototype.guild-posting",
                             worldId = World,
                             lifecycleState = QuestRuntimeLifecycleState.Available,
-                            issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
+                            issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" },
                             intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = PersonId },
                             origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.guild", interactionPointId = "interaction-point.prototype.guild-board" },
                             subjectLinks = new[] { new QuestSubjectLinkData { role = QuestSubjectRole.Location, subject = new InformationSubjectReferenceData { subjectType = InformationSubjectType.Location, subjectId = "location.prototype.dungeon" } } },

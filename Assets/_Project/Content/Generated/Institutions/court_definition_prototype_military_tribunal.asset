@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 935b338bc12ff37498cebe42acf26c0b, type: 3}
+  m_Name: court_definition_prototype_military_tribunal
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Justice:CourtDefinition
+  definitionId: court-definition.prototype.military-tribunal
+  displayName: Military Tribunal
+  description: 
+  visibility: 0
+  tags:
+  - court
+  - justice
+  version: 1
+  category: 7
+  supportedCases: 02000000
+  supportedCharges: 02000000
+  firstInstance: 1
+  appellate: 0
+  requiredJudgeCount: 1
+  defaultStandard: 6
+  availableOutcomes: 0300000006000000020000000500000004000000
+  availableSentences: 01000000020000000300000004000000

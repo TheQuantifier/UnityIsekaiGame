@@ -380,7 +380,7 @@ namespace UnityIsekaiGame.Development.Automation
                 RequesterPersonId = "person.prototype.hero",
                 PersonId = "person.prototype.hero",
                 LocationId = "location.prototype.guild",
-                OrganizationId = "organization.prototype.guild",
+                OrganizationId = "organization.prototype.adventurers-guild",
                 WorldTime = 9d,
                 Limit = 25
             });
@@ -889,7 +889,7 @@ namespace UnityIsekaiGame.Development.Automation
             CompleteGuildObjectives(objectives, assignment, "outcome.complete");
 
             QuestCompletionEvaluationResult wrongCounter = outcomes.EvaluateCompletion(new QuestCompletionEvaluationRequest { assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.other", worldTime = 4d });
-            QuestOutcomeOperationResult complete = outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.quest.outcome.complete", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", locationId = "location.prototype.adventurers-guild", issuerId = "organization.prototype.guild", worldTime = assignment.AssignedWorldTime + 2d });
+            QuestOutcomeOperationResult complete = outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.quest.outcome.complete", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", locationId = "location.prototype.adventurers-guild", issuerId = "organization.prototype.adventurers-guild", worldTime = assignment.AssignedWorldTime + 2d });
             QuestOutcomeOperationResult duplicate = outcomes.Complete(new QuestCompletionRequest { transactionId = "tx.quest.outcome.complete", assignmentId = assignment.AssignmentId, requesterPersonId = assignment.AssigneePersonId, interactionPointId = "interaction-point.prototype.adventurer-guild-counter", worldTime = assignment.AssignedWorldTime + 2.1d });
 
             bool valid = wrongCounter.Status == QuestOutcomeOperationStatus.TurnInRequired
@@ -2432,7 +2432,7 @@ namespace UnityIsekaiGame.Development.Automation
                 questSourceDefinitionId = PrototypeQuestSourceDefinitionFactory.AdventurerGuildCounterDefinitionId,
                 hostLocationId = "location.prototype.adventurers-guild",
                 interactionPointId = "interaction-point.prototype.adventurer-guild-counter",
-                operatingOrganizationId = "organization.prototype.guild",
+                operatingOrganizationId = "organization.prototype.adventurers-guild",
                 sceneBindingKey = "scene.prototype.guild.counter",
                 worldTime = 1d
             });
@@ -2447,7 +2447,7 @@ namespace UnityIsekaiGame.Development.Automation
                 questSourceDefinitionId = PrototypeQuestSourceDefinitionFactory.AdventurerGuildBoardDefinitionId,
                 hostLocationId = "location.prototype.adventurers-guild",
                 interactionPointId = "interaction-point.prototype.guild-board",
-                operatingOrganizationId = "organization.prototype.guild",
+                operatingOrganizationId = "organization.prototype.adventurers-guild",
                 sceneBindingKey = "scene.prototype.guild.board",
                 worldTime = 1d
             });
@@ -2614,8 +2614,8 @@ namespace UnityIsekaiGame.Development.Automation
                 transactionId = transactionId,
                 questId = questId,
                 recipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = personId },
-                institutionalIssuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
-                offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild", actingPersonId = "person.prototype.guild-clerk" },
+                institutionalIssuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" },
+                offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild", actingPersonId = "person.prototype.guild-clerk" },
                 channel = QuestOfferChannel.GuildCounter,
                 sourceInteractionPointId = "interaction-point.prototype.adventurer-guild-counter",
                 sourceLocationId = "location.prototype.adventurers-guild",
@@ -2648,7 +2648,7 @@ namespace UnityIsekaiGame.Development.Automation
                 transactionId = $"tx.quest.{transaction}",
                 questId = questId,
                 questDefinitionId = PrototypeQuestDefinitionFactory.GuildPostingDefinitionId,
-                issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
+                issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" },
                 intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Open },
                 origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.adventurers-guild", interactionPointId = "interaction-point.prototype.adventurer-guild-counter" },
                 subjectLinks = new[] { Subject("location.prototype.dungeon-entry", QuestSubjectRole.Location, InformationSubjectType.Location) },
@@ -2663,7 +2663,7 @@ namespace UnityIsekaiGame.Development.Automation
                 transactionId = $"tx.quest.{transaction}",
                 questDefinitionId = PrototypeQuestDefinitionFactory.DynamicBountyDefinitionId,
                 repeatInstanceKey = key,
-                issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" },
+                issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" },
                 intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Open },
                 origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.adventurers-guild", interactionPointId = "interaction-point.prototype.guild-board" },
                 subjectLinks = new[] { Subject($"encounter.prototype.{key}", QuestSubjectRole.Encounter, InformationSubjectType.Custom) },
@@ -2710,7 +2710,7 @@ namespace UnityIsekaiGame.Development.Automation
                     revision = 2,
                     quests = new List<QuestRecordData>
                     {
-                        new QuestRecordData { questId = QuestId, questDefinitionId = PrototypeQuestDefinitionFactory.GuildPostingDefinitionId, worldId = World, lifecycleState = QuestRuntimeLifecycleState.Available, issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.guild" }, intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = PersonId }, origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.guild", interactionPointId = "interaction-point.prototype.guild-board" }, visibility = QuestVisibility.Public, createdWorldTime = 1d }
+                        new QuestRecordData { questId = QuestId, questDefinitionId = PrototypeQuestDefinitionFactory.GuildPostingDefinitionId, worldId = World, lifecycleState = QuestRuntimeLifecycleState.Available, issuer = new QuestIssuerReferenceData { issuerType = QuestIssuerType.Organization, issuerId = "organization.prototype.adventurers-guild" }, intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = PersonId }, origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.QuestBoard, locationId = "location.prototype.guild", interactionPointId = "interaction-point.prototype.guild-board" }, visibility = QuestVisibility.Public, createdWorldTime = 1d }
                     },
                     events = new List<QuestRuntimeEventData>
                     {
@@ -2831,11 +2831,11 @@ namespace UnityIsekaiGame.Development.Automation
             snapshot.Objectives.objectives[0].satisfiedWorldTime = 9d;
             snapshot.Sources.sources[0].hostLocationId = "location.prototype.guild";
             snapshot.Sources.sources[0].interactionPointId = "interaction-point.prototype.guild-board";
-            snapshot.Sources.sources[0].operatingOrganizationId = "organization.prototype.guild";
+            snapshot.Sources.sources[0].operatingOrganizationId = "organization.prototype.adventurers-guild";
             snapshot.Sources.listings[0].claimedAssignmentId = "assignment.prototype.automation";
             snapshot.Conversations.conversations[0].hostLocationId = "location.prototype.guild";
             snapshot.Conversations.conversations[0].hostInteractionPointId = "interaction-point.prototype.adventurer-guild-counter";
-            snapshot.Conversations.conversations[0].operatingOrganizationId = "organization.prototype.guild";
+            snapshot.Conversations.conversations[0].operatingOrganizationId = "organization.prototype.adventurers-guild";
             return snapshot.Clone();
         }
 

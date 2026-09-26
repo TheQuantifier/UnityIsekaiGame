@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Governments;
+using UnityIsekaiGame.Crimes;
 
 namespace UnityIsekaiGame.Laws
 {
@@ -35,6 +36,12 @@ namespace UnityIsekaiGame.Laws
         public const string TemporaryResidentStatusId = "legal-status.prototype.temporary-resident";
         public const string StatelessStatusId = "legal-status.prototype.stateless";
         public const string CitizenshipId = "citizenship.prototype.general";
+        public const string WorldwideNoKillingRuleId = "law-rule.world.no-killing";
+        public const string WorldwideNoStealingRuleId = "law-rule.world.no-stealing";
+        public const string FundamentalWorldCodeInstrumentId = "legal-instrument.world.fundamental-code";
+        public const string WorldGovernmentId = "government.world.fundamental-authority";
+        public const string WorldAuthorityOrganizationId = "organization.world.fundamental-authority";
+        public const string WorldJurisdictionId = "jurisdiction.world.fundamental-law";
 
         public static DefinitionRegistry AddMissingPrototypeLegalDefinitions(DefinitionRegistry source)
         {
@@ -68,6 +75,8 @@ namespace UnityIsekaiGame.Laws
             Add(Status(TemporaryResidentStatusId, "Temporary Resident", LegalStatusCategory.TemporaryResident, false, true));
             Add(Status(StatelessStatusId, "Stateless Person", LegalStatusCategory.StatelessPerson, false, false));
             CitizenshipDefinition citizenship = ScriptableObject.CreateInstance<CitizenshipDefinition>(); citizenship.DevelopmentConfigure(CitizenshipId, "General Citizenship", Enum.GetValues(typeof(CitizenshipAcquisitionRoute)).Cast<CitizenshipAcquisitionRoute>().Where(item => item != CitizenshipAcquisitionRoute.Unknown), true, true); Add(citizenship);
+            Add(Rule(WorldwideNoKillingRuleId, "No Killing", "crime.killing", PrototypeCrimeDefinitionFactory.UnlawfulKillingOffenseId, "FWC 1"));
+            Add(Rule(WorldwideNoStealingRuleId, "No Stealing", "crime.theft", PrototypeCrimeDefinitionFactory.TheftOffenseId, "FWC 2"));
             return new DefinitionRegistry(all);
         }
 
@@ -75,5 +84,28 @@ namespace UnityIsekaiGame.Laws
         private static LegalInstrumentDefinition Instrument(string id, string name, LegalInstrumentCategory category, int precedence, double emergency = -1d) { LegalInstrumentDefinition value = ScriptableObject.CreateInstance<LegalInstrumentDefinition>(); value.DevelopmentConfigure(id, name, category, precedence, LegalConflictPolicy.HigherPrecedenceWins, publication: true, emergencyDuration: emergency); return value; }
         private static LegalProvisionDefinition Provision(string id, string name, LegalEffectCategory effect, IEnumerable<LegalInstrumentCategory> instruments) { LegalProvisionDefinition value = ScriptableObject.CreateInstance<LegalProvisionDefinition>(); value.DevelopmentConfigure(id, name, effect, instruments); return value; }
         private static LegalStatusDefinition Status(string id, string name, LegalStatusCategory category, bool polity, bool multiple) { LegalStatusDefinition value = ScriptableObject.CreateInstance<LegalStatusDefinition>(); value.DevelopmentConfigure(id, name, category, polity, multiple); return value; }
+        private static LawRuleDefinition Rule(string id, string name, string actionId, string offenseDefinitionId, string citation)
+        {
+            LawRuleDefinition value = ScriptableObject.CreateInstance<LawRuleDefinition>();
+            value.DevelopmentConfigure(
+                id,
+                name,
+                actionId,
+                offenseDefinitionId,
+                FundamentalWorldCodeInstrumentId,
+                "Fundamental World Code",
+                "World Code",
+                citation,
+                CentralStatuteId,
+                SovereignAuthorityId,
+                WorldGovernmentId,
+                WorldAuthorityOrganizationId,
+                new[] { WorldJurisdictionId },
+                LawScopeKind.Worldwide,
+                minimumCredibleReportReliabilityBasisPoints: 6000,
+                reportWantedDefinitionId: PrototypeCrimeDefinitionFactory.WantedForQuestioningDefinitionId,
+                authorityWantedDefinitionId: PrototypeCrimeDefinitionFactory.WantedForArrestDefinitionId);
+            return value;
+        }
     }
 }

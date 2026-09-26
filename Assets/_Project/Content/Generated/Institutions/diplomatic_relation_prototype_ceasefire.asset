@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c90bfeeb1a1ff5d43ae7ea1157037a9f, type: 3}
+  m_Name: diplomatic_relation_prototype_ceasefire
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Diplomacy.DiplomaticRelationDefinition
+  relationDefinitionId: diplomatic-relation.prototype.ceasefire
+  displayName: Prototype Ceasefire Relation
+  description: 
+  category: 8
+  reciprocityPolicy: 2
+  defaultVisibility: 0
+  requiresRecognition: 0
+  createsMilitaryObligation: 0
+  supportsWarState: 1
+  requiredAuthorityPermissionIds: []
+  referencedSocialNormIds: []
+  tags:
+  - diplomacy
+  - organizations
+  - prototype
+  version: 1

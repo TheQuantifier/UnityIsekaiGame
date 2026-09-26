@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityIsekaiGame.ActorLifecycle;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Crimes;
 using UnityIsekaiGame.GameData;
@@ -33,6 +34,8 @@ namespace UnityIsekaiGame.Gameplay
         private bool socialOrganizationSubscribed;
         private readonly Dictionary<string, PersonKnowledgeRuntime> npcKnowledgeByPerson = new Dictionary<string, PersonKnowledgeRuntime>(StringComparer.Ordinal);
         private readonly Dictionary<string, PersonMemoryRuntime> npcMemoryByPerson = new Dictionary<string, PersonMemoryRuntime>(StringComparer.Ordinal);
+        private readonly Dictionary<ActorLifecycleController, Action<ActorLifecycleResult>> lifecycleDeathHandlers = new Dictionary<ActorLifecycleController, Action<ActorLifecycleResult>>();
+        private readonly Dictionary<ActorLifecycleController, PendingCrimeDeathAttribution> pendingCrimeDeaths = new Dictionary<ActorLifecycleController, PendingCrimeDeathAttribution>();
         private Transform npcCognitionRoot;
 
         public IReadOnlyList<string> KnownSocialPersonIds => socialSimulation?.KnownPeople ?? GetPrototypeSocialPersonIds(ResolvePlayerPersonId());
@@ -123,6 +126,12 @@ namespace UnityIsekaiGame.Gameplay
                 SceneCombatDamageBridge.DamageApplied -= HandleSceneCombatDamageApplied;
                 socialCombatSubscribed = false;
             }
+            foreach (KeyValuePair<ActorLifecycleController, Action<ActorLifecycleResult>> subscription in lifecycleDeathHandlers.ToArray())
+            {
+                if (subscription.Key != null) subscription.Key.ActorDied -= subscription.Value;
+            }
+            lifecycleDeathHandlers.Clear();
+            pendingCrimeDeaths.Clear();
 
             if (worldSocialCognitionParticipant != null)
             {
@@ -257,6 +266,30 @@ namespace UnityIsekaiGame.Gameplay
                 targetPerson,
                 "combat.damage",
                 $"social.combat.{result.Request.TransactionId}");
+
+            ActorLifecycleController targetLifecycle = target == null ? null : target.GetComponentInParent<ActorLifecycleController>();
+            if (targetLifecycle != null)
+            {
+                pendingCrimeDeaths[targetLifecycle] = new PendingCrimeDeathAttribution(sourcePerson, targetPerson, result.Request.TransactionId);
+                if (!lifecycleDeathHandlers.ContainsKey(targetLifecycle))
+                {
+                    Action<ActorLifecycleResult> handler = death => HandleAttributedActorDeath(targetLifecycle, death);
+                    lifecycleDeathHandlers[targetLifecycle] = handler;
+                    targetLifecycle.ActorDied += handler;
+                }
+            }
+            if (result.BecameZero && targetLifecycle != null && targetLifecycle.State == ActorLifecycleState.Dead)
+            {
+                RecordKillingCrime(sourcePerson, targetPerson, result.Request.TransactionId);
+            }
+        }
+
+        private void HandleAttributedActorDeath(ActorLifecycleController lifecycle, ActorLifecycleResult result)
+        {
+            if (lifecycle == null || result == null || !result.Succeeded || result.Preview || result.Duplicate || !pendingCrimeDeaths.TryGetValue(lifecycle, out PendingCrimeDeathAttribution attribution)) return;
+            pendingCrimeDeaths.Remove(lifecycle);
+            string transactionId = string.IsNullOrWhiteSpace(result.TransactionId) ? attribution.TransactionId : result.TransactionId;
+            RecordKillingCrime(attribution.SourcePersonId, attribution.TargetPersonId, transactionId);
         }
 
         private void HandleCrimeStateChanged(CrimeMutationEvent change)
@@ -268,7 +301,8 @@ namespace UnityIsekaiGame.Gameplay
 
             string personId = string.Empty;
             double worldTime = playTimeTracker == null ? Time.unscaledTimeAsDouble : playTimeTracker.CumulativeSeconds;
-            if (string.Equals(change.Operation, "create-wanted-status", StringComparison.Ordinal)
+            if ((string.Equals(change.Operation, "create-wanted-status", StringComparison.Ordinal)
+                    || string.Equals(change.Operation, "upsert-wanted-status", StringComparison.Ordinal))
                 && Crimes.TryGetWantedStatus(change.SubjectId, out WantedStatusRecordData wanted))
             {
                 personId = wanted.subjectId;
@@ -352,6 +386,20 @@ namespace UnityIsekaiGame.Gameplay
 
             WorldEntityIdentity entity = actor.GetComponentInParent<WorldEntityIdentity>();
             return entity != null && entity.EntityId.StartsWith("person.", StringComparison.Ordinal) ? entity.EntityId : string.Empty;
+        }
+
+        private readonly struct PendingCrimeDeathAttribution
+        {
+            public PendingCrimeDeathAttribution(string sourcePersonId, string targetPersonId, string transactionId)
+            {
+                SourcePersonId = sourcePersonId ?? string.Empty;
+                TargetPersonId = targetPersonId ?? string.Empty;
+                TransactionId = transactionId ?? string.Empty;
+            }
+
+            public string SourcePersonId { get; }
+            public string TargetPersonId { get; }
+            public string TransactionId { get; }
         }
     }
 }

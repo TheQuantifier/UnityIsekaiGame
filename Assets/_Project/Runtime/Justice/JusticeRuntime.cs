@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using UnityIsekaiGame.Crimes;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Governments;
@@ -152,6 +153,21 @@ namespace UnityIsekaiGame.Justice
                 custody = new CustodyRecordData { custodyId = custodyId, category = request.voluntarySurrender ? CustodyCategory.VoluntarySurrenderCustody : definition.Category == ArrestCategory.MilitaryApprehension ? CustodyCategory.MilitaryCustody : CustodyCategory.ArrestCustody, personId = personId, currentHolderGovernmentId = JusticeModelUtility.N(request.executingGovernmentId), currentHolderOrganizationId = JusticeModelUtility.N(request.executingOrganizationId), currentFacilityPlaceId = JusticeModelUtility.N(request.custodyFacilityPlaceId), legalBasis = basis?.Clone(), sourceArrestId = id, lifecycleState = CustodyLifecycleState.Active, startWorldTime = request.arrestWorldTime, reviewDueWorldTime = definition.DefaultDetentionReviewInterval <= 0d ? -1d : request.arrestWorldTime + definition.DefaultDetentionReviewInterval, visibility = request.visibility, revision = 1 };
             }
             if (request.preview) return JusticeOperationResult.Success("Arrest previewed.", before, before, id, preview: true);
+            if (basis != null && !string.IsNullOrWhiteSpace(basis.incidentId) && crimes != null)
+            {
+                CrimeOperationResult wanted = crimes.ReconcileWantedStatusesForJustice(new WantedStatusJusticeResolutionRequest
+                {
+                    transactionId = $"justice.arrest.wanted.{id}",
+                    resolutionId = id,
+                    subjectPersonId = personId,
+                    incidentIds = new[] { basis.incidentId },
+                    targetState = WantedStatusLifecycleState.Suspended,
+                    includeWarrantDerived = true,
+                    correctionReason = $"Subject apprehended by arrest '{id}'.",
+                    worldTime = request.arrestWorldTime
+                });
+                if (!wanted.Succeeded) return Fail(JusticeOperationCode.InvalidState, $"Arrest could not reconcile wanted status: {wanted.Message}", before);
+            }
             arrests[id] = record;
             if (custody != null) custodyRecords[custody.custodyId] = custody;
             Complete(request.transactionId, "arrest", id);
@@ -279,7 +295,7 @@ namespace UnityIsekaiGame.Justice
             if (!cases.ContainsKey(request.caseId)) return Fail(JusticeOperationCode.MissingCase, $"Case '{request.caseId}' is missing.", before);
             if (!charges.ContainsKey(request.chargeId)) return Fail(JusticeOperationCode.MissingCharge, $"Charge '{request.chargeId}' is missing.", before);
             if (request.preview) return JusticeOperationResult.Success("Plea previewed.", before, before, id, preview: true);
-            pleas[id] = new PleaRecordData { pleaId = id, caseId = JusticeModelUtility.N(request.caseId), chargeId = JusticeModelUtility.N(request.chargeId), defendantPersonId = JusticeModelUtility.N(request.defendantPersonId), category = request.category, statement = request.statement ?? string.Empty, enteredWorldTime = request.enteredWorldTime, agreementPlaceholder = request.agreementPlaceholder, revision = 1 };
+            pleas[id] = new PleaRecordData { pleaId = id, caseId = JusticeModelUtility.N(request.caseId), chargeId = JusticeModelUtility.N(request.chargeId), defendantPersonId = JusticeModelUtility.N(request.defendantPersonId), category = request.category, statement = request.statement ?? string.Empty, enteredWorldTime = request.enteredWorldTime, hasPleaAgreement = request.hasPleaAgreement, revision = 1 };
             Complete(request.transactionId, "plea", id);
             Revision++;
             return Commit(JusticeOperationResult.Success("Formal response recorded without forcing judgment.", before, Revision, id));
@@ -390,6 +406,32 @@ namespace UnityIsekaiGame.Justice
             if (outcomes.Length == 0 || outcomes.Any(item => item.outcome == JudgmentOutcome.Unknown || !charges.ContainsKey(item.chargeId))) return Fail(JusticeOperationCode.InvalidRequest, "Judgment must contain valid charge-level outcomes.", before);
             JudgmentRecordData record = new JudgmentRecordData { judgmentId = id, caseId = courtCase.caseId, courtId = courtCase.courtId, chargeOutcomes = outcomes, lifecycleState = JudgmentLifecycleState.Entered, enteredWorldTime = request.enteredWorldTime, visibility = request.visibility, revision = 1 };
             if (request.preview) return JusticeOperationResult.Success("Judgment previewed.", before, before, id, preview: true);
+            if (crimes != null)
+            {
+                var resolutionGroups = outcomes
+                    .Select(outcome => new { Outcome = outcome, Charge = charges.TryGetValue(outcome.chargeId, out ChargeRecordData charge) ? charge : null })
+                    .Where(item => item.Charge != null && !string.IsNullOrWhiteSpace(item.Charge.incidentId) && !string.IsNullOrWhiteSpace(item.Charge.defendantPersonId))
+                    .GroupBy(item => $"{item.Charge.defendantPersonId}\u001f{item.Charge.incidentId}", StringComparer.Ordinal);
+                foreach (var group in resolutionGroups)
+                {
+                    ChargeRecordData charge = group.First().Charge;
+                    bool adverse = group.Any(item => item.Outcome.outcome == JudgmentOutcome.Guilty || item.Outcome.outcome == JudgmentOutcome.Liable);
+                    bool exonerating = group.All(item => item.Outcome.outcome == JudgmentOutcome.Acquitted || item.Outcome.outcome == JudgmentOutcome.Dismissed || item.Outcome.outcome == JudgmentOutcome.NotProven || item.Outcome.outcome == JudgmentOutcome.NotResponsible || item.Outcome.outcome == JudgmentOutcome.Vacated);
+                    if (!adverse && !exonerating) continue;
+                    CrimeOperationResult wanted = crimes.ReconcileWantedStatusesForJustice(new WantedStatusJusticeResolutionRequest
+                    {
+                        transactionId = $"justice.judgment.wanted.{id}.{charge.chargeId}",
+                        resolutionId = id,
+                        subjectPersonId = charge.defendantPersonId,
+                        incidentIds = new[] { charge.incidentId },
+                        targetState = WantedStatusLifecycleState.Cleared,
+                        includeWarrantDerived = exonerating,
+                        correctionReason = exonerating ? $"Cleared by exonerating judgment '{id}'." : $"Pretrial wanted status concluded by judgment '{id}'.",
+                        worldTime = request.enteredWorldTime
+                    });
+                    if (!wanted.Succeeded) return Fail(JusticeOperationCode.InvalidState, $"Judgment could not reconcile wanted status: {wanted.Message}", before);
+                }
+            }
             judgments[id] = record;
             courtCase.judgmentIds = JusticeModelUtility.C(courtCase.judgmentIds.Concat(new[] { id }));
             courtCase.lifecycleState = CourtCaseLifecycleState.JudgmentEntered;
@@ -600,7 +642,7 @@ namespace UnityIsekaiGame.Justice
 
         public JusticeRuntimeSaveData CreateSaveData()
         {
-            return new JusticeRuntimeSaveData { schemaVersion = 1, worldId = JusticeModelUtility.N(worldId), revision = Revision, courts = Courts.ToArray(), arrests = Arrests.ToArray(), custodyRecords = CustodyRecords.ToArray(), releaseOrders = ReleaseOrders.ToArray(), charges = Charges.ToArray(), cases = Cases.ToArray(), pleas = Pleas.ToArray(), hearings = Hearings.ToArray(), evidenceSubmissions = EvidenceSubmissions.ToArray(), rulings = Rulings.ToArray(), findings = Findings.ToArray(), judgments = Judgments.ToArray(), sentences = Sentences.ToArray(), remedies = Remedies.ToArray(), appeals = Appeals.ToArray(), clemencies = Clemencies.ToArray(), transactions = transactions.Values.OrderBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray() };
+            return new JusticeRuntimeSaveData { schemaVersion = 1, worldId = JusticeModelUtility.N(worldId), revision = Revision, courts = Courts.ToArray(), arrests = Arrests.ToArray(), custodyRecords = CustodyRecords.ToArray(), releaseOrders = ReleaseOrders.ToArray(), charges = Charges.ToArray(), cases = Cases.ToArray(), pleas = Pleas.ToArray(), hearings = Hearings.ToArray(), evidenceSubmissions = EvidenceSubmissions.ToArray(), rulings = Rulings.ToArray(), findings = Findings.ToArray(), judgments = Judgments.ToArray(), sentences = Sentences.ToArray(), remedies = Remedies.ToArray(), appeals = Appeals.ToArray(), clemencies = Clemencies.ToArray(), transactions = transactions.Values.OrderBy(item => item.revision).ThenBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).RetainNewestTransactions().ToArray() };
         }
 
         public JusticeOperationResult RestoreFromSaveData(JusticeRuntimeSaveData saveData, DefinitionRegistry definitions, GovernmentRuntime governmentRuntime, LegalRuntime legalRuntime, OrganizationRuntime organizationRuntime, OrganizationAuthorityRuntime authorityRuntime, CrimeRuntime crimeRuntime, string expectedWorldId, IEnumerable<string> knownPersons, IEnumerable<string> knownPlaces)
@@ -726,7 +768,7 @@ namespace UnityIsekaiGame.Justice
         private bool Def<T>(string id, out T definition) where T : class, IGameDefinition { definition = null; return registry != null && registry.TryGet(JusticeModelUtility.N(id), out definition); }
         private bool Duplicate(string tx, string operation, string subject, long before, out JusticeOperationResult result) { tx = JusticeModelUtility.N(tx); result = null; if (string.IsNullOrEmpty(tx) || !transactions.TryGetValue(tx, out JusticeTransactionRecordData existing)) return false; result = existing.operation == operation && existing.subjectId == subject ? JusticeOperationResult.Success("Duplicate justice transaction ignored.", before, before, subject, duplicate: true) : Fail(JusticeOperationCode.InvalidRequest, $"Transaction '{tx}' has different identity.", before); return true; }
         private void Complete(string tx, string operation, string subject) { tx = JusticeModelUtility.N(tx); if (!string.IsNullOrEmpty(tx)) transactions[tx] = new JusticeTransactionRecordData { transactionId = tx, operation = operation, subjectId = subject, revision = Revision + 1 }; }
-        private JusticeOperationResult Commit(JusticeOperationResult result) { Action<JusticeOperationResult> handlers = OperationCommitted; if (handlers != null) foreach (Action<JusticeOperationResult> handler in handlers.GetInvocationList()) try { handler(result); } catch { } JusticeMutationEvent change = new JusticeMutationEvent(transactions.Values.Where(item => item.revision == Revision && item.subjectId == result.SubjectId).OrderBy(item => item.transactionId, StringComparer.Ordinal).FirstOrDefault()?.operation ?? string.Empty, result.SubjectId, Revision, result); Action<JusticeMutationEvent> changeHandlers = StateChanged; if (changeHandlers != null) foreach (Action<JusticeMutationEvent> handler in changeHandlers.GetInvocationList()) try { handler(change); } catch { } return result; }
+        private JusticeOperationResult Commit(JusticeOperationResult result) { Action<JusticeOperationResult> handlers = OperationCommitted; if (handlers != null) foreach (Action<JusticeOperationResult> handler in handlers.GetInvocationList()) try { handler(result); } catch (Exception exception) { Debug.LogException(exception); } JusticeMutationEvent change = new JusticeMutationEvent(transactions.Values.Where(item => item.revision == Revision && item.subjectId == result.SubjectId).OrderBy(item => item.transactionId, StringComparer.Ordinal).FirstOrDefault()?.operation ?? string.Empty, result.SubjectId, Revision, result); Action<JusticeMutationEvent> changeHandlers = StateChanged; if (changeHandlers != null) foreach (Action<JusticeMutationEvent> handler in changeHandlers.GetInvocationList()) try { handler(change); } catch (Exception exception) { Debug.LogException(exception); } return result; }
         private JusticeOperationResult Fail(JusticeOperationCode code, string message, long revision) => JusticeOperationResult.Failure(code, message, revision);
         private static bool Unique(IEnumerable<string> values, string label, out string failure) { string[] ids = (values ?? Array.Empty<string>()).Select(JusticeModelUtility.N).ToArray(); if (ids.Any(string.IsNullOrEmpty) || ids.Distinct(StringComparer.Ordinal).Count() != ids.Length) { failure = $"Justice save contains invalid or duplicate {label} IDs."; return false; } failure = string.Empty; return true; }
         private void RestoreInternal(JusticeRuntimeSaveData source) { Reset(); JusticeRuntimeSaveData data = source.Clone(); worldId = data.worldId; Revision = data.revision; foreach (var item in data.courts) courts[item.courtId] = item; foreach (var item in data.arrests) arrests[item.arrestId] = item; foreach (var item in data.custodyRecords) custodyRecords[item.custodyId] = item; foreach (var item in data.releaseOrders) releaseOrders[item.releaseOrderId] = item; foreach (var item in data.charges) charges[item.chargeId] = item; foreach (var item in data.cases) cases[item.caseId] = item; foreach (var item in data.pleas) pleas[item.pleaId] = item; foreach (var item in data.hearings) hearings[item.hearingId] = item; foreach (var item in data.evidenceSubmissions) evidenceSubmissions[item.evidenceSubmissionId] = item; foreach (var item in data.rulings) rulings[item.rulingId] = item; foreach (var item in data.findings) findings[item.findingId] = item; foreach (var item in data.judgments) judgments[item.judgmentId] = item; foreach (var item in data.sentences) sentences[item.sentenceId] = item; foreach (var item in data.remedies) remedies[item.remedyId] = item; foreach (var item in data.appeals) appeals[item.appealId] = item; foreach (var item in data.clemencies) clemencies[item.clemencyId] = item; foreach (var item in data.transactions) transactions[item.transactionId] = item; }

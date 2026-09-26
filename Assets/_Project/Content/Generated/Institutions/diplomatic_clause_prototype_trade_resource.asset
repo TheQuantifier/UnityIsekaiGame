@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce38f58445e49804392746501272abae, type: 3}
+  m_Name: diplomatic_clause_prototype_trade_resource
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Diplomacy:DiplomaticClauseDefinition
+  clauseDefinitionId: diplomatic-clause.prototype.trade-resource
+  displayName: Trade Resource Clause
+  category: 4
+  defaultVisibility: 0
+  allowedParameterTypes: 04000000
+  breachTrackable: 1
+  referencesExternalContract: 1
+  tags:
+  - diplomacy
+  - organizations
+  - prototype

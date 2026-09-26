@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 358b3cfc88d1ae94c8409fe91130eb1d, type: 3}
+  m_Name: legal_provision_prototype_duty
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Laws:LegalProvisionDefinition
+  definitionId: legal-provision.prototype.duty
+  displayName: Legal Duty
+  description: 
+  visibility: 0
+  tags:
+  - law
+  - provision
+  version: 1
+  effectCategory: 3
+  supportedInstruments: 0100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d00000064000000

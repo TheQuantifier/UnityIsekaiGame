@@ -231,6 +231,12 @@ namespace UnityIsekaiGame.Inventory
                 Debug.LogWarning($"{name} could not collect tracked dropped item '{runtimeItemInstanceId}': {result.Message}");
                 return true;
             }
+            if (snapshot.OwnershipKind == ItemOwnershipKind.PersonOwned
+                && !string.IsNullOrWhiteSpace(snapshot.OwnerPersonId)
+                && !string.Equals(snapshot.OwnerPersonId, services.PlayerPersonId, System.StringComparison.Ordinal))
+            {
+                services.RecordTheftCrime(services.PlayerPersonId, snapshot.OwnerPersonId, snapshot.ItemInstanceId, $"pickup.{snapshot.ItemInstanceId}");
+            }
             services.CancelNaturalDecomposition(runtimeItemInstanceId);
             PrototypeHudMessageBus.Show($"Picked up {item.DisplayName}");
             CompletePickup();

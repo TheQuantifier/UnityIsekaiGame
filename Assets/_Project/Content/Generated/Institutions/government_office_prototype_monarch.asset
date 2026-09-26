@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497d9929869cd7046a3165d88c8cfbe6, type: 3}
+  m_Name: government_office_prototype_monarch
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Governments:GovernmentOfficeDefinition
+  officeDefinitionId: government-office.prototype.monarch
+  displayName: King or Queen
+  description: 
+  organizationOfficeDefinitionId: organization-office.prototype.civic.monarch
+  institutionRole: 1
+  authorityTier: 60
+  superiorOfficeDefinitionId: 
+  eligibilityRule: 0
+  allowedSelectionMethods: 010000000b0000000d00000009000000
+  headOfGovernment: 1
+  requiresConfirmation: 1
+  permitsActingHolder: 1
+  defaultTermDuration: -1
+  authorityRoleDefinitionId: organization-authority-role.prototype.monarch
+  tags:
+  - government
+  - office
+  - prototype
+  version: 1

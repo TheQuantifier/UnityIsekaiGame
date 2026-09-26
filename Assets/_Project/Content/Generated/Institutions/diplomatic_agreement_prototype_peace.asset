@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c16793eef3eda4040a7db71216791232, type: 3}
+  m_Name: diplomatic_agreement_prototype_peace
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Diplomacy:DiplomaticAgreementDefinition
+  agreementDefinitionId: diplomatic-agreement.prototype.peace
+  displayName: Prototype Peace Agreement
+  description: 
+  category: 9
+  defaultVisibility: 0
+  minimumPrincipalParties: 2
+  requiresSignatures: 1
+  requiresRatification: 0
+  permitsSecretClauses: 0
+  createsAutomaticMilitaryAssistance: 0
+  allowedClauseDefinitionIds:
+  - diplomatic-clause.prototype.peace
+  - diplomatic-clause.prototype.recognition
+  - diplomatic-clause.prototype.withdrawal
+  requiredAuthorityPermissionIds: []
+  tags:
+  - diplomacy
+  - organizations
+  - prototype
+  version: 1

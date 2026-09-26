@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 259e97db72115094a88062681cb41b96, type: 3}
+  m_Name: organization_rank_prototype_guild_sss
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:OrganizationRankDefinition
+  rankDefinitionId: organization-rank.prototype.guild.sss
+  displayName: SSS Rank
+  rankTrackDefinitionId: organization-rank-track.prototype.guild.rating
+  rankOrder: 90
+  priorRankDefinitionIds:
+  - organization-rank.prototype.guild.ss
+  applicableOrganizationIds: []
+  equivalentProfessionalRankDefinitionIds: []
+  terminalRank: 1
+  secret: 0
+  version: 1

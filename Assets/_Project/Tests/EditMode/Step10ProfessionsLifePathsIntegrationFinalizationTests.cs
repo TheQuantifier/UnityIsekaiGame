@@ -13,7 +13,7 @@ namespace UnityIsekaiGame.Tests
         private const string CatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
         private const string PersonId = "person.step10.integration";
         private const string OtherPersonId = "person.step10.other";
-        private const string GuildOrganizationId = "organization.prototype.guild";
+        private const string GuildOrganizationId = "organization.prototype.adventurers-guild";
         private const string GuildAuthorityId = "authority.guild.prototype";
 
         [Test]

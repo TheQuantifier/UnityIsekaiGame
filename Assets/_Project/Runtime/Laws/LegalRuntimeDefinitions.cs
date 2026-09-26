@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityIsekaiGame.Crimes;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Governments;
 
@@ -25,8 +26,143 @@ namespace UnityIsekaiGame.Laws
         public virtual void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report) { if (report == null) return; if (string.IsNullOrWhiteSpace(Id)) report.AddError($"{GetType().Name} has no stable ID."); }
     }
 
+    [CreateAssetMenu(fileName = "LawRuleDefinition", menuName = "Unity Isekai Game/Laws/Law Rule Definition")]
+    public class LawRuleDefinition : LegalDefinitionBase
+    {
+        [Header("Legal rule")]
+        [SerializeField] private LegalEffectCategory effect = LegalEffectCategory.Prohibition;
+        [SerializeField] private string actionId;
+        [SerializeField] private string offenseDefinitionId;
+        [SerializeField] private string subjectMatterId;
+
+        [Header("Instrument and authority")]
+        [SerializeField] private string instrumentId;
+        [SerializeField] private string instrumentTitle;
+        [SerializeField] private string instrumentShortTitle;
+        [SerializeField] private string citation;
+        [SerializeField] private string instrumentDefinitionId;
+        [SerializeField] private string authorityDefinitionId;
+        [SerializeField] private string issuingGovernmentId;
+        [SerializeField] private string issuingOrganizationId;
+        [SerializeField] private string issuingOfficeId;
+        [SerializeField] private string[] jurisdictionIds = Array.Empty<string>();
+
+        [Header("Scope")]
+        [SerializeField] private LawScopeKind scopeKind = LawScopeKind.Worldwide;
+        [SerializeField] private string[] territoryIds = Array.Empty<string>();
+        [SerializeField] private string[] placeIds = Array.Empty<string>();
+        [SerializeField] private string[] propertyIds = Array.Empty<string>();
+        [SerializeField] private string[] organizationIds = Array.Empty<string>();
+
+        [Header("Discovery and enforcement")]
+        [SerializeField, Range(0, 10000)] private int credibleReportReliabilityBasisPoints = 6000;
+        [SerializeField] private string reportedWantedDefinitionId;
+        [SerializeField] private string authorityDiscoveredWantedDefinitionId;
+
+        public LegalEffectCategory Effect => effect;
+        public string ActionId => PoliticalModelUtility.Normalize(actionId);
+        public string OffenseDefinitionId => PoliticalModelUtility.Normalize(offenseDefinitionId);
+        public string SubjectMatterId => PoliticalModelUtility.Normalize(subjectMatterId);
+        public string InstrumentId => PoliticalModelUtility.Normalize(instrumentId);
+        public string InstrumentTitle => string.IsNullOrWhiteSpace(instrumentTitle) ? DisplayName : instrumentTitle.Trim();
+        public string InstrumentShortTitle => string.IsNullOrWhiteSpace(instrumentShortTitle) ? InstrumentTitle : instrumentShortTitle.Trim();
+        public string Citation => citation?.Trim() ?? string.Empty;
+        public string InstrumentDefinitionId => PoliticalModelUtility.Normalize(instrumentDefinitionId);
+        public string AuthorityDefinitionId => PoliticalModelUtility.Normalize(authorityDefinitionId);
+        public string IssuingGovernmentId => PoliticalModelUtility.Normalize(issuingGovernmentId);
+        public string IssuingOrganizationId => PoliticalModelUtility.Normalize(issuingOrganizationId);
+        public string IssuingOfficeId => PoliticalModelUtility.Normalize(issuingOfficeId);
+        public IReadOnlyList<string> JurisdictionIds => PoliticalModelUtility.Clean(jurisdictionIds);
+        public LawScopeKind ScopeKind => scopeKind;
+        public IReadOnlyList<string> TerritoryIds => PoliticalModelUtility.Clean(territoryIds);
+        public IReadOnlyList<string> PlaceIds => PoliticalModelUtility.Clean(placeIds);
+        public IReadOnlyList<string> PropertyIds => PoliticalModelUtility.Clean(propertyIds);
+        public IReadOnlyList<string> OrganizationIds => PoliticalModelUtility.Clean(organizationIds);
+        public int CredibleReportReliabilityBasisPoints => Mathf.Clamp(credibleReportReliabilityBasisPoints, 0, 10000);
+        public string ReportedWantedDefinitionId => PoliticalModelUtility.Normalize(reportedWantedDefinitionId);
+        public string AuthorityDiscoveredWantedDefinitionId => PoliticalModelUtility.Normalize(authorityDiscoveredWantedDefinitionId);
+        public string ProvisionId => $"legal-provision.{Id}";
+
+        public void DevelopmentConfigure(
+            string id,
+            string name,
+            string prohibitedActionId,
+            string legalOffenseDefinitionId,
+            string legalInstrumentId,
+            string title,
+            string shortTitle,
+            string legalCitation,
+            string legalInstrumentDefinitionId,
+            string legalAuthorityDefinitionId,
+            string governmentId,
+            string organizationId,
+            IEnumerable<string> legalJurisdictionIds,
+            LawScopeKind scope,
+            IEnumerable<string> scopedTerritoryIds = null,
+            IEnumerable<string> scopedPlaceIds = null,
+            IEnumerable<string> scopedPropertyIds = null,
+            IEnumerable<string> scopedOrganizationIds = null,
+            int minimumCredibleReportReliabilityBasisPoints = 6000,
+            string reportWantedDefinitionId = "",
+            string authorityWantedDefinitionId = "",
+            string officeId = "")
+        {
+            ConfigureBase(id, name, PoliticalVisibility.Public, new[] { "law", "rule", "crime" });
+            effect = LegalEffectCategory.Prohibition;
+            actionId = PoliticalModelUtility.Normalize(prohibitedActionId);
+            offenseDefinitionId = PoliticalModelUtility.Normalize(legalOffenseDefinitionId);
+            subjectMatterId = string.Empty;
+            instrumentId = PoliticalModelUtility.Normalize(legalInstrumentId);
+            instrumentTitle = title?.Trim() ?? string.Empty;
+            instrumentShortTitle = shortTitle?.Trim() ?? string.Empty;
+            citation = legalCitation?.Trim() ?? string.Empty;
+            instrumentDefinitionId = PoliticalModelUtility.Normalize(legalInstrumentDefinitionId);
+            authorityDefinitionId = PoliticalModelUtility.Normalize(legalAuthorityDefinitionId);
+            issuingGovernmentId = PoliticalModelUtility.Normalize(governmentId);
+            issuingOrganizationId = PoliticalModelUtility.Normalize(organizationId);
+            issuingOfficeId = PoliticalModelUtility.Normalize(officeId);
+            jurisdictionIds = PoliticalModelUtility.Clean(legalJurisdictionIds);
+            scopeKind = scope;
+            territoryIds = PoliticalModelUtility.Clean(scopedTerritoryIds);
+            placeIds = PoliticalModelUtility.Clean(scopedPlaceIds);
+            propertyIds = PoliticalModelUtility.Clean(scopedPropertyIds);
+            organizationIds = PoliticalModelUtility.Clean(scopedOrganizationIds);
+            credibleReportReliabilityBasisPoints = Mathf.Clamp(minimumCredibleReportReliabilityBasisPoints, 0, 10000);
+            reportedWantedDefinitionId = PoliticalModelUtility.Normalize(reportWantedDefinitionId);
+            authorityDiscoveredWantedDefinitionId = PoliticalModelUtility.Normalize(authorityWantedDefinitionId);
+        }
+
+        public override void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitions, DefinitionValidationReport report)
+        {
+            base.ValidateCatalogDefinition(definitions, report);
+            if (effect == LegalEffectCategory.Unknown) report?.AddError($"Law rule '{DisplayName}' has no legal effect.");
+            if (string.IsNullOrWhiteSpace(ActionId)) report?.AddError($"Law rule '{DisplayName}' has no action ID.");
+            if (scopeKind == LawScopeKind.Unknown) report?.AddError($"Law rule '{DisplayName}' has no scope.");
+            if (string.IsNullOrWhiteSpace(InstrumentId) || string.IsNullOrWhiteSpace(InstrumentDefinitionId) || string.IsNullOrWhiteSpace(AuthorityDefinitionId)) report?.AddError($"Law rule '{DisplayName}' has incomplete instrument metadata.");
+            if (string.IsNullOrWhiteSpace(IssuingGovernmentId) || JurisdictionIds.Count == 0) report?.AddError($"Law rule '{DisplayName}' has no issuing government or jurisdiction.");
+            if (scopeKind == LawScopeKind.Worldwide && (TerritoryIds.Count > 0 || PlaceIds.Count > 0 || PropertyIds.Count > 0 || OrganizationIds.Count > 0)) report?.AddError($"Worldwide law rule '{DisplayName}' cannot also contain a local scope.");
+            if (scopeKind == LawScopeKind.Territory && TerritoryIds.Count == 0) report?.AddError($"Territory law rule '{DisplayName}' has no territory.");
+            if (scopeKind == LawScopeKind.Place && PlaceIds.Count == 0) report?.AddError($"Place law rule '{DisplayName}' has no place.");
+            if (scopeKind == LawScopeKind.Property && PropertyIds.Count == 0) report?.AddError($"Property law rule '{DisplayName}' has no property.");
+            if (scopeKind == LawScopeKind.Organization && OrganizationIds.Count == 0) report?.AddError($"Organization law rule '{DisplayName}' has no organization.");
+            ValidateReference<LegalOffenseDefinition>(OffenseDefinitionId, "offense", definitions, report);
+            ValidateReference<LegalInstrumentDefinition>(InstrumentDefinitionId, "instrument definition", definitions, report);
+            ValidateReference<LegalAuthorityDefinition>(AuthorityDefinitionId, "authority definition", definitions, report);
+            ValidateReference<WantedStatusDefinition>(ReportedWantedDefinitionId, "reported wanted status", definitions, report);
+            ValidateReference<WantedStatusDefinition>(AuthorityDiscoveredWantedDefinitionId, "authority wanted status", definitions, report);
+        }
+
+        private void ValidateReference<T>(string id, string label, IReadOnlyDictionary<string, IGameDefinition> definitions, DefinitionValidationReport report) where T : class, IGameDefinition
+        {
+            if (string.IsNullOrWhiteSpace(id) || definitions == null || !definitions.TryGetValue(id, out IGameDefinition definition) || definition is not T)
+            {
+                report?.AddError($"Law rule '{DisplayName}' references a missing {label} '{id}'.");
+            }
+        }
+    }
+
     [CreateAssetMenu(fileName = "LegalAuthorityDefinition", menuName = "Unity Isekai Game/Laws/Legal Authority Definition")]
-    public sealed class LegalAuthorityDefinition : LegalDefinitionBase
+    public class LegalAuthorityDefinition : LegalDefinitionBase
     {
         [SerializeField] private LegalAuthorityCategory category;
         [SerializeField] private GovernmentLevel[] governmentLevels = Array.Empty<GovernmentLevel>();
@@ -47,7 +183,7 @@ namespace UnityIsekaiGame.Laws
     }
 
     [CreateAssetMenu(fileName = "LegalInstrumentDefinition", menuName = "Unity Isekai Game/Laws/Legal Instrument Definition")]
-    public sealed class LegalInstrumentDefinition : LegalDefinitionBase
+    public class LegalInstrumentDefinition : LegalDefinitionBase
     {
         [SerializeField] private LegalInstrumentCategory category;
         [SerializeField] private int precedence;
@@ -63,7 +199,7 @@ namespace UnityIsekaiGame.Laws
     }
 
     [CreateAssetMenu(fileName = "LegalProvisionDefinition", menuName = "Unity Isekai Game/Laws/Legal Provision Definition")]
-    public sealed class LegalProvisionDefinition : LegalDefinitionBase
+    public class LegalProvisionDefinition : LegalDefinitionBase
     {
         [SerializeField] private LegalEffectCategory effectCategory;
         [SerializeField] private LegalInstrumentCategory[] supportedInstruments = Array.Empty<LegalInstrumentCategory>();
@@ -73,7 +209,7 @@ namespace UnityIsekaiGame.Laws
     }
 
     [CreateAssetMenu(fileName = "LegalStatusDefinition", menuName = "Unity Isekai Game/Laws/Legal Status Definition")]
-    public sealed class LegalStatusDefinition : LegalDefinitionBase
+    public class LegalStatusDefinition : LegalDefinitionBase
     {
         [SerializeField] private LegalStatusCategory category;
         [SerializeField] private bool requiresPolity;
@@ -86,7 +222,7 @@ namespace UnityIsekaiGame.Laws
     }
 
     [CreateAssetMenu(fileName = "CitizenshipDefinition", menuName = "Unity Isekai Game/Laws/Citizenship Definition")]
-    public sealed class CitizenshipDefinition : LegalDefinitionBase
+    public class CitizenshipDefinition : LegalDefinitionBase
     {
         [SerializeField] private CitizenshipAcquisitionRoute[] routes = Array.Empty<CitizenshipAcquisitionRoute>();
         [SerializeField] private bool requiresConsent = true;

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5f4261908c34a88a510ef2977041e86, type: 3}
+  m_Name: person_prototype_monarch
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.People.PersonDefinition
+  personId: person.prototype.monarch
+  displayName: Prototype Monarch
+  title: 
+  shortDescription: 
+  portrait: {fileID: 0}
+  primaryCategory: {fileID: 0}
+  tags: []
+  beingDefinition: {fileID: 0}
+  actorProfile: {fileID: 0}
+  homePlace: {fileID: 0}
+  primaryFaction: {fileID: 0}
+  publicRoleTitle: Monarch
+  leadershipOfFaction: {fileID: 0}
+  importance: 1
+  chronologicalAgeYears: 62
+  lifeStage: 3

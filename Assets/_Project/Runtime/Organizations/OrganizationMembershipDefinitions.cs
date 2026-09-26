@@ -242,7 +242,7 @@ namespace UnityIsekaiGame.Organizations
     }
 
     [CreateAssetMenu(fileName = "OrganizationRankTrackDefinition", menuName = "Unity Isekai Game/Organizations/Rank Track Definition")]
-    public sealed class OrganizationRankTrackDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class OrganizationRankTrackDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string rankTrackDefinitionId;
         [SerializeField] private string displayName;
@@ -306,13 +306,14 @@ namespace UnityIsekaiGame.Organizations
     }
 
     [CreateAssetMenu(fileName = "OrganizationRankDefinition", menuName = "Unity Isekai Game/Organizations/Rank Definition")]
-    public sealed class OrganizationRankDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class OrganizationRankDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string rankDefinitionId;
         [SerializeField] private string displayName;
         [SerializeField] private string rankTrackDefinitionId;
         [SerializeField] private int rankOrder;
         [SerializeField] private string[] priorRankDefinitionIds = Array.Empty<string>();
+        [SerializeField] private string[] applicableOrganizationIds = Array.Empty<string>();
         [SerializeField] private string[] equivalentProfessionalRankDefinitionIds = Array.Empty<string>();
         [SerializeField] private bool terminalRank;
         [SerializeField] private bool secret;
@@ -323,22 +324,30 @@ namespace UnityIsekaiGame.Organizations
         public string RankTrackDefinitionId => rankTrackDefinitionId ?? string.Empty;
         public int RankOrder => Math.Max(0, rankOrder);
         public IReadOnlyList<string> PriorRankDefinitionIds => OrganizationMembershipDefinition.Clean(priorRankDefinitionIds);
+        public IReadOnlyList<string> ApplicableOrganizationIds => OrganizationMembershipDefinition.Clean(applicableOrganizationIds);
         public IReadOnlyList<string> EquivalentProfessionalRankDefinitionIds => OrganizationMembershipDefinition.Clean(equivalentProfessionalRankDefinitionIds);
         public bool TerminalRank => terminalRank;
         public bool Secret => secret;
         public int Version => Math.Max(1, version);
 
-        public void DevelopmentConfigure(string id, string name, string trackId, int order, IEnumerable<string> priorRanks = null, IEnumerable<string> professionalRanks = null, bool terminal = false, bool isSecret = false)
+        public void DevelopmentConfigure(string id, string name, string trackId, int order, IEnumerable<string> priorRanks = null, IEnumerable<string> professionalRanks = null, bool terminal = false, bool isSecret = false, IEnumerable<string> organizationIds = null)
         {
             rankDefinitionId = id?.Trim();
             displayName = string.IsNullOrWhiteSpace(name) ? id : name.Trim();
             rankTrackDefinitionId = trackId ?? string.Empty;
             rankOrder = Math.Max(0, order);
             priorRankDefinitionIds = OrganizationMembershipDefinition.Clean(priorRanks).ToArray();
+            applicableOrganizationIds = OrganizationMembershipDefinition.Clean(organizationIds).ToArray();
             equivalentProfessionalRankDefinitionIds = OrganizationMembershipDefinition.Clean(professionalRanks).ToArray();
             terminalRank = terminal;
             secret = isSecret;
             version = 1;
+        }
+
+        public bool AppliesToOrganization(string organizationId)
+        {
+            return ApplicableOrganizationIds.Count == 0
+                || ApplicableOrganizationIds.Contains(string.IsNullOrWhiteSpace(organizationId) ? string.Empty : organizationId.Trim());
         }
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
@@ -381,7 +390,7 @@ namespace UnityIsekaiGame.Organizations
     }
 
     [CreateAssetMenu(fileName = "OrganizationOfficeDefinition", menuName = "Unity Isekai Game/Organizations/Office Definition")]
-    public sealed class OrganizationOfficeDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class OrganizationOfficeDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string officeDefinitionId;
         [SerializeField] private string displayName;

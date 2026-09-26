@@ -1826,12 +1826,11 @@ namespace UnityIsekaiGame.Development.Automation
             ProfessionContentIds.PositionRestrictedRecordsAuthorityId,
             ProfessionContentIds.BlacksmithTeachPermissionId,
             ProfessionContentIds.ForgeRestrictedStationPermissionId,
-            "organization.prototype.guild",
+            "organization.prototype.adventurers-guild",
             "organization.prototype.royal-forge",
             "organization.prototype.temple",
             "organization.prototype.university",
             "organization.prototype.government",
-            "organization.prototype.independent",
             PersistenceService.LocalPlayerId
         };
 

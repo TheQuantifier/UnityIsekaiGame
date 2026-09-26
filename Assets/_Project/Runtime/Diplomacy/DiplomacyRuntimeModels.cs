@@ -468,6 +468,7 @@ namespace UnityIsekaiGame.Diplomacy
         public string transactionId;
         public string operation;
         public string subjectId;
+        public long revision;
 
         public DiplomaticTransactionRecordData Clone()
         {
@@ -475,7 +476,8 @@ namespace UnityIsekaiGame.Diplomacy
             {
                 transactionId = transactionId ?? string.Empty,
                 operation = operation ?? string.Empty,
-                subjectId = subjectId ?? string.Empty
+                subjectId = subjectId ?? string.Empty,
+                revision = revision
             };
         }
     }

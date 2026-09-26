@@ -156,7 +156,7 @@ namespace UnityIsekaiGame.Tests
         {
             DefinitionRegistry registry = Registry();
             string[] knownPersons = { PersonId, "person.observer" };
-            string[] knownAuthorities = { "authority.guild.prototype", "authority.medical.prototype", "organization.prototype.guild" };
+            string[] knownAuthorities = { "authority.guild.prototype", "authority.medical.prototype", "organization.prototype.adventurers-guild" };
             PersonProfessionRuntime professions = new PersonProfessionRuntime();
             professions.Configure(registry, knownPersons);
             ProfessionOperationResult relationship = professions.AddRelationship(new AddProfessionRelationshipRequest

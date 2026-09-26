@@ -33,8 +33,6 @@ namespace UnityIsekaiGame.People
         [SerializeField] private FactionDefinition primaryFaction;
         [SerializeField] private string publicRoleTitle;
         [SerializeField] private FactionDefinition leadershipOfFaction;
-        [SerializeField] private string factionIdPlaceholder;
-        [SerializeField] private string settlementIdPlaceholder;
         [SerializeField] private PersonImportance importance = PersonImportance.Standard;
         [SerializeField, Min(0)] private int chronologicalAgeYears = 18;
         [SerializeField] private PersonLifeStage lifeStage = PersonLifeStage.Adult;
@@ -54,8 +52,6 @@ namespace UnityIsekaiGame.People
         public FactionDefinition PrimaryFaction => primaryFaction;
         public string PublicRoleTitle => publicRoleTitle;
         public FactionDefinition LeadershipOfFaction => leadershipOfFaction;
-        public string FactionIdPlaceholder => factionIdPlaceholder;
-        public string SettlementIdPlaceholder => settlementIdPlaceholder;
         public PersonImportance Importance => importance;
         public int ChronologicalAgeYears => Mathf.Max(0, chronologicalAgeYears);
         public PersonLifeStage LifeStage => lifeStage;

@@ -482,7 +482,7 @@ namespace UnityIsekaiGame.Organizations
             votes = Votes.Select(item => item.Clone()).ToList(),
             resolutions = Resolutions.Select(item => item.Clone()).ToList(),
             executions = Executions.Select(item => item.Clone()).ToList(),
-            transactions = transactionsById.Values.OrderBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToList()
+            transactions = transactionsById.Values.OrderBy(item => item.revision).ThenBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).RetainNewestTransactions().ToList()
         };
 
         public OrganizationDecisionOperationResult RestoreFromSaveData(OrganizationDecisionRuntimeSaveData saveData, DefinitionRegistry definitionRegistry, OrganizationRuntime organizationRuntime, OrganizationMembershipRuntime membershipRuntime, OrganizationAuthorityRuntime authorityRuntime, OrganizationResourceRuntime resourceRuntime, string world, IEnumerable<string> persons, bool restoring = true)
@@ -727,7 +727,7 @@ namespace UnityIsekaiGame.Organizations
         {
             if (string.IsNullOrWhiteSpace(transactionId)) throw new InvalidOperationException("Stable transaction ID is required.");
             if (transactionsById.ContainsKey(transactionId)) throw new InvalidOperationException($"Transaction '{transactionId}' was already committed.");
-            OrganizationDecisionTransactionRecordData transaction = new OrganizationDecisionTransactionRecordData { transactionId = transactionId.Trim(), operation = operation ?? string.Empty, subjectId = subjectId ?? string.Empty, organizationId = organizationId ?? string.Empty, worldTime = worldTime };
+            OrganizationDecisionTransactionRecordData transaction = new OrganizationDecisionTransactionRecordData { transactionId = transactionId.Trim(), operation = operation ?? string.Empty, subjectId = subjectId ?? string.Empty, organizationId = organizationId ?? string.Empty, worldTime = worldTime, revision = Revision + 1L };
             transactionsById.Add(transaction.transactionId, transaction);
             Revision++;
             IsDirty = true;

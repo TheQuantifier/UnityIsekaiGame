@@ -39,8 +39,8 @@ namespace UnityIsekaiGame.Factions
         [SerializeField] private string[] alignmentAxisIds = Array.Empty<string>();
         [SerializeField] private string[] platformTemplateIds = Array.Empty<string>();
         [SerializeField] private Color presentationColor = Color.white;
-        [SerializeField] private string culturePlaceholder;
-        [SerializeField] private string foundingMetadataPlaceholder;
+        [SerializeField] private string cultureId;
+        [SerializeField] private string foundingMetadata;
 
         public string FactionId => factionId;
         public string Id => factionId;
@@ -73,8 +73,8 @@ namespace UnityIsekaiGame.Factions
         public IReadOnlyList<string> AlignmentAxisIds => FactionModelUtility.Clean(alignmentAxisIds);
         public IReadOnlyList<string> PlatformTemplateIds => FactionModelUtility.Clean(platformTemplateIds);
         public Color PresentationColor => presentationColor;
-        public string CulturePlaceholder => culturePlaceholder;
-        public string FoundingMetadataPlaceholder => foundingMetadataPlaceholder;
+        public string CultureId => cultureId;
+        public string FoundingMetadata => foundingMetadata;
 
         public void DevelopmentConfigure(
             string id,

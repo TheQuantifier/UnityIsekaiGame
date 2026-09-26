@@ -1329,7 +1329,7 @@ namespace UnityIsekaiGame.Narrative
             return issuerType switch
             {
                 QuestIssuerType.Person => N(context?.actorPersonId),
-                QuestIssuerType.Organization => string.IsNullOrWhiteSpace(context?.organizationId) ? "organization.prototype.guild" : N(context.organizationId),
+                QuestIssuerType.Organization => string.IsNullOrWhiteSpace(context?.organizationId) ? "organization.prototype.adventurers-guild" : N(context.organizationId),
                 QuestIssuerType.Office => "office.prototype.guild-clerk",
                 QuestIssuerType.Government => string.IsNullOrWhiteSpace(context?.governmentId) ? "government.prototype.city" : N(context.governmentId),
                 QuestIssuerType.Faction => "faction.prototype.hidden",

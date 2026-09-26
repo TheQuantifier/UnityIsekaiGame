@@ -193,7 +193,7 @@ namespace UnityIsekaiGame.Development.Automation
             int discoveries = restored.Sources.QueryDiscoveries(personId: PrototypeEntityLocationFactory.PlayerPersonId).Count;
             int conversations = restored.Conversations.Query(new ConversationQuery { questSourceId = PrototypeSceneIntegrationIds.AdventurerGuildCounterSourceId, access = ConversationAccessLevel.PrivilegedDiagnostic }).Count;
             int dialogue = restored.Dialogue.Query(conversationId: result.GuildConversationId).Count;
-            int memberships = restored.Memberships.QueryMemberships(PrototypeEntityLocationFactory.PlayerPersonId, "organization.prototype.guild", activeOnly: true).Count;
+            int memberships = restored.Memberships.QueryMemberships(PrototypeEntityLocationFactory.PlayerPersonId, "organization.prototype.adventurers-guild", activeOnly: true).Count;
             int arcs = restored.Arcs.Query(new NarrativeArcQuery { arcDefinitionId = PrototypeNarrativeArcDefinitionFactory.GuildIntroArcDefinitionId, actorPersonId = PrototypeEntityLocationFactory.PlayerPersonId }).Count;
             bool valid = result.Succeeded && assignments == 1 && discoveries >= 1 && conversations == 1 && dialogue == 1 && memberships == 1 && arcs == 1;
 

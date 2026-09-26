@@ -170,7 +170,7 @@ namespace UnityIsekaiGame.Organizations
     }
 
     [CreateAssetMenu(fileName = "InstitutionalActionDefinition", menuName = "Unity Isekai Game/Organizations/Institutional Action Definition")]
-    public sealed class InstitutionalActionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class InstitutionalActionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string actionDefinitionId;
         [SerializeField] private string displayName;
@@ -297,7 +297,7 @@ namespace UnityIsekaiGame.Organizations
     }
 
     [CreateAssetMenu(fileName = "OrganizationAuthorityRoleDefinition", menuName = "Unity Isekai Game/Organizations/Authority Role Definition")]
-    public sealed class OrganizationAuthorityRoleDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class OrganizationAuthorityRoleDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string roleDefinitionId;
         [SerializeField] private string displayName;
@@ -403,7 +403,7 @@ namespace UnityIsekaiGame.Organizations
     }
 
     [CreateAssetMenu(fileName = "OrganizationAuthorityBindingDefinition", menuName = "Unity Isekai Game/Organizations/Authority Binding Definition")]
-    public sealed class OrganizationAuthorityBindingDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class OrganizationAuthorityBindingDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string bindingDefinitionId;
         [SerializeField] private string displayName;

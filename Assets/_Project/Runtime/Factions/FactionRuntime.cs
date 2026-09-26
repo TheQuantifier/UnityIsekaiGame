@@ -537,7 +537,7 @@ namespace UnityIsekaiGame.Factions
                 recommendations = VoteRecommendations.Select(item => item.Clone()).ToList(),
                 dispositions = Dispositions.Select(item => item.Clone()).ToList(),
                 structuralEvents = StructuralEvents.Select(item => item.Clone()).ToList(),
-                transactions = transactionsById.Values.OrderBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToList()
+                transactions = transactionsById.Values.OrderBy(item => item.revision).ThenBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).RetainNewestTransactions().ToList()
             };
         }
 
@@ -734,7 +734,7 @@ namespace UnityIsekaiGame.Factions
             transactionId = FactionModelUtility.Normalize(transactionId);
             if (!string.IsNullOrWhiteSpace(transactionId))
             {
-                transactionsById[transactionId] = new FactionTransactionRecordData { transactionId = transactionId, operation = operation ?? string.Empty, subjectId = subjectId ?? string.Empty };
+                transactionsById[transactionId] = new FactionTransactionRecordData { transactionId = transactionId, operation = operation ?? string.Empty, subjectId = subjectId ?? string.Empty, revision = Revision + 1L };
             }
         }
 

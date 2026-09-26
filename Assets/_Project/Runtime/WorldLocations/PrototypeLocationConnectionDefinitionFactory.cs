@@ -88,8 +88,8 @@ namespace UnityIsekaiGame.WorldLocations
             HashSet<string> ids = new HashSet<string>(existingIds ?? Array.Empty<string>(), StringComparer.Ordinal);
             List<LocationAccessPolicyDefinition> definitions = new List<LocationAccessPolicyDefinition>();
             AddPolicy(definitions, ids, PublicAccessPolicyId, "Prototype Public Access", LocationAccessPolicyCategory.Public, allow: true);
-            AddPolicy(definitions, ids, GuildMemberAccessPolicyId, "Prototype Guild Member Access", LocationAccessPolicyCategory.OrganizationMembers, organizations: new[] { "organization.prototype.guild" });
-            AddPolicy(definitions, ids, GuildRankAccessPolicyId, "Prototype Guild Rank Access", LocationAccessPolicyCategory.MinimumRank, organizations: new[] { "organization.prototype.guild" }, ranks: new[] { "rank.prototype.guild.iron" });
+            AddPolicy(definitions, ids, GuildMemberAccessPolicyId, "Prototype Guild Member Access", LocationAccessPolicyCategory.OrganizationMembers, organizations: new[] { "organization.prototype.adventurers-guild" });
+            AddPolicy(definitions, ids, GuildRankAccessPolicyId, "Prototype Guild Rank Access", LocationAccessPolicyCategory.MinimumRank, organizations: new[] { "organization.prototype.adventurers-guild" }, ranks: new[] { "rank.prototype.guild.iron" });
             AddPolicy(definitions, ids, GuildHeadOfficeAccessPolicyId, "Prototype Guild Head Office Access", LocationAccessPolicyCategory.SpecificOffice, offices: new[] { "office.prototype.guild-head" }, authorities: new[] { "permission.prototype.guild.rank-admin" });
             AddPolicy(definitions, ids, MayorOfficeAccessPolicyId, "Prototype Mayor Office Access", LocationAccessPolicyCategory.SpecificOffice, offices: new[] { "office.prototype.mayor" }, authorities: new[] { "authority.government.prototype" });
             AddPolicy(definitions, ids, RecordsAuthorityAccessPolicyId, "Prototype Records Authority Access", LocationAccessPolicyCategory.AuthorizedStaff, authorities: new[] { "permission.prototype.records.restricted-read" });

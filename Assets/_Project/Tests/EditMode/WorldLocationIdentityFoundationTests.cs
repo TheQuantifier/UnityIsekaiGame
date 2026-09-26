@@ -162,7 +162,7 @@ namespace UnityIsekaiGame.Tests
                 commonName = name,
                 initialLifecycleState = LocationLifecycleState.Active,
                 semanticTagIds = tags ?? new[] { "guild", "building", "service" },
-                associatedOrganizationId = definitionId == PrototypeLocationDefinitionFactory.GuildHallDefinitionId ? "organization.prototype.guild" : string.Empty,
+                associatedOrganizationId = definitionId == PrototypeLocationDefinitionFactory.GuildHallDefinitionId ? "organization.prototype.adventurers-guild" : string.Empty,
                 prototypeSceneBindingKey = sceneBinding,
                 visibility = visibility,
                 sourceEventId = "event.location.test",

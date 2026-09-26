@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7eb80768620050642b69dc24ddf7a23b, type: 3}
+  m_Name: justice_institution_prototype_military_tribunal_system
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Justice:JusticeInstitutionDefinition
+  definitionId: justice-institution.prototype.military-tribunal-system
+  displayName: Military Tribunal System
+  description: 
+  visibility: 0
+  tags:
+  - institution
+  - justice
+  version: 1
+  category: 7
+  supportedJurisdictions: 03000000
+  supportedCases: 02000000
+  supportedProcedures: 06000000
+  canHoldCustody: 1
+  canSentence: 1
+  appellate: 0
+  requiredAuthorityActionIds: []

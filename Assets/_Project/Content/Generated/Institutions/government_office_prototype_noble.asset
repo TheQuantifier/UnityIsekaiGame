@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497d9929869cd7046a3165d88c8cfbe6, type: 3}
+  m_Name: government_office_prototype_noble
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Governments:GovernmentOfficeDefinition
+  officeDefinitionId: government-office.prototype.noble
+  displayName: Noble
+  description: 
+  organizationOfficeDefinitionId: organization-office.prototype.civic.noble
+  institutionRole: 100
+  authorityTier: 10
+  superiorOfficeDefinitionId: government-office.prototype.village-chief
+  eligibilityRule: 0
+  allowedSelectionMethods: 0100000003000000
+  headOfGovernment: 0
+  requiresConfirmation: 0
+  permitsActingHolder: 1
+  defaultTermDuration: -1
+  authorityRoleDefinitionId: organization-authority-role.prototype.noble
+  tags:
+  - government
+  - office
+  - prototype
+  version: 1

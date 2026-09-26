@@ -494,7 +494,7 @@ namespace UnityIsekaiGame.Diplomacy
                 warSides = warSidesById.Values.OrderBy(item => item.sideId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
                 warParticipations = warParticipationsById.Values.OrderBy(item => item.participationId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
                 incidents = incidentsById.Values.OrderBy(item => item.incidentId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
-                transactions = transactionsById.Values.OrderBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToList()
+                transactions = transactionsById.Values.OrderBy(item => item.revision).ThenBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).RetainNewestTransactions().ToList()
             };
         }
 
@@ -738,7 +738,7 @@ namespace UnityIsekaiGame.Diplomacy
         {
             transactionId = DiplomacyModelUtility.Normalize(transactionId);
             if (string.IsNullOrWhiteSpace(transactionId)) return;
-            transactionsById[transactionId] = new DiplomaticTransactionRecordData { transactionId = transactionId, operation = operation ?? string.Empty, subjectId = subjectId ?? string.Empty };
+            transactionsById[transactionId] = new DiplomaticTransactionRecordData { transactionId = transactionId, operation = operation ?? string.Empty, subjectId = subjectId ?? string.Empty, revision = Revision + 1L };
         }
 
         private bool TryGetDefinition<TDefinition>(string id, out TDefinition definition) where TDefinition : class, IGameDefinition

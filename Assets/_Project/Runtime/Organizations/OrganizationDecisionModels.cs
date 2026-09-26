@@ -455,6 +455,7 @@ namespace UnityIsekaiGame.Organizations
         public string subjectId;
         public string organizationId;
         public double worldTime;
+        public long revision;
 
         public OrganizationDecisionTransactionRecordData Clone() => new OrganizationDecisionTransactionRecordData
         {
@@ -462,7 +463,8 @@ namespace UnityIsekaiGame.Organizations
             operation = operation ?? string.Empty,
             subjectId = subjectId ?? string.Empty,
             organizationId = organizationId ?? string.Empty,
-            worldTime = worldTime
+            worldTime = worldTime,
+            revision = revision
         };
     }
 

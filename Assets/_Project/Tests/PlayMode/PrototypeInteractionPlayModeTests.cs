@@ -131,7 +131,8 @@ namespace UnityIsekaiGame.Tests
             InteractionPromptView promptView = Object.FindAnyObjectByType<InteractionPromptView>(FindObjectsInactive.Include);
             Assert.That(promptView, Is.Not.Null);
             Assert.That(promptView.IsVisible, Is.True);
-            Assert.That(promptView.DisplayedPrompt, Is.EqualTo("Interact: Adventurer Guild Counter"));
+            IInteractable guildCounter = (IInteractable)interactables.Single(component => component.name == "AdventurerGuildCounter");
+            Assert.That(promptView.DisplayedPrompt, Is.EqualTo(guildCounter.InteractionPrompt));
             CaptureCamera(detector.GetComponent<Camera>(), "PrototypeInteractionPlayMode-GuildCounter.png");
             Assert.That(runtimeErrors, Is.Empty, string.Join("\n", runtimeErrors));
         }

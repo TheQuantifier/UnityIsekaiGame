@@ -13,7 +13,7 @@ namespace UnityIsekaiGame.Organizations
         CriminalOrganization,
         Branch,
         Household,
-        GovernmentPlaceholder,
+        Government,
         Custom
     }
 

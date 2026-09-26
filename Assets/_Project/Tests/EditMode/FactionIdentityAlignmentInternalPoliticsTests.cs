@@ -15,7 +15,7 @@ namespace UnityIsekaiGame.Tests
     public sealed class FactionIdentityAlignmentInternalPoliticsTests
     {
         private const string PersonId = PersistenceService.LocalPlayerId;
-        private const string GuildId = "organization.prototype.guild";
+        private const string GuildId = "organization.prototype.adventurers-guild";
         private static readonly string[] KnownPersons = { PersonId, "person.prototype.friend", "person.prototype.mentor" };
 
         [Test]

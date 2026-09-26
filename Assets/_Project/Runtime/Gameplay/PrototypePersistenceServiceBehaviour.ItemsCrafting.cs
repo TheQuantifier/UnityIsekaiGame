@@ -7,6 +7,7 @@ using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.Governments;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Inventory.Composition;
 using UnityIsekaiGame.Inventory.Crafting;
@@ -17,6 +18,7 @@ using UnityIsekaiGame.Inventory.Production;
 using UnityIsekaiGame.Inventory.Quality;
 using UnityIsekaiGame.Inventory.Recipes;
 using UnityIsekaiGame.Professions;
+using UnityIsekaiGame.Organizations;
 using UnityIsekaiGame.Skills;
 using UnityIsekaiGame.WorldEntities;
 
@@ -747,6 +749,14 @@ namespace UnityIsekaiGame.Gameplay
             {
                 return PrototypeCraftingStartResult.Failure("Player inventory is unavailable.");
             }
+
+            GovernmentPermitCheckResult craftPermit = Governments.EvaluateRegulatedAction(
+                ResolvePlayerPersonId(),
+                GovernmentPermitHolderCategory.Person,
+                "government.action.operate-regulated-workshop",
+                PrototypeInstitutionalContentIds.TownJurisdiction,
+                playTimeTracker?.CumulativeSeconds ?? Time.realtimeSinceStartupAsDouble);
+            if (!craftPermit.Allowed) return PrototypeCraftingStartResult.Failure($"Crafting is not permitted here: {craftPermit.Message}");
 
             string recipeId = slotRequest?.recipeId;
             if (string.IsNullOrWhiteSpace(recipeId) || !registry.TryGet(recipeId, out RecipeDefinition recipe))

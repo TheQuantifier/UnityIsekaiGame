@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b46e94f943f56d4cadd263cb8723b7c, type: 3}
+  m_Name: organization_authority_role_prototype_manor_lord
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Organizations:OrganizationAuthorityRoleDefinition
+  roleDefinitionId: organization-authority-role.prototype.manor-lord
+  displayName: Manor Lord Authority
+  description: 
+  grantedPermissionIds:
+  - organization-permission.prototype.appoint-officeholders
+  - organization-permission.prototype.approve-organization-expense
+  - organization-permission.prototype.assign-acting-officeholders
+  - organization-permission.prototype.cast-organization-vote
+  - organization-permission.prototype.create-offices
+  - organization-permission.prototype.create-treasury-account
+  - organization-permission.prototype.delegate-permissions
+  - organization-permission.prototype.enact-municipal-law
+  - organization-permission.prototype.execute-organization-resolution
+  - organization-permission.prototype.issue-orders
+  - organization-permission.prototype.manage-restricted-funds
+  - organization-permission.prototype.record-official-crime-discovery
+  - organization-permission.prototype.remove-officeholders
+  - organization-permission.prototype.represent-externally
+  - organization-permission.prototype.submit-decision-proposal
+  - organization-permission.prototype.veto-organization-resolution
+  - organization-permission.prototype.view-public-information
+  - organization-permission.prototype.view-restricted-information
+  - organization-permission.prototype.view-restricted-treasury
+  - organization-permission.prototype.view-treasury
+  deniedPermissionIds: []
+  supportedOrganizationDefinitionIds: []
+  supportedOrganizationCategories: 
+  defaultScopeType: 10
+  delegationPolicy: 20
+  defaultDuration: -1
+  priority: 170
+  conflictPolicy: 20
+  visibility: 0
+  tags:
+  - authority
+  - organization
+  - prototype
+  version: 1

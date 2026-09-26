@@ -12,6 +12,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Skills.SkillDefinition
   skillId: skill.healing-magic
   displayName: Healing Magic
+  skillTypes: 67
   description: Learned proficiency with healing effects.
   primaryCategory: {fileID: 11400000, guid: 53200000000000000000000000000053, type: 2}
   tags:

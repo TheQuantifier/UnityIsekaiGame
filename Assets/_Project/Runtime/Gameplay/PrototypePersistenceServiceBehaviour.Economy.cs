@@ -14,6 +14,8 @@ using UnityIsekaiGame.Economy.Properties;
 using UnityIsekaiGame.Economy.RegionalFlow;
 using UnityIsekaiGame.Economy.Trading;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Governments;
+using UnityIsekaiGame.Organizations;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Inventory.Composition;
 using UnityIsekaiGame.Inventory.Crafting;
@@ -123,6 +125,13 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             double worldTime = CurrentEconomyWorldTime;
+            GovernmentPermitCheckResult sellerPermit = Governments.EvaluateRegulatedAction(
+                PrototypeEconomyContentIds.BusinessInstance,
+                GovernmentPermitHolderCategory.Business,
+                "government.action.conduct-regulated-trade",
+                PrototypeInstitutionalContentIds.TownJurisdiction,
+                worldTime);
+            if (!sellerPermit.Allowed) return PrototypeEconomyOperation.Failure($"The merchant cannot conduct this sale: {sellerPermit.Message}");
             int quotedExactQuantity = finishedGood ? Math.Min(quantity, exactStock.Count) : 0;
             string[] quotedExactIds = exactStock.Take(quotedExactQuantity).Select(stock => stock.itemInstanceId).ToArray();
             List<MerchantQuoteRecordData> purchaseQuotes = new List<MerchantQuoteRecordData>();
@@ -292,6 +301,13 @@ namespace UnityIsekaiGame.Gameplay
             ItemQualityAffixes.TryGetQualityForItem(itemInstanceId, out ItemQualitySnapshot quality);
             ItemDurability.TryGetDurabilityForItem(itemInstanceId, out ItemDurabilitySnapshot durability);
             double worldTime = CurrentEconomyWorldTime;
+            GovernmentPermitCheckResult sellerPermit = Governments.EvaluateRegulatedAction(
+                ResolvePlayerPersonId(),
+                GovernmentPermitHolderCategory.Person,
+                "government.action.sell-crafted-goods",
+                PrototypeInstitutionalContentIds.TownJurisdiction,
+                worldTime);
+            if (!sellerPermit.Allowed) return PrototypeEconomyOperation.Failure($"You cannot sell this item here: {sellerPermit.Message}");
             MarketOperationResult quote = CreatePrototypeQuote(slot.Item.Id, MerchantQuoteDirection.MerchantBuys, 1, worldTime, identity, quality, durability);
             if (!quote.Succeeded || quote.Quote == null)
             {
@@ -515,7 +531,7 @@ namespace UnityIsekaiGame.Gameplay
 
             if (!Economy.TryGetAccount(PrototypeEconomyContentIds.TreasuryAccount, out _))
             {
-                Economy.CreateAccount(PrototypeEconomyContentIds.TreasuryAccount, gold, "organization.prototype-town",
+                Economy.CreateAccount(PrototypeEconomyContentIds.TreasuryAccount, gold, "organization.prototype.government",
                     EconomyAccountKind.SystemTreasury, 0L, "economy-opening.prototype-town-treasury");
             }
 
@@ -590,7 +606,7 @@ namespace UnityIsekaiGame.Gameplay
                     businessId = PrototypeEconomyContentIds.BusinessInstance,
                     businessDefinitionId = PrototypeEconomyContentIds.BusinessWorkshop,
                     displayName = "Prototype Town Arms Workshop",
-                    linkedOrganizationId = "organization.prototype-town",
+                    linkedOrganizationId = "organization.prototype.government",
                     founderSubjectIds = new[] { "person.prototype.merchant" },
                     operatingCurrencyIds = new[] { gold.Id },
                     state = BusinessState.Planned
@@ -672,7 +688,7 @@ namespace UnityIsekaiGame.Gameplay
                 InstitutionalRevenue.RegisterAuthority(new InstitutionalRevenueAuthorityData
                 {
                     authorityId = PrototypeEconomyContentIds.RevenueAuthority,
-                    institutionId = "organization.prototype-town",
+                    institutionId = "organization.prototype.government",
                     institutionKind = InstitutionKind.SettlementFoundation,
                     authorityCategory = InstitutionalRevenueAuthorityCategory.Assess,
                     sourceReferenceId = "law.prototype-town.sales-tax",
@@ -698,7 +714,7 @@ namespace UnityIsekaiGame.Gameplay
                 InstitutionalRevenue.AssignRevenueAccount(new InstitutionalRevenueAccountAssignmentData
                 {
                     assignmentId = "revenue-account.prototype-town.sales-tax",
-                    institutionId = "organization.prototype-town",
+                    institutionId = "organization.prototype.government",
                     institutionKind = InstitutionKind.SettlementFoundation,
                     accountId = PrototypeEconomyContentIds.TreasuryAccount,
                     purpose = RevenueAccountPurpose.TaxCollection,
@@ -1325,7 +1341,7 @@ namespace UnityIsekaiGame.Gameplay
             EnsurePrototypeEconomyInitialized();
             string personId = ResolvePlayerPersonId();
             EmploymentRecordData employment = PositionEmployment.QueryEmploymentByPerson(personId, activeOnly: true)
-                .Where(record => string.Equals(record.employerOrganizationId, "organization.prototype-town", StringComparison.Ordinal))
+                .Where(record => string.Equals(record.employerOrganizationId, "organization.prototype.government", StringComparison.Ordinal))
                 .Where(record => string.IsNullOrWhiteSpace(record.compensationPolicyId)
                     || string.Equals(record.compensationPolicyId, PrototypeEconomyContentIds.CompensationTownCraft, StringComparison.Ordinal))
                 .OrderBy(record => record.employmentId, StringComparer.Ordinal)
@@ -2022,11 +2038,11 @@ namespace UnityIsekaiGame.Gameplay
                         subjectKind = RevenueSubjectKind.Seller,
                         role = RevenueSubjectRole.EconomicBearer,
                         subjectId = PrototypeEconomyContentIds.BusinessInstance,
-                        organizationId = "organization.prototype-town",
+                        organizationId = "organization.prototype.government",
                         accountId = PrototypeEconomyContentIds.MerchantAccount
                     }
                 },
-                institutionId = "organization.prototype-town",
+                institutionId = "organization.prototype.government",
                 currencyId = PrototypeEconomyContentIds.CurrencyGold,
                 eventWorldTime = worldTime,
                 monetaryValueUnits = purchase.Transaction.Units,
@@ -2050,6 +2066,12 @@ namespace UnityIsekaiGame.Gameplay
             InstitutionalRevenueOperationResult paid = InstitutionalRevenue.PayObligation(step.Obligation.obligationId, Economy,
                 $"revenue-pay.{operationId}", taxUnits, worldTime);
             if (!paid.Succeeded) { failure = paid.Message; return false; }
+            InstitutionalRevenueOperationResult recognized = InstitutionalRevenue.RecognizeRevenue(
+                paid.Payment.paymentId,
+                $"revenue-record.{operationId}",
+                "town-sales-tax",
+                $"revenue-recognize.{operationId}");
+            if (!recognized.Succeeded) { failure = recognized.Message; return false; }
             return true;
         }
 
@@ -2110,7 +2132,7 @@ namespace UnityIsekaiGame.Gameplay
                 participants = new List<TradeParticipantData> { seller, buyer },
                 initiatorParticipantId = seller.participantId,
                 hostMerchantId = PrototypeEconomyContentIds.BusinessInstance,
-                hostOrganizationId = "organization.prototype-town",
+                hostOrganizationId = "organization.prototype.government",
                 marketInstanceId = PrototypeEconomyContentIds.MarketInstanceTown,
                 locationReferenceId = "place.prototype-town",
                 state = TradeSessionState.Open,
@@ -2316,7 +2338,7 @@ namespace UnityIsekaiGame.Gameplay
                 participantId = "trade-participant.prototype-town-workshop",
                 kind = TradeParticipantKind.Organization,
                 role = role,
-                subjectId = "organization.prototype-town",
+                subjectId = "organization.prototype.government",
                 representedOwnerId = PrototypeEconomyContentIds.BusinessInstance,
                 sourceInventoryId = "inventory.prototype-town.finished-goods",
                 receivingInventoryId = "inventory.prototype-town.finished-goods",

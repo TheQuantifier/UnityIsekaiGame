@@ -52,18 +52,37 @@ namespace UnityIsekaiGame.Tests
         public void InstitutionalActionPipelineSeparatesIdentityAuthorityJurisdictionLawAndDomain()
         {
             using TestLabRuntimeBundle bundle = CreateBundle();
+            const string authorityGrantId = "organization-authority-grant.test.integration";
+            const string governmentId = "government.test.integration";
+            const string territoryId = "political-territory.test.integration";
+            const string jurisdictionId = "jurisdiction.test.integration";
+            Assert.That(bundle.Governments.CreatePolity(new PolityCreateRequest { transactionId = "tx.integration.polity", polityId = "polity.test.integration", polityDefinitionId = PrototypeGovernmentDefinitionFactory.KingdomPolityDefinitionId, officialName = "Integration Polity", worldTime = 1d }).Succeeded, Is.True);
+            Assert.That(bundle.Governments.RegisterGovernment(new GovernmentRegisterRequest { transactionId = "tx.integration.government", governmentId = governmentId, governmentDefinitionId = PrototypeGovernmentDefinitionFactory.RoyalGovernmentDefinitionId, polityId = "polity.test.integration", officialName = "Integration Government", primaryGoverningOrganizationId = "organization.prototype.adventurers-guild", governingOrganizationIds = new[] { "organization.prototype.adventurers-guild" }, level = GovernmentLevel.Central, worldTime = 2d }).Succeeded, Is.True);
+            Assert.That(bundle.Governments.CreateTerritory(new TerritoryCreateRequest { transactionId = "tx.integration.territory", territoryId = territoryId, territoryDefinitionId = PrototypeGovernmentDefinitionFactory.RealmTerritoryDefinitionId, displayName = "Integration Territory", polityId = "polity.test.integration", primaryGovernmentId = governmentId, placeIds = new[] { "place.test.integration" }, worldTime = 3d }).Succeeded, Is.True);
+            Assert.That(bundle.Governments.CreateJurisdiction(new JurisdictionCreateRequest { transactionId = "tx.integration.jurisdiction", jurisdictionId = jurisdictionId, jurisdictionDefinitionId = PrototypeGovernmentDefinitionFactory.GeneralJurisdictionDefinitionId, governmentId = governmentId, category = JurisdictionCategory.GeneralGovernment, scopeDimensions = JurisdictionScopeDimension.Territory, territoryIds = new[] { territoryId }, priority = 100, worldTime = 4d }).Succeeded, Is.True);
+            Assert.That(bundle.OrganizationAuthority.CreateDirectGrant(new OrganizationAuthorityGrantRequest
+            {
+                transactionId = "tx.integration.authority",
+                grantId = authorityGrantId,
+                organizationId = "organization.prototype.adventurers-guild",
+                granteePersonId = PersistenceService.LocalPlayerId,
+                grantorPersonId = PersistenceService.LocalPlayerId,
+                permissionDefinitionIds = new[] { PrototypeOrganizationAuthorityDefinitionFactory.IssueWarrantPermissionId },
+                scope = OrganizationAuthorityScopeData.ForOrganization("organization.prototype.adventurers-guild"),
+                startWorldTime = 0d
+            }).Succeeded, Is.True);
             Step13InstitutionalIntegrationFacade facade = CreateFacade(bundle);
             Step13InstitutionalActionContext valid = new Step13InstitutionalActionContext(
                 PersistenceService.LocalPlayerId,
-                "organization.prototype.guild",
-                "government.prototype.village",
-                "office-assignment.prototype.magistrate",
-                "authority-grant.prototype.magistrate",
+                "organization.prototype.adventurers-guild",
+                governmentId,
+                string.Empty,
+                authorityGrantId,
                 new Step13InstitutionalSubjectReference(Step13InstitutionalSubjectType.Warrant, "warrant.prototype.arrest", PersistenceService.LocalWorldId, nameof(CrimeRuntime)),
-                "institutional-action.prototype.issue-warrant",
-                "place.prototype.village",
-                "territory.prototype.village",
-                "jurisdiction.prototype.village",
+                string.Empty,
+                "place.test.integration",
+                territoryId,
+                jurisdictionId,
                 "legal-subject.prototype.public-order",
                 string.Empty,
                 string.Empty,

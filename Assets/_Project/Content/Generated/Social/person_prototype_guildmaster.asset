@@ -25,8 +25,6 @@ MonoBehaviour:
   primaryFaction: {fileID: 0}
   publicRoleTitle: Guild Master
   leadershipOfFaction: {fileID: 0}
-  factionIdPlaceholder: 
-  settlementIdPlaceholder: 
   importance: 1
   chronologicalAgeYears: 52
   lifeStage: 3

@@ -28,7 +28,7 @@ namespace UnityIsekaiGame.Organizations
     }
 
     [CreateAssetMenu(fileName = "OrganizationGoalDefinition", menuName = "Unity Isekai Game/Organizations/Goal Definition")]
-    public sealed class OrganizationGoalDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class OrganizationGoalDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string goalDefinitionId;
         [SerializeField] private string displayName;
@@ -116,7 +116,7 @@ namespace UnityIsekaiGame.Organizations
     }
 
     [CreateAssetMenu(fileName = "OrganizationPolicyDefinition", menuName = "Unity Isekai Game/Organizations/Policy Definition")]
-    public sealed class OrganizationPolicyDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class OrganizationPolicyDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string policyDefinitionId;
         [SerializeField] private string displayName;
@@ -200,7 +200,7 @@ namespace UnityIsekaiGame.Organizations
     }
 
     [CreateAssetMenu(fileName = "OrganizationDecisionProcedureDefinition", menuName = "Unity Isekai Game/Organizations/Decision Procedure Definition")]
-    public sealed class OrganizationDecisionProcedureDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class OrganizationDecisionProcedureDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string procedureDefinitionId;
         [SerializeField] private string displayName;
@@ -306,7 +306,7 @@ namespace UnityIsekaiGame.Organizations
     }
 
     [CreateAssetMenu(fileName = "OrganizationProposalDefinition", menuName = "Unity Isekai Game/Organizations/Proposal Definition")]
-    public sealed class OrganizationProposalDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class OrganizationProposalDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string proposalDefinitionId;
         [SerializeField] private string displayName;

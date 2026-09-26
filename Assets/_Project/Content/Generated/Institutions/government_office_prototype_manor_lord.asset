@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497d9929869cd7046a3165d88c8cfbe6, type: 3}
+  m_Name: government_office_prototype_manor_lord
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Governments:GovernmentOfficeDefinition
+  officeDefinitionId: government-office.prototype.manor-lord
+  displayName: Manor Lord
+  description: 
+  organizationOfficeDefinitionId: organization-office.prototype.civic.manor-lord
+  institutionRole: 1
+  authorityTier: 40
+  superiorOfficeDefinitionId: government-office.prototype.duke
+  eligibilityRule: 0
+  allowedSelectionMethods: 0100000002000000030000000b0000000d000000
+  headOfGovernment: 1
+  requiresConfirmation: 1
+  permitsActingHolder: 1
+  defaultTermDuration: -1
+  authorityRoleDefinitionId: organization-authority-role.prototype.manor-lord
+  tags:
+  - government
+  - office
+  - prototype
+  version: 1
