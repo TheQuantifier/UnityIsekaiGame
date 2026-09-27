@@ -290,6 +290,10 @@ namespace SceneZoneTool.Editor
             bool found = TryScenePlanePoint(current.mousePosition, out Vector3 candidate);
             if (zone.Shape == SceneZoneShape.Circle)
             {
+                // A completed circle is selected data, not an implicit edit target.
+                // Circle geometry may only change through a pending new-zone draft
+                // or the explicit Replace Selected Outline action.
+                if (!pendingNewZone && !replacingCircle) return;
                 HandleCircleTool(view, current, control, found, candidate);
                 return;
             }
@@ -604,7 +608,7 @@ namespace SceneZoneTool.Editor
         internal void SetCircle(Vector3 center, float radius)
         {
             center = ToStoredPoint(center);
-            Undo.RecordObject(zone, replacingCircle ? "Replace Zone Circle" : "Create Zone Circle");
+            if (!pendingNewZone) Undo.RecordObject(zone, replacingCircle ? "Replace Zone Circle" : "Edit Zone Circle");
             SerializedObject serialized = new SerializedObject(zone);
             serialized.FindProperty("hasCenterPoint").boolValue = true;
             serialized.FindProperty("centerPoint").vector2Value = new Vector2(center.x, center.z);
@@ -615,6 +619,9 @@ namespace SceneZoneTool.Editor
             PersistPendingZone();
             AssetDatabase.SaveAssetIfDirty(zone);
             replacingCircle = false;
+            definingCircleRadius = false;
+            movingPendingCircleCenter = false;
+            paintMode = SceneZonePaintMode.SelectZone;
             blockedBy = null;
             ClearOverlapError();
             SceneView.RepaintAll();
@@ -658,7 +665,7 @@ namespace SceneZoneTool.Editor
                 Repaint();
                 return;
             }
-            Undo.RecordObject(zone, "Close Zone Boundary");
+            if (!pendingNewZone) Undo.RecordObject(zone, "Replace Zone Boundary");
             SetPoints(draftPoints);
             PersistPendingZone();
             drawing = false;
@@ -767,7 +774,7 @@ namespace SceneZoneTool.Editor
             foreach (SceneZoneLayerAsset visibleLayer in sceneLayers)
             foreach (SceneZoneAsset item in visibleLayer.Zones)
             {
-                if (item == null || (item == zone && paintMode != SceneZonePaintMode.SelectZone)) continue;
+                if (item == null || !item.IsUsable || (item == zone && paintMode != SceneZonePaintMode.SelectZone)) continue;
                 if (!IsZoneVisible(item)) continue;
                 bool selected = item == zone && !pendingNewZone;
                 Color outlineColor = selected ? selectedZoneColor : visibleLayer.OutlineColor;

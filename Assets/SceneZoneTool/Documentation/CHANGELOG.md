@@ -1,8 +1,25 @@
 # Changelog
 
-## 1.0.1
+## 1.0.3
+
+- Deferred layer and zone file dialogs until the current Scene view overlay layout pass finishes.
+- Fixed the `EndLayoutGroup: BeginLayoutGroup must be called first` error when creating or deleting layers and zones from the authoring overlay.
+- Completed circles now leave authoring mode, preventing the next Scene-view click from replacing the circle that was just created.
+- Restricted circle geometry changes to new-zone drafts and the explicit Replace Selected Outline action.
+- Project validation now detects and removes abandoned embedded circle and polygon drafts while preserving valid zones.
+- Unusable legacy zone records are no longer rendered as unattached Scene-view points.
+- The authoring controller reports each persisted incomplete zone by name and directs users to the Validate Project cleanup command without repeatedly spamming the Console.
+- New zones are now registered as atomic Unity Undo operations, so undo removes both the layer reference and embedded sub-asset while redo restores both.
+- Undo and redo now refresh authoring state immediately instead of leaving stale selected-zone references or unfinished geometry state.
+
+## 1.0.2
 
 - Released Scene view input whenever View, Move, Rotate, Scale, Alt-navigation, or middle-mouse navigation is active, preventing the authoring overlay from trapping the pointer.
+- Restored zone authoring explicitly when an action button is selected.
+- Added regression coverage and troubleshooting guidance for switching between zone authoring and normal Scene view controls.
+
+## 1.0.1
+
 - Added automatic Built-In, URP, and HDRP unlit-material selection for runtime zone outlines and the Basic Usage marker.
 - Removed sample material assets that produced Asset Store SRP compatibility warnings.
 - Replaced the global zone-change event with per-zone subscriptions for clean Fast Enter Play Mode behavior.
