@@ -56,7 +56,8 @@ namespace UnityIsekaiGame.PrototypeIntegration
             bool required = true,
             string expectedDefinitionId = "",
             string sourceLocationId = "",
-            string destinationLocationId = "")
+            string destinationLocationId = "",
+            string preferredServiceDefinitionId = "")
         {
             Category = category;
             LogicalId = N(logicalId);
@@ -67,6 +68,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
             ExpectedDefinitionId = N(expectedDefinitionId);
             SourceLocationId = N(sourceLocationId);
             DestinationLocationId = N(destinationLocationId);
+            PreferredServiceDefinitionId = N(preferredServiceDefinitionId);
         }
 
         public WorldSceneBindingCategory Category { get; }
@@ -80,6 +82,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
         public string ExpectedDefinitionId { get; }
         public string SourceLocationId { get; }
         public string DestinationLocationId { get; }
+        public string PreferredServiceDefinitionId { get; }
         private static string N(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 

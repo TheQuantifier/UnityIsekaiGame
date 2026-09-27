@@ -60,6 +60,19 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             instanceIdsByBindingKey.Clear();
         }
 
+        public void ClearConfiguration()
+        {
+            ClearTransientBindings();
+            locations = null;
+            entityLocations = null;
+            interactionPoints = null;
+            connections = null;
+            routes = null;
+            journeys = null;
+            politicalTravel = null;
+            worldId = PersistenceService.LocalWorldId;
+        }
+
         public WorldSceneBindingSnapshot Register(WorldSceneBindingComponent binding)
         {
             if (binding == null)
@@ -238,6 +251,46 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             return interactionPoints != null && interactionPoints.TryGetPoint(pointId, out snapshot);
         }
 
+        public InteractionEligibilityResult EvaluateInteraction(string pointId, string serviceDefinitionId, EntityLocationReferenceData consumer, double worldTime)
+        {
+            return interactionPoints?.EvaluateEligibility(new InteractionEligibilityRequest
+            {
+                interactionPointId = pointId,
+                serviceDefinitionId = serviceDefinitionId,
+                consumerEntity = consumer,
+                worldTime = worldTime,
+                physicalPresenceVerified = true
+            });
+        }
+
+        public InteractionInvocationResult InvokeInteraction(string pointId, string serviceDefinitionId, EntityLocationReferenceData consumer, double worldTime)
+        {
+            if (interactionPoints == null) return null;
+            return interactionPoints.Invoke(new InteractionRequest
+            {
+                transactionId = $"scene.interaction.{pointId}.{serviceDefinitionId}.{interactionPoints.Revision + 1}",
+                interactionPointId = pointId,
+                serviceDefinitionId = serviceDefinitionId,
+                consumerEntity = consumer,
+                worldId = worldId,
+                worldTime = worldTime,
+                sourceContextId = "prototype.scene",
+                provenanceId = "prototype.scene-binding",
+                physicalPresenceVerified = true
+            });
+        }
+
+        public SceneBindingTransitionResult SynchronizePhysicalPresence(EntityLocationReferenceData actor, string locationId, double worldTime)
+        {
+            return RequestTransition(new SceneBindingTransitionRequest
+            {
+                transactionId = $"scene-binding.presence.{actor?.entityId}.{locationId}.{Guid.NewGuid():N}",
+                actor = actor,
+                toLocationId = locationId,
+                worldTime = worldTime
+            });
+        }
+
         public bool TryGetConnection(string connectionId, out LocationConnectionSnapshot snapshot)
         {
             snapshot = null;
@@ -248,6 +301,11 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
         {
             placement = null;
             return entityLocations != null && entityLocations.TryGetActivePlacement(entity, out placement);
+        }
+
+        public bool CanMaterializeAtLocation(string locationId)
+        {
+            return TryResolveMaterializationAnchor(locationId, out _);
         }
 
         public SceneBindingMaterializationResult MaterializeEntity(WorldEntitySceneBinding entityBinding)
@@ -268,9 +326,9 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 return SceneBindingMaterializationResult.Failure("Entity has no active authoritative placement.", entityBinding.LogicalId, entityBinding.BindingKey);
             }
 
-            if (!TryResolve(WorldSceneBindingCategory.Location, placement.ExactLocationId, out WorldSceneBindingComponent locationBinding))
+            if (!TryResolveMaterializationAnchor(placement.ExactLocationId, out WorldSceneBindingComponent locationBinding))
             {
-                return SceneBindingMaterializationResult.Failure("No loaded scene binding represents the authoritative location.", placement.ExactLocationId);
+                return SceneBindingMaterializationResult.Failure("No loaded location or spawn anchor represents the authoritative location.", placement.ExactLocationId);
             }
 
             Transform anchor = locationBinding.BindingTransform;
@@ -288,6 +346,14 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             }
 
             return SceneBindingMaterializationResult.Success("Entity scene representation materialized from authoritative placement.", placement.ExactLocationId, locationBinding.BindingKey);
+        }
+
+        private bool TryResolveMaterializationAnchor(string locationId, out WorldSceneBindingComponent binding)
+        {
+            // A spawn anchor is the precise placement target. A location binding remains
+            // the fallback for scenes that only author a room/building marker.
+            return TryResolve(WorldSceneBindingCategory.SpawnAnchor, locationId, out binding)
+                || TryResolve(WorldSceneBindingCategory.Location, locationId, out binding);
         }
 
         public SceneBindingTransitionResult RequestTransition(SceneBindingTransitionRequest request)
@@ -377,6 +443,8 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 return LocationConnectionOperationResult.Failure(LocationConnectionOperationStatus.MissingConnection, $"Connection '{connectionId}' is missing.", connections.Revision);
             }
 
+            LocationConnectionAccessContextData effectiveAccess = accessContext?.Clone() ?? new LocationConnectionAccessContextData();
+            if (effectiveAccess.actor == null) effectiveAccess.actor = actor?.Clone();
             return connections.MutateState(new LocationConnectionStateMutationRequest
             {
                 transactionId = string.IsNullOrWhiteSpace(transactionId) ? $"scene-binding.connection-state.{Guid.NewGuid():N}" : transactionId.Trim(),
@@ -384,7 +452,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 openState = openState,
                 lockState = current.LockState,
                 blockageState = current.BlockageState,
-                accessContext = accessContext,
+                accessContext = effectiveAccess,
                 worldTime = worldTime,
                 sourceEventId = "scene-binding.connection-state",
                 provenanceId = "scene-binding",

@@ -143,6 +143,22 @@ namespace UnityIsekaiGame.WorldLocations
             if (request.blockageState != LocationConnectionBlockageState.Unknown) changed.blockageState = request.blockageState;
             if (!ValidateStates(definition, changed.openState, changed.lockState, changed.blockageState, before, out failure)) return failure;
 
+            if (request.openState == LocationConnectionOpenState.Open)
+            {
+                EntityLocationReferenceData actor = request.accessContext?.actor;
+                if (!ValidActor(actor)) return Fail(LocationConnectionOperationStatus.MissingActor, "Opening a connection requires an authoritative actor.", before);
+                if (changed.lockState == LocationConnectionLockState.Locked) return Fail(LocationConnectionOperationStatus.DeniedByLock, "The connection is locked.", before);
+                if (changed.blockageState != LocationConnectionBlockageState.Clear) return Fail(LocationConnectionOperationStatus.DeniedByBlockage, $"The connection is blocked: {changed.blockageState}.", before);
+                if (entityLocationRuntime == null || !entityLocationRuntime.TryGetActivePlacement(actor, out EntityPlacementSnapshot placement)) return Fail(LocationConnectionOperationStatus.MissingPlacement, "The actor has no authoritative placement.", before);
+                ResolveDirection(existing, placement.ExactLocationId, out string from, out string to);
+                List<string> accessReasons = new List<string>();
+                LocationConnectionAccessResult policyResult = new LocationConnectionAccessResult();
+                if (!EvaluatePolicies(existing, from, to, request.accessContext, request.worldTime, policyResult, accessReasons))
+                {
+                    return Fail(LocationConnectionOperationStatus.DeniedByPolicy, $"Connection access denied: {string.Join(", ", accessReasons.Distinct(StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal))}.", before);
+                }
+            }
+
             if (request.preview)
             {
                 return LocationConnectionOperationResult.Success(BuildSnapshot(changed), "Connection state mutation preview.", before, before, preview: true);

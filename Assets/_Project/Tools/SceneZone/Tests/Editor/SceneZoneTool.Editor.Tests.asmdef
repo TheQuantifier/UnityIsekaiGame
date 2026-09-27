@@ -1,0 +1,22 @@
+{
+    "name": "SceneZoneTool.Editor.Tests",
+    "rootNamespace": "SceneZoneTool.Editor.Tests",
+    "references": [
+        "SceneZoneTool.Runtime",
+        "SceneZoneTool.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

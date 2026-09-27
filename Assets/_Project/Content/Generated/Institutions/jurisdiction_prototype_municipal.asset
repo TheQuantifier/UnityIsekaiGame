@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Prototype Municipal Jurisdiction
   category: 2
   allowedDimensions: 35
-  allowedSubjectMatters: 02000000010000000700000006000000
+  allowedSubjectMatters: 0200000001000000070000000600000008000000
   defaultConflictPolicy: 2
   allowsDelegation: 1
   exclusiveByDefault: 0

@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19093d56dc18f0543a58b7bca1754d13, type: 3}
+  m_Name: location_definition_court
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.LocationDefinition
+  locationDefinitionId: location-definition.court
+  displayName: Court
+  description: 
+  primaryCategory: {fileID: 0}
+  tags: []
+  category: 5
+  persistent: 1
+  allowsSceneBinding: 1
+  validEntityLocation: 1
+  validInteractionPointHost: 1
+  futureContainmentAllowed: 1
+  futureRoutingAllowed: 1
+  supportsPropertyAssociation: 1
+  supportsOrganizationAssociation: 1
+  supportsGovernmentAssociation: 1
+  supportsTerritoryAssociation: 1
+  supportsPublicVisibility: 1
+  supportsRestrictedVisibility: 1
+  supportsSecretVisibility: 0
+  supportsHiddenVisibility: 0
+  allowedSemanticTagIds:
+  - building
+  - court
+  - justice
+  version: 1

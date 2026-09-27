@@ -3,7 +3,8 @@
     "rootNamespace": "UnityIsekaiGame",
     "references": [
         "UnityIsekaiGame.GameData",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "SceneZoneTool.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

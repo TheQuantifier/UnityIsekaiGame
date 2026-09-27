@@ -15,7 +15,7 @@ namespace UnityIsekaiGame.Tests
         public void JourneyCreationUsesAcceptedRoutePlanWithoutTeleportingTraveler()
         {
             Fixture fixture = CreateFixture();
-            LocationRouteSearchResult plan = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.village", "location.prototype.market-district"));
+            LocationRouteSearchResult plan = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.town", "location.prototype.market-district"));
 
             TravelJourneyOperationResult created = CreateJourney(fixture, "journey.test.accepted", "location.prototype.market-district", plan.Plan);
 
@@ -24,7 +24,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(created.Journey.LifecycleState, Is.EqualTo(TravelJourneyLifecycleState.Ready));
             Assert.That(created.Journey.Steps.Count, Is.EqualTo(plan.Plan.EdgeCount));
             Assert.That(fixture.EntityLocations.TryGetActivePlacement(PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId, fixture.WorldId), out EntityPlacementSnapshot placement), Is.True);
-            Assert.That(placement.ExactLocationId, Is.EqualTo("location.prototype.village"));
+            Assert.That(placement.ExactLocationId, Is.EqualTo("location.prototype.town"));
         }
 
         [Test]
@@ -44,7 +44,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(partial.Journey.CompletedDistance.meters, Is.GreaterThan(0d));
             Assert.That(duplicateBoundary.Duplicate, Is.True);
             Assert.That(context.InTransit, Is.True);
-            Assert.That(context.ExactPlacement.ExactLocationId, Is.EqualTo("location.prototype.village"));
+            Assert.That(context.ExactPlacement.ExactLocationId, Is.EqualTo("location.prototype.town"));
             Assert.That(context.NextLocationId, Is.EqualTo("location.prototype.market-district"));
         }
 
@@ -76,12 +76,12 @@ namespace UnityIsekaiGame.Tests
             LocationRouteMutationResult blockedSegment = fixture.Routes.MutateSegment(new LocationRouteSegmentMutationRequest
             {
                 transactionId = "test.journey.block-segment",
-                segmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                segmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                 blockageState = RouteSegmentBlockageState.TemporarilyBlocked,
                 worldTime = 11d
             });
             TravelJourneyOperationResult blocked = fixture.Journeys.AdvanceJourney(Lifecycle(fixture, created.Journey.JourneyId, "blocked", 12d, 5d));
-            LocationRouteMutationResult replacement = CreateRoute(fixture, "route-segment.test.journey-alternative", "location.prototype.village", "location.prototype.market-district", 95d, 30d);
+            LocationRouteMutationResult replacement = CreateRoute(fixture, "route-segment.test.journey-alternative", "location.prototype.town", "location.prototype.market-district", 95d, 30d);
 
             TravelJourneyOperationResult replanned = fixture.Journeys.ReplanJourney(new TravelJourneyReplanRequest
             {
@@ -138,7 +138,7 @@ namespace UnityIsekaiGame.Tests
                 journeyId = id,
                 traveler = traveler,
                 controller = PrototypeEntityLocationFactory.Person(PrototypeEntityLocationFactory.PlayerPersonId, fixture.WorldId),
-                originLocationId = "location.prototype.village",
+                originLocationId = "location.prototype.town",
                 destinationLocationId = destination,
                 acceptedRoutePlan = acceptedPlan,
                 accessContext = AccessContext(fixture, traveler),

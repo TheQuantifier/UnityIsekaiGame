@@ -510,7 +510,29 @@ namespace UnityIsekaiGame.WorldLocations
         {
             string id = N(locationId);
             if (string.IsNullOrWhiteSpace(id) || locations == null) return string.IsNullOrWhiteSpace(id) ? Array.Empty<string>() : new[] { id };
-            return new[] { id }.Concat(locations.GetAncestors(id).Select(item => item.LocationId)).Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.Ordinal).ToArray();
+            List<string> references = new List<string>();
+            if (locations.TryGetSnapshot(id, out LocationSnapshot exact))
+            {
+                AddLocationReferences(references, exact);
+            }
+            else
+            {
+                references.Add(id);
+            }
+
+            foreach (LocationSnapshot ancestor in locations.GetAncestors(id))
+            {
+                AddLocationReferences(references, ancestor);
+            }
+
+            return references.Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.Ordinal).ToArray();
+        }
+
+        private static void AddLocationReferences(ICollection<string> references, LocationSnapshot location)
+        {
+            if (location == null) return;
+            if (!string.IsNullOrWhiteSpace(location.AuthoredPlaceDefinitionId)) references.Add(location.AuthoredPlaceDefinitionId);
+            if (!string.IsNullOrWhiteSpace(location.LocationId)) references.Add(location.LocationId);
         }
 
         private static PoliticalTravelCrossingClassification Classify(PoliticalTravelTerritoryResolution origin, PoliticalTravelTerritoryResolution destination)

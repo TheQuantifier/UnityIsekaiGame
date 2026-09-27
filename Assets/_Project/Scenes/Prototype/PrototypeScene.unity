@@ -223,8 +223,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 84965edb733e42f7b1861c674782dd9d, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   playerActionMap: Player
   moveActionName: Move
@@ -257,8 +257,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ecf701be4dd74672b375fbe7e127e0ce, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   input: {fileID: 100003}
   movementSettings: {fileID: 11400000, guid: 1f044d40739746a58a2f50387891deac, type: 2}
   stamina: {fileID: 100009}
@@ -294,58 +294,58 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d1557c9814764e4691dbb481f51daac7, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Inventory.PlayerInventory
   slotCapacity: 16
   slots:
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
   - item: {fileID: 0}
     quantity: 0
-    itemInstanceId:
+    itemInstanceId: 
 --- !u!114 &100007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -356,7 +356,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39143b74073e54c4398d9c545727e393, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Gameplay.PlayerHealth
   input: {fileID: 100003}
   resources: {fileID: 343134210}
@@ -370,7 +370,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9e1f059b59b16ff4483bcb79aed3eee0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Gameplay.PlayerMana
   resources: {fileID: 343134210}
 --- !u!114 &100009
@@ -383,7 +383,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ad5a2329e4b530046a9ad34fecb563d8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Gameplay.PlayerStamina
   sprintDrainPerSecond: 5
   restartThreshold: 20
@@ -495,8 +495,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 72dc0ff5953e41c391eaf8cbeaf350c6, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   input: {fileID: 100003}
   movementSettings: {fileID: 11400000, guid: 1f044d40739746a58a2f50387891deac, type: 2}
   yawRoot: {fileID: 100001}
@@ -512,8 +512,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
@@ -556,7 +556,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ef0842c93a224e7e8eced95c761bfb55, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Interaction.CameraInteractionDetector
   input: {fileID: 100003}
   interactor: {fileID: 100000}
@@ -576,7 +576,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1205aac00c1e47d896284bf7120d87e3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Combat.FirstPersonWeaponPresenter
   equipment: {fileID: 343134188}
   combat: {fileID: 343134189}
@@ -631,7 +631,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -804,7 +804,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -973,7 +973,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05ab56aac02e11e4e9fe23125a1f9d2e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Persistence.PlayerSpawnPoint
   spawnPointId: spawn.prototype.combat
   place: {fileID: 0}
@@ -989,7 +989,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 637f6fcabac34858a168f60fb235f4cb, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Development.PrototypeTestPoint
   testPointId: test-point.combat
   displayName: Combat
@@ -1036,7 +1036,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05ab56aac02e11e4e9fe23125a1f9d2e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Persistence.PlayerSpawnPoint
   spawnPointId: spawn.prototype.contract-board
   place: {fileID: 0}
@@ -1052,7 +1052,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 637f6fcabac34858a168f60fb235f4cb, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Development.PrototypeTestPoint
   testPointId: test-point.contract-board
   displayName: Contracts
@@ -1103,7 +1103,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -1184,7 +1184,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.3, g: 0.42, b: 0.5, a: 0.95}
@@ -1222,7 +1222,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -1318,7 +1318,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56ad7e2fb2fe41208ba7961db9c3aec1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Gameplay.PrototypeMarketStall
   services: {fileID: 0}
   input: {fileID: 0}
@@ -1410,12 +1410,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 130264602}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 4, y: 0.75, z: 4}
   m_LocalScale: {x: 2.4, y: 1.5, z: 1.2}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 752209369}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &131180256
 GameObject:
@@ -1464,7 +1464,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -1526,7 +1526,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -1570,7 +1570,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 1}
@@ -1600,7 +1600,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
@@ -1685,7 +1685,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1762,7 +1762,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 0.95}
@@ -1800,7 +1800,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -1889,7 +1889,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1963,7 +1963,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
@@ -1983,7 +1983,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 1}
@@ -2021,7 +2021,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -2104,7 +2104,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 0.95}
@@ -2142,7 +2142,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -2226,7 +2226,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
@@ -2246,7 +2246,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -2290,7 +2290,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 1}
@@ -2368,7 +2368,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c7aaef7153f64b65b54076fa987c3a45, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.SpellLoadoutHudView
   loadout: {fileID: 343134192}
   slotViews:
@@ -2432,7 +2432,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -2499,7 +2499,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -2569,14 +2569,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f76fc3efd344269909619c23389a073, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.WorldEntitySceneBinding
   instanceId: WorldEntitySceneBinding.35a4d23fb48444de89709eb4a52d459b
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: Person:local-world:person.prototype.prisoner
   bindingKey: prototype.scene.entity.prisoner
-  displayName:
+  displayName: 
   role: 0
   required: 0
   autoRegister: 1
@@ -2635,7 +2635,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 0.95}
@@ -2673,7 +2673,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -2756,7 +2756,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 0.95}
@@ -2794,7 +2794,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -2879,7 +2879,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -2917,7 +2917,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 263477192}
   iconImage: {fileID: 1933817098}
@@ -2968,14 +2968,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f76fc3efd344269909619c23389a073, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.WorldEntitySceneBinding
   instanceId: WorldEntitySceneBinding.5a75ec4766d842c8b03c706639bd9110
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: Person:local-world:person.prototype.merchant
   bindingKey: prototype.scene.entity.merchant
-  displayName:
+  displayName: 
   role: 0
   required: 0
   autoRegister: 1
@@ -3032,7 +3032,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -3098,6 +3098,9 @@ Transform:
   - {fileID: 1677657122}
   - {fileID: 735736979}
   - {fileID: 534941393}
+  - {fileID: 1226624584}
+  - {fileID: 1298473924}
+  - {fileID: 1958286024}
   m_Father: {fileID: 3001000201}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &278595014
@@ -3110,7 +3113,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7b53ad883bd340739f3c232f2fc1b499, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.WorldSceneBindingBootstrap
   bootstrapMode: 0
   registerChildrenOnEnable: 1
@@ -3166,7 +3169,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -3204,7 +3207,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 299220332}
   iconImage: {fileID: 1118719602}
@@ -3260,7 +3263,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -3320,7 +3323,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df4d2eb656c5478a9a2a3a4c315892ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventoryScreenController
   input: {fileID: 100003}
   inventory: {fileID: 100006}
@@ -3355,7 +3358,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: af8c4c81ab0643098585e0fcaa327897, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventoryScreenView
   canvasGroup: {fileID: 328735283}
   slotViews:
@@ -3433,7 +3436,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
@@ -3450,7 +3453,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
@@ -3550,14 +3553,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8725a44a7ada4c8a9c5d86923d98c25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.ConnectionSceneBinding
   instanceId: ConnectionSceneBinding.f1bce9d824984c729acd0290268bc415
   worldId: local-world
   sceneKey: scene.prototype
-  logicalId: location-connection.prototype.village-civic-entrance
-  bindingKey: prototype.connection.village-civic
-  displayName: Village to Civic Entrance
+  logicalId: location-connection.prototype.town-civic-entrance
+  bindingKey: prototype.connection.town-civic
+  displayName: Town to Civic Entrance
   role: 0
   required: 1
   autoRegister: 1
@@ -3567,7 +3570,7 @@ MonoBehaviour:
   interactTogglesOpenClosed: 1
   interactionRange: 3
   requirePhysicalRange: 1
-  sourceLocationId: location.prototype.village
+  sourceLocationId: location.prototype.town
   destinationLocationId: location.prototype.civic-office
 --- !u!1001 &342894925
 PrefabInstance:
@@ -3575,8 +3578,12 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 3001000211}
     m_Modifications:
+    - target: {fileID: 617195430623649333, guid: 105b76fa679811545b97dba6d35206fb, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.6499999
+      objectReference: {fileID: 0}
     - target: {fileID: 617195430623649333, guid: 105b76fa679811545b97dba6d35206fb, type: 3}
       propertyPath: m_LocalPosition.x
       value: 14
@@ -3595,11 +3602,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 617195430623649333, guid: 105b76fa679811545b97dba6d35206fb, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 617195430623649333, guid: 105b76fa679811545b97dba6d35206fb, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 617195430623649333, guid: 105b76fa679811545b97dba6d35206fb, type: 3}
       propertyPath: m_LocalRotation.z
@@ -3626,6 +3633,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 105b76fa679811545b97dba6d35206fb, type: 3}
+--- !u!4 &342894926 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 617195430623649333, guid: 105b76fa679811545b97dba6d35206fb, type: 3}
+  m_PrefabInstance: {fileID: 342894925}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &343134187
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3636,7 +3648,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 045240f77ef28004b918bfe4ad6a5bf5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Equipment.PlayerStats
   actorProfile: {fileID: 11400000, guid: 0697f228c00e4202a143936fb644f547, type: 2}
   characterAttributes: {fileID: 343134212}
@@ -3653,28 +3665,28 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7d87d5cce97d0004ca6c7d75e5985015, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Equipment.PlayerEquipment
   inventory: {fileID: 100006}
   slots:
   - slotType: 0
     item: {fileID: 0}
-    itemInstanceId:
+    itemInstanceId: 
   - slotType: 1
     item: {fileID: 0}
-    itemInstanceId:
+    itemInstanceId: 
   - slotType: 2
     item: {fileID: 0}
-    itemInstanceId:
+    itemInstanceId: 
   - slotType: 3
     item: {fileID: 0}
-    itemInstanceId:
+    itemInstanceId: 
   - slotType: 4
     item: {fileID: 0}
-    itemInstanceId:
+    itemInstanceId: 
   - slotType: 5
     item: {fileID: 0}
-    itemInstanceId:
+    itemInstanceId: 
 --- !u!114 &343134189
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3685,7 +3697,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bfed13567dcc40f1afd028b056045db0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Combat.PlayerMeleeCombat
   input: {fileID: 100003}
   equipment: {fileID: 343134188}
@@ -3714,7 +3726,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d516550001c941d3b1606550ebeca596, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Gameplay.PrototypeTestController
   input: {fileID: 100003}
   player: {fileID: 100001}
@@ -3750,7 +3762,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 658856e70f7049d78c20247efc05f24a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Magic.PlayerSpellcaster
   input: {fileID: 100003}
   castOrigin: {fileID: 100011}
@@ -3771,7 +3783,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 08e03d53f6884e9d92bfb32110cb2694, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Magic.PlayerSpellLoadout
   slotCount: 4
   knownSpells:
@@ -3794,7 +3806,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9523bc0a447341d393f0f14cf05da968, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Magic.PlayerSpellLoadoutInputController
   input: {fileID: 100003}
   loadout: {fileID: 343134192}
@@ -3808,7 +3820,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b5961eab69174380badf1f7f4c4360ce, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Contracts.PlayerContractJournal
   inventory: {fileID: 100006}
   activeContractLimit: 6
@@ -3822,7 +3834,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 242249f9a783460a9a7f071b8a1423d9, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Quests.PlayerQuestLog
   inventory: {fileID: 100006}
 --- !u!114 &343134196
@@ -3835,7 +3847,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d1fb0e46e44301b4496da21379869daf, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.StatusEffects.StatusEffectController
   ongoingEffects: {fileID: 343134208}
   useLocalTime: 1
@@ -3849,7 +3861,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 993542e1e62dbf94cb792e1004d219fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Places.CurrentPlaceTracker
 --- !u!114 &343134198
 MonoBehaviour:
@@ -3861,14 +3873,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f76fc3efd344269909619c23389a073, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.WorldEntitySceneBinding
   instanceId: WorldEntitySceneBinding.671a33cb384c481996ebd2f9d0a1161a
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: Person:local-world:person.prototype.player
   bindingKey: prototype.scene.entity.player
-  displayName:
+  displayName: 
   role: 0
   required: 0
   autoRegister: 1
@@ -3888,19 +3900,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 732592b521a1bdf4bbfcd81a79f2fe26, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldEntities.WorldEntityIdentity
   identityKind: 0
-  localAuthoredId:
-  runtimeEntityId:
+  localAuthoredId: 
+  runtimeEntityId: 
   sceneKey: scene.prototype
   worldId: local-world
   ownerScope: 200
-  ownerId:
-  parentEntityId:
+  ownerId: 
+  parentEntityId: 
   persistenceEligible: 1
-  definitionId:
-  expectedEntityType:
+  definitionId: 
+  expectedEntityType: 
   registerInAwake: 1
 --- !u!114 &343134200
 MonoBehaviour:
@@ -3912,7 +3924,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56000000000000000000000000000556, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.CharacterSystem.CharacterSystemCoordinator
   identity: {fileID: 343134203}
   actorStats: {fileID: 343134187}
@@ -3930,7 +3942,7 @@ MonoBehaviour:
   worldEntityIdentity: {fileID: 343134199}
   simulation: {fileID: 343134215}
   lifecycle: {fileID: 343134209}
-  actorIdOverride:
+  actorIdOverride: 
 --- !u!114 &343134201
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3941,7 +3953,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4afdfb13707e4a96b4fd4bf83fe6432d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Inventory.Identity.PlayerItemIdentitySynchronizer
   inventory: {fileID: 100006}
   equipment: {fileID: 343134188}
@@ -3959,7 +3971,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 53000000000000000000000000001253, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Skills.PlayerSkillActionEventSource
   skills: {fileID: 343134207}
   identity: {fileID: 343134203}
@@ -3977,11 +3989,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 560609a731194954b90cab43c2afd13e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Progression.PlayerIdentityProgression
   accountId: local-account
   playerId: local-player
-  personId:
+  personId: 
   actorStats: {fileID: 0}
   characterAttributes: {fileID: 343134212}
   calculatedStats: {fileID: 343134211}
@@ -3992,31 +4004,31 @@ MonoBehaviour:
   overallLevelConfiguration: {fileID: 0}
   origin:
     assigned: 0
-    originFamilyId:
-    originId:
+    originFamilyId: 
+    originId: 
     randomSeed: 0
     startingGoldAmount: 0
     originStatGrantsApplied: 0
     startingCurrencyApplied: 0
-    assignedAtUtc:
+    assignedAtUtc: 
     assignedAtPlaytimeSeconds: 0
-    assignmentSource:
+    assignmentSource: 
   birthGift:
-    giftDefinitionId:
-    rarityId:
+    giftDefinitionId: 
+    rarityId: 
     giftType: 0
-    originFamilyId:
-    originId:
+    originFamilyId: 
+    originId: 
     awakeningMode: 0
     requiredActivePlaytimeSeconds: 0
     currentProgressSeconds: 0
     state: 0
     rewardApplied: 0
-    assignedAtUtc:
+    assignedAtUtc: 
     assignedAtPlaytimeSeconds: 0
-    awakenedAtUtc:
+    awakenedAtUtc: 
     awakenedAtPlaytimeSeconds: 0
-    assignmentSource:
+    assignmentSource: 
   permanentAttributeGrants: []
   roles: []
   socialStatuses: []
@@ -4033,11 +4045,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: db2a0fe64251421bb7d61b8a57a6765a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Knowledge.PersonKnowledgeRuntime
-  personId:
-  currentActorId:
-  currentBodyId:
+  personId: 
+  currentActorId: 
+  currentBodyId: 
 --- !u!114 &343134205
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4048,11 +4060,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a110000000000000000000000000013, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Beings.Biology.ActorBodyRuntime
   defaultSpecies: {fileID: 11400000, guid: 7a170000000000000000000000000001, type: 2}
-  actorBodyIdOverride:
-  personIdOverride:
+  actorBodyIdOverride: 
+  personIdOverride: 
 --- !u!114 &343134206
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4063,7 +4075,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 55000000000000000000000000003155, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Traits.CharacterTraitCollection
   calculatedStats: {fileID: 343134211}
   skills: {fileID: 343134207}
@@ -4080,7 +4092,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 53000000000000000000000000001053, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Skills.CharacterSkillCollection
   calculatedStats: {fileID: 343134211}
   spellLoadout: {fileID: 0}
@@ -4096,7 +4108,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64000000000000000000000000000008, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Combat.OngoingEffects.OngoingEffectService
   defaultTarget: {fileID: 343134200}
   autoProcessWithUnityTime: 1
@@ -4111,7 +4123,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 63f00000000000000000000000000012, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.ActorLifecycle.ActorLifecycleController
   defeatPolicy: {fileID: 0}
   character: {fileID: 343134200}
@@ -4130,7 +4142,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 293a11155c6b3d541b5c2add5075b405, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.ResourceSystem.CharacterResourceCollection
   calculatedStats: {fileID: 343134211}
 --- !u!114 &343134211
@@ -4143,7 +4155,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 320333c85e0d4d26b4de8319e96c4d6a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Stats.CalculatedStatCollection
   attributes: {fileID: 343134212}
 --- !u!114 &343134212
@@ -4156,7 +4168,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 11053d09d0524f9fb31e3726ff9cc086, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Stats.CharacterAttributes
 --- !u!114 &343134213
 MonoBehaviour:
@@ -4168,7 +4180,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4739b0ff39294c539d61364c170e3f61, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Abilities.CharacterAbilityCollection
 --- !u!114 &343134214
 MonoBehaviour:
@@ -4180,7 +4192,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9f43e563a4b84a57848bcd92b844f401, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Capabilities.CharacterCapabilityCollection
 --- !u!114 &343134215
 MonoBehaviour:
@@ -4192,7 +4204,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 48aa571eb15143aba20c77beef7356e3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.CharacterSystem.AuthoritativeCharacterSimulationDriver
   character: {fileID: 343134200}
   resources: {fileID: 343134210}
@@ -4243,7 +4255,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8725a44a7ada4c8a9c5d86923d98c25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.ConnectionSceneBinding
   instanceId: ConnectionSceneBinding.e2e75ae54c62463792b5881efea9af6a
   worldId: local-world
@@ -4317,7 +4329,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -4340,7 +4352,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!1 &368595341
 GameObject:
   m_ObjectHideFlags: 0
@@ -4388,7 +4400,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -4475,7 +4487,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -4527,7 +4539,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -4550,7 +4562,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &373012967
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4627,7 +4639,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 0.95}
@@ -4665,7 +4677,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -4746,7 +4758,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -4769,7 +4781,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &385226510
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4825,7 +4837,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -4848,7 +4860,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &395224311
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4904,7 +4916,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -5044,8 +5056,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_UsePipelineSettings: 1
   m_AdditionalLightsShadowResolutionTier: 2
   m_CustomShadowLayers: 0
@@ -5112,7 +5124,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0}
@@ -5189,7 +5201,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
   m_Padding:
     m_Left: 0
@@ -5215,7 +5227,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0}
@@ -5290,7 +5302,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -5400,7 +5412,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1c1ee838bcee63544a8885c2927f1cfc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Persistence.SceneKeyIdentity
   sceneKey: scene.prototype
 --- !u!1 &456532959
@@ -5582,7 +5594,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
   instanceId: InteractionPointSceneBinding.a48fad86bdea44398b1b8af225ab2e08
   worldId: local-world
@@ -5596,6 +5608,7 @@ MonoBehaviour:
   anchor: {fileID: 0}
   interactionRange: 3
   requirePhysicalRange: 1
+  serviceDefinitionId: interaction-service.prototype.shop-purchase
 --- !u!1 &471864190
 GameObject:
   m_ObjectHideFlags: 0
@@ -5643,7 +5656,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -5700,7 +5713,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a9de0181a8b549c8912988fe6fbe9bc7, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.SpellManagementView
   knownSpellButtons:
   - {fileID: 1556402242}
@@ -5770,7 +5783,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.08, g: 0.09, b: 0.1, a: 0.92}
@@ -5845,7 +5858,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -5924,7 +5937,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -5999,7 +6012,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -6061,7 +6074,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -6105,7 +6118,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 1}
@@ -6135,7 +6148,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
@@ -6278,7 +6291,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8725a44a7ada4c8a9c5d86923d98c25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.ConnectionSceneBinding
   instanceId: ConnectionSceneBinding.9bc49295408344068bae00fd488bdaf0
   worldId: local-world
@@ -6349,7 +6362,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.06, g: 0.07, b: 0.08, a: 0.95}
@@ -6403,7 +6416,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2163681123550400602, guid: f7bb2a22483f2b843814c8d6515a7482, type: 3}
       propertyPath: target
-      value:
+      value: 
       objectReference: {fileID: 100001}
     - target: {fileID: 2163681123550400602, guid: f7bb2a22483f2b843814c8d6515a7482, type: 3}
       propertyPath: detectionRadius
@@ -6501,7 +6514,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9c27c243ff3f4971b4379a7b9c790129, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Combat.PrototypeEnemyController
 --- !u!114 &518715564 stripped
 MonoBehaviour:
@@ -6512,7 +6525,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f0ddba5deeda42459b6476e43d796270, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Combat.EnemyHealth
 --- !u!114 &518715565
 MonoBehaviour:
@@ -6524,7 +6537,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2fb9dd917abeb6d49a1d8e265451d389, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Combat.PrototypeEnemyPatrolController
   enemyController: {fileID: 518715563}
   health: {fileID: 518715564}
@@ -6587,9 +6600,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c969ebaa84af40c280367b76c9a2bf42, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Gameplay.PrototypePersistenceServiceBehaviour
+  institutionalSimulationSettings:
+    enabled: 1
+    evaluationIntervalSeconds: 1
+    maximumOperationsPerRuntime: 64
+    maximumCatchUpBoundaries: 8
   equippedWeaponWearPerAttack: 0.25
+  socialSimulationSettings:
+    autonomousNpcDecisions: 1
+    decisionIntervalSeconds: 2
+    maximumNpcDecisionsPerTick: 1
+    maintenanceIntervalSeconds: 60
+    maximumInteractionHistory: 2000
+    maximumDecisionHistoryPerPerson: 32
+    maximumProcessedTransactions: 4096
+    maximumRumorTransmissions: 2000
+    maximumNormAssessments: 2000
+    maximumInfluenceAttempts: 1000
+    maximumEmotionEpisodesPerPerson: 32
+  enableSocialDebugPanel: 1
   definitionCatalog: {fileID: 11400000, guid: 357d3d18865946889262f9bf55802d62, type: 2}
   playerInventory: {fileID: 100006}
   playerEquipment: {fileID: 343134188}
@@ -6705,7 +6736,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7724a351fccd3e244861be0c61016820, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Persistence.PlayTimeTracker
   cumulativeSeconds: 0
   countWhileMenuOpen: 0
@@ -6719,7 +6750,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8a0d1428f814d1e4196cd27b794f1fcf, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Persistence.AutosaveCoordinator
   intervalSeconds: 300
   retryDelaySeconds: 30
@@ -6734,10 +6765,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7acf421e215f78343bca430e216f3c95, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Persistence.GameSaveDirtyTracker
   isDirty: 0
-  lastReason:
+  lastReason: 
 --- !u!1 &528405641
 GameObject:
   m_ObjectHideFlags: 0
@@ -6888,7 +6919,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -6911,7 +6942,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &535185225
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -6963,7 +6994,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05ab56aac02e11e4e9fe23125a1f9d2e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Persistence.PlayerSpawnPoint
   spawnPointId: spawn.prototype.equipment
   place: {fileID: 0}
@@ -6979,7 +7010,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 637f6fcabac34858a168f60fb235f4cb, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Development.PrototypeTestPoint
   testPointId: test-point.equipment
   displayName: Equipment
@@ -7155,7 +7186,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -7234,7 +7265,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -7293,7 +7324,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: edf25d44392341a08581711e6b36f318, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Dialogue.DialogueController
 --- !u!4 &604495671
 Transform:
@@ -7357,7 +7388,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -7380,7 +7411,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &609803141
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -7451,7 +7482,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GridLayoutGroup
   m_Padding:
     m_Left: 0
@@ -7514,7 +7545,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -7558,7 +7589,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.12, g: 0.14, b: 0.16, a: 0.95}
@@ -7635,7 +7666,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 0.95}
@@ -7673,7 +7704,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -7762,7 +7793,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -7785,7 +7816,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!1 &658954428
 GameObject:
   m_ObjectHideFlags: 0
@@ -7835,7 +7866,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 0.95}
@@ -7873,7 +7904,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -8050,7 +8081,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
   instanceId: InteractionPointSceneBinding.1725931d3711409eb444ae6d68249ea3
   worldId: local-world
@@ -8064,6 +8095,7 @@ MonoBehaviour:
   anchor: {fileID: 0}
   interactionRange: 3
   requirePhysicalRange: 1
+  serviceDefinitionId: interaction-service.prototype.records-public-access
 --- !u!1 &665144310 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7516797644157564959, guid: b2192ba13e83098478985e3919f7f873, type: 3}
@@ -8084,7 +8116,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
   instanceId: InteractionPointSceneBinding.5273a1a8b6d74389bb03e88b67ddd4d3
   worldId: local-world
@@ -8098,6 +8130,7 @@ MonoBehaviour:
   anchor: {fileID: 0}
   interactionRange: 3
   requirePhysicalRange: 1
+  serviceDefinitionId: interaction-service.prototype.meet-mayor
 --- !u!114 &665144313
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8108,7 +8141,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
   instanceId: InteractionPointSceneBinding.8e7785ac6f58471aabd63a91e605b975
   worldId: local-world
@@ -8122,6 +8155,7 @@ MonoBehaviour:
   anchor: {fileID: 0}
   interactionRange: 3
   requirePhysicalRange: 1
+  serviceDefinitionId: interaction-service.prototype.register-merchant
 --- !u!114 &665144314
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8132,7 +8166,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
   instanceId: InteractionPointSceneBinding.1e164245ff1e48528231a242529749d7
   worldId: local-world
@@ -8146,6 +8180,7 @@ MonoBehaviour:
   anchor: {fileID: 0}
   interactionRange: 3
   requirePhysicalRange: 1
+  serviceDefinitionId: interaction-service.prototype.prison-cell-inspect
 --- !u!114 &665144316
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8156,14 +8191,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
   instanceId: LocationSceneBinding.a43d58fba78e4ed6a6f81a7ec631bf40
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: location.prototype.adventurers-guild
   bindingKey: prototype.scene.location.adventurers-guild
-  displayName:
+  displayName: 
   role: 0
   required: 1
   autoRegister: 1
@@ -8179,7 +8214,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7b53ad883bd340739f3c232f2fc1b499, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.WorldSceneBindingBootstrap
   bootstrapMode: 0
   registerChildrenOnEnable: 1
@@ -8239,7 +8274,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -8262,7 +8297,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!1 &699227345
 GameObject:
   m_ObjectHideFlags: 0
@@ -8306,7 +8341,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8725a44a7ada4c8a9c5d86923d98c25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.ConnectionSceneBinding
   instanceId: ConnectionSceneBinding.c9953b53b6074c74aa6e3e8fd93cbaba
   worldId: local-world
@@ -8353,7 +8388,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -8446,7 +8481,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d516550001c941d3b1606550ebeca596, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Gameplay.PrototypeTestController
   input: {fileID: 100003}
   player: {fileID: 100001}
@@ -8501,7 +8536,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -8545,7 +8580,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.19, b: 0.21, a: 1}
@@ -8640,7 +8675,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -8663,7 +8698,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &727211146
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -8723,7 +8758,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -8761,7 +8796,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 730835877}
   iconImage: {fileID: 165616561}
@@ -8853,14 +8888,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
   instanceId: LocationSceneBinding.77e6cd0f14f34dd88a7734fd7b93831f
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: location.prototype.mayor-office
   bindingKey: prototype.scene.location.mayor-office
-  displayName:
+  displayName: 
   role: 0
   required: 1
   autoRegister: 1
@@ -8913,7 +8948,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -8936,7 +8971,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &745642678
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -8992,7 +9027,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -9055,8 +9090,63 @@ Transform:
   m_Children:
   - {fileID: 3582551198601119244}
   - {fileID: 665144304}
+  - {fileID: 130264607}
   m_Father: {fileID: 3001000141}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &755206943
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 755206944}
+  - component: {fileID: 755206945}
+  m_Layer: 0
+  m_Name: Route - Town Market Route
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &755206944
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 755206943}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.5, z: 20}
+  m_LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1226624584}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &755206945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 755206943}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f61e9f75f45f49e89f614a897e1c0968, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.RouteSegmentSceneBinding
+  instanceId: RouteSegmentSceneBinding.362e6ce1be854c3094c1f6fa962f8dc5
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: route-segment.prototype.town-market-street
+  bindingKey: prototype.scene.route.town-market
+  displayName: Town Market Route
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
 --- !u!1 &757741463
 GameObject:
   m_ObjectHideFlags: 0
@@ -9106,7 +9196,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ed50a3067de5413599ce2f32b27f4fde, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.SpellQuickSlotView
   backgroundImage: {fileID: 757741466}
   label: {fileID: 1988736725}
@@ -9122,7 +9212,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.1, g: 0.12, b: 0.14, a: 0.82}
@@ -9192,14 +9282,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f76fc3efd344269909619c23389a073, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.WorldEntitySceneBinding
   instanceId: WorldEntitySceneBinding.bec72e70a40940b58ce3c2c553014917
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: Person:local-world:person.prototype.guildmaster
   bindingKey: prototype.scene.entity.guildmaster
-  displayName:
+  displayName: 
   role: 0
   required: 0
   autoRegister: 1
@@ -9264,7 +9354,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -9335,7 +9425,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -9394,8 +9484,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_IsGlobal: 1
   priority: 0
   blendDistance: 0
@@ -9471,7 +9561,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -9494,7 +9584,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!1 &852314616
 GameObject:
   m_ObjectHideFlags: 0
@@ -9578,7 +9668,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ebc53dc4f74b45afbf1886304fb8f6bc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Interaction.InteractionPromptPresenter
   detector: {fileID: 100016}
   promptView: {fileID: 1030244856}
@@ -9592,7 +9682,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
@@ -9609,7 +9699,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
@@ -9721,7 +9811,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -9788,7 +9878,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8725a44a7ada4c8a9c5d86923d98c25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.ConnectionSceneBinding
   instanceId: ConnectionSceneBinding.33f46b022f8e4fa6851ab25fc074206c
   worldId: local-world
@@ -9869,7 +9959,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e62aba04586c8b544ad9ff54896b89be, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Combat.PrototypeEnemyAnimationDriver
   animator: {fileID: 1577020295}
   health: {fileID: 929592978}
@@ -9888,7 +9978,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 011c4463df5546f389f151c46391939e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Combat.EnemyMeleeAttack
   health: {fileID: 929592978}
   execution: {fileID: 0}
@@ -9910,7 +10000,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9c27c243ff3f4971b4379a7b9c790129, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Combat.PrototypeEnemyController
   target: {fileID: 100001}
   health: {fileID: 929592978}
@@ -9931,7 +10021,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f0ddba5deeda42459b6476e43d796270, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Combat.EnemyHealth
   resources: {fileID: 929592981}
 --- !u!114 &929592979
@@ -9944,7 +10034,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d1fb0e46e44301b4496da21379869daf, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.StatusEffects.StatusEffectController
   ongoingEffects: {fileID: 929592988}
   useLocalTime: 1
@@ -9958,7 +10048,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 63f00000000000000000000000000012, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.ActorLifecycle.ActorLifecycleController
   defeatPolicy: {fileID: 0}
   character: {fileID: 929592987}
@@ -9977,7 +10067,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 293a11155c6b3d541b5c2add5075b405, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.ResourceSystem.CharacterResourceCollection
   calculatedStats: {fileID: 929592983}
 --- !u!114 &929592982
@@ -9990,7 +10080,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 09672751c3f54efd8e4e70931fbdd62c, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Stats.ActorStats
   actorProfile: {fileID: 11400000, guid: 8f9cba49469c4a2bbdbd7f0ffbcb2ec1, type: 2}
   characterAttributes: {fileID: 929592984}
@@ -10005,7 +10095,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 320333c85e0d4d26b4de8319e96c4d6a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Stats.CalculatedStatCollection
   attributes: {fileID: 929592984}
 --- !u!114 &929592984
@@ -10018,7 +10108,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 11053d09d0524f9fb31e3726ff9cc086, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Stats.CharacterAttributes
 --- !u!114 &929592985
 MonoBehaviour:
@@ -10030,16 +10120,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 732592b521a1bdf4bbfcd81a79f2fe26, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldEntities.WorldEntityIdentity
   identityKind: 0
   localAuthoredId: enemy.prototype-zombie
-  runtimeEntityId:
+  runtimeEntityId: 
   sceneKey: scene.prototype
   worldId: local-world
   ownerScope: 200
-  ownerId:
-  parentEntityId:
+  ownerId: 
+  parentEntityId: 
   persistenceEligible: 1
   definitionId: actor.prototype-zombie
   expectedEntityType: Actor
@@ -10079,7 +10169,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56000000000000000000000000000556, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.CharacterSystem.CharacterSystemCoordinator
   identity: {fileID: 0}
   actorStats: {fileID: 929592982}
@@ -10097,7 +10187,7 @@ MonoBehaviour:
   worldEntityIdentity: {fileID: 929592985}
   simulation: {fileID: 929592994}
   lifecycle: {fileID: 929592980}
-  actorIdOverride:
+  actorIdOverride: 
 --- !u!114 &929592988
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10108,7 +10198,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64000000000000000000000000000008, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Combat.OngoingEffects.OngoingEffectService
   defaultTarget: {fileID: 929592987}
   autoProcessWithUnityTime: 1
@@ -10123,7 +10213,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4739b0ff39294c539d61364c170e3f61, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Abilities.CharacterAbilityCollection
 --- !u!114 &929592990
 MonoBehaviour:
@@ -10135,7 +10225,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9f43e563a4b84a57848bcd92b844f401, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Capabilities.CharacterCapabilityCollection
 --- !u!114 &929592991
 MonoBehaviour:
@@ -10147,7 +10237,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 53000000000000000000000000001053, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Skills.CharacterSkillCollection
   calculatedStats: {fileID: 929592983}
   spellLoadout: {fileID: 0}
@@ -10163,7 +10253,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 55000000000000000000000000003155, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Traits.CharacterTraitCollection
   calculatedStats: {fileID: 929592983}
   skills: {fileID: 929592991}
@@ -10180,11 +10270,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a110000000000000000000000000013, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Beings.Biology.ActorBodyRuntime
   defaultSpecies: {fileID: 11400000, guid: 7a170000000000000000000000000002, type: 2}
-  actorBodyIdOverride:
-  personIdOverride:
+  actorBodyIdOverride: 
+  personIdOverride: 
 --- !u!114 &929592994
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10195,7 +10285,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 48aa571eb15143aba20c77beef7356e3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.CharacterSystem.AuthoritativeCharacterSimulationDriver
   character: {fileID: 929592987}
   resources: {fileID: 929592981}
@@ -10250,7 +10340,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -10329,7 +10419,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -10367,7 +10457,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 940439090}
   iconImage: {fileID: 1135151321}
@@ -10425,7 +10515,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 0.95}
@@ -10463,7 +10553,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -10540,7 +10630,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8725a44a7ada4c8a9c5d86923d98c25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.ConnectionSceneBinding
   instanceId: ConnectionSceneBinding.27d1d066816e4a1caec3ea701aff7c48
   worldId: local-world
@@ -10625,7 +10715,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
   instanceId: InteractionPointSceneBinding.cc5b695f163145a08121b382a648c579
   worldId: local-world
@@ -10639,6 +10729,7 @@ MonoBehaviour:
   anchor: {fileID: 0}
   interactionRange: 3
   requirePhysicalRange: 1
+  serviceDefinitionId: interaction-service.prototype.workstation-use
 --- !u!114 &980640453
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10649,7 +10740,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4514884aaac03844281580faeb5a6b0a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Gameplay.PrototypeCraftingWorkstation
   services: {fileID: 0}
   input: {fileID: 0}
@@ -10702,7 +10793,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -10725,7 +10816,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &985452502
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -10783,7 +10874,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ed50a3067de5413599ce2f32b27f4fde, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.SpellQuickSlotView
   backgroundImage: {fileID: 986396023}
   label: {fileID: 1166359412}
@@ -10799,7 +10890,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.1, g: 0.12, b: 0.14, a: 0.82}
@@ -10859,7 +10950,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 938c61db9a524f98beff1b59439f44f8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.DialogueScreenController
   dialogueController: {fileID: 604495670}
   view: {fileID: 991644963}
@@ -10874,7 +10965,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c3622e2a3ce649d397a7d899bd03eda9, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.DialogueView
   canvasGroup: {fileID: 991644964}
   speakerLabel: {fileID: 370841929}
@@ -10906,7 +10997,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
@@ -10923,7 +11014,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
@@ -11062,7 +11153,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -11141,7 +11232,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -11202,7 +11293,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 1013909081}
   iconImage: {fileID: 231273071}
@@ -11243,7 +11334,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -11335,7 +11426,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
   instanceId: InteractionPointSceneBinding.030a36d6dbb44a9eb6d2f04fcf1d4fd4
   worldId: local-world
@@ -11349,6 +11440,7 @@ MonoBehaviour:
   anchor: {fileID: 0}
   interactionRange: 3
   requirePhysicalRange: 1
+  serviceDefinitionId: interaction-service.prototype.storage-access
 --- !u!1 &1030244855
 GameObject:
   m_ObjectHideFlags: 0
@@ -11377,7 +11469,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5adcbf97c89343a994f2f7049705ac3c, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Interaction.InteractionPromptView
   canvasGroup: {fileID: 1030244858}
   promptText: {fileID: 710393713}
@@ -11460,7 +11552,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -11483,7 +11575,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1030999655
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -11547,7 +11639,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -11581,7 +11673,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
   instanceId: InteractionPointSceneBinding.ac2e342712114c61aeeabed288edea73
   worldId: local-world
@@ -11595,6 +11687,7 @@ MonoBehaviour:
   anchor: {fileID: 0}
   interactionRange: 3
   requirePhysicalRange: 1
+  serviceDefinitionId: interaction-service.prototype.adventurer-rank-admin
 --- !u!1 &1037259493
 GameObject:
   m_ObjectHideFlags: 0
@@ -11638,14 +11731,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8725a44a7ada4c8a9c5d86923d98c25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.ConnectionSceneBinding
   instanceId: ConnectionSceneBinding.7147c63a2be84739982e458462a5df5b
   worldId: local-world
   sceneKey: scene.prototype
-  logicalId: location-connection.prototype.village-guild-entrance
-  bindingKey: prototype.connection.village-guild
-  displayName: Village to Guild Entrance
+  logicalId: location-connection.prototype.town-guild-entrance
+  bindingKey: prototype.connection.town-guild
+  displayName: Town to Guild Entrance
   role: 0
   required: 1
   autoRegister: 1
@@ -11655,7 +11748,7 @@ MonoBehaviour:
   interactTogglesOpenClosed: 1
   interactionRange: 3
   requirePhysicalRange: 1
-  sourceLocationId: location.prototype.village
+  sourceLocationId: location.prototype.town
   destinationLocationId: location.prototype.adventurers-guild
 --- !u!1 &1050589589
 GameObject:
@@ -11704,7 +11797,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
   m_Padding:
     m_Left: 0
@@ -11770,7 +11863,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
@@ -11790,7 +11883,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -11834,7 +11927,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.12, g: 0.14, b: 0.16, a: 0.95}
@@ -11913,7 +12006,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0}
@@ -11984,7 +12077,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8725a44a7ada4c8a9c5d86923d98c25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.ConnectionSceneBinding
   instanceId: ConnectionSceneBinding.184bb5c0eaf244029ff559f1d4e7c927
   worldId: local-world
@@ -12058,7 +12151,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -12131,7 +12224,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.15, g: 0.17, b: 0.19, a: 0.95}
@@ -12169,12 +12262,66 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e10d6ca6ded1c104b8a6bc5aac9b42ea, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.EquipmentSlotView
   label: {fileID: 1889361258}
   backgroundImage: {fileID: 1079600285}
   normalColor: {r: 0.15, g: 0.17, b: 0.19, a: 0.95}
   selectedColor: {r: 0.35, g: 0.52, b: 0.68, a: 0.95}
+--- !u!1 &1080755867
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1080755868}
+  - component: {fileID: 1080755869}
+  m_Layer: 0
+  m_Name: Route - Market Guild Route
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1080755868
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1080755867}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3, y: 0.5, z: 20}
+  m_LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1226624584}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1080755869
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1080755867}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f61e9f75f45f49e89f614a897e1c0968, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.RouteSegmentSceneBinding
+  instanceId: RouteSegmentSceneBinding.5f80f302902a4ed38f54f302a6b5f243
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: route-segment.prototype.market-guild-street
+  bindingKey: prototype.scene.route.market-guild
+  displayName: Market Guild Route
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
 --- !u!1 &1086551922
 GameObject:
   m_ObjectHideFlags: 0
@@ -12224,7 +12371,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ed50a3067de5413599ce2f32b27f4fde, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.SpellQuickSlotView
   backgroundImage: {fileID: 1086551925}
   label: {fileID: 1895380856}
@@ -12240,7 +12387,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.1, g: 0.12, b: 0.14, a: 0.82}
@@ -12377,7 +12524,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -12451,14 +12598,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
   instanceId: LocationSceneBinding.39e8c8d6467342b394f1dbb4eb6a5a6d
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: location.prototype.basement-prison
   bindingKey: prototype.scene.location.basement-prison
-  displayName:
+  displayName: 
   role: 0
   required: 1
   autoRegister: 1
@@ -12507,7 +12654,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05ab56aac02e11e4e9fe23125a1f9d2e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Persistence.PlayerSpawnPoint
   spawnPointId: spawn.prototype.magic-status
   place: {fileID: 0}
@@ -12523,7 +12670,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 637f6fcabac34858a168f60fb235f4cb, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Development.PrototypeTestPoint
   testPointId: test-point.magic-status
   displayName: Magic and Status
@@ -12574,7 +12721,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -12649,7 +12796,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -12677,6 +12824,60 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1118719600}
   m_CullTransparentMesh: 1
+--- !u!1 &1128646665
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1128646666}
+  - component: {fileID: 1128646667}
+  m_Layer: 0
+  m_Name: Checkpoint - Dungeon Entry Checkpoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1128646666
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1128646665}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.5, z: 24}
+  m_LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1298473924}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1128646667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1128646665}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a611eed7e834cfa9e7a8889be520f1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.CheckpointSceneBinding
+  instanceId: CheckpointSceneBinding.ca5f0b92669c4f6089c85c2fbb1effef
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: border-checkpoint.prototype.dungeon-entry
+  bindingKey: prototype.scene.checkpoint.dungeon-entry
+  displayName: Dungeon Entry Checkpoint
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
 --- !u!1 &1132953864
 GameObject:
   m_ObjectHideFlags: 0
@@ -12724,7 +12925,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -12799,7 +13000,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -12874,7 +13075,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.75, g: 0.95, b: 1, a: 0.9}
@@ -12953,7 +13154,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -13032,7 +13233,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -13055,7 +13256,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1166359413
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -13112,7 +13313,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9775b2644abc39047af5837e05084fc7, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.HealthReadoutView
   health: {fileID: 100007}
   stamina: {fileID: 100009}
@@ -13128,7 +13329,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -13215,7 +13416,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 0.85, b: 0.45, a: 1}
@@ -13238,7 +13439,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!1 &1199147189
 GameObject:
   m_ObjectHideFlags: 0
@@ -13286,7 +13487,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -13309,7 +13510,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1199147192
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -13373,7 +13574,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -13396,7 +13597,41 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
+--- !u!1 &1226624583
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1226624584}
+  m_Layer: 0
+  m_Name: Routes
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1226624584
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1226624583}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 755206944}
+  - {fileID: 1080755868}
+  - {fileID: 2088242426}
+  m_Father: {fileID: 278595013}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1231905780
 GameObject:
   m_ObjectHideFlags: 0
@@ -13448,7 +13683,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -13486,7 +13721,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 1231905782}
   iconImage: {fileID: 471864192}
@@ -13542,7 +13777,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -13687,7 +13922,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -13710,7 +13945,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!1 &1256758226
 GameObject:
   m_ObjectHideFlags: 0
@@ -13762,7 +13997,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -13800,7 +14035,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 1256758228}
   iconImage: {fileID: 476899665}
@@ -13851,14 +14086,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f76fc3efd344269909619c23389a073, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.WorldEntitySceneBinding
   instanceId: WorldEntitySceneBinding.b994f32d24874a5a95cada91826e267a
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: WorldEntity:local-world:world-entity.prototype.dungeon-door
   bindingKey: prototype.scene.entity.dungeon-door
-  displayName:
+  displayName: 
   role: 0
   required: 0
   autoRegister: 1
@@ -13917,7 +14152,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.15, g: 0.17, b: 0.19, a: 0.95}
@@ -13955,7 +14190,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e10d6ca6ded1c104b8a6bc5aac9b42ea, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.EquipmentSlotView
   label: {fileID: 1446881181}
   backgroundImage: {fileID: 1269522849}
@@ -14008,7 +14243,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -14087,7 +14322,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 0.85, b: 0.45, a: 1}
@@ -14110,7 +14345,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1291012085
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -14166,7 +14401,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -14245,7 +14480,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -14357,19 +14592,51 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
   instanceId: LocationSceneBinding.b42f98984cee40ab9bb4bf069289312e
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: location.prototype.dungeon-entry
   bindingKey: prototype.scene.location.dungeon-entry
-  displayName:
+  displayName: 
   role: 0
   required: 1
   autoRegister: 1
   anchor: {fileID: 0}
   locationDefinitionId: location-definition.dungeon
+--- !u!1 &1298473923
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1298473924}
+  m_Layer: 0
+  m_Name: Checkpoints
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1298473924
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1298473923}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1128646666}
+  m_Father: {fileID: 278595013}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1300943054
 GameObject:
   m_ObjectHideFlags: 0
@@ -14454,7 +14721,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05ab56aac02e11e4e9fe23125a1f9d2e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Persistence.PlayerSpawnPoint
   spawnPointId: spawn.prototype.default
   place: {fileID: 0}
@@ -14470,7 +14737,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 637f6fcabac34858a168f60fb235f4cb, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Development.PrototypeTestPoint
   testPointId: test-point.spawn
   displayName: Spawn / Hub
@@ -14521,7 +14788,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -14600,7 +14867,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -14623,7 +14890,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1331645093
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -14679,7 +14946,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -14756,7 +15023,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ed50a3067de5413599ce2f32b27f4fde, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.SpellQuickSlotView
   backgroundImage: {fileID: 1341287135}
   label: {fileID: 745642677}
@@ -14772,7 +15039,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.1, g: 0.12, b: 0.14, a: 0.82}
@@ -14848,7 +15115,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0}
@@ -14919,7 +15186,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05ab56aac02e11e4e9fe23125a1f9d2e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Persistence.PlayerSpawnPoint
   spawnPointId: spawn.prototype.npc-quest
   place: {fileID: 0}
@@ -14935,7 +15202,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 637f6fcabac34858a168f60fb235f4cb, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Development.PrototypeTestPoint
   testPointId: test-point.npc-quest
   displayName: Dialogue and Quests
@@ -14986,7 +15253,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -15046,7 +15313,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -15240,7 +15507,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.15, g: 0.17, b: 0.19, a: 0.95}
@@ -15278,7 +15545,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e10d6ca6ded1c104b8a6bc5aac9b42ea, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.EquipmentSlotView
   label: {fileID: 433932176}
   backgroundImage: {fileID: 1398492026}
@@ -15331,7 +15598,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -15354,7 +15621,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1404588869
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -15414,7 +15681,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -15452,7 +15719,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 1411779589}
   iconImage: {fileID: 940175505}
@@ -15508,7 +15775,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -15531,7 +15798,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1414700840
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -15587,7 +15854,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -15666,7 +15933,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -15689,7 +15956,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1415326865
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -15745,7 +16012,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -15886,7 +16153,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -15996,7 +16263,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -16161,7 +16428,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 0.95}
@@ -16199,7 +16466,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -16276,7 +16543,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05ab56aac02e11e4e9fe23125a1f9d2e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Persistence.PlayerSpawnPoint
   spawnPointId: spawn.prototype.items
   place: {fileID: 0}
@@ -16292,7 +16559,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 637f6fcabac34858a168f60fb235f4cb, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Development.PrototypeTestPoint
   testPointId: test-point.items
   displayName: Inventory and Items
@@ -16347,7 +16614,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -16385,7 +16652,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 1519219570}
   iconImage: {fileID: 233224332}
@@ -16441,7 +16708,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -16464,7 +16731,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1522015984
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -16528,7 +16795,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -16551,7 +16818,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!1 &1545301081
 GameObject:
   m_ObjectHideFlags: 0
@@ -16607,7 +16874,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.12, g: 0.14, b: 0.16, a: 0.9}
@@ -16676,7 +16943,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 0.95}
@@ -16714,7 +16981,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -16826,11 +17093,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7111792606161652653, guid: d58be77cba3adf54cb14b15052b86514, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bff3b0bafe705114189d62a112472d73, type: 2}
     - target: {fileID: 7537417665459280382, guid: d58be77cba3adf54cb14b15052b86514, type: 3}
       propertyPath: m_Controller
-      value:
+      value: 
       objectReference: {fileID: 9100000, guid: f58d3b481b0946245925f6e8c6d38427, type: 2}
     - target: {fileID: 7537417665459280382, guid: d58be77cba3adf54cb14b15052b86514, type: 3}
       propertyPath: m_ApplyRootMotion
@@ -16838,7 +17105,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8148904740025422625, guid: d58be77cba3adf54cb14b15052b86514, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: bff3b0bafe705114189d62a112472d73, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -16902,7 +17169,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -17034,7 +17301,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -17113,7 +17380,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -17192,7 +17459,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -17267,7 +17534,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8725a44a7ada4c8a9c5d86923d98c25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.ConnectionSceneBinding
   instanceId: ConnectionSceneBinding.ef581c44e9984d7a85ae98bd1023c6fa
   worldId: local-world
@@ -17388,7 +17655,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -17432,7 +17699,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.12, g: 0.14, b: 0.16, a: 0.95}
@@ -17507,7 +17774,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -17530,7 +17797,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1667588135
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -17601,7 +17868,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
   m_SendPointerHoverToParent: 1
   m_MoveRepeatDelay: 0.5
@@ -17632,7 +17899,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
@@ -17699,7 +17966,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -17781,7 +18048,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0}
@@ -17838,7 +18105,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -17882,7 +18149,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.3, g: 0.42, b: 0.5, a: 0.95}
@@ -17977,7 +18244,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -18051,14 +18318,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
   instanceId: LocationSceneBinding.80f324c5fda84dab8d614a0c4db4a0ca
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: location.prototype.civic-office
   bindingKey: prototype.scene.location.civic-office
-  displayName:
+  displayName: 
   role: 0
   required: 1
   autoRegister: 1
@@ -18119,7 +18386,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -18193,7 +18460,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
@@ -18213,7 +18480,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -18257,7 +18524,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 1}
@@ -18336,7 +18603,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -18374,7 +18641,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 1758618029}
   iconImage: {fileID: 1132953866}
@@ -18528,7 +18795,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -18566,7 +18833,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 1778925255}
   iconImage: {fileID: 2023708970}
@@ -18630,7 +18897,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -18653,7 +18920,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!1 &1786610507
 GameObject:
   m_ObjectHideFlags: 0
@@ -18683,7 +18950,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -18727,7 +18994,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.3, g: 0.42, b: 0.5, a: 0.95}
@@ -18875,7 +19142,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -18964,7 +19231,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.08, g: 0.09, b: 0.1, a: 0.88}
@@ -19002,7 +19269,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ee653f5ede214ef7a1df9fdd28492a22, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Contracts.ContractJournalView
   canvasGroup: {fileID: 0}
   contractListRoot: {fileID: 1050589590}
@@ -19063,7 +19330,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.15, g: 0.17, b: 0.19, a: 0.95}
@@ -19101,7 +19368,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e10d6ca6ded1c104b8a6bc5aac9b42ea, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.EquipmentSlotView
   label: {fileID: 2070086262}
   backgroundImage: {fileID: 1809064736}
@@ -19154,7 +19421,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -19233,7 +19500,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -19372,7 +19639,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.11, g: 0.13, b: 0.15, a: 0.95}
@@ -19451,7 +19718,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -19489,7 +19756,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 1862751223}
   iconImage: {fileID: 1117795842}
@@ -19639,7 +19906,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -19662,7 +19929,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!1 &1881261397
 GameObject:
   m_ObjectHideFlags: 0
@@ -19710,7 +19977,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.96, g: 0.97, b: 0.94, a: 1}
@@ -19733,7 +20000,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1881261400
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -19797,7 +20064,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -19868,7 +20135,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -19947,7 +20214,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -20026,7 +20293,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -20049,7 +20316,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1895380857
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -20105,7 +20372,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -20166,7 +20433,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
@@ -20183,7 +20450,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
@@ -20294,7 +20561,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -20332,7 +20599,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 1924412318}
   iconImage: {fileID: 2081161670}
@@ -20388,7 +20655,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -20561,7 +20828,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -20584,7 +20851,39 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
+--- !u!1 &1958286023
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1958286024}
+  m_Layer: 0
+  m_Name: Spawn Anchors
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1958286024
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1958286023}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1987635869}
+  m_Father: {fileID: 278595013}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1965517539
 GameObject:
   m_ObjectHideFlags: 0
@@ -20632,7 +20931,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -20715,7 +21014,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -20753,7 +21052,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 1969812754}
   iconImage: {fileID: 1240084396}
@@ -20809,7 +21108,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
   m_Padding:
     m_Left: 0
@@ -20875,7 +21174,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
   m_IgnoreLayout: 0
   m_MinWidth: -1
@@ -20895,7 +21194,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -20939,7 +21238,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.16, g: 0.18, b: 0.2, a: 1}
@@ -20967,6 +21266,60 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1984322065}
   m_CullTransparentMesh: 1
+--- !u!1 &1987635868
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1987635869}
+  - component: {fileID: 1987635870}
+  m_Layer: 0
+  m_Name: Spawn - Player Town Spawn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1987635869
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1987635868}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.5, z: 28}
+  m_LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1958286024}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1987635870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1987635868}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91db0a6d354a4d3387dd61e55ee29ed5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.SpawnAnchorSceneBinding
+  instanceId: SpawnAnchorSceneBinding.a11093f307224958999fd0d22dd19e68
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: location.prototype.town
+  bindingKey: prototype.scene.spawn.player-town
+  displayName: Player Town Spawn
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
 --- !u!1 &1988736723
 GameObject:
   m_ObjectHideFlags: 0
@@ -21014,7 +21367,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -21037,7 +21390,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &1988736726
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -21089,7 +21442,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05ab56aac02e11e4e9fe23125a1f9d2e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Persistence.PlayerSpawnPoint
   spawnPointId: spawn.prototype.quest-area
   place: {fileID: 11400000, guid: 296da81eaaa8497e94c0cd52855222aa, type: 2}
@@ -21105,7 +21458,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 637f6fcabac34858a168f60fb235f4cb, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Development.PrototypeTestPoint
   testPointId: test-point.investigation-area
   displayName: Investigation Area
@@ -21158,7 +21511,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
   m_Navigation:
     m_Mode: 3
@@ -21202,7 +21555,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.12, g: 0.14, b: 0.16, a: 0.95}
@@ -21259,7 +21612,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0e168df97afb4940970e5837369b8830, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Quests.QuestJournalView
   questListRoot: {fileID: 1975592117}
   questButtonTemplate: {fileID: 139356432}
@@ -21308,7 +21661,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.08, g: 0.09, b: 0.1, a: 0.88}
@@ -21384,7 +21737,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e3d09d66a62a460c987fb699959863c8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.PrototypeHudMessageView
   label: {fileID: 2011711706}
   messageDuration: 2.5
@@ -21398,7 +21751,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 0.95, b: 0.72, a: 1}
@@ -21421,7 +21774,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text:
+  m_Text: 
 --- !u!222 &2011711707
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -21481,7 +21834,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -21519,7 +21872,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 2012315475}
   iconImage: {fileID: 324222766}
@@ -21591,7 +21944,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.08, g: 0.09, b: 0.1, a: 0.92}
@@ -21662,7 +22015,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8725a44a7ada4c8a9c5d86923d98c25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.ConnectionSceneBinding
   instanceId: ConnectionSceneBinding.cc66bc8def624c71a941c18c91fe129e
   worldId: local-world
@@ -21728,7 +22081,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -21807,7 +22160,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.07, g: 0.08, b: 0.09, a: 0.45}
@@ -21882,7 +22235,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -21987,7 +22340,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 0.68, g: 0.72, b: 0.76, a: 1}
@@ -22068,7 +22421,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.15, g: 0.17, b: 0.19, a: 0.95}
@@ -22106,7 +22459,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e10d6ca6ded1c104b8a6bc5aac9b42ea, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.EquipmentSlotView
   label: {fileID: 1899517203}
   backgroundImage: {fileID: 2051971603}
@@ -22214,7 +22567,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.15, g: 0.17, b: 0.19, a: 0.95}
@@ -22252,7 +22605,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e10d6ca6ded1c104b8a6bc5aac9b42ea, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.EquipmentSlotView
   label: {fileID: 2085152956}
   backgroundImage: {fileID: 2057919397}
@@ -22305,7 +22658,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -22384,7 +22737,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -22454,14 +22807,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
   instanceId: LocationSceneBinding.0cc5f7dc05ac46729ea21b5dd663959f
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: location.prototype.guildmaster-office
   bindingKey: prototype.scene.location.guild-head-office
-  displayName:
+  displayName: 
   role: 0
   required: 1
   autoRegister: 1
@@ -22514,7 +22867,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -22588,14 +22941,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f76fc3efd344269909619c23389a073, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.WorldEntitySceneBinding
   instanceId: WorldEntitySceneBinding.755d06c2ab9246818422080d3d23788d
   worldId: local-world
   sceneKey: scene.prototype
   logicalId: WorldEntity:local-world:world-entity.prototype.guild-chest
   bindingKey: prototype.scene.entity.guild-chest
-  displayName:
+  displayName: 
   role: 0
   required: 0
   autoRegister: 1
@@ -22605,6 +22958,60 @@ MonoBehaviour:
   snapToGroundAfterMaterialization: 1
   groundProbeHeight: 25
   groundProbeDistance: 80
+--- !u!1 &2088242425
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2088242426}
+  - component: {fileID: 2088242427}
+  m_Layer: 0
+  m_Name: Route - Town Wilderness Route
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2088242426
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2088242425}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6, y: 0.5, z: 20}
+  m_LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1226624584}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2088242427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2088242425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f61e9f75f45f49e89f614a897e1c0968, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.RouteSegmentSceneBinding
+  instanceId: RouteSegmentSceneBinding.6d345342bc0644acac6b6a9f887451d3
+  worldId: local-world
+  sceneKey: scene.prototype
+  logicalId: route-segment.prototype.town-wilderness-trail
+  bindingKey: prototype.scene.route.town-wilderness
+  displayName: Town Wilderness Route
+  role: 0
+  required: 1
+  autoRegister: 1
+  anchor: {fileID: 0}
 --- !u!1 &2092683197
 GameObject:
   m_ObjectHideFlags: 0
@@ -22710,7 +23117,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
   m_Padding:
     m_Left: 12
@@ -22736,7 +23143,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.05, g: 0.06, b: 0.07, a: 0.82}
@@ -22877,7 +23284,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.18, g: 0.2, b: 0.22, a: 0.95}
@@ -22915,7 +23322,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b1c9fe6647b4595a336edffa818f1fc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.UI.Inventory.InventorySlotView
   backgroundImage: {fileID: 2108548357}
   iconImage: {fileID: 1340033439}
@@ -22966,14 +23373,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fa9bfa6f53e540cf86a723453be03f04, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.LocationSceneBinding
   instanceId: LocationSceneBinding.236861e83cae412dbd9013ea7e276274
   worldId: local-world
   sceneKey: scene.prototype
-  logicalId: location.prototype.village
-  bindingKey: prototype.scene.location.village
-  displayName:
+  logicalId: location.prototype.town
+  bindingKey: prototype.scene.location.town
+  displayName: 
   role: 0
   required: 1
   autoRegister: 1
@@ -23026,7 +23433,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -23105,7 +23512,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -23381,6 +23788,7 @@ Transform:
   - {fileID: 499392241}
   - {fileID: 465965856}
   - {fileID: 1248058139}
+  - {fileID: 342894926}
   m_Father: {fileID: 3001000201}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!64 &3001000212
@@ -23846,5 +24254,3 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 453153377}
-  - {fileID: 342894925}
-  - {fileID: 130264607}

@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Interaction;
@@ -15,6 +16,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
     {
         [SerializeField] private float interactionRange = 3f;
         [SerializeField] private bool requirePhysicalRange = true;
+        [SerializeField] private string serviceDefinitionId;
 
         public override WorldSceneBindingCategory Category => WorldSceneBindingCategory.InteractionPoint;
         public string InteractionPrompt
@@ -29,12 +31,14 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
         }
         public float InteractionRange => interactionRange;
         public bool RequiresPhysicalRange => requirePhysicalRange;
+        public string PreferredServiceDefinitionId => serviceDefinitionId;
         public InteractionPointSnapshot LastPoint { get; private set; }
 
-        public void ConfigureInteraction(float range = 3f, bool enforcePhysicalRange = true)
+        public void ConfigureInteraction(float range = 3f, bool enforcePhysicalRange = true, string preferredServiceDefinitionId = null)
         {
             interactionRange = Mathf.Max(0.1f, range);
             requirePhysicalRange = enforcePhysicalRange;
+            serviceDefinitionId = preferredServiceDefinitionId?.Trim() ?? string.Empty;
         }
 
         public bool CanInteract(in InteractionContext context)
@@ -54,6 +58,11 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 return false;
             }
 
+            string serviceId = ResolveServiceId(point);
+            if (string.IsNullOrWhiteSpace(serviceId)) return false;
+            InteractionEligibilityResult eligibility = Runtime.EvaluateInteraction(LogicalId, serviceId, PlayerConsumer(), WorldTime());
+            if (eligibility == null || !eligibility.Eligible) return false;
+
             IInteractionPointDestinationHandler handler = ResolveDestinationHandler();
             return handler == null || handler.CanHandleInteraction(context, point);
         }
@@ -67,6 +76,16 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             }
 
             LastPoint = point;
+            string serviceId = ResolveServiceId(point);
+            double worldTime = WorldTime();
+            InteractionInvocationResult invocation = Runtime.InvokeInteraction(LogicalId, serviceId, PlayerConsumer(), worldTime);
+            if (invocation == null || !invocation.Success)
+            {
+                PrototypeHudMessageBus.Show(invocation?.Message ?? "That service is currently unavailable.");
+                return;
+            }
+            Runtime.SynchronizePhysicalPresence(PlayerBody(), point.ActiveHostLocationId, worldTime);
+
             IInteractionPointDestinationHandler handler = ResolveDestinationHandler();
             if (handler != null)
             {
@@ -76,6 +95,28 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
             PrototypeHudMessageBus.Show($"Interacted with {DisplayName}.");
             Debug.Log($"Scene interaction routed to logical interaction point '{point.InteractionPointId}'.");
+        }
+
+        private string ResolveServiceId(InteractionPointSnapshot point)
+        {
+            if (!string.IsNullOrWhiteSpace(serviceDefinitionId) && point.ServiceDefinitionIds.Contains(serviceDefinitionId)) return serviceDefinitionId;
+            return point.ServiceDefinitionIds.FirstOrDefault() ?? string.Empty;
+        }
+
+        private static EntityLocationReferenceData PlayerConsumer()
+        {
+            return PrototypeEntityLocationFactory.Person(PrototypeEntityLocationFactory.PlayerPersonId);
+        }
+
+        private static EntityLocationReferenceData PlayerBody()
+        {
+            return PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId);
+        }
+
+        private static double WorldTime()
+        {
+            PrototypePersistenceServiceBehaviour persistence = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+            return persistence?.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble;
         }
 
         private IInteractionPointDestinationHandler ResolveDestinationHandler()

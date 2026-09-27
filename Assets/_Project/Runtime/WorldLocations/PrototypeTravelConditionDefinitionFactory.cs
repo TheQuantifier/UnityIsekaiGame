@@ -77,6 +77,24 @@ namespace UnityIsekaiGame.WorldLocations
         {
             if (runtime == null) return;
             runtime.Configure(registry, routes, journeys, string.IsNullOrWhiteSpace(worldId) ? PersistenceService.LocalWorldId : worldId.Trim());
+            runtime.CreateCondition(new TravelConditionCreateRequest
+            {
+                transactionId = "prototype.seed.travel-condition.wilderness-trail-mud",
+                conditionId = "travel-condition.prototype.wilderness-trail-mud",
+                conditionDefinitionId = MuddyRoadConditionId,
+                target = new TravelConditionTargetReferenceData
+                {
+                    scope = TravelConditionTargetScope.RouteSegment,
+                    targetId = PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId,
+                    sourceLocationId = "location.prototype.town",
+                    destinationLocationId = "location.prototype.wilderness-ring",
+                    edgeKind = RouteEdgeKind.RouteSegment
+                },
+                startsWorldTime = 0d,
+                endsWorldTime = -1d,
+                sourceEventId = "event.prototype.world-setup",
+                provenanceId = "prototype.travel-condition.seed"
+            });
         }
 
         private static void AddCondition(ICollection<TravelConditionDefinition> definitions, ISet<string> ids, string id, string display, TravelConditionCategory category, IEnumerable<TravelConditionTargetScope> scopes, TravelConditionSeverity severity, double movementMultiplier, double costMultiplier, bool blocksTravel, IEnumerable<string> restrictedModes = null, IEnumerable<string> capabilities = null, IEnumerable<string> equipment = null, IEnumerable<string> hazards = null, IEnumerable<string> encounters = null, TravelConditionVisibility visibility = TravelConditionVisibility.Public, int priority = 0)

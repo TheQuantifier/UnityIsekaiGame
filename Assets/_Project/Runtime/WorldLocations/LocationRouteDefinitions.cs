@@ -7,7 +7,7 @@ using UnityIsekaiGame.GameData;
 namespace UnityIsekaiGame.WorldLocations
 {
     [CreateAssetMenu(fileName = "TravelModeDefinition", menuName = "Unity Isekai Game/World/Travel Mode Definition")]
-    public sealed class TravelModeDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class TravelModeDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string travelModeDefinitionId;
         [SerializeField] private string displayName;
@@ -16,6 +16,7 @@ namespace UnityIsekaiGame.WorldLocations
         [SerializeField] private RouteSegmentCategory[] supportedRouteCategories = Array.Empty<RouteSegmentCategory>();
         [SerializeField] private double distanceMultiplier = 1d;
         [SerializeField] private double costMultiplier = 1d;
+        [SerializeField] private double baseSpeedMetersPerSecond = 1.4d;
         [SerializeField] private string[] requiredCapabilityIds = Array.Empty<string>();
         [SerializeField] private string[] requiredEquipmentDefinitionIds = Array.Empty<string>();
         [SerializeField] private RouteVisibility visibility = RouteVisibility.Public;
@@ -28,6 +29,7 @@ namespace UnityIsekaiGame.WorldLocations
         public IReadOnlyList<RouteSegmentCategory> SupportedRouteCategories => supportedRouteCategories ?? Array.Empty<RouteSegmentCategory>();
         public double DistanceMultiplier => distanceMultiplier;
         public double CostMultiplier => costMultiplier;
+        public double BaseSpeedMetersPerSecond => baseSpeedMetersPerSecond;
         public IReadOnlyList<string> RequiredCapabilityIds => requiredCapabilityIds ?? Array.Empty<string>();
         public IReadOnlyList<string> RequiredEquipmentDefinitionIds => requiredEquipmentDefinitionIds ?? Array.Empty<string>();
         public RouteVisibility Visibility => visibility;
@@ -42,10 +44,11 @@ namespace UnityIsekaiGame.WorldLocations
             requiredEquipmentDefinitionIds = Clean(requiredEquipmentDefinitionIds);
             distanceMultiplier = ValidPositive(distanceMultiplier) ? distanceMultiplier : 1d;
             costMultiplier = ValidPositive(costMultiplier) ? costMultiplier : 1d;
+            baseSpeedMetersPerSecond = ValidPositive(baseSpeedMetersPerSecond) ? baseSpeedMetersPerSecond : 1.4d;
             version = Math.Max(1, version);
         }
 
-        public void DevelopmentConfigure(string id, string display, TravelModeCategory modeCategory, IEnumerable<RouteSegmentCategory> routeCategories, double distanceScale = 1d, double costScale = 1d, IEnumerable<string> capabilities = null, IEnumerable<string> equipment = null, RouteVisibility modeVisibility = RouteVisibility.Public)
+        public void DevelopmentConfigure(string id, string display, TravelModeCategory modeCategory, IEnumerable<RouteSegmentCategory> routeCategories, double distanceScale = 1d, double costScale = 1d, IEnumerable<string> capabilities = null, IEnumerable<string> equipment = null, RouteVisibility modeVisibility = RouteVisibility.Public, double baseSpeed = 1.4d)
         {
             travelModeDefinitionId = N(id);
             displayName = string.IsNullOrWhiteSpace(display) ? travelModeDefinitionId : display.Trim();
@@ -54,6 +57,7 @@ namespace UnityIsekaiGame.WorldLocations
             supportedRouteCategories = CleanCategories(routeCategories);
             distanceMultiplier = distanceScale;
             costMultiplier = costScale;
+            baseSpeedMetersPerSecond = baseSpeed;
             requiredCapabilityIds = Clean(capabilities);
             requiredEquipmentDefinitionIds = Clean(equipment);
             visibility = modeVisibility;
@@ -74,6 +78,7 @@ namespace UnityIsekaiGame.WorldLocations
             if (!Enum.IsDefined(typeof(TravelModeCategory), category) || category == TravelModeCategory.Unknown) report.AddError($"Travel Mode Definition '{DisplayName}' must declare a concrete category.");
             if (!ValidPositive(distanceMultiplier)) report.AddError($"Travel Mode Definition '{DisplayName}' has invalid distance multiplier.");
             if (!ValidPositive(costMultiplier)) report.AddError($"Travel Mode Definition '{DisplayName}' has invalid cost multiplier.");
+            if (!ValidPositive(baseSpeedMetersPerSecond)) report.AddError($"Travel Mode Definition '{DisplayName}' has invalid base speed.");
         }
 
         private static bool ValidPositive(double value) => !double.IsNaN(value) && !double.IsInfinity(value) && value > 0d;
@@ -83,7 +88,7 @@ namespace UnityIsekaiGame.WorldLocations
     }
 
     [CreateAssetMenu(fileName = "RouteSegmentDefinition", menuName = "Unity Isekai Game/World/Route Segment Definition")]
-    public sealed class RouteSegmentDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class RouteSegmentDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string routeSegmentDefinitionId;
         [SerializeField] private string displayName;

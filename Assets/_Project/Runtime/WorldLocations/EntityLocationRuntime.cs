@@ -112,6 +112,27 @@ namespace UnityIsekaiGame.WorldLocations
             }
         }
 
+        public bool TryResolvePersonId(EntityLocationReferenceData entity, out string personId)
+        {
+            personId = string.Empty;
+            EntityLocationReferenceData normalized = NormalizeEntity(entity);
+            if (normalized == null || string.IsNullOrWhiteSpace(normalized.entityId) || !WorldMatches(normalized.worldId)) return false;
+            if (normalized.entityType == LocationOccupantEntityType.Person)
+            {
+                personId = normalized.entityId;
+                return true;
+            }
+
+            if (normalized.entityType != LocationOccupantEntityType.Body) return false;
+            EntityPersonBodyBindingData binding = activeBodyByPersonId.Values
+                .Where(value => value != null && !value.bodyDestroyed && string.Equals(Normalize(value.activeBodyId), normalized.entityId, StringComparison.Ordinal))
+                .OrderBy(value => value.personId, StringComparer.Ordinal)
+                .FirstOrDefault();
+            if (binding == null) return false;
+            personId = Normalize(binding.personId);
+            return !string.IsNullOrWhiteSpace(personId);
+        }
+
         public void ConfigureCapacity(EntityLocationCapacityRuleData rule)
         {
             if (rule == null || string.IsNullOrWhiteSpace(rule.locationId))

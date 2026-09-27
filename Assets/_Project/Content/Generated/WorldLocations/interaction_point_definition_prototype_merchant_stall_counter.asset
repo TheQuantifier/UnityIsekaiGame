@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75308ae928ce0184890cc5142d840b60, type: 3}
+  m_Name: interaction_point_definition_prototype_merchant_stall_counter
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.InteractionPointDefinition
+  interactionPointDefinitionId: interaction-point-definition.prototype.merchant-stall-counter
+  displayName: Merchant Stall Counter
+  description: 
+  category: 8
+  supportedHostLocationCategories: 050000000700000006000000
+  supportedServiceCategories: 0a0000000b0000000c000000
+  supportedSubjectLinkRoles: 060000000500000004000000
+  simultaneousUserCapacity: 2
+  exclusiveUse: 0
+  supportsReservation: 1
+  activeProviderRequired: 1
+  requiresEntityPresence: 1
+  remoteUseSupported: 0
+  itemPlacementSupported: 0
+  mayBecomeUnavailable: 1
+  mayBeSceneBound: 1
+  defaultVisibility: 0
+  validationTags:
+  - prototype
+  - salescounter
+  version: 1

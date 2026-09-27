@@ -63,8 +63,8 @@ Prepare validation runs before commit and rejects corrupt graphs without mutatin
 The prototype location seed now creates a representative hierarchy:
 
 - world -> region
-- region -> village and wilderness
-- village -> district and buildings
+- region -> town and wilderness
+- town -> district and buildings
 - buildings -> offices, counters, and prison room
 - wilderness -> dungeon entry
 

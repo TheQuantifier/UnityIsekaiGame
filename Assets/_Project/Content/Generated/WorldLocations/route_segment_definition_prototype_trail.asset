@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 353e2051db3e7ab479322ece787314d5, type: 3}
+  m_Name: route_segment_definition_prototype_trail
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.WorldLocations:RouteSegmentDefinition
+  routeSegmentDefinitionId: route-segment-definition.prototype.trail
+  displayName: Prototype Trail
+  description: 
+  category: 4
+  defaultDirectionality: 1
+  defaultDistanceMeters: 120
+  defaultCostUnits: 150
+  costMultiplier: 1
+  allowZeroDistance: 0
+  supportsAccessPolicies: 1
+  supportsNetworkMembership: 1
+  supportsSceneBinding: 1
+  mayBeHidden: 1
+  defaultVisibility: 0
+  supportedTravelModeDefinitionIds:
+  - travel-mode-definition.prototype.running
+  - travel-mode-definition.prototype.walking
+  version: 1

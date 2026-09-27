@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8432011726847330655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
+  m_Name: Prototype Town Boundary
+  m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
+  boundaryId: zone.prototype-town
+  displayName: Prototype Town Boundary
+  notes: 
+  boundaryLayer: {fileID: 11400000}
+  shape: 1
+  hasCenterPoint: 0
+  centerPoint: {x: 0, y: 0}
+  circleCenter: {x: 0, y: 0}
+  circleRadius: 25
+  polygonPoints:
+  - {x: 22.41, y: 385.103}
+  - {x: 85.882, y: 221.363}
+  - {x: 174.19, y: 137.654}
+  - {x: 211.906, y: 32.787}
+  - {x: 130.036, y: -132.792}
+  - {x: -212.161, y: -4.008}
+  - {x: -123.852, y: 136.734}
+  - {x: -173.526, y: 324.39}
+  - {x: -109.134, y: 399.821}
+  lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
+  fillColor: {r: 0.3922867, g: 0.95, b: 0.304, a: 0.16}
+  lineWidth: 0.2
+  version: 1
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: adb7ae8f1af42f04d8b3c8c1c0e582fa, type: 3}
+  m_Name: SettlementBoundaries
+  m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneLayerAsset
+  layerId: zone-layer.settlements
+  displayName: Settlement Boundaries
+  sceneGuid: e05b77e4d2cc25845adb762e95d51873
+  scenePath: Assets/_Project/Scenes/Prototype/PrototypeScene.unity
+  sceneName: PrototypeScene
+  outlineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
+  preventOverlap: 1
+  zones:
+  - {fileID: -8432011726847330655}

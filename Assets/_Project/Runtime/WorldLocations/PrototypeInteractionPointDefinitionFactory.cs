@@ -34,7 +34,7 @@ namespace UnityIsekaiGame.WorldLocations
         public const string RecordsPublicAccessServiceId = "interaction-service.prototype.records-public-access";
         public const string RecordsRestrictedAccessServiceId = "interaction-service.prototype.records-restricted-access";
         public const string PrisonCellInspectServiceId = "interaction-service.prototype.prison-cell-inspect";
-        public const string ShopSaleServiceId = "interaction-service.prototype.shop-sale-placeholder";
+        public const string ShopSaleServiceId = "interaction-service.prototype.shop-purchase";
         public const string StorageAccessServiceId = "interaction-service.prototype.storage-access";
         public const string WorkstationUseServiceId = "interaction-service.prototype.workstation-use";
 
@@ -84,20 +84,20 @@ namespace UnityIsekaiGame.WorldLocations
         {
             HashSet<string> ids = new HashSet<string>(existingIds ?? Array.Empty<string>(), StringComparer.Ordinal);
             List<InteractionServiceDefinition> definitions = new List<InteractionServiceDefinition>();
-            AddService(definitions, ids, RegisterAdventurerServiceId, "Register Adventurer", InteractionServiceCategory.Registration, new[] { AdventurerGuildCounterDefinitionId }, InteractionDestinationRuntime.OrganizationMembership, InteractionProviderRequirementKind.AnyAuthorizedMember, mutates: true, authority: new[] { PrototypeOrganizationAuthorityDefinitionFactory.AdmitMembersPermissionId }, membership: new[] { PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId });
+            AddService(definitions, ids, RegisterAdventurerServiceId, "Register Adventurer", InteractionServiceCategory.Registration, new[] { AdventurerGuildCounterDefinitionId }, InteractionDestinationRuntime.OrganizationMembership, InteractionProviderRequirementKind.AnyAuthorizedMember, mutates: true, authority: new[] { PrototypeOrganizationAuthorityDefinitionFactory.AdmitMembersPermissionId }, membership: new[] { PrototypeOrganizationMembershipDefinitionFactory.GuildStaffMemberId });
             AddService(definitions, ids, AdventurerIntroductionServiceId, "Adventurer Introduction", InteractionServiceCategory.Information, new[] { AdventurerGuildCounterDefinitionId }, InteractionDestinationRuntime.KnowledgeRecords, InteractionProviderRequirementKind.AnyAuthorizedMember);
-            AddService(definitions, ids, AdventurerRankAdminServiceId, "Adventurer Rank Administration", InteractionServiceCategory.RankAdministration, new[] { AdventurerGuildCounterDefinitionId, GuildHeadDeskDefinitionId }, InteractionDestinationRuntime.OrganizationMembership, InteractionProviderRequirementKind.SpecificOfficeholder, mutates: true, authority: new[] { "permission.prototype.guild.rank-admin" });
+            AddService(definitions, ids, AdventurerRankAdminServiceId, "Adventurer Rank Administration", InteractionServiceCategory.RankAdministration, new[] { AdventurerGuildCounterDefinitionId, GuildHeadDeskDefinitionId }, InteractionDestinationRuntime.OrganizationMembership, InteractionProviderRequirementKind.SpecificOfficeholder, mutates: true, authority: new[] { PrototypeOrganizationAuthorityDefinitionFactory.AssignRanksPermissionId });
             AddService(definitions, ids, AdventurerInformationServiceId, "Adventurer Guild Information", InteractionServiceCategory.Information, new[] { AdventurerGuildCounterDefinitionId, GuildHeadDeskDefinitionId }, InteractionDestinationRuntime.KnowledgeRecords, InteractionProviderRequirementKind.AnyAuthorizedMember);
             AddService(definitions, ids, QuestBoardBrowseServiceId, "Browse Quest Board", InteractionServiceCategory.QuestAccessPlaceholder, new[] { AdventurerGuildCounterDefinitionId, QuestBoardDefinitionId }, InteractionDestinationRuntime.QuestPlaceholder, InteractionProviderRequirementKind.NoProvider, providerPresence: InteractionPhysicalPresencePolicy.NotRequired);
-            AddService(definitions, ids, RegisterMerchantServiceId, "Register Merchant", InteractionServiceCategory.Registration, new[] { MerchantGuildCounterDefinitionId }, InteractionDestinationRuntime.OrganizationMembership, InteractionProviderRequirementKind.AnyAuthorizedMember, mutates: true, authority: new[] { "permission.prototype.merchant.membership-admin" });
-            AddService(definitions, ids, MerchantPermitServiceId, "Merchant Specialty Permit", InteractionServiceCategory.PermitAdministration, new[] { MerchantGuildCounterDefinitionId }, InteractionDestinationRuntime.Legal, InteractionProviderRequirementKind.AnyAuthorizedMember, mutates: true, authority: new[] { "permission.prototype.merchant.permit-admin" }, legal: new[] { "legal-action.prototype.merchant-specialty-permit" });
+            AddService(definitions, ids, RegisterMerchantServiceId, "Register Merchant", InteractionServiceCategory.Registration, new[] { MerchantGuildCounterDefinitionId }, InteractionDestinationRuntime.OrganizationMembership, InteractionProviderRequirementKind.AnyAuthorizedMember, mutates: true, authority: new[] { PrototypeOrganizationAuthorityDefinitionFactory.AdmitMembersPermissionId }, membership: new[] { PrototypeOrganizationMembershipDefinitionFactory.GuildStaffMemberId });
+            AddService(definitions, ids, MerchantPermitServiceId, "Merchant Specialty Permit", InteractionServiceCategory.PermitAdministration, new[] { MerchantGuildCounterDefinitionId }, InteractionDestinationRuntime.Legal, InteractionProviderRequirementKind.AnyAuthorizedMember, mutates: true);
             AddService(definitions, ids, MerchantInformationServiceId, "Merchant Guild Information", InteractionServiceCategory.Information, new[] { MerchantGuildCounterDefinitionId }, InteractionDestinationRuntime.KnowledgeRecords, InteractionProviderRequirementKind.AnyAuthorizedMember);
-            AddService(definitions, ids, MeetMayorServiceId, "Meet Mayor", InteractionServiceCategory.GovernmentService, new[] { MayorDeskDefinitionId }, InteractionDestinationRuntime.Social, InteractionProviderRequirementKind.SpecificOfficeholder, office: new[] { "office.prototype.mayor" });
+            AddService(definitions, ids, MeetMayorServiceId, "Meet Mayor", InteractionServiceCategory.GovernmentService, new[] { MayorDeskDefinitionId }, InteractionDestinationRuntime.Social, InteractionProviderRequirementKind.SpecificOfficeholder, office: new[] { PrototypeOrganizationMembershipDefinitionFactory.MayorOfficeId });
             AddService(definitions, ids, GovernmentInformationServiceId, "Government Information", InteractionServiceCategory.Information, new[] { MayorDeskDefinitionId }, InteractionDestinationRuntime.KnowledgeRecords, InteractionProviderRequirementKind.SpecificOfficeholder);
             AddService(definitions, ids, RecordsPublicAccessServiceId, "Public Records Access", InteractionServiceCategory.RecordAccess, new[] { RecordsDeskDefinitionId }, InteractionDestinationRuntime.KnowledgeRecords, InteractionProviderRequirementKind.AssignedClerk);
-            AddService(definitions, ids, RecordsRestrictedAccessServiceId, "Restricted Records Access", InteractionServiceCategory.RecordAccess, new[] { RecordsDeskDefinitionId }, InteractionDestinationRuntime.KnowledgeRecords, InteractionProviderRequirementKind.AssignedClerk, authority: new[] { "permission.prototype.records.restricted-read" }, legal: new[] { "legal-right.prototype.records.restricted-read" }, visibility: InteractionPointVisibility.Restricted);
+            AddService(definitions, ids, RecordsRestrictedAccessServiceId, "Restricted Records Access", InteractionServiceCategory.RecordAccess, new[] { RecordsDeskDefinitionId }, InteractionDestinationRuntime.KnowledgeRecords, InteractionProviderRequirementKind.AssignedClerk, authority: new[] { PrototypeOrganizationAuthorityDefinitionFactory.ViewRestrictedInformationPermissionId }, visibility: InteractionPointVisibility.Restricted);
             AddService(definitions, ids, PrisonCellInspectServiceId, "Inspect Prison Cell", InteractionServiceCategory.DetentionService, new[] { PrisonCellDefinitionId }, InteractionDestinationRuntime.Justice, InteractionProviderRequirementKind.NoProvider, providerPresence: InteractionPhysicalPresencePolicy.NotRequired, visibility: InteractionPointVisibility.Restricted);
-            AddService(definitions, ids, ShopSaleServiceId, "Shop Sale Placeholder", InteractionServiceCategory.SalePlaceholder, new[] { MerchantStallCounterDefinitionId }, InteractionDestinationRuntime.BusinessTrade, InteractionProviderRequirementKind.AssignedPerson, mutates: true);
+            AddService(definitions, ids, ShopSaleServiceId, "Purchase Goods", InteractionServiceCategory.SalePlaceholder, new[] { MerchantStallCounterDefinitionId }, InteractionDestinationRuntime.BusinessTrade, InteractionProviderRequirementKind.AssignedPerson, mutates: true);
             AddService(definitions, ids, StorageAccessServiceId, "Storage Access", InteractionServiceCategory.StorageAccess, new[] { StorageAccessDefinitionId }, InteractionDestinationRuntime.ItemInventory, InteractionProviderRequirementKind.NoProvider, providerPresence: InteractionPhysicalPresencePolicy.NotRequired, mutates: true);
             AddService(definitions, ids, WorkstationUseServiceId, "Use Workstation", InteractionServiceCategory.Crafting, new[] { WorkstationDefinitionId }, InteractionDestinationRuntime.Crafting, InteractionProviderRequirementKind.NoProvider, providerPresence: InteractionPhysicalPresencePolicy.NotRequired, mutates: true);
             return definitions;
@@ -115,28 +115,40 @@ namespace UnityIsekaiGame.WorldLocations
             SeedPoint(runtime, AdventurerGuildCounterPointId, AdventurerGuildCounterDefinitionId, "Adventurer Guild Counter", "location.prototype.adventurers-guild", new[] { RegisterAdventurerServiceId, AdventurerIntroductionServiceId, AdventurerRankAdminServiceId, AdventurerInformationServiceId, QuestBoardBrowseServiceId }, "prototype.scene.interaction.adventurer-guild-counter");
             Link(runtime, AdventurerGuildCounterPointId, InteractionSubjectLinkRole.RepresentedOrganization, "Organization", "organization.prototype.adventurers-guild", world);
             Provider(runtime, AdventurerGuildCounterPointId, RegisterAdventurerServiceId, PrototypeEntityLocationFactory.AdventurersGuildReceptionistPersonId, world);
+            Provider(runtime, AdventurerGuildCounterPointId, AdventurerIntroductionServiceId, PrototypeEntityLocationFactory.AdventurersGuildReceptionistPersonId, world);
+            Provider(runtime, AdventurerGuildCounterPointId, AdventurerInformationServiceId, PrototypeEntityLocationFactory.AdventurersGuildReceptionistPersonId, world);
+            Provider(runtime, AdventurerGuildCounterPointId, AdventurerRankAdminServiceId, PrototypeEntityLocationFactory.GuildMasterPersonId, world);
 
             SeedPoint(runtime, MerchantGuildCounterPointId, MerchantGuildCounterDefinitionId, "Merchant Guild Counter", "location.prototype.merchant-counter", new[] { RegisterMerchantServiceId, MerchantPermitServiceId, MerchantInformationServiceId }, "prototype.scene.interaction.merchant-guild-counter");
             Link(runtime, MerchantGuildCounterPointId, InteractionSubjectLinkRole.RepresentedOrganization, "Organization", "organization.prototype.merchant-guild", world);
             Provider(runtime, MerchantGuildCounterPointId, RegisterMerchantServiceId, PrototypeEntityLocationFactory.MerchantGuildReceptionistPersonId, world);
+            Provider(runtime, MerchantGuildCounterPointId, MerchantPermitServiceId, PrototypeEntityLocationFactory.MerchantGuildReceptionistPersonId, world);
+            Provider(runtime, MerchantGuildCounterPointId, MerchantInformationServiceId, PrototypeEntityLocationFactory.MerchantGuildReceptionistPersonId, world);
 
             SeedPoint(runtime, MayorDeskPointId, MayorDeskDefinitionId, "Mayor Desk", "location.prototype.mayor-office", new[] { MeetMayorServiceId, GovernmentInformationServiceId }, "prototype.scene.interaction.mayor-desk");
             Link(runtime, MayorDeskPointId, InteractionSubjectLinkRole.RepresentedGovernment, "Government", "government.prototype.civic", world);
-            Link(runtime, MayorDeskPointId, InteractionSubjectLinkRole.RepresentedOffice, "Office", "office.prototype.mayor", world);
+            Link(runtime, MayorDeskPointId, InteractionSubjectLinkRole.RepresentedOffice, "Office", PrototypeOrganizationMembershipDefinitionFactory.MayorOfficeId, world);
+            Provider(runtime, MayorDeskPointId, MeetMayorServiceId, PrototypeInstitutionalContentIds.MayorPerson, world);
+            Provider(runtime, MayorDeskPointId, GovernmentInformationServiceId, PrototypeInstitutionalContentIds.MayorPerson, world);
 
             SeedPoint(runtime, GuildHeadDeskPointId, GuildHeadDeskDefinitionId, "Guild Head Desk", "location.prototype.guildmaster-office", new[] { AdventurerRankAdminServiceId, AdventurerInformationServiceId }, "prototype.scene.interaction.guild-head-desk");
-            Link(runtime, GuildHeadDeskPointId, InteractionSubjectLinkRole.RepresentedOffice, "Office", "office.prototype.guild-head", world);
+            Link(runtime, GuildHeadDeskPointId, InteractionSubjectLinkRole.RepresentedOffice, "Office", PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, world);
+            Provider(runtime, GuildHeadDeskPointId, AdventurerRankAdminServiceId, PrototypeEntityLocationFactory.GuildMasterPersonId, world);
+            Provider(runtime, GuildHeadDeskPointId, AdventurerInformationServiceId, PrototypeEntityLocationFactory.GuildMasterPersonId, world);
 
-            SeedPoint(runtime, RecordsDeskPointId, RecordsDeskDefinitionId, "City Office Records Desk", "location.prototype.civic-office", new[] { RecordsPublicAccessServiceId, RecordsRestrictedAccessServiceId }, "prototype.scene.interaction.city-records-desk");
+            SeedPoint(runtime, RecordsDeskPointId, RecordsDeskDefinitionId, "City Office Records Desk", "location.prototype.records-office", new[] { RecordsPublicAccessServiceId, RecordsRestrictedAccessServiceId }, "prototype.scene.interaction.city-records-desk");
             Link(runtime, RecordsDeskPointId, InteractionSubjectLinkRole.AssociatedRecordsCollection, "KnowledgeRecordCollection", "records.prototype.civic-public", world);
+            Provider(runtime, RecordsDeskPointId, RecordsPublicAccessServiceId, PrototypeEntityLocationFactory.RecordsClerkPersonId, world);
+            Provider(runtime, RecordsDeskPointId, RecordsRestrictedAccessServiceId, PrototypeEntityLocationFactory.RecordsClerkPersonId, world);
 
             SeedPoint(runtime, PrisonCellPointId, PrisonCellDefinitionId, "Prison Cell", "location.prototype.basement-prison", new[] { PrisonCellInspectServiceId }, "prototype.scene.interaction.prison-cell", InteractionPointVisibility.Restricted);
             Link(runtime, PrisonCellPointId, InteractionSubjectLinkRole.AssociatedCustodyLocation, "Location", "location.prototype.basement-prison", world, InteractionPointVisibility.Restricted);
 
             SeedPoint(runtime, QuestBoardPointId, QuestBoardDefinitionId, "Quest Board", "location.prototype.adventurers-guild", new[] { QuestBoardBrowseServiceId }, "prototype.scene.interaction.quest-board");
             SeedPoint(runtime, ShopCounterPointId, MerchantStallCounterDefinitionId, "Shop Counter", "location.prototype.merchant-counter", new[] { ShopSaleServiceId }, "prototype.scene.interaction.shop-counter");
-            SeedPoint(runtime, StorageAccessPointId, StorageAccessDefinitionId, "Guild Storage Access", "location.prototype.adventurers-guild", new[] { StorageAccessServiceId }, "prototype.scene.interaction.guild-storage");
-            SeedPoint(runtime, WorkstationPointId, WorkstationDefinitionId, "Prototype Workstation", "location.prototype.merchant-counter", new[] { WorkstationUseServiceId }, "prototype.scene.interaction.workstation");
+            Provider(runtime, ShopCounterPointId, ShopSaleServiceId, PrototypeEntityLocationFactory.MerchantPersonId, world);
+            SeedPoint(runtime, StorageAccessPointId, StorageAccessDefinitionId, "Guild Storage Access", "location.prototype.guild-storage", new[] { StorageAccessServiceId }, "prototype.scene.interaction.guild-storage");
+            SeedPoint(runtime, WorkstationPointId, WorkstationDefinitionId, "Prototype Workstation", "location.prototype.forge-workshop", new[] { WorkstationUseServiceId }, "prototype.scene.interaction.workstation");
         }
 
         private static InteractionSubjectLinkRole[] OrganizationRoles()

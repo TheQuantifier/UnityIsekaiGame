@@ -65,7 +65,7 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             int sceneChanges = missingScripts + prefabChanges;
             int placeholders = 0;
 
-            sceneChanges += EnsureBootstrap(root, WorldSceneBindingBootstrapMode.DevelopmentFixtureImport);
+            sceneChanges += EnsureBootstrap(root, WorldSceneBindingBootstrapMode.ProductionBindOnly);
             sceneChanges += RemoveLegacyCounterBindingComponents();
             sceneChanges += RemoveLegacyCounterBindingObjects(root);
             foreach (PrototypeSceneWorldBindingExpectation expected in PrototypeSceneIntegrationContract.WorldBindings)
@@ -231,6 +231,9 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
                 WorldSceneBindingCategory.InteractionPoint => ApplyInteractionBinding(target, expected) + removedDuplicates,
                 WorldSceneBindingCategory.Connection => ApplyConnectionBinding(target, expected) + removedDuplicates,
                 WorldSceneBindingCategory.Entity => ApplyEntityBinding(target, expected) + removedDuplicates,
+                WorldSceneBindingCategory.RouteSegment => ApplySimpleBinding<RouteSegmentSceneBinding>(target, expected) + removedDuplicates,
+                WorldSceneBindingCategory.Checkpoint => ApplySimpleBinding<CheckpointSceneBinding>(target, expected) + removedDuplicates,
+                WorldSceneBindingCategory.SpawnAnchor => ApplySimpleBinding<SpawnAnchorSceneBinding>(target, expected) + removedDuplicates,
                 _ => 0
             });
         }
@@ -257,6 +260,9 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
                 WorldSceneBindingCategory.Connection => 0f,
                 WorldSceneBindingCategory.InteractionPoint => 8f,
                 WorldSceneBindingCategory.Entity => 16f,
+                WorldSceneBindingCategory.RouteSegment => 20f,
+                WorldSceneBindingCategory.Checkpoint => 24f,
+                WorldSceneBindingCategory.SpawnAnchor => 28f,
                 _ => 20f
             };
             Vector3 desired = new Vector3((index % 5) * 3f, 0.5f, rowOffset + (index / 5) * 3f);
@@ -304,11 +310,11 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
         {
             int removedConflicts = RemoveConflictingWorldBindings<InteractionPointSceneBinding>(target, expected);
             InteractionPointSceneBinding binding = GetOrAdd<InteractionPointSceneBinding>(target, out bool added);
-            bool changed = added || binding.LogicalId != expected.LogicalId || binding.BindingKey != expected.BindingKey || binding.SceneKey != PrototypeSceneIntegrationIds.SceneKey || binding.WorldId != PersistenceService.LocalWorldId || binding.Role != expected.Role || binding.Required != expected.Required || binding.AuthoredDisplayName != expected.DisplayName || !Mathf.Approximately(binding.InteractionRange, 3f) || !binding.RequiresPhysicalRange;
+            bool changed = added || binding.LogicalId != expected.LogicalId || binding.BindingKey != expected.BindingKey || binding.SceneKey != PrototypeSceneIntegrationIds.SceneKey || binding.WorldId != PersistenceService.LocalWorldId || binding.Role != expected.Role || binding.Required != expected.Required || binding.AuthoredDisplayName != expected.DisplayName || !Mathf.Approximately(binding.InteractionRange, 3f) || !binding.RequiresPhysicalRange || binding.PreferredServiceDefinitionId != expected.PreferredServiceDefinitionId;
             if (changed)
             {
                 binding.ConfigureBinding(expected.LogicalId, expected.BindingKey, PrototypeSceneIntegrationIds.SceneKey, PersistenceService.LocalWorldId, expected.Role, expected.Required, expected.DisplayName);
-                binding.ConfigureInteraction();
+                binding.ConfigureInteraction(preferredServiceDefinitionId: expected.PreferredServiceDefinitionId);
                 EditorUtility.SetDirty(binding);
             }
 
@@ -344,6 +350,21 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             if (changed)
             {
                 binding.ConfigureEntity(entity.entityType, entity.entityId, expected.BindingKey, PrototypeSceneIntegrationIds.SceneKey, PersistenceService.LocalWorldId);
+                EditorUtility.SetDirty(binding);
+            }
+
+            return (changed ? 1 : 0) + removedConflicts;
+        }
+
+        private static int ApplySimpleBinding<T>(GameObject target, PrototypeSceneWorldBindingExpectation expected)
+            where T : WorldSceneBindingComponent
+        {
+            int removedConflicts = RemoveConflictingWorldBindings<T>(target, expected);
+            T binding = GetOrAdd<T>(target, out bool added);
+            bool changed = added || binding.LogicalId != expected.LogicalId || binding.BindingKey != expected.BindingKey || binding.SceneKey != PrototypeSceneIntegrationIds.SceneKey || binding.WorldId != PersistenceService.LocalWorldId || binding.Role != expected.Role || binding.Required != expected.Required || binding.AuthoredDisplayName != expected.DisplayName;
+            if (changed)
+            {
+                binding.ConfigureBinding(expected.LogicalId, expected.BindingKey, PrototypeSceneIntegrationIds.SceneKey, PersistenceService.LocalWorldId, expected.Role, expected.Required, expected.DisplayName);
                 EditorUtility.SetDirty(binding);
             }
 
@@ -941,6 +962,9 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
             {
                 WorldSceneBindingCategory.Connection => $"Connection - {expected.DisplayName}",
                 WorldSceneBindingCategory.Entity => $"Entity - {expected.DisplayName}",
+                WorldSceneBindingCategory.RouteSegment => $"Route - {expected.DisplayName}",
+                WorldSceneBindingCategory.Checkpoint => $"Checkpoint - {expected.DisplayName}",
+                WorldSceneBindingCategory.SpawnAnchor => $"Spawn - {expected.DisplayName}",
                 _ => expected.DisplayName
             };
         }
@@ -953,6 +977,9 @@ namespace UnityIsekaiGame.Editor.PrototypeIntegration
                 WorldSceneBindingCategory.InteractionPoint => "Interaction Points",
                 WorldSceneBindingCategory.Connection => "Connections",
                 WorldSceneBindingCategory.Entity => "Entities",
+                WorldSceneBindingCategory.RouteSegment => "Routes",
+                WorldSceneBindingCategory.Checkpoint => "Checkpoints",
+                WorldSceneBindingCategory.SpawnAnchor => "Spawn Anchors",
                 _ => "Other Bindings"
             };
         }

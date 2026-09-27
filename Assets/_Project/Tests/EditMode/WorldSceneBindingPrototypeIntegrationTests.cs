@@ -63,7 +63,7 @@ namespace UnityIsekaiGame.Tests
         {
             Fixture fixture = CreateFixture();
             WorldSceneBindingRuntime runtime = CreateBindingRuntime(fixture);
-            LocationSceneBinding village = LocationBinding("village-anchor", "location.prototype.village", "prototype.scene.village", fixture.WorldId);
+            LocationSceneBinding village = LocationBinding("village-anchor", "location.prototype.town", "prototype.scene.village", fixture.WorldId);
             village.transform.position = new Vector3(10f, 2f, 30f);
             WorldEntitySceneBinding player = EntityBinding("player", LocationOccupantEntityType.Body, PrototypeEntityLocationFactory.PlayerBodyId, fixture.WorldId);
             long before = fixture.EntityLocations.Revision;
@@ -76,7 +76,30 @@ namespace UnityIsekaiGame.Tests
             Assert.That(player.transform.position, Is.EqualTo(village.transform.position));
             Assert.That(fixture.EntityLocations.Revision, Is.EqualTo(before));
             Assert.That(fixture.EntityLocations.TryGetActivePlacement(PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId, fixture.WorldId), out EntityPlacementSnapshot placement), Is.True);
-            Assert.That(placement.ExactLocationId, Is.EqualTo("location.prototype.village"));
+            Assert.That(placement.ExactLocationId, Is.EqualTo("location.prototype.town"));
+        }
+
+        [Test]
+        public void EntityBindingPrefersPreciseSpawnAnchorOverGeneralLocationMarker()
+        {
+            Fixture fixture = CreateFixture();
+            WorldSceneBindingRuntime runtime = CreateBindingRuntime(fixture);
+            LocationSceneBinding location = LocationBinding("town-location", "location.prototype.town", "prototype.scene.location.town", fixture.WorldId);
+            location.transform.position = new Vector3(10f, 2f, 30f);
+            SpawnAnchorSceneBinding spawn = New<SpawnAnchorSceneBinding>("town-spawn");
+            spawn.ConfigureBinding("location.prototype.town", "prototype.scene.spawn.player-town", "scene.prototype", fixture.WorldId);
+            spawn.transform.position = new Vector3(40f, 3f, 50f);
+            WorldEntitySceneBinding player = EntityBinding("spawn-player", LocationOccupantEntityType.Body, PrototypeEntityLocationFactory.PlayerBodyId, fixture.WorldId);
+
+            runtime.Register(location);
+            runtime.Register(spawn);
+            runtime.Register(player);
+            WorldSceneBindingValidationReport report = runtime.SyncAllFromAuthoritative(initialSync: true);
+
+            Assert.That(report.Succeeded, Is.True, string.Join(Environment.NewLine, report.Issues));
+            Assert.That(runtime.CanMaterializeAtLocation("location.prototype.town"), Is.True);
+            Assert.That(runtime.CanMaterializeAtLocation("location.prototype.market-district"), Is.False);
+            Assert.That(player.transform.position, Is.EqualTo(spawn.transform.position));
         }
 
         [Test]
@@ -110,6 +133,7 @@ namespace UnityIsekaiGame.Tests
                 connectionId = PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId,
                 openState = LocationConnectionOpenState.Open,
                 lockState = LocationConnectionLockState.Unlocked,
+                accessContext = AccessContext(actor, fixture.WorldId, offices: new[] { "office.prototype.guild-head" }, authorities: new[] { "permission.prototype.guild.rank-admin" }),
                 worldTime = 11d
             });
             SceneBindingTransitionResult allowed = door.RequestTraversal(actor, AccessContext(actor, fixture.WorldId, offices: new[] { "office.prototype.guild-head" }, authorities: new[] { "permission.prototype.guild.rank-admin" }), 12d);
@@ -137,12 +161,14 @@ namespace UnityIsekaiGame.Tests
             runtime.Register(door);
             runtime.SyncAllFromAuthoritative(initialSync: true);
             bool closedEnabled = collider.enabled;
+            EntityLocationReferenceData actor = PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId, fixture.WorldId);
             fixture.Connections.MutateState(new LocationConnectionStateMutationRequest
             {
                 transactionId = "test.scene-binding.open-visual-door",
                 connectionId = PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId,
                 openState = LocationConnectionOpenState.Open,
                 lockState = LocationConnectionLockState.Unlocked,
+                accessContext = AccessContext(actor, fixture.WorldId, privileged: true),
                 worldTime = 20d
             });
             runtime.SyncAllFromAuthoritative();
@@ -203,7 +229,7 @@ namespace UnityIsekaiGame.Tests
             Fixture fixture = CreateFixture(includeRoutes: true, includeCheckpoint: true);
             WorldSceneBindingRuntime runtime = CreateBindingRuntime(fixture);
             RouteSegmentSceneBinding route = New<RouteSegmentSceneBinding>("route");
-            route.ConfigureBinding(PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId, "prototype.route.village-market", "scene.prototype", fixture.WorldId);
+            route.ConfigureBinding(PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId, "prototype.scene.route.town-market", "scene.prototype", fixture.WorldId);
             CheckpointSceneBinding checkpoint = New<CheckpointSceneBinding>("checkpoint");
             checkpoint.ConfigureBinding("checkpoint.prototype.village-gate", "prototype.checkpoint.village-gate", "scene.prototype", fixture.WorldId);
             int routeCount = fixture.Routes.SegmentCount;
@@ -261,14 +287,15 @@ namespace UnityIsekaiGame.Tests
             return placement;
         }
 
-        private static LocationConnectionAccessContextData AccessContext(EntityLocationReferenceData actor, string worldId, string[] offices = null, string[] authorities = null)
+        private static LocationConnectionAccessContextData AccessContext(EntityLocationReferenceData actor, string worldId, string[] offices = null, string[] authorities = null, bool privileged = false)
         {
             return new LocationConnectionAccessContextData
             {
                 actor = actor?.Clone(),
                 personId = PrototypeEntityLocationFactory.PlayerPersonId,
                 officeIds = offices ?? Array.Empty<string>(),
-                authorityIds = authorities ?? Array.Empty<string>()
+                authorityIds = authorities ?? Array.Empty<string>(),
+                privileged = privileged
             };
         }
 
@@ -314,8 +341,8 @@ namespace UnityIsekaiGame.Tests
                     transactionId = "test.scene-binding.checkpoint",
                     checkpointId = "checkpoint.prototype.village-gate",
                     displayName = "Prototype Village Gate",
-                    locationId = "location.prototype.village",
-                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                    locationId = "location.prototype.town",
+                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                     policy = BorderCheckpointPolicy.RequireInspection,
                     lifecycleState = BorderCheckpointLifecycleState.Active,
                     visibility = PoliticalVisibility.Public,

@@ -20,6 +20,9 @@ namespace UnityIsekaiGame.WorldLocations
         private string worldId = PersistenceService.LocalWorldId;
         private bool disposed;
 
+        public event Action<TravelHazardExposureSnapshot> HazardTriggered;
+        public event Action<TravelEncounterSnapshot> EncounterTriggered;
+
         public long Revision { get; private set; }
         public bool IsDirty { get; private set; }
         public string WorldId => worldId;
@@ -239,6 +242,7 @@ namespace UnityIsekaiGame.WorldLocations
             hazardsById[id] = record;
             Complete(N(request.transactionId), "travel-hazard.trigger", id, id);
             Touch();
+            HazardTriggered?.Invoke(new TravelHazardExposureSnapshot(record));
             return TravelConditionOperationResult.HazardSuccess(new TravelHazardExposureSnapshot(record), "Travel hazard triggered.", before, Revision);
         }
 
@@ -274,6 +278,7 @@ namespace UnityIsekaiGame.WorldLocations
             encountersById[id] = record;
             Complete(N(request.transactionId), "travel-encounter.trigger", id, id);
             Touch();
+            EncounterTriggered?.Invoke(new TravelEncounterSnapshot(record));
             return TravelConditionOperationResult.EncounterSuccess(new TravelEncounterSnapshot(record), "Travel encounter triggered.", before, Revision);
         }
 

@@ -30,11 +30,12 @@ namespace UnityIsekaiGame.Tests
             {
                 "location.prototype.world",
                 "location.prototype.region",
-                "location.prototype.village",
+                "location.prototype.town",
                 "location.prototype.adventurers-guild",
                 "location.prototype.guildmaster-office"
             }));
-            Assert.That(runtime.GetDescendants("location.prototype.village").Select(item => item.LocationId), Is.Ordered);
+            string[] descendantIds = runtime.GetDescendants("location.prototype.town").Select(item => item.LocationId).ToArray();
+            Assert.That(descendantIds, Is.EqualTo(descendantIds.OrderBy(value => value, StringComparer.Ordinal).ToArray()));
         }
 
         [Test]
@@ -73,7 +74,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(cycle.Status, Is.EqualTo(LocationOperationStatus.CycleDetected), cycle.Message);
             Assert.That(runtime.Revision, Is.EqualTo(beforeCycle));
             Assert.That(secondParent.Status, Is.EqualTo(LocationOperationStatus.ActiveParentConflict), secondParent.Message);
-            Assert.That(runtime.GetActiveParentLink("location.prototype.adventurers-guild").ParentLocationId, Is.EqualTo("location.prototype.village"));
+            Assert.That(runtime.GetActiveParentLink("location.prototype.adventurers-guild").ParentLocationId, Is.EqualTo("location.prototype.town"));
         }
 
         [Test]
@@ -144,7 +145,7 @@ namespace UnityIsekaiGame.Tests
             {
                 linkId = "location-containment.test.corrupt-cycle",
                 parentLocationId = "location.prototype.guildmaster-office",
-                childLocationId = "location.prototype.village",
+                childLocationId = "location.prototype.town",
                 kind = LocationContainmentKind.Primary,
                 state = LocationLinkState.Active
             });
@@ -155,7 +156,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(restored.GetActiveParentLink("location.prototype.guildmaster-office").ParentLocationId, Is.EqualTo("location.prototype.adventurers-guild"));
             Assert.That(rejected.Status, Is.EqualTo(LocationOperationStatus.PersistenceInvalid), rejected.Message);
             Assert.That(restored.Revision, Is.EqualTo(before));
-            Assert.That(restored.GetActiveParentLink("location.prototype.village").ParentLocationId, Is.EqualTo("location.prototype.region"));
+            Assert.That(restored.GetActiveParentLink("location.prototype.town").ParentLocationId, Is.EqualTo("location.prototype.region"));
         }
 
         [Test]

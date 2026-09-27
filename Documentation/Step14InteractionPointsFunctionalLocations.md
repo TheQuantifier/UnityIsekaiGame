@@ -51,7 +51,7 @@ Invalid payloads are rejected before live runtime mutation.
 
 ## Prototype Coverage
 
-The prototype factory seeds representative logical points for the current village/guild flow:
+The prototype factory seeds representative logical points for the current town/guild flow:
 
 - Adventurer guild counter.
 - Merchant guild counter.

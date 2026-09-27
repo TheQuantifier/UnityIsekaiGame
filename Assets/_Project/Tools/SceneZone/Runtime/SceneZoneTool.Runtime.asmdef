@@ -1,0 +1,14 @@
+{
+    "name": "SceneZoneTool.Runtime",
+    "rootNamespace": "SceneZoneTool",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

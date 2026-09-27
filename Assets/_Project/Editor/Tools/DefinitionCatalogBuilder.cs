@@ -50,7 +50,7 @@ namespace UnityIsekaiGame.Editor
                 .OrderBy(group => group.Key, StringComparer.Ordinal)
                 .ToArray();
             SerializedObject serialized = new SerializedObject(catalog);
-            serialized.FindProperty("contentVersion").stringValue = "phase-3.group-10.organizations-government-law";
+            serialized.FindProperty("contentVersion").stringValue = "phase-3.group-11.world-locations-travel";
             serialized.FindProperty("defaults").objectReferenceValue = defaults;
             SerializedProperty sections = serialized.FindProperty("sections");
             sections.arraySize = groups.Length;

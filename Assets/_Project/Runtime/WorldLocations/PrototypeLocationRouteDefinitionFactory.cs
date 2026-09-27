@@ -20,12 +20,19 @@ namespace UnityIsekaiGame.WorldLocations
         public const string DungeonRouteSegmentDefinitionId = "route-segment-definition.prototype.dungeon-route";
         public const string BridgeSegmentDefinitionId = "route-segment-definition.prototype.bridge";
 
-        public const string VillageStreetNetworkId = "route-network.prototype.village-streets";
+        public const string TownStreetNetworkId = "route-network.prototype.town-streets";
         public const string RegionalTrailNetworkId = "route-network.prototype.regional-trails";
 
-        public const string VillageMarketStreetSegmentId = "route-segment.prototype.village-market-street";
-        public const string VillageWildernessTrailSegmentId = "route-segment.prototype.village-wilderness-trail";
+        public const string TownMarketStreetSegmentId = "route-segment.prototype.town-market-street";
+        public const string TownWildernessTrailSegmentId = "route-segment.prototype.town-wilderness-trail";
         public const string MarketGuildStreetSegmentId = "route-segment.prototype.market-guild-street";
+        public const string TownCivicStreetSegmentId = "route-segment.prototype.town-civic-street";
+        public const string TownMerchantGuildStreetSegmentId = "route-segment.prototype.town-merchant-guild-street";
+        public const string TownGuardStreetSegmentId = "route-segment.prototype.town-guard-street";
+        public const string TownCourtStreetSegmentId = "route-segment.prototype.town-court-street";
+        public const string TownTempleStreetSegmentId = "route-segment.prototype.town-temple-street";
+        public const string TownUniversityStreetSegmentId = "route-segment.prototype.town-university-street";
+        public const string TownForgeStreetSegmentId = "route-segment.prototype.town-forge-street";
 
         public static DefinitionRegistry AddMissingPrototypeRouteDefinitions(DefinitionRegistry baseRegistry)
         {
@@ -66,9 +73,9 @@ namespace UnityIsekaiGame.WorldLocations
                 RouteSegmentCategory.Custom
             };
 
-            AddMode(definitions, ids, WalkingModeDefinitionId, "Prototype Walking", TravelModeCategory.Walking, walkingCategories, 1d, 1d);
-            AddMode(definitions, ids, RunningModeDefinitionId, "Prototype Running", TravelModeCategory.RunningPlaceholder, walkingCategories, 1d, 0.75d, capabilities: new[] { "capability.prototype.movement.run" });
-            AddMode(definitions, ids, CartModeDefinitionId, "Prototype Cart Travel", TravelModeCategory.CartPlaceholder, new[] { RouteSegmentCategory.Road, RouteSegmentCategory.Street, RouteSegmentCategory.RegionalRoad, RouteSegmentCategory.TradeRoad, RouteSegmentCategory.Bridge }, 1d, 1.2d, equipment: new[] { "item.prototype-cart" });
+            AddMode(definitions, ids, WalkingModeDefinitionId, "Prototype Walking", TravelModeCategory.Walking, walkingCategories, 1d, 1d, baseSpeed: 1.4d);
+            AddMode(definitions, ids, RunningModeDefinitionId, "Prototype Running", TravelModeCategory.RunningPlaceholder, walkingCategories, 1d, 0.75d, capabilities: new[] { "capability.prototype.movement.run" }, baseSpeed: 2.8d);
+            AddMode(definitions, ids, CartModeDefinitionId, "Prototype Cart Travel", TravelModeCategory.CartPlaceholder, new[] { RouteSegmentCategory.Road, RouteSegmentCategory.Street, RouteSegmentCategory.RegionalRoad, RouteSegmentCategory.TradeRoad, RouteSegmentCategory.Bridge }, 1d, 1.2d, equipment: new[] { "item.prototype-cart" }, baseSpeed: 2.2d);
             return definitions;
         }
 
@@ -94,16 +101,23 @@ namespace UnityIsekaiGame.WorldLocations
 
             string world = string.IsNullOrWhiteSpace(worldId) ? PersistenceService.LocalWorldId : worldId.Trim();
             runtime.Configure(registry, locations, connections, world);
-            SeedSegment(runtime, VillageMarketStreetSegmentId, StreetSegmentDefinitionId, "Village Market Street", "location.prototype.village", "location.prototype.market-district", 70d, 70d, RouteVisibility.Public);
+            SeedSegment(runtime, TownMarketStreetSegmentId, StreetSegmentDefinitionId, "Town Market Street", "location.prototype.town", "location.prototype.market-district", 70d, 70d, RouteVisibility.Public);
             SeedSegment(runtime, MarketGuildStreetSegmentId, StreetSegmentDefinitionId, "Market to Guild Street", "location.prototype.market-district", "location.prototype.adventurers-guild", 85d, 85d, RouteVisibility.Public);
-            SeedSegment(runtime, VillageWildernessTrailSegmentId, TrailSegmentDefinitionId, "Village Wilderness Trail", "location.prototype.village", "location.prototype.wilderness-ring", 140d, 170d, RouteVisibility.LocallyKnown);
+            SeedSegment(runtime, TownCivicStreetSegmentId, StreetSegmentDefinitionId, "Town Civic Street", "location.prototype.town", "location.prototype.civic-office", 55d, 55d, RouteVisibility.Public);
+            SeedSegment(runtime, TownMerchantGuildStreetSegmentId, StreetSegmentDefinitionId, "Town Merchant Guild Street", "location.prototype.town", "location.prototype.merchant-guild", 80d, 80d, RouteVisibility.Public);
+            SeedSegment(runtime, TownGuardStreetSegmentId, StreetSegmentDefinitionId, "Town Guard Street", "location.prototype.town", "location.prototype.guard-station", 65d, 65d, RouteVisibility.Public);
+            SeedSegment(runtime, TownCourtStreetSegmentId, StreetSegmentDefinitionId, "Town Court Street", "location.prototype.town", "location.prototype.courthouse", 60d, 60d, RouteVisibility.Public);
+            SeedSegment(runtime, TownTempleStreetSegmentId, StreetSegmentDefinitionId, "Town Temple Street", "location.prototype.town", "location.prototype.temple", 90d, 90d, RouteVisibility.Public);
+            SeedSegment(runtime, TownUniversityStreetSegmentId, StreetSegmentDefinitionId, "Town University Street", "location.prototype.town", "location.prototype.university", 110d, 110d, RouteVisibility.Public);
+            SeedSegment(runtime, TownForgeStreetSegmentId, StreetSegmentDefinitionId, "Town Forge Street", "location.prototype.town", "location.prototype.forge", 75d, 75d, RouteVisibility.Public);
+            SeedSegment(runtime, TownWildernessTrailSegmentId, TrailSegmentDefinitionId, "Town Wilderness Trail", "location.prototype.town", "location.prototype.wilderness-ring", 140d, 170d, RouteVisibility.Public);
             runtime.CreateNetwork(new LocationRouteNetworkCreateRequest
             {
-                transactionId = $"prototype.seed.{VillageStreetNetworkId}",
-                networkId = VillageStreetNetworkId,
-                displayName = "Prototype Village Street Network",
+                transactionId = $"prototype.seed.{TownStreetNetworkId}",
+                networkId = TownStreetNetworkId,
+                displayName = "Prototype Town Street Network",
                 category = RouteNetworkCategory.StreetNetwork,
-                segmentIds = new[] { VillageMarketStreetSegmentId, MarketGuildStreetSegmentId },
+                segmentIds = new[] { TownMarketStreetSegmentId, MarketGuildStreetSegmentId, TownCivicStreetSegmentId, TownMerchantGuildStreetSegmentId, TownGuardStreetSegmentId, TownCourtStreetSegmentId, TownTempleStreetSegmentId, TownUniversityStreetSegmentId, TownForgeStreetSegmentId },
                 visibility = RouteVisibility.Public
             });
             runtime.CreateNetwork(new LocationRouteNetworkCreateRequest
@@ -112,7 +126,7 @@ namespace UnityIsekaiGame.WorldLocations
                 networkId = RegionalTrailNetworkId,
                 displayName = "Prototype Regional Trail Network",
                 category = RouteNetworkCategory.TrailNetwork,
-                segmentIds = new[] { VillageWildernessTrailSegmentId },
+                segmentIds = new[] { TownWildernessTrailSegmentId },
                 visibility = RouteVisibility.LocallyKnown
             });
         }
@@ -130,7 +144,9 @@ namespace UnityIsekaiGame.WorldLocations
                 directionality = LocationConnectionDirectionality.Bidirectional,
                 distanceMeters = distance,
                 baseCostUnits = cost,
-                supportedTravelModeDefinitionIds = new[] { WalkingModeDefinitionId, RunningModeDefinitionId },
+                supportedTravelModeDefinitionIds = definitionId == TrailSegmentDefinitionId
+                    ? new[] { WalkingModeDefinitionId, RunningModeDefinitionId }
+                    : new[] { WalkingModeDefinitionId, RunningModeDefinitionId, CartModeDefinitionId },
                 visibility = visibility,
                 worldTime = 0d,
                 sourceEventId = "event.prototype.world-setup",
@@ -138,12 +154,12 @@ namespace UnityIsekaiGame.WorldLocations
             });
         }
 
-        private static void AddMode(ICollection<TravelModeDefinition> definitions, ISet<string> ids, string id, string display, TravelModeCategory category, IEnumerable<RouteSegmentCategory> routeCategories, double distanceScale, double costScale, IEnumerable<string> capabilities = null, IEnumerable<string> equipment = null)
+        private static void AddMode(ICollection<TravelModeDefinition> definitions, ISet<string> ids, string id, string display, TravelModeCategory category, IEnumerable<RouteSegmentCategory> routeCategories, double distanceScale, double costScale, IEnumerable<string> capabilities = null, IEnumerable<string> equipment = null, double baseSpeed = 1.4d)
         {
             if (ids.Contains(id)) return;
             TravelModeDefinition definition = ScriptableObject.CreateInstance<TravelModeDefinition>();
             definition.name = display;
-            definition.DevelopmentConfigure(id, display, category, routeCategories, distanceScale, costScale, capabilities, equipment);
+            definition.DevelopmentConfigure(id, display, category, routeCategories, distanceScale, costScale, capabilities, equipment, baseSpeed: baseSpeed);
             definitions.Add(definition);
             ids.Add(id);
         }
