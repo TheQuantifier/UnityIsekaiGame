@@ -209,7 +209,7 @@ namespace UnityIsekaiGame.Quests
             if (TryDuplicate(transactionId, out QuestSourceOperationResult duplicate)) return duplicate;
             if (!listingsById.TryGetValue(N(request.questListingId), out QuestListingRecordData listing)) return Fail(QuestSourceOperationStatus.MissingListing, $"Quest Listing '{N(request.questListingId)}' is missing.");
             if (!sourcesById.TryGetValue(listing.questSourceId, out QuestSourceRecordData source)) return Fail(QuestSourceOperationStatus.MissingSource, $"Quest Source '{listing.questSourceId}' is missing.");
-            if (request.targetState == QuestListingLifecycleState.Unknown || request.targetState == QuestListingLifecycleState.DraftPlaceholder) return Fail(QuestSourceOperationStatus.InvalidRequest, "Listing lifecycle transition requires a terminal or active concrete state.");
+            if (request.targetState == QuestListingLifecycleState.Unknown || request.targetState == QuestListingLifecycleState.Draft) return Fail(QuestSourceOperationStatus.InvalidRequest, "Listing lifecycle transition requires a terminal or active concrete state.");
 
             QuestListingRecordData changed = listing.Clone();
             QuestListingLifecycleState beforeState = changed.lifecycleState;
@@ -765,10 +765,10 @@ namespace UnityIsekaiGame.Quests
                 QuestSourceCategory.GuildCounter or QuestSourceCategory.Organization or QuestSourceCategory.Business => QuestOfferChannel.GuildCounter,
                 QuestSourceCategory.GovernmentDesk or QuestSourceCategory.Office => QuestOfferChannel.GovernmentDesk,
                 QuestSourceCategory.NPC => QuestOfferChannel.DirectPerson,
-                QuestSourceCategory.RecordPlaceholder => QuestOfferChannel.RecordPlaceholder,
-                QuestSourceCategory.LetterPlaceholder => QuestOfferChannel.LetterPlaceholder,
+                QuestSourceCategory.Record => QuestOfferChannel.Record,
+                QuestSourceCategory.Letter => QuestOfferChannel.Letter,
                 QuestSourceCategory.TravelEncounter => QuestOfferChannel.TravelEncounter,
-                QuestSourceCategory.WorldEventPlaceholder => QuestOfferChannel.NarrativeEventPlaceholder,
+                QuestSourceCategory.WorldEvent => QuestOfferChannel.NarrativeEvent,
                 QuestSourceCategory.System => QuestOfferChannel.SystemGenerated,
                 _ => QuestOfferChannel.DirectInstitution
             };

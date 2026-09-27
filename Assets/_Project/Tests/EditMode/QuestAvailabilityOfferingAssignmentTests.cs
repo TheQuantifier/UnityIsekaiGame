@@ -114,7 +114,7 @@ namespace UnityIsekaiGame.Tests
                 questId = create.Snapshot.QuestId,
                 recipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = "person.prototype.scout" },
                 offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.System, issuerId = "system.quest" },
-                channel = QuestOfferChannel.NarrativeEventPlaceholder,
+                channel = QuestOfferChannel.NarrativeEvent,
                 eligibilityContext = Context("person.prototype.scout", eligible: false),
                 worldTime = 1d
             });

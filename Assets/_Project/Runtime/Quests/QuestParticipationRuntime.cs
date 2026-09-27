@@ -68,7 +68,7 @@ namespace UnityIsekaiGame.Quests
                 state = QuestAvailabilityState.Historical;
                 reasons.Add("quest.historical");
             }
-            else if (quest.LifecycleState == QuestRuntimeLifecycleState.Invalid || quest.LifecycleState == QuestRuntimeLifecycleState.Unknown || quest.LifecycleState == QuestRuntimeLifecycleState.DraftPlaceholder)
+            else if (quest.LifecycleState == QuestRuntimeLifecycleState.Invalid || quest.LifecycleState == QuestRuntimeLifecycleState.Unknown || quest.LifecycleState == QuestRuntimeLifecycleState.Draft)
             {
                 state = QuestAvailabilityState.Invalid;
                 reasons.Add("quest.invalid-lifecycle");
@@ -816,7 +816,7 @@ namespace UnityIsekaiGame.Quests
                 QuestSourceChannel.Government => QuestOfferChannel.GovernmentDesk,
                 QuestSourceChannel.Organization => QuestOfferChannel.GuildCounter,
                 QuestSourceChannel.Dialogue => QuestOfferChannel.DirectPerson,
-                QuestSourceChannel.WorldEvent => QuestOfferChannel.NarrativeEventPlaceholder,
+                QuestSourceChannel.WorldEvent => QuestOfferChannel.NarrativeEvent,
                 QuestSourceChannel.Discovery => QuestOfferChannel.TravelEncounter,
                 QuestSourceChannel.System => QuestOfferChannel.SystemGenerated,
                 _ => QuestOfferChannel.DirectInstitution

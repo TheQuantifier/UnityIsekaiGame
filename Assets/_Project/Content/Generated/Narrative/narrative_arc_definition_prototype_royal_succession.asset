@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5dfa1bc4cf9f7f41ac27153f2352465, type: 3}
+  m_Name: narrative_arc_definition_prototype_royal_succession
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Narrative.NarrativeArcDefinition
+  data:
+    arcDefinitionId: narrative-arc-definition.prototype.royal-succession
+    displayName: Prototype Royal Succession Arc
+    scope: 1
+    visibility: 5
+    repeatable: 0
+    cascadeDepthLimit: 16
+    tagIds:
+    - branch
+    - prototype
+    - royal
+    stages:
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.royal-succession.heir
+      displayName: Support the heir
+      order: 10
+      initial: 1
+      terminalOnCompletion: 0
+      hidden: 0
+      entryDependencies: []
+      completionDependencies:
+      - dependencyDefinitionId: dependency.heir-branch
+        kind: 8
+        requiredId: narrative-state-definition.prototype.royal-succession|narrative-variable.prototype.royal-succession.branch|narrative-state-value.prototype.royal-succession.support-heir
+        secondaryId: narrative-variable.prototype.royal-succession.branch
+        requiredValue: narrative-state-value.prototype.royal-succession.support-heir
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions: []
+      completionActions: []
+      questBindings: []
+      tagIds: []
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.royal-succession.rival
+      displayName: Support the rival
+      order: 20
+      initial: 1
+      terminalOnCompletion: 0
+      hidden: 0
+      entryDependencies: []
+      completionDependencies:
+      - dependencyDefinitionId: dependency.rival-branch
+        kind: 8
+        requiredId: narrative-state-definition.prototype.royal-succession|narrative-variable.prototype.royal-succession.branch|narrative-state-value.prototype.royal-succession.support-rival
+        secondaryId: narrative-variable.prototype.royal-succession.branch
+        requiredValue: narrative-state-value.prototype.royal-succession.support-rival
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions: []
+      completionActions: []
+      questBindings: []
+      tagIds: []
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.royal-succession.reconcile
+      displayName: Reconcile succession
+      order: 30
+      initial: 0
+      terminalOnCompletion: 1
+      hidden: 0
+      entryDependencies:
+      - dependencyDefinitionId: dependency.any-royal-branch
+        kind: 5
+        requiredId: 
+        secondaryId: 
+        requiredValue: 
+        stageDefinitionIds:
+        - narrative-arc-stage-definition.prototype.royal-succession.heir
+        - narrative-arc-stage-definition.prototype.royal-succession.rival
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      completionDependencies:
+      - dependencyDefinitionId: dependency.royal-reconciled
+        kind: 8
+        requiredId: narrative-state-definition.prototype.royal-succession|narrative-variable.prototype.royal-succession.branch|narrative-state-value.prototype.royal-succession.reconciled
+        secondaryId: narrative-variable.prototype.royal-succession.branch
+        requiredValue: narrative-state-value.prototype.royal-succession.reconciled
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions: []
+      completionActions: []
+      questBindings: []
+      tagIds: []

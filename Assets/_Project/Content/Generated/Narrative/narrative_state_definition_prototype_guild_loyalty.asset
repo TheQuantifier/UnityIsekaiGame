@@ -1,0 +1,200 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01ef61394384a7246a72bd9689b4acc5, type: 3}
+  m_Name: narrative_state_definition_prototype_guild_loyalty
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Narrative.NarrativeStateDefinition
+  data:
+    stateDefinitionId: narrative-state-definition.prototype.guild-loyalty
+    displayName: Prototype Guild Loyalty
+    scope: 2
+    visibility: 2
+    domainId: narrative-domain.prototype.guild
+    tagIds:
+    - branch
+    - guild
+    - prototype
+    variables:
+    - variableDefinitionId: narrative-variable.prototype.guild-loyalty.path
+      displayName: Guild loyalty path
+      kind: 3
+      scope: 2
+      visibility: 2
+      mutabilityPolicy: 1
+      defaultValue:
+        kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.guild-loyalty.uncommitted
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      allowedValues:
+      - valueDefinitionId: narrative-state-value.prototype.guild-loyalty.uncommitted
+        displayName: Uncommitted
+        terminal: 0
+        branchDefinitionId: 
+        mergeGroupId: 
+        tagIds: []
+      - valueDefinitionId: narrative-state-value.prototype.guild-loyalty.loyal-to-guild
+        displayName: Loyal to Adventurers Guild
+        terminal: 0
+        branchDefinitionId: narrative-branch.prototype.guild.loyal
+        mergeGroupId: 
+        tagIds: []
+      - valueDefinitionId: narrative-state-value.prototype.guild-loyalty.supported-merchant
+        displayName: Supported Merchant Guild
+        terminal: 0
+        branchDefinitionId: narrative-branch.prototype.guild.merchant
+        mergeGroupId: 
+        tagIds: []
+      - valueDefinitionId: narrative-state-value.prototype.guild-loyalty.city-service
+        displayName: City service merge
+        terminal: 0
+        branchDefinitionId: narrative-branch.prototype.guild.city-service
+        mergeGroupId: narrative-merge.prototype.guild.city-service
+        tagIds: []
+      minimumValue: -2147483648
+      maximumValue: 2147483647
+      exclusionGroupId: narrative-exclusion.prototype.guild-loyalty
+      recordInitialDefaultHistory: 0
+      tagIds: []
+    transitions:
+    - transitionDefinitionId: narrative-transition-definition.prototype.guild-loyalty.choose-guild
+      displayName: 
+      variableDefinitionId: narrative-variable.prototype.guild-loyalty.path
+      allowedSourceValues:
+      - kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.guild-loyalty.uncommitted
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      targetValue:
+        kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.guild-loyalty.loyal-to-guild
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      conditions: []
+      consequences:
+      - actionDefinitionId: narrative-action.prototype.narrative-transition-definition-prototype-guild-loyalty-choose-guild.signal
+        category: 10
+        requirement: 1
+        targetId: narrative-signal-definition.prototype.state.guild-loyal
+        secondaryTargetId: 
+        outputSlotId: 
+        inputSlotId: 
+        order: 10
+        priority: 0
+        hidden: 0
+      repeatPolicy: 2
+      reentryPolicy: 3
+      visibility: 1
+      order: 10
+      automatic: 0
+      hidden: 0
+    - transitionDefinitionId: narrative-transition-definition.prototype.guild-loyalty.choose-merchant
+      displayName: 
+      variableDefinitionId: narrative-variable.prototype.guild-loyalty.path
+      allowedSourceValues:
+      - kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.guild-loyalty.uncommitted
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      targetValue:
+        kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.guild-loyalty.supported-merchant
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      conditions: []
+      consequences: []
+      repeatPolicy: 2
+      reentryPolicy: 3
+      visibility: 1
+      order: 20
+      automatic: 0
+      hidden: 0
+    - transitionDefinitionId: narrative-transition-definition.prototype.guild-loyalty.merge-city-service
+      displayName: 
+      variableDefinitionId: narrative-variable.prototype.guild-loyalty.path
+      allowedSourceValues:
+      - kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.guild-loyalty.loyal-to-guild
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      - kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.guild-loyalty.supported-merchant
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      targetValue:
+        kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.guild-loyalty.city-service
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      conditions: []
+      consequences: []
+      repeatPolicy: 3
+      reentryPolicy: 1
+      visibility: 1
+      order: 30
+      automatic: 0
+      hidden: 0

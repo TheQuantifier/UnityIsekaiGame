@@ -846,7 +846,7 @@ namespace UnityIsekaiGame.Development.Automation
                 && hasSeededBoard
                 && validRuntime
                 && pointDefinition.Category == InteractionPointCategory.GuildCounter
-                && serviceDefinition.DestinationRuntime == InteractionDestinationRuntime.QuestPlaceholder
+                && serviceDefinition.DestinationRuntime == InteractionDestinationRuntime.Quest
                 && counter.ActiveHostLocationId == "location.prototype.adventurers-guild"
                 && board.ServiceDefinitionIds.Contains(PrototypeInteractionPointDefinitionFactory.QuestBoardBrowseServiceId);
             return TestLabAssertions.True("step14-interaction-readiness", "Seeded interaction points and definitions resolve", valid, $"Definitions={hasPointDefinition}/{hasServiceDefinition} Seeded={hasSeededCounter}/{hasSeededBoard} Points={runtime?.PointCount} Validation={validRuntime}:{failure}");
@@ -1035,7 +1035,7 @@ namespace UnityIsekaiGame.Development.Automation
                 consumerEntity = Person(PrototypeEntityLocationFactory.PlayerPersonId, context),
                 preview = false
             });
-            bool valid = result.Success && result.DestinationRuntime == InteractionDestinationRuntime.QuestPlaceholder && runtime.Revision == before && result.RevisionBefore == result.RevisionAfter;
+            bool valid = result.Success && result.DestinationRuntime == InteractionDestinationRuntime.Quest && runtime.Revision == before && result.RevisionBefore == result.RevisionAfter;
             return TestLabAssertions.True("step14-interaction-routing", "Interaction invocation validates route and leaves destination mutation to owning runtime", valid, $"Success={result.Success} Destination={result.DestinationRuntime} Revision={before}->{runtime.Revision} Message={result.Message}");
         }
 

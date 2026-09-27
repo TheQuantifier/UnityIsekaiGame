@@ -100,41 +100,6 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void ReachLocationObjective_MatchesTypedPlaceAndCompletesOnceOnlyWhileActive()
-        {
-            ScriptableObject place = CreatePlace("place.poi.disturbance-site", "Disturbance Site", "PointOfInterest");
-            ScriptableObject objective = CreateReachLocationObjective(place, "legacy_disturbance");
-            object context = Activator.CreateInstance(RequiredType("UnityIsekaiGame.Contracts.ContractObjectiveContext"), new object[] { null });
-            object instance = Invoke(objective, "CreateInstance", context);
-
-            InvokeStatic(RequiredType("UnityIsekaiGame.Quests.QuestObjectiveSignalBus"), "ReportReachLocation", "place.poi.disturbance-site");
-            Assert.That(Get<int>(instance, "CurrentProgress"), Is.EqualTo(0));
-
-            Invoke(instance, "Activate");
-            InvokeStatic(RequiredType("UnityIsekaiGame.Quests.QuestObjectiveSignalBus"), "ReportReachLocation", "place.poi.disturbance-site");
-            InvokeStatic(RequiredType("UnityIsekaiGame.Quests.QuestObjectiveSignalBus"), "ReportReachLocation", "place.poi.disturbance-site");
-
-            Assert.That(Get<int>(instance, "CurrentProgress"), Is.EqualTo(1));
-            Assert.That(Get<bool>(instance, "IsComplete"), Is.True);
-            Invoke(instance, "Dispose");
-        }
-
-        [Test]
-        public void ReachLocationObjective_UsesLegacyStringFallbackWhenNoPlaceAssigned()
-        {
-            ScriptableObject objective = CreateReachLocationObjective(null, "prototype_disturbance_site");
-            object context = Activator.CreateInstance(RequiredType("UnityIsekaiGame.Contracts.ContractObjectiveContext"), new object[] { null });
-            object instance = Invoke(objective, "CreateInstance", context);
-
-            Invoke(instance, "Activate");
-            InvokeStatic(RequiredType("UnityIsekaiGame.Quests.QuestObjectiveSignalBus"), "ReportReachLocation", "prototype_disturbance_site");
-
-            Assert.That(Get<int>(instance, "CurrentProgress"), Is.EqualTo(1));
-            Assert.That(Get<bool>(instance, "IsComplete"), Is.True);
-            Invoke(instance, "Dispose");
-        }
-
-        [Test]
         public void PersonDefinition_CanReferenceHomePlace()
         {
             ScriptableObject home = CreatePlace("place.settlement.prototype-town", "Prototype Town", "Settlement");
@@ -182,15 +147,6 @@ namespace UnityIsekaiGame.Tests
             SetObjectArray(place, "tags", tags ?? Array.Empty<TagDefinition>());
             SetObject(place, "parentPlace", parent);
             return place;
-        }
-
-        private static ScriptableObject CreateReachLocationObjective(ScriptableObject targetPlace, string legacyLocationId)
-        {
-            ScriptableObject objective = ScriptableObject.CreateInstance(RequiredType("UnityIsekaiGame.Quests.ReachLocationObjectiveDefinition"));
-            SetString(objective, "description", "Reach test location.");
-            SetObject(objective, "targetPlace", targetPlace);
-            SetString(objective, "locationId", legacyLocationId);
-            return objective;
         }
 
         private static CategoryDefinition CreateCategory(string id, CategoryDomain domain)

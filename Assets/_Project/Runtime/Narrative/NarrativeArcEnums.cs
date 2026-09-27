@@ -58,7 +58,7 @@ namespace UnityIsekaiGame.Narrative
         InstantiateOnStageActivation,
         InstantiateAndPublish,
         InstantiateAndDirectOffer,
-        ObserveAnyQuestFromDefinitionPlaceholder,
+        ObserveAnyQuestFromDefinition,
         Custom
     }
 

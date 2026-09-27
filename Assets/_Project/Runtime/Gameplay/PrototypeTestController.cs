@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityIsekaiGame.ActorLifecycle;
 using UnityIsekaiGame.Combat;
-using UnityIsekaiGame.Contracts;
-using UnityIsekaiGame.Dialogue;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Inventory;
@@ -29,14 +27,12 @@ namespace UnityIsekaiGame.Gameplay
         [SerializeField] private ActorLifecycleController playerLifecycle;
         [SerializeField] private PlayerInventory playerInventory;
         [SerializeField] private PlayerEquipment playerEquipment;
-        [SerializeField] private DialogueController dialogueController;
         [SerializeField] private MonoBehaviour inventoryScreenController;
         [SerializeField] private Transform playerSpawnPoint;
         [SerializeField] private Transform prototypeEnemy;
         [SerializeField] private EnemyHealth enemyHealth;
         [SerializeField] private EnemyMeleeAttack enemyAttack;
         [SerializeField] private PrototypeEnemyController enemyController;
-        [SerializeField] private EnemyContractTargetReporter enemyContractTargetReporter;
         [SerializeField] private EnemyLootDrop enemyLootDrop;
         [SerializeField] private StatusEffectController enemyStatusEffects;
         [SerializeField] private CharacterResourceCollection enemyResources;
@@ -70,7 +66,8 @@ namespace UnityIsekaiGame.Gameplay
 
         public void ResetPrototypeState()
         {
-            dialogueController?.EndDialogue();
+            FindAnyObjectByType<PrototypeDialoguePanel>()?.Close();
+            FindAnyObjectByType<PrototypeQuestSourcePanel>()?.Close();
             (inventoryScreenController as IPlayerMenuController)?.CloseForPrototypeReset();
             RestoreSceneResetState();
             ResolveRuntimeReferences();
@@ -157,11 +154,6 @@ namespace UnityIsekaiGame.Gameplay
                 playerEquipment = player.GetComponent<PlayerEquipment>();
             }
 
-            if (dialogueController == null)
-            {
-                dialogueController = FindAnyObjectByType<DialogueController>();
-            }
-
             if (inventoryScreenController == null)
             {
                 inventoryScreenController = FindMenuController();
@@ -195,11 +187,6 @@ namespace UnityIsekaiGame.Gameplay
             if (enemyController == null && prototypeEnemy != null)
             {
                 enemyController = prototypeEnemy.GetComponent<PrototypeEnemyController>();
-            }
-
-            if (enemyContractTargetReporter == null && prototypeEnemy != null)
-            {
-                enemyContractTargetReporter = prototypeEnemy.GetComponent<EnemyContractTargetReporter>();
             }
 
             if (enemyLootDrop == null && prototypeEnemy != null)
@@ -324,7 +311,6 @@ namespace UnityIsekaiGame.Gameplay
 
             enemyAttack?.ResetCooldown();
             enemyController?.ResetControllerState();
-            enemyContractTargetReporter?.ResetReporter();
             enemyLootDrop?.ResetLootState();
             enemyStatusEffects?.ClearAllStatuses();
             enemyResources?.ResetToDefinitionDefaults("prototype.reset.enemy", "Prototype reset.", restoration: true);

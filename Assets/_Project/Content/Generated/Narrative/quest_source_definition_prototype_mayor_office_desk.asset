@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a67c4140241bc249833df8406de2a04, type: 3}
+  m_Name: quest_source_definition_prototype_mayor_office_desk
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Quests.QuestSourceDefinition
+  definitionId: quest-source-definition.prototype.mayor-office-desk
+  displayName: Mayor Office Desk
+  category: 3
+  defaultVisibility: 7
+  discoveryPolicy: 3
+  listingDiscoveryPolicy: 2
+  eligibilityDisplayPolicy: 3
+  publicationPolicy:
+    maxActiveListings: 4
+    duplicatePolicy: 1
+    expirationPolicy: 3
+    defaultListingDuration: 5
+    acceptedListingPolicy: 2
+    repeatableListingPolicy: 3
+  filters:
+    allowedQuestCategories: 0b000000
+    requiredQuestTagIds:
+    - civic
+    allowedIssuerIds:
+    - government.prototype.civic
+    allowedRepeatabilityPolicies: 
+  providerRequirements:
+  - kind: 5
+    requirementId: office.prototype.mayor
+    hidden: 0
+  publicationAuthorityRequirementIds:
+  - authority.prototype.city.quest-assign
+  sourceRoleIds:
+  - quest-source-role.acceptance
+  - quest-source-role.discovery
+  - quest-source-role.listing
+  - quest-source-role.offer
+  - quest-source-role.rewardclaim
+  - quest-source-role.turnin
+  tags:
+  - government
+  - mayor
+  - prototype
+  - restricted

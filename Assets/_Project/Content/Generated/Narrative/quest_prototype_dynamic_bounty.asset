@@ -1,0 +1,197 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae127f1fb11847bd9c01a706ab051189, type: 3}
+  m_Name: quest_prototype_dynamic_bounty
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Quests.QuestDefinition
+  questId: quest.prototype.dynamic-bounty
+  title: Dynamic Bounty
+  summary: 
+  detailedDescription: 
+  category: 10
+  importance: 2
+  repeatabilityPolicy: 6
+  defaultVisibility: 1
+  defaultSourceChannel: 2
+  supportedIssuerTypes: 0200000004000000
+  supportedRecipientScopes: 0100000002000000
+  defaultTagIds:
+  - bounty
+  - dynamic
+  supportedSubjectRoleIds: []
+  allowDynamicInstances: 1
+  allowMultipleSimultaneousInstances: 1
+  uniquePerWorld: 0
+  uniquePerRecipient: 0
+  identityNotes: 
+  assignmentPolicy: 2
+  consentPolicy: 1
+  refusalPolicy: 1
+  abandonmentPolicy: 1
+  assignmentCapacity: 4
+  availabilityStartWorldTime: -1
+  availabilityEndWorldTime: -1
+  defaultOfferDuration: 2
+  issuerWithdrawalAllowed: 1
+  prevalidateEligibilityForOffers: 1
+  offeringAuthorityRequirementIds:
+  - authority.prototype.bounty-board.post
+  eligibilityRequirementGroups:
+  - groupId: bounty-board
+    policy: 1
+    thresholdCount: 0
+    requirements:
+    - requirementId: InteractionPointPresence.interaction-point.prototype.bounty-board
+      kind: 23
+      requiredId: interaction-point.prototype.bounty-board
+      secondaryId: 
+      minimumValue: 0
+      maximumValue: 0
+      comparison: 1
+      revealFailure: 1
+      negate: 0
+    revealFailures: 1
+  objectiveDefinitions:
+  - objectiveDefinitionId: quest-objective-definition.prototype.bounty.defeat-target
+    groupDefinitionId: 
+    label: Defeat Bounty Target
+    description: Defeat Bounty Target
+    category: 19
+    progressModel: 7
+    progressSource: 2
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 3
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 34
+      subjectId: encounter.prototype.dynamic-bounty-target
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds: []
+    tagIds:
+    - bounty
+    - combat
+    - required
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 10
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  - objectiveDefinitionId: quest-objective-definition.prototype.bounty.survive-combat
+    groupDefinitionId: 
+    label: Survive the Encounter
+    description: Survive the Encounter
+    category: 21
+    progressModel: 2
+    progressSource: 2
+    classification: 2
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 34
+      subjectId: encounter.prototype.dynamic-bounty-target
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds: []
+    tagIds:
+    - combat
+    - optional
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 20
+    requiredForCompletion: 0
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  objectiveGroups:
+  - groupDefinitionId: quest-objective-group.prototype.bounty.required
+    label: quest-objective-group.prototype.bounty.required
+    policy: 1
+    thresholdCount: 1
+    objectiveDefinitionIds:
+    - quest-objective-definition.prototype.bounty.defeat-target
+    requiredForCompletion: 1
+    sequenceOrder: 0
+  completionPolicy:
+    policy: 2
+    requiredInteractionPointId: interaction-point.prototype.bounty-board
+    requiredIssuerId: 
+    requireAllRequiredObjectives: 1
+    allowOptionalBonusRewards: 1
+  deadlineDefinitions:
+  - deadlineDefinitionId: quest-deadline-definition.prototype.bounty.two-days
+    startKind: 1
+    expirationPolicy: 1
+    absoluteWorldTime: -1
+    durationFromStart: 2
+    hidden: 0
+  failureConditions:
+  - failureConditionId: quest-failure-condition.prototype.bounty.actor-died
+    reasonCode: 4
+    triggerKind: 2
+    subject:
+      subjectType: 34
+      subjectId: quest-failure-condition.prototype.bounty.actor-died
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    hidden: 0
+  rewardPackages:
+  - rewardPackageId: quest-reward-package.prototype.bounty.base
+    deliveryPolicy: 2
+    atomicityPolicy: 1
+    rewards:
+    - rewardDefinitionId: quest-reward.prototype.bounty.gold
+      category: 1
+      targetDefinitionId: currency.gold
+      secondaryTargetId: 
+      quantity: 75
+      optional: 0
+      hidden: 0
+      metadata: 
+    - rewardDefinitionId: quest-reward.prototype.bounty.reputation
+      category: 3
+      targetDefinitionId: reputation.prototype.city-guard
+      secondaryTargetId: 
+      quantity: 8
+      optional: 0
+      hidden: 0
+      metadata: 
+  consequenceDefinitions: []

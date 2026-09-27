@@ -1,0 +1,241 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae127f1fb11847bd9c01a706ab051189, type: 3}
+  m_Name: quest_prototype_merchant_delivery
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Quests.QuestDefinition
+  questId: quest.prototype.merchant-delivery
+  title: Merchant Delivery
+  summary: 
+  detailedDescription: 
+  category: 12
+  importance: 2
+  repeatabilityPolicy: 3
+  defaultVisibility: 2
+  defaultSourceChannel: 4
+  supportedIssuerTypes: 0200000006000000
+  supportedRecipientScopes: 02000000
+  defaultTagIds:
+  - contract
+  - delivery
+  - merchant
+  supportedSubjectRoleIds: []
+  allowDynamicInstances: 0
+  allowMultipleSimultaneousInstances: 1
+  uniquePerWorld: 0
+  uniquePerRecipient: 1
+  identityNotes: 
+  assignmentPolicy: 3
+  consentPolicy: 1
+  refusalPolicy: 1
+  abandonmentPolicy: 1
+  assignmentCapacity: 0
+  availabilityStartWorldTime: -1
+  availabilityEndWorldTime: -1
+  defaultOfferDuration: 3
+  issuerWithdrawalAllowed: 1
+  prevalidateEligibilityForOffers: 1
+  offeringAuthorityRequirementIds:
+  - authority.prototype.merchant.quest-offer
+  eligibilityRequirementGroups:
+  - groupId: merchant-counter
+    policy: 1
+    thresholdCount: 0
+    requirements:
+    - requirementId: InteractionPointPresence.interaction-point.prototype.merchant-guild-counter
+      kind: 23
+      requiredId: interaction-point.prototype.merchant-guild-counter
+      secondaryId: 
+      minimumValue: 0
+      maximumValue: 0
+      comparison: 1
+      revealFailure: 1
+      negate: 0
+    revealFailures: 1
+  objectiveDefinitions:
+  - objectiveDefinitionId: quest-objective-definition.prototype.delivery.collect-parcel
+    groupDefinitionId: 
+    label: Collect Merchant Parcel
+    description: Collect Merchant Parcel
+    category: 10
+    progressModel: 2
+    progressSource: 2
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 34
+      subjectId: item.prototype.merchant-parcel
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds: []
+    tagIds:
+    - delivery
+    - item
+    - required
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 10
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  - objectiveDefinitionId: quest-objective-definition.prototype.delivery.possess-parcel
+    groupDefinitionId: 
+    label: Possess Merchant Parcel
+    description: Possess Merchant Parcel
+    category: 11
+    progressModel: 4
+    progressSource: 1
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 2
+    ownershipScope: 1
+    target:
+      subjectType: 34
+      subjectId: item.prototype.merchant-parcel
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds: []
+    tagIds:
+    - delivery
+    - item
+    - required
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 20
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  - objectiveDefinitionId: quest-objective-definition.prototype.delivery.deliver-parcel
+    groupDefinitionId: 
+    label: Deliver Parcel to Merchant Counter
+    description: Deliver Parcel to Merchant Counter
+    category: 13
+    progressModel: 2
+    progressSource: 2
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 34
+      subjectId: interaction-point.prototype.merchant-guild-counter
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 34
+      subjectId: item.prototype.merchant-parcel
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds:
+    - quest-objective-definition.prototype.delivery.collect-parcel
+    tagIds:
+    - delivery
+    - required
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 30
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  objectiveGroups:
+  - groupDefinitionId: quest-objective-group.prototype.delivery.required
+    label: quest-objective-group.prototype.delivery.required
+    policy: 1
+    thresholdCount: 3
+    objectiveDefinitionIds:
+    - quest-objective-definition.prototype.delivery.collect-parcel
+    - quest-objective-definition.prototype.delivery.deliver-parcel
+    - quest-objective-definition.prototype.delivery.possess-parcel
+    requiredForCompletion: 1
+    sequenceOrder: 0
+  completionPolicy:
+    policy: 2
+    requiredInteractionPointId: interaction-point.prototype.merchant-guild-counter
+    requiredIssuerId: 
+    requireAllRequiredObjectives: 1
+    allowOptionalBonusRewards: 1
+  deadlineDefinitions:
+  - deadlineDefinitionId: quest-deadline-definition.prototype.delivery.one-day
+    startKind: 1
+    expirationPolicy: 1
+    absoluteWorldTime: -1
+    durationFromStart: 1
+    hidden: 0
+  failureConditions:
+  - failureConditionId: quest-failure-condition.prototype.delivery.parcel-lost
+    reasonCode: 3
+    triggerKind: 3
+    subject:
+      subjectType: 34
+      subjectId: quest-failure-condition.prototype.delivery.parcel-lost
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    hidden: 0
+  rewardPackages:
+  - rewardPackageId: quest-reward-package.prototype.delivery.base
+    deliveryPolicy: 2
+    atomicityPolicy: 1
+    rewards:
+    - rewardDefinitionId: quest-reward.prototype.delivery.gold
+      category: 1
+      targetDefinitionId: currency.gold
+      secondaryTargetId: 
+      quantity: 25
+      optional: 0
+      hidden: 0
+      metadata: 
+    - rewardDefinitionId: quest-reward.prototype.delivery.item
+      category: 2
+      targetDefinitionId: item.health-potion
+      secondaryTargetId: 
+      quantity: 1
+      optional: 0
+      hidden: 0
+      metadata: 
+  consequenceDefinitions: []

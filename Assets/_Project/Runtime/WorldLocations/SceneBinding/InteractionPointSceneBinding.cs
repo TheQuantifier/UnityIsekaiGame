@@ -2,6 +2,7 @@ using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Interaction;
+using UnityIsekaiGame.Quests;
 
 namespace UnityIsekaiGame.WorldLocations.SceneBinding
 {
@@ -85,6 +86,11 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 return;
             }
             Runtime.SynchronizePhysicalPresence(PlayerBody(), point.ActiveHostLocationId, worldTime);
+            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+            if (services?.NarrativeCoordinator != null)
+                services.NarrativeCoordinator.HandleInteractionPointUsed(point.InteractionPointId, string.IsNullOrWhiteSpace(invocation.RequestId) ? serviceId : invocation.RequestId);
+            else
+                QuestObjectiveSignalBus.Report(QuestObjectiveCategory.UseInteractionPoint, point.InteractionPointId, PrototypeEntityLocationFactory.PlayerPersonId, worldTime, sourceEventId: invocation.RequestId);
 
             IInteractionPointDestinationHandler handler = ResolveDestinationHandler();
             if (handler != null)

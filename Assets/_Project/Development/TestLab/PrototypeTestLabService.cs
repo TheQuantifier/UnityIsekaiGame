@@ -28,7 +28,6 @@ using UnityIsekaiGame.Combat.Execution;
 using UnityIsekaiGame.Combat.Integration;
 using UnityIsekaiGame.Combat.OngoingEffects;
 using UnityIsekaiGame.Combat.Reactions;
-using UnityIsekaiGame.Contracts;
 using UnityIsekaiGame.Crimes;
 using UnityIsekaiGame.Dialogue;
 using UnityIsekaiGame.Equipment;
@@ -1163,8 +1162,7 @@ namespace UnityIsekaiGame.Development
                 $"Inventory: {FormatInventory()}",
                 $"Equipped: {CountEquipped()} item(s)",
                 $"Selected Spell: {(context.SpellLoadout == null || context.SpellLoadout.SelectedSpell == null ? "None" : FormatDefinition(context.SpellLoadout.SelectedSpell))}",
-                $"Quests: {(context.QuestLog == null ? 0 : context.QuestLog.Quests.Count)}",
-                $"Contracts: {(context.ContractJournal == null ? 0 : context.ContractJournal.Contracts.Count)}",
+                $"Quests: {(context.Narrative == null ? 0 : context.Narrative.GetJournal().Count)}",
                 $"Identity: {FormatIdentityOneLine()}",
                 $"Enemy: {FormatEnemy()}",
                 $"Location: {FormatLocationOneLine()}",
@@ -12915,13 +12913,13 @@ namespace UnityIsekaiGame.Development
 
         public PrototypeTestLabOperation StartQuest(QuestDefinition quest)
         {
-            if (context?.QuestLog == null || quest == null)
+            if (context?.Narrative == null || quest == null)
             {
-                return RecordFailure("Start Quest", "Quest log or quest definition is missing.", "MissingReference");
+                return RecordFailure("Start Quest", "Narrative coordinator or quest definition is missing.", "MissingReference");
             }
 
-            QuestOperationResult result = context.QuestLog.StartQuest(quest);
-            return Record(result.Succeeded, "Start Quest", result.Succeeded ? "Started" : "Failed", result.Message);
+            QuestParticipationOperationResult result = context.Narrative.CreateDevelopmentAssignment(quest, "test-lab");
+            return Record(result.Succeeded, "Start Quest", result.Succeeded ? "Assigned" : "Failed", result.Message);
         }
 
         public PrototypeTestLabOperation ReportTalk(PersonDefinition person)
@@ -12953,26 +12951,8 @@ namespace UnityIsekaiGame.Development
                 targetCategory = "prototype_enemy";
             }
 
-            GameObject temporary = new GameObject("Development Contract Objective Target");
-            try
-            {
-                ContractObjectiveTarget target = temporary.AddComponent<ContractObjectiveTarget>();
-                target.DevelopmentSetTargetCategory(targetCategory);
-                context?.QuestLog?.RecordDefeat(target);
-                context?.ContractJournal?.RecordDefeat(target);
-                return RecordSuccess("Report Defeat", $"Reported defeat target '{targetCategory}'.");
-            }
-            finally
-            {
-                if (Application.isPlaying)
-                {
-                    UnityEngine.Object.Destroy(temporary);
-                }
-                else
-                {
-                    UnityEngine.Object.DestroyImmediate(temporary);
-                }
-            }
+            context?.Narrative?.ReportObjective(QuestObjectiveCategory.DefeatTarget, targetCategory, 1, "test-lab");
+            return RecordSuccess("Report Defeat", $"Reported defeat target '{targetCategory}'.");
         }
 
         public PrototypeTestLabOperation ClearQuestLog(bool confirmed)
@@ -12982,30 +12962,7 @@ namespace UnityIsekaiGame.Development
                 return confirmation;
             }
 
-            context?.QuestLog?.DevelopmentClearQuestLog();
-            return RecordSuccess("Clear Quest Log", "Quest log cleared.");
-        }
-
-        public PrototypeTestLabOperation AcceptContract(ContractDefinition contract)
-        {
-            if (context?.ContractJournal == null || contract == null)
-            {
-                return RecordFailure("Accept Contract", "Contract journal or contract definition is missing.", "MissingReference");
-            }
-
-            ContractOperationResult result = context.ContractJournal.AcceptContract(contract);
-            return Record(result.Succeeded, "Accept Contract", result.Succeeded ? "Accepted" : "Failed", result.Message);
-        }
-
-        public PrototypeTestLabOperation ClearContractJournal(bool confirmed)
-        {
-            if (!RequireConfirmation("ClearContractJournal", confirmed, out PrototypeTestLabOperation confirmation))
-            {
-                return confirmation;
-            }
-
-            context?.ContractJournal?.DevelopmentClearContractJournal();
-            return RecordSuccess("Clear Contract Journal", "Contract journal cleared.");
+            return RecordFailure("Clear Quest Log", "Authoritative quest history is retained; reset the Test Lab fixture or load a clean save instead.", "UnsupportedDestructiveOperation");
         }
 
         public PrototypeTestLabOperation Save()
@@ -13659,7 +13616,7 @@ namespace UnityIsekaiGame.Development
             UnityEngine.Object.DestroyImmediate(gameObject);
         }
 
-        public PrototypeTestLabOperation RunScenario(string scenarioId, ItemDefinition item, QuestDefinition quest, ContractDefinition contract, DamageTypeDefinition damageType)
+        public PrototypeTestLabOperation RunScenario(string scenarioId, ItemDefinition item, QuestDefinition quest, DamageTypeDefinition damageType)
         {
             switch (scenarioId)
             {
@@ -13684,13 +13641,6 @@ namespace UnityIsekaiGame.Development
                     }
 
                     return RecordSuccess("Scenario: Quest Midpoint", "Started selected quest. Use Talk/Reach/Defeat actions to progress through normal events.");
-                case "contract":
-                    if (contract != null)
-                    {
-                        AcceptContract(contract);
-                    }
-
-                    return RecordSuccess("Scenario: Contract Testing", "Accepted selected contract if available.");
                 case "persistence":
                     RestoreVitals();
                     if (item != null)
@@ -13701,11 +13651,6 @@ namespace UnityIsekaiGame.Development
                     if (quest != null)
                     {
                         StartQuest(quest);
-                    }
-
-                    if (contract != null)
-                    {
-                        AcceptContract(contract);
                     }
 
                     return RecordSuccess("Scenario: Persistence Round Trip", "Prepared representative player state for save/load testing.");
@@ -13728,8 +13673,7 @@ namespace UnityIsekaiGame.Development
             AddCharacterSystemDiagnostics(lines);
             AddReferenceDiagnostic(lines, "Inventory", context?.Inventory);
             AddReferenceDiagnostic(lines, "Equipment", context?.Equipment);
-            AddReferenceDiagnostic(lines, "Quest Log", context?.QuestLog);
-            AddReferenceDiagnostic(lines, "Contract Journal", context?.ContractJournal);
+            lines.Add($"Narrative Coordinator: {(context?.Narrative == null ? "Missing" : "OK")}");
             AddReferenceDiagnostic(lines, "Persistence", context?.Persistence);
             AddReferenceDiagnostic(lines, "Enemy Health", context?.EnemyHealth);
 

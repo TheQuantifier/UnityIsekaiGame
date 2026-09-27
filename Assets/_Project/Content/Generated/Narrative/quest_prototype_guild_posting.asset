@@ -1,0 +1,297 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae127f1fb11847bd9c01a706ab051189, type: 3}
+  m_Name: quest_prototype_guild_posting
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Quests.QuestDefinition
+  questId: quest.prototype.guild-posting
+  title: Guild Posting
+  summary: 
+  detailedDescription: 
+  category: 3
+  importance: 2
+  repeatabilityPolicy: 1
+  defaultVisibility: 1
+  defaultSourceChannel: 2
+  supportedIssuerTypes: 02000000
+  supportedRecipientScopes: 0100000002000000
+  defaultTagIds:
+  - guild
+  - posting
+  - public
+  supportedSubjectRoleIds: []
+  allowDynamicInstances: 0
+  allowMultipleSimultaneousInstances: 0
+  uniquePerWorld: 1
+  uniquePerRecipient: 0
+  identityNotes: 
+  assignmentPolicy: 1
+  consentPolicy: 1
+  refusalPolicy: 1
+  abandonmentPolicy: 1
+  assignmentCapacity: 1
+  availabilityStartWorldTime: -1
+  availabilityEndWorldTime: -1
+  defaultOfferDuration: 7
+  issuerWithdrawalAllowed: 1
+  prevalidateEligibilityForOffers: 1
+  offeringAuthorityRequirementIds:
+  - authority.prototype.guild.quest-offer
+  eligibilityRequirementGroups:
+  - groupId: guild-context
+    policy: 1
+    thresholdCount: 0
+    requirements:
+    - requirementId: OrganizationMembership.organization.prototype.adventurers-guild
+      kind: 11
+      requiredId: organization.prototype.adventurers-guild
+      secondaryId: 
+      minimumValue: 0
+      maximumValue: 0
+      comparison: 1
+      revealFailure: 1
+      negate: 0
+    - requirementId: InteractionPointPresence.interaction-point.prototype.adventurer-guild-counter
+      kind: 23
+      requiredId: interaction-point.prototype.adventurer-guild-counter
+      secondaryId: 
+      minimumValue: 0
+      maximumValue: 0
+      comparison: 1
+      revealFailure: 1
+      negate: 0
+    revealFailures: 1
+  objectiveDefinitions:
+  - objectiveDefinitionId: quest-objective-definition.prototype.guild.use-counter
+    groupDefinitionId: 
+    label: Use Adventurer Guild Counter
+    description: Use Adventurer Guild Counter
+    category: 4
+    progressModel: 2
+    progressSource: 2
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 34
+      subjectId: interaction-point.prototype.adventurer-guild-counter
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds: []
+    tagIds:
+    - guild
+    - interaction
+    - required
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 10
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  - objectiveDefinitionId: quest-objective-definition.prototype.guild.enter-dungeon
+    groupDefinitionId: 
+    label: Enter the Dungeon
+    description: Enter the Dungeon
+    category: 2
+    progressModel: 2
+    progressSource: 2
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 22
+      subjectId: location.prototype.dungeon-entry
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds:
+    - quest-objective-definition.prototype.guild.use-counter
+    tagIds:
+    - exploration
+    - required
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 20
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  - objectiveDefinitionId: quest-objective-definition.prototype.guild.defeat-monsters
+    groupDefinitionId: 
+    label: Defeat Three Monsters
+    description: Defeat Three Monsters
+    category: 20
+    progressModel: 3
+    progressSource: 2
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 34
+      subjectId: enemy-family.prototype.monster
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds:
+    - quest-objective-definition.prototype.guild.enter-dungeon
+    tagIds:
+    - combat
+    - required
+    targetAmount: 3
+    thresholdValue: 3
+    sequenceOrder: 30
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  - objectiveDefinitionId: quest-objective-definition.prototype.guild.report-return
+    groupDefinitionId: 
+    label: Report Back to the Guild
+    description: Report Back to the Guild
+    category: 4
+    progressModel: 2
+    progressSource: 2
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 34
+      subjectId: interaction-point.prototype.adventurer-guild-counter
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds:
+    - quest-objective-definition.prototype.guild.defeat-monsters
+    tagIds:
+    - guild
+    - required
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 40
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  objectiveGroups:
+  - groupDefinitionId: quest-objective-group.prototype.guild.required
+    label: quest-objective-group.prototype.guild.required
+    policy: 4
+    thresholdCount: 4
+    objectiveDefinitionIds:
+    - quest-objective-definition.prototype.guild.defeat-monsters
+    - quest-objective-definition.prototype.guild.enter-dungeon
+    - quest-objective-definition.prototype.guild.report-return
+    - quest-objective-definition.prototype.guild.use-counter
+    requiredForCompletion: 1
+    sequenceOrder: 0
+  completionPolicy:
+    policy: 2
+    requiredInteractionPointId: interaction-point.prototype.adventurer-guild-counter
+    requiredIssuerId: 
+    requireAllRequiredObjectives: 1
+    allowOptionalBonusRewards: 1
+  deadlineDefinitions:
+  - deadlineDefinitionId: quest-deadline-definition.prototype.guild.three-days
+    startKind: 1
+    expirationPolicy: 1
+    absoluteWorldTime: -1
+    durationFromStart: 3
+    hidden: 0
+  failureConditions:
+  - failureConditionId: quest-failure-condition.prototype.guild.deadline
+    reasonCode: 1
+    triggerKind: 4
+    subject:
+      subjectType: 34
+      subjectId: quest-failure-condition.prototype.guild.deadline
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    hidden: 0
+  rewardPackages:
+  - rewardPackageId: quest-reward-package.prototype.guild.base
+    deliveryPolicy: 2
+    atomicityPolicy: 1
+    rewards:
+    - rewardDefinitionId: quest-reward.prototype.guild.gold
+      category: 1
+      targetDefinitionId: currency.gold
+      secondaryTargetId: 
+      quantity: 50
+      optional: 0
+      hidden: 0
+      metadata: 
+    - rewardDefinitionId: quest-reward.prototype.guild.reputation
+      category: 3
+      targetDefinitionId: reputation.prototype.adventurers-guild
+      secondaryTargetId: 
+      quantity: 5
+      optional: 0
+      hidden: 0
+      metadata: 
+  consequenceDefinitions:
+  - consequenceDefinitionId: quest-consequence.prototype.guild.missed
+    appliesTo: 4
+    category: 3
+    targetDefinitionId: reputation.prototype.adventurers-guild
+    magnitude: -2
+    hidden: 0

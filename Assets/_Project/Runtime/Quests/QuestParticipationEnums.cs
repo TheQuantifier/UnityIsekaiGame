@@ -109,10 +109,10 @@ namespace UnityIsekaiGame.Quests
         QuestBoard,
         GovernmentDesk,
         GuildCounter,
-        LetterPlaceholder,
-        RecordPlaceholder,
+        Letter,
+        Record,
         TravelEncounter,
-        NarrativeEventPlaceholder,
+        NarrativeEvent,
         SystemGenerated,
         Custom
     }

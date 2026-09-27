@@ -468,7 +468,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7c21d83a071427ca03369f49971446a, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.SceneBinding.InteractionPointSceneBinding
   instanceId: InteractionPointSceneBinding.0eba08f3c90a43ec8ea9ca28f7f01cb1
   worldId: local-world
@@ -493,7 +493,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2e6d400c90999a74391c0e79944bb570, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.PrototypeIntegration.QuestSourceSceneBinding
   questSourceId: quest-source.prototype.adventurers-guild-counter
   questSourceDefinitionId: quest-source-definition.prototype.adventurers-guild-counter
@@ -503,6 +503,8 @@ MonoBehaviour:
   displayName: Adventurer Guild Counter Source
   hostLocationId: location.prototype.adventurers-guild
   interactionPointId: interaction-point.prototype.adventurer-guild-counter
+  conversationDefinitionId: conversation-definition.prototype.adventurer-guild-counter
+  providerPersonId: person.prototype.adventurers-guild-receptionist
   required: 1
 --- !u!114 &5917682319005689966
 MonoBehaviour:
@@ -514,7 +516,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 49346fcca181e10489931c4ee88cbce3, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Gameplay.PrototypeAdventurerGuildRegistrationDesk
   services: {fileID: 0}
 --- !u!1 &3046396287148874832
@@ -562,7 +564,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 732592b521a1bdf4bbfcd81a79f2fe26, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldEntities.WorldEntityIdentity
   identityKind: 0
   localAuthoredId: interact.guild.city-records-desk
@@ -621,6 +623,8 @@ MonoBehaviour:
   displayName: City Records Archive Source
   hostLocationId: location.prototype.records-office
   interactionPointId: interaction-point.prototype.city-records-desk
+  conversationDefinitionId: conversation-definition.prototype.records-desk
+  providerPersonId: person.prototype.records-clerk
   required: 1
 --- !u!65 &2755265151923874800
 BoxCollider:
@@ -747,6 +751,8 @@ MonoBehaviour:
   displayName: Mayor Office Quest Source
   hostLocationId: location.prototype.mayor-office
   interactionPointId: interaction-point.prototype.mayor-desk
+  conversationDefinitionId: conversation-definition.prototype.mayor-desk
+  providerPersonId: person.prototype.mayor
   required: 1
 --- !u!65 &7466957445528105946
 BoxCollider:
@@ -1454,6 +1460,7 @@ GameObject:
   - component: {fileID: 6748106840422986269}
   - component: {fileID: 2716880108775424252}
   - component: {fileID: 7501536906116240629}
+  - component: {fileID: 1539290748617047837}
   m_Layer: 0
   m_Name: Interact - Guild Head Desk
   m_TagString: Untagged
@@ -1546,6 +1553,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.2, y: 1.6, z: 1.2}
   m_Center: {x: 0, y: 0.4, z: 0}
+--- !u!114 &1539290748617047837
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6065192242096792717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e38bc43d8ec4d8990e8096878da11ae, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.PrototypeIntegration.ConversationSceneBinding
+  conversationDefinitionId: conversation-definition.prototype.guild-head-office
+  providerPersonId: person.prototype.guildmaster
+  hostLocationId: location.prototype.guildmaster-office
+  displayName: Guildmaster
 --- !u!1 &6291591689856358009
 GameObject:
   m_ObjectHideFlags: 0
@@ -1969,6 +1992,8 @@ MonoBehaviour:
   displayName: Merchant Guild Counter Source
   hostLocationId: location.prototype.merchant-counter
   interactionPointId: interaction-point.prototype.merchant-guild-counter
+  conversationDefinitionId: conversation-definition.prototype.merchant-guild-counter
+  providerPersonId: person.prototype.merchant-guild-receptionist
   required: 1
 --- !u!114 &6675432177377732473
 MonoBehaviour:
@@ -2030,6 +2055,7 @@ GameObject:
   - component: {fileID: 9082937606431810316}
   - component: {fileID: 7101574737991751420}
   - component: {fileID: 5382356726886025211}
+  - component: {fileID: 8733927205128458075}
   m_Layer: 0
   m_Name: Interact - Prison Cell A Door
   m_TagString: Untagged
@@ -2122,6 +2148,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.25, y: 2.4, z: 0.6}
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &8733927205128458075
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7516797644157564959}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e38bc43d8ec4d8990e8096878da11ae, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.PrototypeIntegration.ConversationSceneBinding
+  conversationDefinitionId: conversation-definition.prototype.prisoner-interview
+  providerPersonId: person.prototype.prisoner
+  hostLocationId: location.prototype.basement-prison
+  displayName: Prisoner
 --- !u!1 &7629211789380569954
 GameObject:
   m_ObjectHideFlags: 0
@@ -18132,6 +18174,8 @@ MonoBehaviour:
   displayName: Adventurer Guild Quest Board
   hostLocationId: location.prototype.adventurers-guild
   interactionPointId: interaction-point.prototype.quest-board
+  conversationDefinitionId:
+  providerPersonId:
   required: 1
 --- !u!4 &8361592443885916225 stripped
 Transform:

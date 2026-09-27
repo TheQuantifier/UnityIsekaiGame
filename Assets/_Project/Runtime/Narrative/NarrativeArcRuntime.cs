@@ -434,7 +434,7 @@ namespace UnityIsekaiGame.Narrative
                     : new NarrativeArcQuestBindingResult(!binding.required, string.Empty, "Existing quest was not found.");
             }
 
-            if (binding.mode == NarrativeArcQuestBindingMode.ObserveAnyQuestFromDefinitionPlaceholder)
+            if (binding.mode == NarrativeArcQuestBindingMode.ObserveAnyQuestFromDefinition)
             {
                 QuestSnapshot existing = integrations.QuestRuntime.Query(new QuestQuery { definitionId = binding.questDefinitionId, includeRetired = false, access = QuestVisibilityAccess.PrivilegedDiagnostic }).FirstOrDefault();
                 return existing != null

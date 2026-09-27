@@ -43,7 +43,10 @@ namespace UnityIsekaiGame.Gameplay
         private NarrativeEventRuntime worldNarrativeEvents;
         private NarrativeEventRuntimeIntegrations narrativeEventIntegrations;
         private NarrativeStateRuntime worldNarrativeState;
+        private NarrativeStateRuntimeIntegrations narrativeStateIntegrations;
         private NarrativeArcRuntime worldNarrativeArcs;
+        private NarrativeArcRuntimeIntegrations narrativeArcIntegrations;
+        private PrototypeNarrativeCoordinator worldNarrativeCoordinator;
 
         private bool worldLocationAndNarrativeRegistered;
         private bool consistencyValidatorsRegistered;
@@ -60,8 +63,16 @@ namespace UnityIsekaiGame.Gameplay
         public SpatialTerritoryBoundaryRuntime WorldSpatialTerritories => worldSpatialTerritories;
         public WorldTravelCoordinator WorldTravel => worldTravelCoordinator;
         public QuestRuntime WorldQuests => worldQuests;
+        public QuestParticipationRuntime WorldQuestParticipation => worldQuestParticipation;
+        public QuestObjectiveProgressRuntime WorldQuestObjectives => worldQuestObjectives;
+        public QuestOutcomeRuntime WorldQuestOutcomes => worldQuestOutcomes;
+        public QuestSourceRuntime WorldQuestSources => worldQuestSources;
         public ConversationRuntime WorldConversations => worldConversations;
+        public DialogueFlowRuntime WorldDialogue => worldDialogue;
         public NarrativeEventRuntime WorldNarrativeEvents => worldNarrativeEvents;
+        public NarrativeStateRuntime WorldNarrativeState => worldNarrativeState;
+        public NarrativeArcRuntime WorldNarrativeArcs => worldNarrativeArcs;
+        public PrototypeNarrativeCoordinator NarrativeCoordinator => worldNarrativeCoordinator;
 
         private void EnsureWorldLocationAndNarrativePersistence()
         {
@@ -98,10 +109,10 @@ namespace UnityIsekaiGame.Gameplay
                 new QuestOutcomePersistenceParticipant(worldQuestOutcomes, () => worldQuests, () => worldQuestParticipation, () => worldQuestObjectives, GetDefinitionRegistry, () => questRewardEffectExecutor, ownerId: worldId),
                 new QuestSourcePersistenceParticipant(worldQuestSources, () => worldQuests, () => worldQuestParticipation, GetDefinitionRegistry, worldId),
                 new ConversationPersistenceParticipant(worldConversations, GetDefinitionRegistry, worldId),
-                new DialogueFlowPersistenceParticipant(worldDialogue, GetDefinitionRegistry, () => worldConversations, ownerId: worldId),
+                new DialogueFlowPersistenceParticipant(worldDialogue, GetDefinitionRegistry, () => worldConversations, () => worldNarrativeCoordinator, ownerId: worldId),
                 new NarrativeEventPersistenceParticipant(worldNarrativeEvents, GetDefinitionRegistry, () => narrativeEventIntegrations, ownerId: worldId),
-                new NarrativeStatePersistenceParticipant(worldNarrativeState, GetDefinitionRegistry, ownerId: worldId),
-                new NarrativeArcPersistenceParticipant(worldNarrativeArcs, GetDefinitionRegistry, ownerId: worldId)
+                new NarrativeStatePersistenceParticipant(worldNarrativeState, GetDefinitionRegistry, () => narrativeStateIntegrations, ownerId: worldId),
+                new NarrativeArcPersistenceParticipant(worldNarrativeArcs, GetDefinitionRegistry, () => narrativeArcIntegrations, ownerId: worldId)
             };
 
             bool succeeded = true;
@@ -138,6 +149,8 @@ namespace UnityIsekaiGame.Gameplay
 
             worldLocationAndNarrativeParticipants = Array.Empty<IPersistenceParticipant>();
             worldLocationAndNarrativeRegistered = false;
+            worldNarrativeCoordinator?.Dispose();
+            worldNarrativeCoordinator = null;
             if (playerSpatialTerritoryTracker != null) playerSpatialTerritoryTracker.BoundaryCrossed -= OnPlayerSpatialBoundaryCrossed;
             WorldSceneBindingRuntime.Default.ClearConfiguration();
         }
@@ -361,17 +374,48 @@ namespace UnityIsekaiGame.Gameplay
             worldQuestSources ??= new QuestSourceRuntime(worldQuests, worldQuestParticipation, registry, worldId);
             worldConversations ??= new ConversationRuntime(registry, worldId);
             worldDialogue ??= new DialogueFlowRuntime(registry, worldConversations, runtimeWorldId: worldId);
+            worldNarrativeEvents ??= new NarrativeEventRuntime(registry, runtimeWorldId: worldId);
+            worldNarrativeState ??= new NarrativeStateRuntime(registry, runtimeWorldId: worldId);
+            worldNarrativeArcs ??= new NarrativeArcRuntime(registry, runtimeWorldId: worldId);
+            worldNarrativeCoordinator ??= new PrototypeNarrativeCoordinator(this, registry);
+
+            narrativeStateIntegrations = new NarrativeStateRuntimeIntegrations
+            {
+                NarrativeEventRuntime = worldNarrativeEvents,
+                ConsequenceValidator = (action, request) => action != null,
+                ConsequenceExecutor = worldNarrativeCoordinator.ExecuteNarrativeStateConsequence
+            };
+            narrativeArcIntegrations = new NarrativeArcRuntimeIntegrations
+            {
+                QuestRuntime = worldQuests,
+                QuestSourceRuntime = worldQuestSources,
+                QuestOutcomeRuntime = worldQuestOutcomes,
+                NarrativeEventRuntime = worldNarrativeEvents,
+                NarrativeStateRuntime = worldNarrativeState,
+                ActionExecutor = worldNarrativeCoordinator.ExecuteNarrativeArcAction
+            };
             narrativeEventIntegrations = new NarrativeEventRuntimeIntegrations
             {
                 QuestRuntime = worldQuests,
                 QuestSourceRuntime = worldQuestSources,
                 ConversationRuntime = worldConversations,
-                ContextualSocialActionExecutor = ExecuteNarrativeSocialAction
+                InformationGrantExecutor = worldNarrativeCoordinator.GrantInformation,
+                TravelConditionExecutor = worldNarrativeCoordinator.ExecuteTravelCondition,
+                ConnectionChangeExecutor = worldNarrativeCoordinator.ExecuteConnectionChange,
+                ContextualSocialActionExecutor = ExecuteNarrativeSocialAction,
+                OrganizationActionExecutor = worldNarrativeCoordinator.ExecuteOrganizationAction,
+                LegalActionExecutor = worldNarrativeCoordinator.ExecuteLegalAction,
+                NarrativeStateTransitionExecutor = worldNarrativeState.RequestTransition,
+                NarrativeStateConditionEvaluator = worldNarrativeCoordinator.EvaluateNarrativeStateCondition,
+                NarrativeArcSignalExecutor = worldNarrativeArcs.ApplySignal,
+                NarrativeArcConditionEvaluator = worldNarrativeArcs.EvaluateCondition
             };
-            worldNarrativeEvents ??= new NarrativeEventRuntime(registry, narrativeEventIntegrations, runtimeWorldId: worldId);
             worldNarrativeEvents.Configure(registry, narrativeEventIntegrations, worldId);
-            worldNarrativeState ??= new NarrativeStateRuntime(registry, runtimeWorldId: worldId);
-            worldNarrativeArcs ??= new NarrativeArcRuntime(registry, runtimeWorldId: worldId);
+            worldNarrativeState.Configure(registry, narrativeStateIntegrations, worldId);
+            worldNarrativeArcs.Configure(registry, narrativeArcIntegrations, worldId);
+            worldDialogue.Configure(registry, worldConversations, worldNarrativeCoordinator, worldId);
+            worldDialogue.NarrativeStateConditionEvaluator = worldNarrativeCoordinator.EvaluateNarrativeStateCondition;
+            worldNarrativeCoordinator.InitializePrototypeContent();
         }
 
         private bool ExecuteNarrativeSocialAction(NarrativeSocialActionRequest request)

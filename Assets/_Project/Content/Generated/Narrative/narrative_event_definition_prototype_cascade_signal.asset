@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f03a805d15f439cb19a687e73b58075, type: 3}
+  m_Name: narrative_event_definition_prototype_cascade_signal
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Narrative.NarrativeEventDefinition
+  data:
+    eventDefinitionId: narrative-event-definition.prototype.cascade-signal
+    displayName: Cascade Signal Follow Up
+    category: 16
+    scope: 1
+    repeatPolicy: 2
+    armingPolicy: 1
+    triggerMode: 1
+    delayedRevalidationPolicy: 0
+    atomicityPolicy: 0
+    retryPolicy: 0
+    visibility: 1
+    conditionGroupPolicy: 0
+    atLeastConditionCount: 1
+    priority: 0
+    activationStartTime: -1
+    activationEndTime: -1
+    delayDuration: -1
+    cascadeDepthLimit: 8
+    scopeSelectorId: 
+    historyPolicyId: 
+    failurePolicyId: 
+    tagIds:
+    - cascade
+    - prototype
+    triggers:
+    - triggerDefinitionId: trigger.cascade
+      category: 24
+      requiredSourceId: narrative-signal-definition.prototype.cascade.start
+      requiredSubjectId: 
+      committedOnly: 1
+      ignoreRestoreReplay: 1
+      hidden: 0
+    conditions: []
+    actions:
+    - actionDefinitionId: action.emit-cascade-follow-up
+      category: 10
+      requirement: 1
+      targetId: narrative-signal-definition.prototype.cascade.follow-up
+      secondaryTargetId: 
+      outputSlotId: 
+      inputSlotId: 
+      order: 10
+      priority: 0
+      hidden: 0

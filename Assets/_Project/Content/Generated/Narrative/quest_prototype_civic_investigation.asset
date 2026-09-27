@@ -1,0 +1,249 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae127f1fb11847bd9c01a706ab051189, type: 3}
+  m_Name: quest_prototype_civic_investigation
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Quests.QuestDefinition
+  questId: quest.prototype.civic-investigation
+  title: Civic Investigation
+  summary: 
+  detailedDescription: 
+  category: 11
+  importance: 3
+  repeatabilityPolicy: 1
+  defaultVisibility: 7
+  defaultSourceChannel: 6
+  supportedIssuerTypes: 0300000004000000
+  supportedRecipientScopes: 0200000005000000
+  defaultTagIds:
+  - civic
+  - investigation
+  - restricted
+  supportedSubjectRoleIds: []
+  allowDynamicInstances: 0
+  allowMultipleSimultaneousInstances: 0
+  uniquePerWorld: 1
+  uniquePerRecipient: 0
+  identityNotes: 
+  assignmentPolicy: 2
+  consentPolicy: 3
+  refusalPolicy: 2
+  abandonmentPolicy: 2
+  assignmentCapacity: 2
+  availabilityStartWorldTime: -1
+  availabilityEndWorldTime: -1
+  defaultOfferDuration: 5
+  issuerWithdrawalAllowed: 1
+  prevalidateEligibilityForOffers: 1
+  offeringAuthorityRequirementIds:
+  - authority.prototype.city.quest-assign
+  eligibilityRequirementGroups:
+  - groupId: civic-authorized
+    policy: 1
+    thresholdCount: 0
+    requirements:
+    - requirementId: Office.office.prototype.city-investigator
+      kind: 13
+      requiredId: office.prototype.city-investigator
+      secondaryId: 
+      minimumValue: 0
+      maximumValue: 0
+      comparison: 1
+      revealFailure: 1
+      negate: 0
+    - requirementId: Citizenship.government.prototype.city
+      kind: 18
+      requiredId: government.prototype.city
+      secondaryId: 
+      minimumValue: 0
+      maximumValue: 0
+      comparison: 1
+      revealFailure: 1
+      negate: 0
+    revealFailures: 1
+  objectiveDefinitions:
+  - objectiveDefinitionId: quest-objective-definition.prototype.investigation.visit-office
+    groupDefinitionId: 
+    label: Visit Mayor's Office
+    description: Visit Mayor's Office
+    category: 2
+    progressModel: 2
+    progressSource: 2
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 22
+      subjectId: location.prototype.mayor-office
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds: []
+    tagIds:
+    - civic
+    - required
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 10
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  - objectiveDefinitionId: quest-objective-definition.prototype.investigation.learn-fact
+    groupDefinitionId: 
+    label: Learn Incident Fact
+    description: Learn Incident Fact
+    category: 23
+    progressModel: 2
+    progressSource: 2
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 7
+      subjectId: fact.prototype.civic-incident
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds:
+    - quest-objective-definition.prototype.investigation.visit-office
+    tagIds:
+    - knowledge
+    - required
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 20
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  - objectiveDefinitionId: quest-objective-definition.prototype.investigation.report-incident
+    groupDefinitionId: 
+    label: Report Incident
+    description: Report Incident
+    category: 38
+    progressModel: 2
+    progressSource: 2
+    classification: 1
+    visibility: 1
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 34
+      subjectId: incident.prototype.civic
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds:
+    - quest-objective-definition.prototype.investigation.learn-fact
+    tagIds:
+    - legal
+    - required
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 30
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  objectiveGroups:
+  - groupDefinitionId: quest-objective-group.prototype.investigation.required
+    label: quest-objective-group.prototype.investigation.required
+    policy: 4
+    thresholdCount: 3
+    objectiveDefinitionIds:
+    - quest-objective-definition.prototype.investigation.learn-fact
+    - quest-objective-definition.prototype.investigation.report-incident
+    - quest-objective-definition.prototype.investigation.visit-office
+    requiredForCompletion: 1
+    sequenceOrder: 0
+  completionPolicy:
+    policy: 3
+    requiredInteractionPointId: 
+    requiredIssuerId: office.prototype.mayor
+    requireAllRequiredObjectives: 1
+    allowOptionalBonusRewards: 1
+  deadlineDefinitions:
+  - deadlineDefinitionId: quest-deadline-definition.prototype.investigation.five-days
+    startKind: 1
+    expirationPolicy: 1
+    absoluteWorldTime: -1
+    durationFromStart: 5
+    hidden: 0
+  failureConditions:
+  - failureConditionId: quest-failure-condition.prototype.investigation.protected-target
+    reasonCode: 2
+    triggerKind: 2
+    subject:
+      subjectType: 34
+      subjectId: quest-failure-condition.prototype.investigation.protected-target
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    hidden: 0
+  rewardPackages:
+  - rewardPackageId: quest-reward-package.prototype.investigation.base
+    deliveryPolicy: 2
+    atomicityPolicy: 1
+    rewards:
+    - rewardDefinitionId: quest-reward.prototype.investigation.legal-permit
+      category: 7
+      targetDefinitionId: permit.prototype.city-investigator
+      secondaryTargetId: 
+      quantity: 1
+      optional: 0
+      hidden: 0
+      metadata: 
+    - rewardDefinitionId: quest-reward.prototype.investigation.knowledge
+      category: 8
+      targetDefinitionId: knowledge.prototype.civic-incident-resolution
+      secondaryTargetId: 
+      quantity: 1
+      optional: 0
+      hidden: 0
+      metadata: 
+  consequenceDefinitions: []

@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.Quests;
 using UnityIsekaiGame.ResourceSystem;
 
 namespace UnityIsekaiGame.Combat
@@ -10,6 +11,7 @@ namespace UnityIsekaiGame.Combat
     public sealed class EnemyHealth : MonoBehaviour
     {
         [SerializeField] private CharacterResourceCollection resources;
+        [SerializeField] private string questObjectiveTargetId = "encounter.prototype.dynamic-bounty-target";
         private bool subscribed;
         private bool defeatPublished;
 
@@ -90,6 +92,14 @@ namespace UnityIsekaiGame.Combat
             if (defeatPublished) return;
             defeatPublished = true;
             Defeated?.Invoke();
+            if (!string.IsNullOrWhiteSpace(questObjectiveTargetId))
+            {
+                PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+                string actorId = services?.PlayerPersonId ?? "person.prototype.player";
+                double worldTime = services?.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble;
+                QuestObjectiveSignalBus.Report(QuestObjectiveCategory.DefeatTarget, questObjectiveTargetId.Trim(), actorId, worldTime, sourceEventId: $"enemy-defeat.{name}.{Time.frameCount}");
+                QuestObjectiveSignalBus.Report(QuestObjectiveCategory.DefeatCount, "enemy-family.prototype.monster", actorId, worldTime, sourceEventId: $"enemy-defeat-count.{name}.{Time.frameCount}");
+            }
             PrototypeHudMessageBus.Show($"{name} defeated");
         }
     }

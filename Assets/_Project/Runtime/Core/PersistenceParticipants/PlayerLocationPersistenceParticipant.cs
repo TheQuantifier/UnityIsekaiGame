@@ -58,7 +58,7 @@ namespace UnityIsekaiGame.Persistence
         public string OwnerId => ownerId;
         public PersistenceLoadPhase LoadPhase => PersistenceLoadPhase.PositionAndPlace;
         public int LoadPriority => 0;
-        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => new[] { PlayerQuestContractPersistenceParticipant.Key };
+        public System.Collections.Generic.IReadOnlyList<string> RequiredDependencies => System.Array.Empty<string>();
         public System.Collections.Generic.IReadOnlyList<string> OptionalDependencies => Array.Empty<string>();
         public bool SupportsRollback => true;
         public bool RequiresSceneReadiness => true;

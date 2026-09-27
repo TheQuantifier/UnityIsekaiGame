@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a67c4140241bc249833df8406de2a04, type: 3}
+  m_Name: quest_source_definition_prototype_hidden_faction_rumor
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Quests.QuestSourceDefinition
+  definitionId: quest-source-definition.prototype.hidden-faction-rumor
+  displayName: Hidden Faction Rumor Source
+  category: 8
+  defaultVisibility: 10
+  discoveryPolicy: 4
+  listingDiscoveryPolicy: 4
+  eligibilityDisplayPolicy: 5
+  publicationPolicy:
+    maxActiveListings: 2
+    duplicatePolicy: 1
+    expirationPolicy: 1
+    defaultListingDuration: -1
+    acceptedListingPolicy: 1
+    repeatableListingPolicy: 3
+  filters:
+    allowedQuestCategories: 15000000
+    requiredQuestTagIds:
+    - hidden
+    allowedIssuerIds:
+    - system.quest
+    allowedRepeatabilityPolicies: 
+  providerRequirements:
+  - kind: 8
+    requirementId: faction.prototype.hidden
+    hidden: 0
+  publicationAuthorityRequirementIds: []
+  sourceRoleIds:
+  - quest-source-role.acceptance
+  - quest-source-role.discovery
+  - quest-source-role.informationunlock
+  - quest-source-role.listing
+  tags:
+  - faction
+  - hidden
+  - prototype
+  - rumor

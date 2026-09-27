@@ -92,7 +92,7 @@ namespace UnityIsekaiGame.Tests
             {
                 transactionId = "test.interaction.subject-link",
                 interactionPointId = PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId,
-                role = InteractionSubjectLinkRole.AssociatedQuestSourcePlaceholder,
+                role = InteractionSubjectLinkRole.AssociatedQuestSource,
                 subject = Subject("QuestSource", "quest-source.prototype.board", fixture.WorldId)
             });
             InteractionPointOperationResult provider = runtime.AssignProvider(new InteractionProviderAssignmentRequest
@@ -123,7 +123,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(provider.Succeeded, Is.True, provider.Message);
             Assert.That(movePlayer.Succeeded, Is.True, movePlayer.Message);
             Assert.That(invoke.Success, Is.True, invoke.Message);
-            Assert.That(invoke.DestinationRuntime, Is.EqualTo(InteractionDestinationRuntime.QuestPlaceholder));
+            Assert.That(invoke.DestinationRuntime, Is.EqualTo(InteractionDestinationRuntime.Quest));
             Assert.That(invoke.RevisionBefore, Is.EqualTo(invoke.RevisionAfter));
             Assert.That(runtime.Revision, Is.EqualTo(before + 2L));
             Assert.That(runtime.GetSubjectLinks(PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId, includeHidden: true).Any(item => item.Subject.subjectId == "quest-source.prototype.board"), Is.True);

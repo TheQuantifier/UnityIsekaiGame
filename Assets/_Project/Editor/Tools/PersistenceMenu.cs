@@ -236,10 +236,8 @@ namespace UnityIsekaiGame.Editor
             PlayerMana mana = playerRoot == null ? Object.FindAnyObjectByType<PlayerMana>() : playerRoot.GetComponent<PlayerMana>();
             PlayerStamina stamina = playerRoot == null ? Object.FindAnyObjectByType<PlayerStamina>() : playerRoot.GetComponent<PlayerStamina>();
             StatusEffectController statusController = playerRoot == null ? Object.FindAnyObjectByType<StatusEffectController>() : playerRoot.GetComponent<StatusEffectController>();
-            PlayerQuestLog questLog = playerRoot == null ? Object.FindAnyObjectByType<PlayerQuestLog>() : playerRoot.GetComponent<PlayerQuestLog>();
-            PlayerContractJournal contractJournal = playerRoot == null ? Object.FindAnyObjectByType<PlayerContractJournal>() : playerRoot.GetComponent<PlayerContractJournal>();
             PlayerIdentityProgression identityProgression = playerRoot == null ? Object.FindAnyObjectByType<PlayerIdentityProgression>() : playerRoot.GetComponent<PlayerIdentityProgression>();
-            service.ConfigurePlayerPersistence(catalog, inventory, equipment, stats, health, mana, stamina, statusController, identityProgression, questLog, contractJournal);
+            service.ConfigurePlayerPersistence(catalog, inventory, equipment, stats, health, mana, stamina, statusController, identityProgression);
         }
     }
 }

@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityIsekaiGame.Combat;
-using UnityIsekaiGame.Contracts;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Places;
@@ -25,7 +24,7 @@ namespace UnityIsekaiGame.Development.Automation
             TryRegister(registry, BuildSaveFileFoundationSuite());
             TryRegister(registry, BuildInventoryEquipmentPersistenceSuite());
             TryRegister(registry, BuildVitalsStatusPersistenceSuite());
-            TryRegister(registry, BuildQuestContractPersistenceSuite());
+            TryRegister(registry, BuildQuestPersistenceSuite());
             TryRegister(registry, BuildLocationPersistenceSuite());
             TryRegister(registry, BuildWorldEntityIdentitySuite());
             TryRegister(registry, BuildSaveSlotsRecoverySuite());
@@ -72,18 +71,15 @@ namespace UnityIsekaiGame.Development.Automation
                     Step("load", "Load vitals/resources/statuses", context => Operation(context.Prototype().Load(), context, "step4-load-vitals"))));
         }
 
-        private static ITestLabAutomationSuite BuildQuestContractPersistenceSuite()
+        private static ITestLabAutomationSuite BuildQuestPersistenceSuite()
         {
-            return Suite("feature.4.4.quest-contract-persistence", "Feature 4.4 Quest and Contract Persistence", "4.4", 440,
-                Required("QuestLog", "ContractJournal", "PersistenceService"),
-                Scenario("quest-contract-roundtrip", "Quest and contract save/load round trip", 10,
-                    Step("clear-quests", "Clear quest log", context => Operation(context.Prototype().ClearQuestLog(true), context, "step4-clear-quests")),
-                    Step("clear-contracts", "Clear contract journal", context => Operation(context.Prototype().ClearContractJournal(true), context, "step4-clear-contracts")),
+            return Suite("feature.4.4.quest-persistence", "Feature 4.4 Quest Persistence", "4.4", 440,
+                Required("Narrative Coordinator", "PersistenceService"),
+                Scenario("quest-roundtrip", "Quest save/load round trip", 10,
                     Step("start-quest", "Start quest", context => Operation(context.Prototype().StartQuest(First<QuestDefinition>(context)), context, "step4-start-quest")),
-                    Step("accept-contract", "Accept contract", context => Operation(context.Prototype().AcceptContract(First<ContractDefinition>(context)), context, "step4-accept-contract")),
                     Step("progress", "Report defeat progress", context => Operation(context.Prototype().ReportDefeat("prototype_enemy"), context, "step4-report-defeat")),
-                    Step("save", "Save quest and contract state", context => Operation(context.Prototype().Save(), context, "step4-save-quests")),
-                    Step("load", "Load quest and contract state", context => Operation(context.Prototype().Load(), context, "step4-load-quests"))));
+                    Step("save", "Save quest state", context => Operation(context.Prototype().Save(), context, "step4-save-quests")),
+                    Step("load", "Load quest state", context => Operation(context.Prototype().Load(), context, "step4-load-quests"))));
         }
 
         private static ITestLabAutomationSuite BuildLocationPersistenceSuite()

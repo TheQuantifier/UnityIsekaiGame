@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5dfa1bc4cf9f7f41ac27153f2352465, type: 3}
+  m_Name: narrative_arc_definition_prototype_mayor_investigation
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Narrative.NarrativeArcDefinition
+  data:
+    arcDefinitionId: narrative-arc-definition.prototype.mayor-investigation
+    displayName: Prototype Mayor Investigation Arc
+    scope: 1
+    visibility: 7
+    repeatable: 0
+    cascadeDepthLimit: 16
+    tagIds:
+    - hidden
+    - mayor
+    - prototype
+    stages:
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.mayor-investigation.hidden
+      displayName: Hidden mayor investigation
+      order: 10
+      initial: 1
+      terminalOnCompletion: 0
+      hidden: 1
+      entryDependencies: []
+      completionDependencies:
+      - dependencyDefinitionId: dependency.mayor-exposed
+        kind: 8
+        requiredId: narrative-state-definition.prototype.mayor-investigation|narrative-variable.prototype.mayor-investigation.stage|narrative-state-value.prototype.mayor-investigation.exposed
+        secondaryId: narrative-variable.prototype.mayor-investigation.stage
+        requiredValue: narrative-state-value.prototype.mayor-investigation.exposed
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions: []
+      completionActions: []
+      questBindings:
+      - bindingDefinitionId: binding.civic-investigation
+        mode: 2
+        questDefinitionId: quest.prototype.civic-investigation
+        questId: 
+        questSourceId: quest-source.prototype.mayor-office-desk
+        required: 1
+        hidden: 0
+      tagIds: []

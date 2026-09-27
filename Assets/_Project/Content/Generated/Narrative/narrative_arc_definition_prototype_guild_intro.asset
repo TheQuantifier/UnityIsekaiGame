@@ -1,0 +1,130 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5dfa1bc4cf9f7f41ac27153f2352465, type: 3}
+  m_Name: narrative_arc_definition_prototype_guild_intro
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Narrative.NarrativeArcDefinition
+  data:
+    arcDefinitionId: narrative-arc-definition.prototype.guild-intro
+    displayName: Prototype Adventurers Guild Introduction
+    scope: 2
+    visibility: 2
+    repeatable: 0
+    cascadeDepthLimit: 16
+    tagIds:
+    - guild
+    - prototype
+    - quest-chain
+    stages:
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.guild-intro.join
+      displayName: Choose guild allegiance
+      order: 10
+      initial: 1
+      terminalOnCompletion: 0
+      hidden: 0
+      entryDependencies: []
+      completionDependencies:
+      - dependencyDefinitionId: dependency.guild-loyal
+        kind: 8
+        requiredId: narrative-state-definition.prototype.guild-loyalty|narrative-variable.prototype.guild-loyalty.path|narrative-state-value.prototype.guild-loyalty.loyal-to-guild
+        secondaryId: narrative-variable.prototype.guild-loyalty.path
+        requiredValue: narrative-state-value.prototype.guild-loyalty.loyal-to-guild
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions: []
+      completionActions: []
+      questBindings: []
+      tagIds: []
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.guild-intro.guild-posting
+      displayName: Guild posting quest
+      order: 20
+      initial: 0
+      terminalOnCompletion: 0
+      hidden: 0
+      entryDependencies:
+      - dependencyDefinitionId: dependency.guild-choice-resolved
+        kind: 1
+        requiredId: narrative-arc-stage-definition.prototype.guild-intro.join
+        secondaryId: 
+        requiredValue: 
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      completionDependencies:
+      - dependencyDefinitionId: dependency.guild-posting-completed
+        kind: 7
+        requiredId: quest.prototype.guild-posting
+        secondaryId: 
+        requiredValue: Completed
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions: []
+      completionActions: []
+      questBindings:
+      - bindingDefinitionId: binding.guild-posting
+        mode: 2
+        questDefinitionId: quest.prototype.guild-posting
+        questId: 
+        questSourceId: 
+        required: 1
+        hidden: 0
+      tagIds: []
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.guild-intro.follow-up
+      displayName: Follow-up rumor
+      order: 30
+      initial: 0
+      terminalOnCompletion: 1
+      hidden: 0
+      entryDependencies:
+      - dependencyDefinitionId: dependency.guild-posting-resolved
+        kind: 1
+        requiredId: narrative-arc-stage-definition.prototype.guild-intro.guild-posting
+        secondaryId: 
+        requiredValue: 
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      completionDependencies:
+      - dependencyDefinitionId: dependency.follow-up-signal
+        kind: 10
+        requiredId: narrative-signal-definition.prototype.cascade.follow-up
+        secondaryId: 
+        requiredValue: 
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions:
+      - actionDefinitionId: narrative-action.prototype.guild-intro.follow-up-signal
+        category: 10
+        requirement: 1
+        targetId: narrative-signal-definition.prototype.cascade.start
+        secondaryTargetId: 
+        outputSlotId: 
+        inputSlotId: 
+        order: 10
+        priority: 0
+        hidden: 0
+      completionActions: []
+      questBindings: []
+      tagIds: []
