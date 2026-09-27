@@ -219,6 +219,7 @@ namespace UnityIsekaiGame.WorldLocations
         public string destinationLocationId;
         public TravelJourneyPlanSnapshotData routePlan;
         public string travelModeDefinitionId;
+        public double movementRateOverrideMetersPerSecond = -1d;
         public TravelJourneyCategory category = TravelJourneyCategory.OrdinaryTravel;
         public TravelJourneyLifecycleState lifecycleState = TravelJourneyLifecycleState.Ready;
         public TravelJourneyProgressionMode progressionMode = TravelJourneyProgressionMode.AutomaticLogical;
@@ -254,6 +255,7 @@ namespace UnityIsekaiGame.WorldLocations
                 destinationLocationId = N(destinationLocationId),
                 routePlan = routePlan?.Clone(),
                 travelModeDefinitionId = N(travelModeDefinitionId),
+                movementRateOverrideMetersPerSecond = movementRateOverrideMetersPerSecond,
                 category = category,
                 lifecycleState = lifecycleState,
                 progressionMode = progressionMode,
@@ -341,7 +343,7 @@ namespace UnityIsekaiGame.WorldLocations
     [Serializable]
     public sealed class TravelJourneyRuntimeSaveData
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
         public int schemaVersion = CurrentSchemaVersion;
         public string worldId;
         public long revision;
@@ -411,6 +413,7 @@ namespace UnityIsekaiGame.WorldLocations
         public string DestinationLocationId => data.destinationLocationId ?? string.Empty;
         public string RoutePlanId => data.routePlan?.routePlanId ?? string.Empty;
         public string TravelModeDefinitionId => data.travelModeDefinitionId ?? string.Empty;
+        public double MovementRateOverrideMetersPerSecond => data.movementRateOverrideMetersPerSecond;
         public TravelJourneyCategory Category => data.category;
         public TravelJourneyLifecycleState LifecycleState => data.lifecycleState;
         public TravelJourneyProgressionMode ProgressionMode => data.progressionMode;

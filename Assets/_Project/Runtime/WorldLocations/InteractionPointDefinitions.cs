@@ -7,7 +7,7 @@ using UnityIsekaiGame.GameData;
 namespace UnityIsekaiGame.WorldLocations
 {
     [CreateAssetMenu(fileName = "InteractionPointDefinition", menuName = "Unity Isekai Game/World/Interaction Point Definition")]
-    public sealed class InteractionPointDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class InteractionPointDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string interactionPointDefinitionId;
         [SerializeField] private string displayName;
@@ -184,7 +184,7 @@ namespace UnityIsekaiGame.WorldLocations
     }
 
     [CreateAssetMenu(fileName = "InteractionServiceDefinition", menuName = "Unity Isekai Game/World/Interaction Service Definition")]
-    public sealed class InteractionServiceDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class InteractionServiceDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string interactionServiceDefinitionId;
         [SerializeField] private string displayName;

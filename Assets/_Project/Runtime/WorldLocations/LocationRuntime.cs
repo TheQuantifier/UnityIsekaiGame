@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.Places;
 
 namespace UnityIsekaiGame.WorldLocations
 {
@@ -88,6 +89,14 @@ namespace UnityIsekaiGame.WorldLocations
             if (!TryGetDefinition(request.locationDefinitionId, out LocationDefinition definition, before, out LocationOperationResult failure))
             {
                 return failure;
+            }
+
+            string authoredPlaceDefinitionId = Normalize(request.authoredPlaceDefinitionId);
+            if (!string.IsNullOrWhiteSpace(authoredPlaceDefinitionId)
+                && RegistryContainsAuthoredPlaces(registry)
+                && !registry.TryGet(authoredPlaceDefinitionId, out PlaceDefinition _))
+            {
+                return Fail(LocationOperationStatus.MissingDefinition, $"Location references missing authored Place Definition '{authoredPlaceDefinitionId}'.", before);
             }
 
             LocationLifecycleState lifecycle = request.initialLifecycleState == LocationLifecycleState.Unknown ? LocationLifecycleState.Active : request.initialLifecycleState;
@@ -774,7 +783,7 @@ namespace UnityIsekaiGame.WorldLocations
             report = new LocationValidationReport();
             saveData ??= new LocationRuntimeSaveData();
             string world = string.IsNullOrWhiteSpace(expectedWorldId) ? PersistenceService.LocalWorldId : expectedWorldId.Trim();
-            if (saveData.schemaVersion < 1 || saveData.schemaVersion > LocationRuntimeSaveData.CurrentSchemaVersion) report.AddError($"Unsupported location save schema {saveData.schemaVersion}.");
+            if (saveData.schemaVersion != LocationRuntimeSaveData.CurrentSchemaVersion) report.AddError($"Unsupported location save schema {saveData.schemaVersion}; expected {LocationRuntimeSaveData.CurrentSchemaVersion}.");
             if (!string.IsNullOrWhiteSpace(saveData.worldId) && !string.Equals(saveData.worldId.Trim(), world, StringComparison.Ordinal)) report.AddError($"Location save world '{saveData.worldId}' does not match expected world '{world}'.");
 
             HashSet<string> recordIds = new HashSet<string>(StringComparer.Ordinal);
@@ -819,6 +828,13 @@ namespace UnityIsekaiGame.WorldLocations
                     if (!string.IsNullOrWhiteSpace(record.associatedOrganizationId) && !definition.SupportsOrganizationAssociation) report.AddError($"Location '{locationId}' cannot reference an organization.");
                     if (!string.IsNullOrWhiteSpace(record.associatedGovernmentId) && !definition.SupportsGovernmentAssociation) report.AddError($"Location '{locationId}' cannot reference a government.");
                     if ((record.associatedTerritoryIds ?? Array.Empty<string>()).Length > 0 && !definition.SupportsTerritoryAssociation) report.AddError($"Location '{locationId}' cannot reference territories.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(record.authoredPlaceDefinitionId)
+                    && RegistryContainsAuthoredPlaces(registry)
+                    && !registry.TryGet(Normalize(record.authoredPlaceDefinitionId), out PlaceDefinition _))
+                {
+                    report.AddError($"Location '{locationId}' references missing authored Place Definition '{record.authoredPlaceDefinitionId}'.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(record.worldId) && !string.Equals(record.worldId.Trim(), world, StringComparison.Ordinal)) report.AddError($"Location '{locationId}' belongs to world '{record.worldId}', not '{world}'.");
@@ -951,6 +967,7 @@ namespace UnityIsekaiGame.WorldLocations
             {
                 locationId = locationId,
                 locationDefinitionId = Normalize(definition.Id),
+                authoredPlaceDefinitionId = Normalize(request.authoredPlaceDefinitionId),
                 worldId = worldId,
                 currentOfficialNameRecordId = BuildNameId(locationId, "official", 1),
                 officialName = officialName,
@@ -971,6 +988,11 @@ namespace UnityIsekaiGame.WorldLocations
                 provenanceId = Normalize(request.provenanceId),
                 revision = 1L
             };
+        }
+
+        private static bool RegistryContainsAuthoredPlaces(DefinitionRegistry definitionRegistry)
+        {
+            return definitionRegistry != null && definitionRegistry.DefinitionsById.Values.Any(value => value is PlaceDefinition);
         }
 
         private void RestoreInternal(LocationRuntimeSaveData saveData)

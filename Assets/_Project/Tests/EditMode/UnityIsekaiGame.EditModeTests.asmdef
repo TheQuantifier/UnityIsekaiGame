@@ -6,7 +6,8 @@
         "UnityIsekaiGame.Gameplay",
         "UnityIsekaiGame.UI",
         "UnityIsekaiGame.Development",
-        "UnityIsekaiGame.Editor"
+        "UnityIsekaiGame.Editor",
+        "SceneZoneTool.Runtime"
     ],
     "includePlatforms": [
         "Editor"

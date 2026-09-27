@@ -25,8 +25,8 @@ namespace UnityIsekaiGame.Tests
             Assert.That(fixture.Routes.SegmentCount, Is.GreaterThanOrEqualTo(3));
             Assert.That(fixture.Routes.NetworkCount, Is.GreaterThanOrEqualTo(2));
             Assert.That(fixture.Routes.ValidateCurrent(out string failure), Is.True, failure);
-            Assert.That(fixture.Routes.TryGetSegment(PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId, out LocationRouteSegmentSnapshot segment), Is.True);
-            Assert.That(segment.NetworkIds, Does.Contain(PrototypeLocationRouteDefinitionFactory.VillageStreetNetworkId));
+            Assert.That(fixture.Routes.TryGetSegment(PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId, out LocationRouteSegmentSnapshot segment), Is.True);
+            Assert.That(segment.NetworkIds, Does.Contain(PrototypeLocationRouteDefinitionFactory.TownStreetNetworkId));
         }
 
         [Test]
@@ -34,7 +34,7 @@ namespace UnityIsekaiGame.Tests
         {
             Fixture fixture = CreateFixture();
 
-            LocationRouteSearchResult result = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.village", "location.prototype.merchant-counter", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
+            LocationRouteSearchResult result = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.town", "location.prototype.merchant-counter", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
 
             Assert.That(result.Succeeded, Is.True, result.Message);
             Assert.That(result.Plan.EdgeCount, Is.GreaterThanOrEqualTo(2));
@@ -48,17 +48,17 @@ namespace UnityIsekaiGame.Tests
         public void ObjectivesTieBreaksCyclesAndParallelEdgesAreDeterministic()
         {
             Fixture fixture = CreateFixture();
-            LocationRouteMutationResult cheap = CreateRoute(fixture, "route-segment.test.long-cheap", "location.prototype.village", "location.prototype.market-district", 180d, 5d);
-            LocationRouteMutationResult cycle = CreateRoute(fixture, "route-segment.test.market-cycle", "location.prototype.market-district", "location.prototype.village", 10d, 10d, directionality: LocationConnectionDirectionality.SourceToDestinationOnly);
+            LocationRouteMutationResult cheap = CreateRoute(fixture, "route-segment.test.long-cheap", "location.prototype.town", "location.prototype.market-district", 180d, 5d);
+            LocationRouteMutationResult cycle = CreateRoute(fixture, "route-segment.test.market-cycle", "location.prototype.market-district", "location.prototype.town", 10d, 10d, directionality: LocationConnectionDirectionality.SourceToDestinationOnly);
 
-            LocationRouteSearchResult shortest = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.village", "location.prototype.market-district", RoutePlanningObjective.ShortestDistance, RouteAccessEvaluationMode.RequireCurrentAccess));
-            LocationRouteSearchResult lowest = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.village", "location.prototype.market-district", RoutePlanningObjective.LowestCost, RouteAccessEvaluationMode.RequireCurrentAccess));
-            LocationRouteSearchResult lowestAgain = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.village", "location.prototype.market-district", RoutePlanningObjective.LowestCost, RouteAccessEvaluationMode.RequireCurrentAccess));
-            LocationRouteReachabilityResult reachable = fixture.Routes.GetReachableLocations(Request(fixture, "location.prototype.village", "location.prototype.basement-prison"));
+            LocationRouteSearchResult shortest = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.town", "location.prototype.market-district", RoutePlanningObjective.ShortestDistance, RouteAccessEvaluationMode.RequireCurrentAccess));
+            LocationRouteSearchResult lowest = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.town", "location.prototype.market-district", RoutePlanningObjective.LowestCost, RouteAccessEvaluationMode.RequireCurrentAccess));
+            LocationRouteSearchResult lowestAgain = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.town", "location.prototype.market-district", RoutePlanningObjective.LowestCost, RouteAccessEvaluationMode.RequireCurrentAccess));
+            LocationRouteReachabilityResult reachable = fixture.Routes.GetReachableLocations(Request(fixture, "location.prototype.town", "location.prototype.basement-prison"));
 
             Assert.That(cheap.Succeeded, Is.True, cheap.Message);
             Assert.That(cycle.Succeeded, Is.True, cycle.Message);
-            Assert.That(shortest.Plan.Steps[0].EdgeId, Is.EqualTo(PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId));
+            Assert.That(shortest.Plan.Steps[0].EdgeId, Is.EqualTo(PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId));
             Assert.That(lowest.Plan.Steps[0].EdgeId, Is.EqualTo(cheap.Segment.SegmentId));
             Assert.That(lowest.Plan.PlanId, Is.EqualTo(lowestAgain.Plan.PlanId));
             Assert.That(reachable.BudgetExceeded, Is.False);
@@ -72,8 +72,8 @@ namespace UnityIsekaiGame.Tests
             EntityLocationReferenceData actor = PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId, fixture.WorldId);
             LocationConnectionAccessContextData authorized = AccessContext(fixture, actor, offices: new[] { "office.prototype.guild-head" }, authorities: new[] { "permission.prototype.guild.rank-admin" });
 
-            LocationRouteSearchResult current = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.village", "location.prototype.guildmaster-office", RoutePlanningObjective.ShortestDistance, RouteAccessEvaluationMode.RequireCurrentAccess, authorized));
-            LocationRouteSearchResult unlockable = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.village", "location.prototype.guildmaster-office", RoutePlanningObjective.ShortestDistance, RouteAccessEvaluationMode.PermitUnlockableConnections, authorized));
+            LocationRouteSearchResult current = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.town", "location.prototype.guildmaster-office", RoutePlanningObjective.ShortestDistance, RouteAccessEvaluationMode.RequireCurrentAccess, authorized));
+            LocationRouteSearchResult unlockable = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.town", "location.prototype.guildmaster-office", RoutePlanningObjective.ShortestDistance, RouteAccessEvaluationMode.PermitUnlockableConnections, authorized));
 
             Assert.That(current.Succeeded, Is.False);
             Assert.That(unlockable.Succeeded, Is.True, unlockable.Message);
@@ -113,18 +113,18 @@ namespace UnityIsekaiGame.Tests
         public void RoutePlansAreImmutableAndRevalidateAgainstRouteAndConnectionChanges()
         {
             Fixture fixture = CreateFixture();
-            LocationRouteSearchResult planned = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
+            LocationRouteSearchResult planned = fixture.Routes.PlanRoute(Request(fixture, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
             LocationRoutePlan plan = planned.Plan;
             string firstEdge = plan.Steps[0].EdgeId;
 
             LocationRouteMutationResult blocked = fixture.Routes.MutateSegment(new LocationRouteSegmentMutationRequest
             {
                 transactionId = "test.route.block-market",
-                segmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                segmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                 blockageState = RouteSegmentBlockageState.TemporarilyBlocked,
                 worldTime = 40d
             });
-            LocationRouteRevalidationResult revalidation = fixture.Routes.RevalidatePlan(plan, Request(fixture, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
+            LocationRouteRevalidationResult revalidation = fixture.Routes.RevalidatePlan(plan, Request(fixture, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
 
             Assert.That(planned.Succeeded, Is.True, planned.Message);
             Assert.That(blocked.Succeeded, Is.True, blocked.Message);
@@ -161,14 +161,14 @@ namespace UnityIsekaiGame.Tests
             Fixture fixture = CreateFixture();
             long before = fixture.Routes.Revision;
 
-            LocationRouteMutationResult missingDefinition = CreateRoute(fixture, "route-segment.test.missing-definition", "location.prototype.village", "location.prototype.market-district", 10d, 10d, definitionId: "route-segment-definition.missing");
-            LocationRouteMutationResult missingLocation = CreateRoute(fixture, "route-segment.test.missing-location", "location.prototype.village", "location.prototype.missing", 10d, 10d);
+            LocationRouteMutationResult missingDefinition = CreateRoute(fixture, "route-segment.test.missing-definition", "location.prototype.town", "location.prototype.market-district", 10d, 10d, definitionId: "route-segment-definition.missing");
+            LocationRouteMutationResult missingLocation = CreateRoute(fixture, "route-segment.test.missing-location", "location.prototype.town", "location.prototype.missing", 10d, 10d);
             LocationRouteMutationResult badNetwork = fixture.Routes.CreateSegment(new LocationRouteSegmentCreateRequest
             {
                 transactionId = "test.route.bad-network",
                 segmentId = "route-segment.test.bad-network",
                 segmentDefinitionId = PrototypeLocationRouteDefinitionFactory.StreetSegmentDefinitionId,
-                sourceLocationId = "location.prototype.village",
+                sourceLocationId = "location.prototype.town",
                 destinationLocationId = "location.prototype.market-district",
                 distanceMeters = 10d,
                 baseCostUnits = 10d,

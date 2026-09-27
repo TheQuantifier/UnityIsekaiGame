@@ -7,7 +7,7 @@ using UnityIsekaiGame.GameData;
 namespace UnityIsekaiGame.WorldLocations
 {
     [CreateAssetMenu(fileName = "LocationDefinition", menuName = "Unity Isekai Game/World/Location Definition")]
-    public sealed class LocationDefinition : ScriptableObject, IGameDefinition, ICategorizableDefinition, ITaggedDefinition, IDefinitionCatalogValidationParticipant
+    public class LocationDefinition : ScriptableObject, IGameDefinition, ICategorizableDefinition, ITaggedDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string locationDefinitionId;
         [SerializeField] private string displayName;

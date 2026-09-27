@@ -19,7 +19,7 @@ namespace UnityIsekaiGame.Tests
     public sealed class PoliticalTravelTerritoryJurisdictionBordersTests
     {
         private const string TravelerId = "person.prototype.player";
-        private const string OriginLocationId = "location.prototype.village";
+        private const string OriginLocationId = "location.prototype.town";
         private const string DestinationLocationId = "location.prototype.market-district";
         private const string OriginTerritoryId = "political-territory.test.origin";
         private const string DestinationTerritoryId = "political-territory.test.destination";
@@ -293,7 +293,7 @@ namespace UnityIsekaiGame.Tests
                     travelerPersonId = TravelerId,
                     originLocationId = OriginLocationId,
                     destinationLocationId = DestinationLocationId,
-                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                     physicalTravelPossible = physicalTravelPossible,
                     legalComplianceMode = mode,
                     visibilityMode = visibility,
@@ -310,7 +310,7 @@ namespace UnityIsekaiGame.Tests
                     travelerPersonId = TravelerId,
                     originLocationId = OriginLocationId,
                     destinationLocationId = DestinationLocationId,
-                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                     physicalTravelPossible = true,
                     legalComplianceMode = mode,
                     visibilityMode = PoliticalTravelVisibilityMode.Privileged,
@@ -325,7 +325,7 @@ namespace UnityIsekaiGame.Tests
                     transactionId = $"tx.checkpoint.{policy}",
                     checkpointId = "border-checkpoint.test.market-gate",
                     displayName = "Market Gate",
-                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                     sourceTerritoryId = OriginTerritoryId,
                     destinationTerritoryId = DestinationTerritoryId,
                     governingGovernmentId = DestinationGovernmentId,

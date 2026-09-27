@@ -16,7 +16,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
         [SerializeField] private string destinationLocationId;
 
         public override WorldSceneBindingCategory Category => WorldSceneBindingCategory.Connection;
-        public string InteractionPrompt => LastConnection != null ? $"{(LastConnection.OpenState == LocationConnectionOpenState.Open ? "Close" : "Open")} {DisplayName}" : $"Use {DisplayName}";
+        public string InteractionPrompt => LastConnection != null ? $"{(LastConnection.OpenState == LocationConnectionOpenState.Open ? "Use" : "Open")} {DisplayName}" : $"Use {DisplayName}";
         public LocationConnectionSnapshot LastConnection { get; private set; }
         public LocationConnectionOperationResult LastInteractionResult { get; private set; }
         public bool InteractionEnabled => interactTogglesOpenClosed;
@@ -68,14 +68,22 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 return;
             }
 
-            LocationConnectionOpenState next = connection.OpenState == LocationConnectionOpenState.Open ? LocationConnectionOpenState.Closed : LocationConnectionOpenState.Open;
-            LocationConnectionOperationResult result = Runtime.RequestConnectionOpenState($"scene-binding.toggle.{LogicalId}.{Guid.NewGuid():N}", LogicalId, next, null, null, 0d, false);
-            LastInteractionResult = result;
-            if (result.Succeeded)
+            EntityLocationReferenceData actor = PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId);
+            PrototypePersistenceServiceBehaviour persistence = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+            double worldTime = persistence?.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble;
+            LocationConnectionAccessContextData access = persistence != null
+                ? persistence.BuildWorldLocationAccessContext(actor, worldTime)
+                : new LocationConnectionAccessContextData { actor = actor, personId = PrototypeEntityLocationFactory.PlayerPersonId };
+            if (connection.OpenState == LocationConnectionOpenState.Open)
             {
-                SyncFromAuthoritative(Runtime, false);
+                SceneBindingTransitionResult traversal = RequestTraversal(actor, access, worldTime);
+                PrototypeHudMessageBus.Show(traversal.Message);
+                return;
             }
 
+            LocationConnectionOperationResult result = Runtime.RequestConnectionOpenState($"scene-binding.open.{LogicalId}.{Guid.NewGuid():N}", LogicalId, LocationConnectionOpenState.Open, actor, access, worldTime, false);
+            LastInteractionResult = result;
+            if (result.Succeeded) SyncFromAuthoritative(Runtime, false);
             PrototypeHudMessageBus.Show(result.Message);
         }
 
@@ -92,13 +100,20 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
         public SceneBindingTransitionResult RequestTraversal(EntityLocationReferenceData actor, LocationConnectionAccessContextData accessContext = null, double worldTime = 0d, bool preview = false)
         {
+            string from = sourceLocationId;
+            string to = destinationLocationId;
+            if (Runtime.TryGetActivePlacement(actor, out EntityPlacementSnapshot placement))
+            {
+                from = placement.ExactLocationId;
+                if (string.Equals(from, destinationLocationId, StringComparison.Ordinal)) to = sourceLocationId;
+            }
             return Runtime.RequestTransition(new SceneBindingTransitionRequest
             {
                 transactionId = $"scene-binding.traverse.{LogicalId}.{Guid.NewGuid():N}",
                 actor = actor,
                 connectionId = LogicalId,
-                fromLocationId = sourceLocationId,
-                toLocationId = destinationLocationId,
+                fromLocationId = from,
+                toLocationId = to,
                 accessContext = accessContext,
                 worldTime = worldTime,
                 preview = preview

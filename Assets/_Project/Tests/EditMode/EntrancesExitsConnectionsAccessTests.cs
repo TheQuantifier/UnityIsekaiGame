@@ -25,7 +25,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(fixture.Connections.ConnectionCount, Is.GreaterThanOrEqualTo(10));
             Assert.That(fixture.Connections.EndpointCount, Is.EqualTo(fixture.Connections.ConnectionCount * 2));
             Assert.That(fixture.Connections.ValidateCurrent(out string failure), Is.True, failure);
-            Assert.That(fixture.Connections.GetOutgoingConnections("location.prototype.village").Select(item => item.ConnectionId), Does.Contain(PrototypeLocationConnectionDefinitionFactory.VillageGuildEntranceConnectionId));
+            Assert.That(fixture.Connections.GetOutgoingConnections("location.prototype.town").Select(item => item.ConnectionId), Does.Contain(PrototypeLocationConnectionDefinitionFactory.TownGuildEntranceConnectionId));
         }
 
         [Test]
@@ -76,6 +76,7 @@ namespace UnityIsekaiGame.Tests
                 connectionId = PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId,
                 openState = LocationConnectionOpenState.Open,
                 lockState = LocationConnectionLockState.Unlocked,
+                accessContext = AccessContext(fixture, actor, privileged: true),
                 worldTime = 11d
             });
             LocationConnectionOperationResult blocked = fixture.Connections.MutateState(new LocationConnectionStateMutationRequest
@@ -130,12 +131,12 @@ namespace UnityIsekaiGame.Tests
             Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guildmaster-office", AccessContext(fixture, actor)).accessState, Is.EqualTo(LocationConnectionAccessState.MissingAuthority));
             Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guildmaster-office", AccessContext(fixture, actor, offices: new[] { "office.prototype.guild-head" }, authorities: new[] { "permission.prototype.guild.rank-admin" })).Allowed, Is.True);
             Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.MayorOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.mayor-office", AccessContext(fixture, actor, offices: new[] { "office.prototype.mayor" }, authorities: new[] { "authority.government.prototype" })).Allowed, Is.True);
-            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.mayor-office", AccessContext(fixture, actor, employments: new[] { "employment.prototype.records-clerk" })).Allowed, Is.True);
-            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.mayor-office", AccessContext(fixture, actor, permits: new[] { "legal-right.prototype.records.restricted-read" })).Allowed, Is.True);
-            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.mayor-office", AccessContext(fixture, actor, warrants: new[] { "warrant.prototype.search" })).Allowed, Is.True);
-            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.GuildStorageConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.merchant-counter", AccessContext(fixture, actor, properties: new[] { "property.prototype.guild-storage" })).Allowed, Is.True);
-            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.GuildStorageConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.merchant-counter", AccessContext(fixture, actor, keyDefinitions: new[] { "item.prototype-storage-key" })).Allowed, Is.True);
-            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.PrisonCellConnectionId, actor, "location.prototype.civic-office", "location.prototype.basement-prison", AccessContext(fixture, actor, custodyRoles: new[] { "custody-role.prototype.guard" })).Allowed, Is.True);
+            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.records-office", AccessContext(fixture, actor, employments: new[] { "employment.prototype.records-clerk" })).Allowed, Is.True);
+            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.records-office", AccessContext(fixture, actor, permits: new[] { "legal-right.prototype.records.restricted-read" })).Allowed, Is.True);
+            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.records-office", AccessContext(fixture, actor, warrants: new[] { "warrant.prototype.search" })).Allowed, Is.True);
+            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.GuildStorageConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guild-storage", AccessContext(fixture, actor, properties: new[] { "property.prototype.guild-storage" })).Allowed, Is.True);
+            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.GuildStorageConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guild-storage", AccessContext(fixture, actor, keyDefinitions: new[] { "item.prototype-storage-key" })).Allowed, Is.True);
+            Assert.That(Evaluate(fixture, PrototypeLocationConnectionDefinitionFactory.PrisonCellConnectionId, actor, "location.prototype.guard-station", "location.prototype.basement-prison", AccessContext(fixture, actor, custodyRoles: new[] { "custody-role.prototype.guard" })).Allowed, Is.True);
         }
 
         [Test]
@@ -229,6 +230,7 @@ namespace UnityIsekaiGame.Tests
 
         private static void Unlock(Fixture fixture, string connectionId)
         {
+            EntityLocationReferenceData actor = PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId, fixture.WorldId);
             fixture.Connections.MutateState(new LocationConnectionStateMutationRequest
             {
                 transactionId = $"test.connection.unlock.{connectionId}",
@@ -236,6 +238,7 @@ namespace UnityIsekaiGame.Tests
                 openState = LocationConnectionOpenState.Open,
                 lockState = LocationConnectionLockState.Unlocked,
                 blockageState = LocationConnectionBlockageState.Clear,
+                accessContext = AccessContext(fixture, actor, privileged: true),
                 worldTime = 15d
             });
         }

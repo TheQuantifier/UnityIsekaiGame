@@ -7,7 +7,7 @@ using UnityIsekaiGame.GameData;
 namespace UnityIsekaiGame.WorldLocations
 {
     [CreateAssetMenu(fileName = "TravelConditionDefinition", menuName = "Unity Isekai Game/World/Travel Condition Definition")]
-    public sealed class TravelConditionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class TravelConditionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string travelConditionDefinitionId;
         [SerializeField] private string displayName;
@@ -148,7 +148,7 @@ namespace UnityIsekaiGame.WorldLocations
     }
 
     [CreateAssetMenu(fileName = "TravelHazardDefinition", menuName = "Unity Isekai Game/World/Travel Hazard Definition")]
-    public sealed class TravelHazardDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class TravelHazardDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string travelHazardDefinitionId;
         [SerializeField] private string displayName;
@@ -203,7 +203,7 @@ namespace UnityIsekaiGame.WorldLocations
     }
 
     [CreateAssetMenu(fileName = "TravelEncounterDefinition", menuName = "Unity Isekai Game/World/Travel Encounter Definition")]
-    public sealed class TravelEncounterDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class TravelEncounterDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string travelEncounterDefinitionId;
         [SerializeField] private string displayName;

@@ -88,6 +88,7 @@ namespace UnityIsekaiGame.WorldLocations
                 destinationLocationId = destination,
                 routePlan = TravelJourneyPlanSnapshotData.FromPlan(plan),
                 travelModeDefinitionId = plan.TravelModeDefinitionId,
+                movementRateOverrideMetersPerSecond = request.movementRateOverrideMetersPerSecond,
                 category = request.category == TravelJourneyCategory.Unknown ? TravelJourneyCategory.OrdinaryTravel : request.category,
                 lifecycleState = TravelJourneyLifecycleState.Ready,
                 progressionMode = request.progressionMode == TravelJourneyProgressionMode.Unknown ? TravelJourneyProgressionMode.AutomaticLogical : request.progressionMode,
@@ -136,7 +137,7 @@ namespace UnityIsekaiGame.WorldLocations
             if (!ValidateTravelerAtCurrentStepSource(journey, before, out failure)) return failure;
             LocationRouteRevalidationResult revalidation = RevalidateJourney(journey, request);
             if (!revalidation.Valid) return BlockJourney(journey, request, TravelJourneyBlockReason.RouteStale, revalidation.Message, before);
-            TravelMovementRateResult movementRate = EvaluateMovementRate(journey.travelModeDefinitionId, request.movementRateOverrideMetersPerSecond);
+            TravelMovementRateResult movementRate = EvaluateMovementRate(journey.travelModeDefinitionId, EffectiveMovementRateOverride(journey, request.movementRateOverrideMetersPerSecond));
             if (!movementRate.Succeeded) return Fail(TravelJourneyMutationStatus.InvalidRequest, movementRate.Diagnostics, before);
             TravelConditionOperationResult conditionCheck = EvaluateCurrentStepConditions(journey, request, movementRate, out movementRate);
             if (conditionCheck?.Evaluation?.HardBlocked == true) return BlockJourney(journey, request, TravelJourneyBlockReason.TravelConditionBlocked, conditionCheck.Evaluation.Diagnostics, before);
@@ -172,7 +173,7 @@ namespace UnityIsekaiGame.WorldLocations
 
             LocationRouteRevalidationResult revalidation = RevalidateJourney(journey, request);
             if (!revalidation.Valid) return BlockJourney(journey, request, RevalidationBlockReason(revalidation), revalidation.Message, before);
-            TravelMovementRateResult movementRate = EvaluateMovementRate(journey.travelModeDefinitionId, request.movementRateOverrideMetersPerSecond);
+            TravelMovementRateResult movementRate = EvaluateMovementRate(journey.travelModeDefinitionId, EffectiveMovementRateOverride(journey, request.movementRateOverrideMetersPerSecond));
             if (!movementRate.Succeeded) return BlockJourney(journey, request, TravelJourneyBlockReason.MovementRateInvalid, movementRate.Diagnostics, before);
             TravelConditionOperationResult conditionCheck = EvaluateCurrentStepConditions(journey, request, movementRate, out movementRate);
             if (conditionCheck?.Evaluation?.HardBlocked == true) return BlockJourney(journey, request, TravelJourneyBlockReason.TravelConditionBlocked, conditionCheck.Evaluation.Diagnostics, before);
@@ -325,7 +326,7 @@ namespace UnityIsekaiGame.WorldLocations
             if (!request.travelerCanMove) return BlockJourney(journey, request, TravelJourneyBlockReason.CapabilityUnavailable, "Traveler cannot move.", before);
             LocationRouteRevalidationResult revalidation = RevalidateJourney(journey, request);
             if (!revalidation.Valid) return BlockJourney(journey, request, RevalidationBlockReason(revalidation), revalidation.Message, before);
-            TravelMovementRateResult movementRate = EvaluateMovementRate(journey.travelModeDefinitionId, request.movementRateOverrideMetersPerSecond);
+            TravelMovementRateResult movementRate = EvaluateMovementRate(journey.travelModeDefinitionId, EffectiveMovementRateOverride(journey, request.movementRateOverrideMetersPerSecond));
             TravelConditionOperationResult conditionCheck = EvaluateCurrentStepConditions(journey, request, movementRate, out movementRate);
             if (conditionCheck?.Evaluation?.HardBlocked == true) return BlockJourney(journey, request, TravelJourneyBlockReason.TravelConditionBlocked, conditionCheck.Evaluation.Diagnostics, before);
             if (conditionCheck?.Encounter != null) return BlockJourney(journey, request, TravelJourneyBlockReason.EncounterInterrupted, $"Travel encounter '{conditionCheck.Encounter.EncounterDefinitionId}' interrupted the journey.", before);
@@ -489,25 +490,20 @@ namespace UnityIsekaiGame.WorldLocations
         {
             string modeId = string.IsNullOrWhiteSpace(travelModeDefinitionId) ? PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId : travelModeDefinitionId.Trim();
             TravelModeCategory category = TravelModeCategory.Walking;
+            double baseRate = 1.4d;
             if (registry != null && registry.TryGet(modeId, out TravelModeDefinition mode))
             {
                 category = mode.Category;
+                baseRate = mode.BaseSpeedMetersPerSecond;
             }
-
-            double baseRate = category switch
-            {
-                TravelModeCategory.RunningPlaceholder => 2.8d,
-                TravelModeCategory.CartPlaceholder => 2.2d,
-                TravelModeCategory.MountedPlaceholder => 4.8d,
-                TravelModeCategory.ClimbingPlaceholder => 0.8d,
-                TravelModeCategory.SwimmingPlaceholder => 1.0d,
-                TravelModeCategory.FlyingPlaceholder => 8.0d,
-                TravelModeCategory.TeleportPlaceholder => 999999d,
-                _ => 1.4d
-            };
             double final = overrideRateMetersPerSecond > 0d ? overrideRateMetersPerSecond : baseRate;
             bool valid = final > 0d && !double.IsNaN(final) && !double.IsInfinity(final);
             return new TravelMovementRateResult(modeId, category, baseRate, overrideRateMetersPerSecond, valid ? final : 0d, valid ? "Movement rate resolved." : "Movement rate is invalid.");
+        }
+
+        private static double EffectiveMovementRateOverride(TravelJourneyRecordData journey, double requestedOverride)
+        {
+            return requestedOverride > 0d ? requestedOverride : journey?.movementRateOverrideMetersPerSecond ?? -1d;
         }
 
         public TravelJourneyRuntimeSaveData CreateSaveData()

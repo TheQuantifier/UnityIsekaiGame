@@ -903,6 +903,7 @@ namespace UnityIsekaiGame.Gameplay
         private void Awake()
         {
             EnsureInitialized();
+            if (GetComponent<PrototypeTravelPanel>() == null) gameObject.AddComponent<PrototypeTravelPanel>();
         }
 
         private void Update()
@@ -912,6 +913,7 @@ namespace UnityIsekaiGame.Gameplay
             AdvancePrototypeEconomy();
             AdvanceGroup9SocialSimulation();
             AdvanceGroup10InstitutionalSimulation();
+            AdvanceWorldTravel();
 
             if (memoryMaintenance == null || playTimeTracker == null)
             {
@@ -5212,11 +5214,6 @@ namespace UnityIsekaiGame.Gameplay
             definitionRegistry = PrototypeSocialInfluenceDefinitionFactory.AddMissingPrototypeSocialInfluenceDefinitions(definitionRegistry);
             definitionRegistry = PrototypeSocialEmotionDefinitionFactory.AddMissingPrototypeSocialEmotionDefinitions(definitionRegistry);
             definitionRegistry = PrototypeFamilyRelationshipDefinitionFactory.AddMissingPrototypeFamilyRelationshipDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeLocationDefinitionFactory.AddMissingPrototypeLocationDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeInteractionPointDefinitionFactory.AddMissingPrototypeInteractionDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeLocationConnectionDefinitionFactory.AddMissingPrototypeConnectionDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeLocationRouteDefinitionFactory.AddMissingPrototypeRouteDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeTravelConditionDefinitionFactory.AddMissingPrototypeTravelConditionDefinitions(definitionRegistry);
             definitionRegistry = PrototypeQuestDefinitionFactory.AddMissingPrototypeQuestDefinitions(definitionRegistry);
             definitionRegistry = PrototypeQuestSourceDefinitionFactory.AddMissingPrototypeQuestSourceDefinitions(definitionRegistry);
             definitionRegistry = PrototypeConversationDefinitionFactory.AddMissingPrototypeConversationDefinitions(definitionRegistry);

@@ -58,6 +58,7 @@ namespace UnityIsekaiGame.WorldLocations
     {
         public string locationId;
         public string locationDefinitionId;
+        public string authoredPlaceDefinitionId;
         public string worldId;
         public string currentOfficialNameRecordId;
         public string officialName;
@@ -85,6 +86,7 @@ namespace UnityIsekaiGame.WorldLocations
             {
                 locationId = locationId ?? string.Empty,
                 locationDefinitionId = locationDefinitionId ?? string.Empty,
+                authoredPlaceDefinitionId = authoredPlaceDefinitionId ?? string.Empty,
                 worldId = worldId ?? string.Empty,
                 currentOfficialNameRecordId = currentOfficialNameRecordId ?? string.Empty,
                 officialName = officialName ?? string.Empty,
@@ -207,7 +209,7 @@ namespace UnityIsekaiGame.WorldLocations
     [Serializable]
     public sealed class LocationRuntimeSaveData
     {
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         public int schemaVersion = CurrentSchemaVersion;
         public string worldId;
@@ -239,6 +241,7 @@ namespace UnityIsekaiGame.WorldLocations
         public string transactionId;
         public string locationId;
         public string locationDefinitionId;
+        public string authoredPlaceDefinitionId;
         public string officialName;
         public string commonName;
         public IEnumerable<string> aliases;
@@ -381,6 +384,7 @@ namespace UnityIsekaiGame.WorldLocations
 
         public string LocationId => data.locationId ?? string.Empty;
         public string LocationDefinitionId => data.locationDefinitionId ?? string.Empty;
+        public string AuthoredPlaceDefinitionId => data.authoredPlaceDefinitionId ?? string.Empty;
         public string WorldId => data.worldId ?? string.Empty;
         public string OfficialName => data.officialName ?? string.Empty;
         public string CommonName => data.commonName ?? string.Empty;

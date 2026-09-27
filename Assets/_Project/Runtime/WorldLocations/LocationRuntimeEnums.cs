@@ -51,6 +51,7 @@ namespace UnityIsekaiGame.WorldLocations
     public enum LocationAssociationKind
     {
         Unknown,
+        Place,
         Property,
         Organization,
         Government,

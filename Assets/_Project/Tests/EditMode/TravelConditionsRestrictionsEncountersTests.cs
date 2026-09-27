@@ -48,7 +48,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void RequirementEvaluationIsReadOnlyAndDeterministic()
         {
-            Fixture fixture = Fixture.Create(PrototypeLocationRouteDefinitionFactory.VillageWildernessTrailSegmentId, "location.prototype.wilderness-ring");
+            Fixture fixture = Fixture.Create(PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId, "location.prototype.wilderness-ring");
             TravelConditionOperationResult condition = fixture.Conditions.CreateCondition(fixture.ConditionRequest("climb", PrototypeTravelConditionDefinitionFactory.ClimbingRequiredConditionId));
             long revision = fixture.Conditions.Revision;
 
@@ -67,7 +67,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void HiddenTravelRiskDoesNotLeakCountsUntilKnown()
         {
-            Fixture fixture = Fixture.Create(PrototypeLocationRouteDefinitionFactory.VillageWildernessTrailSegmentId, "location.prototype.wilderness-ring");
+            Fixture fixture = Fixture.Create(PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId, "location.prototype.wilderness-ring");
             TravelConditionOperationResult condition = fixture.Conditions.CreateCondition(fixture.ConditionRequest("hidden", PrototypeTravelConditionDefinitionFactory.HiddenAmbushRiskConditionId));
 
             TravelConditionEvaluationResult safe = fixture.Conditions.Evaluate(fixture.EvaluateRequest(TravelConditionEvaluationMode.KnowledgeSafeCurrentConditions));
@@ -177,7 +177,7 @@ namespace UnityIsekaiGame.Tests
             public string WorldId { get; }
             public EntityLocationReferenceData Traveler { get; }
 
-            public static Fixture Create(string segmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId, string destinationId = "location.prototype.market-district")
+            public static Fixture Create(string segmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId, string destinationId = "location.prototype.market-district")
             {
                 string worldId = PersistenceService.LocalWorldId;
                 DefinitionRegistry registry = new DefinitionRegistry(Array.Empty<IGameDefinition>());
@@ -240,7 +240,7 @@ namespace UnityIsekaiGame.Tests
                 return new LocationRouteSearchRequest
                 {
                     traveler = Traveler,
-                    originLocationId = "location.prototype.village",
+                    originLocationId = "location.prototype.town",
                     destinationLocationId = destinationId,
                     travelModeDefinitionId = PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId,
                     accessMode = RouteAccessEvaluationMode.RequireCurrentAccess,
@@ -256,7 +256,7 @@ namespace UnityIsekaiGame.Tests
                 {
                     scope = TravelConditionTargetScope.RouteSegment,
                     targetId = segmentId,
-                    sourceLocationId = "location.prototype.village",
+                    sourceLocationId = "location.prototype.town",
                     destinationLocationId = destinationId,
                     edgeKind = RouteEdgeKind.RouteSegment,
                     traveler = Traveler

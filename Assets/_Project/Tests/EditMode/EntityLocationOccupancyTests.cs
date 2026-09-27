@@ -178,7 +178,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(prepare.Succeeded, Is.True, prepare.Message);
             Assert.That(move.Succeeded, Is.True, move.Message);
             Assert.That(commit.Succeeded, Is.True, commit.Message);
-            Assert.That(fixture.EntityLocations.ResolvePhysicalLocation(PrototypeEntityLocationFactory.Person(PrototypeEntityLocationFactory.PlayerPersonId, fixture.WorldId)).LocationId, Is.EqualTo("location.prototype.village"));
+            Assert.That(fixture.EntityLocations.ResolvePhysicalLocation(PrototypeEntityLocationFactory.Person(PrototypeEntityLocationFactory.PlayerPersonId, fixture.WorldId)).LocationId, Is.EqualTo("location.prototype.town"));
         }
 
         private static Fixture CreateFixture()

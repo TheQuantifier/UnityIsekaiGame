@@ -312,7 +312,7 @@ namespace UnityIsekaiGame.Development.Automation
             bool hasGuildHall = registry.TryGet(PrototypeLocationDefinitionFactory.GuildHallDefinitionId, out LocationDefinition guildHall);
             bool hasDetention = registry.TryGet(PrototypeLocationDefinitionFactory.DetentionAreaDefinitionId, out LocationDefinition detention);
             bool definitions = hasSettlement && hasGuildHall && hasDetention;
-            bool hasVillage = runtime.TryGetSnapshot("location.prototype.village", out LocationSnapshot village);
+            bool hasVillage = runtime.TryGetSnapshot("location.prototype.town", out LocationSnapshot village);
             bool hasGuild = runtime.TryGetSnapshot("location.prototype.adventurers-guild", out LocationSnapshot guild);
             bool seeded = hasVillage && hasGuild;
             LocationValidationReport report = runtime.ValidateRuntime();
@@ -450,7 +450,7 @@ namespace UnityIsekaiGame.Development.Automation
         {
             LocationRuntime runtime = Runtime(context);
             LocationValidationReport report = runtime.ValidateRuntime();
-            LocationContainmentSnapshot villageParent = runtime.GetActiveParentLink("location.prototype.village");
+            LocationContainmentSnapshot villageParent = runtime.GetActiveParentLink("location.prototype.town");
             bool spatial = runtime.AreSpatiallyRelated("location.prototype.market-district", "location.prototype.adventurers-guild", LocationSpatialRelationshipKind.Near);
             bool valid = report.Succeeded
                 && villageParent != null
@@ -466,10 +466,10 @@ namespace UnityIsekaiGame.Development.Automation
         {
             LocationRuntime runtime = Runtime(context);
             IReadOnlyList<LocationSnapshot> path = runtime.GetHierarchyPath("location.prototype.guildmaster-office").Path;
-            IReadOnlyList<LocationSnapshot> children = runtime.GetChildren("location.prototype.village");
-            IReadOnlyList<LocationSnapshot> descendants = runtime.GetDescendants("location.prototype.village");
+            IReadOnlyList<LocationSnapshot> children = runtime.GetChildren("location.prototype.town");
+            IReadOnlyList<LocationSnapshot> descendants = runtime.GetDescendants("location.prototype.town");
             bool deterministic = descendants.Select(item => item.LocationId).SequenceEqual(descendants.Select(item => item.LocationId).OrderBy(id => id, StringComparer.Ordinal));
-            bool valid = path.Select(item => item.LocationId).SequenceEqual(new[] { "location.prototype.world", "location.prototype.region", "location.prototype.village", "location.prototype.adventurers-guild", "location.prototype.guildmaster-office" })
+            bool valid = path.Select(item => item.LocationId).SequenceEqual(new[] { "location.prototype.world", "location.prototype.region", "location.prototype.town", "location.prototype.adventurers-guild", "location.prototype.guildmaster-office" })
                 && children.Any(item => item.LocationId == "location.prototype.adventurers-guild")
                 && descendants.Any(item => item.LocationId == "location.prototype.basement-prison")
                 && deterministic;
@@ -515,7 +515,7 @@ namespace UnityIsekaiGame.Development.Automation
                 childLocationId = "location.prototype.adventurers-guild",
                 effectiveWorldTime = 75d
             });
-            bool valid = second.Status == LocationOperationStatus.ActiveParentConflict && runtime.GetActiveParentLink("location.prototype.adventurers-guild").ParentLocationId == "location.prototype.village";
+            bool valid = second.Status == LocationOperationStatus.ActiveParentConflict && runtime.GetActiveParentLink("location.prototype.adventurers-guild").ParentLocationId == "location.prototype.town";
             return TestLabAssertions.True("step14-location-hierarchy-active-parent", "Second active primary parent rejects", valid, $"Status={second.Status} Parent={runtime.GetActiveParentLink("location.prototype.adventurers-guild")?.ParentLocationId}");
         }
 
@@ -660,7 +660,7 @@ namespace UnityIsekaiGame.Development.Automation
             bool validRuntime = runtime.ValidateRuntime(out string failure);
             bool hasBody = runtime.TryGetActivePlacement(Body(PrototypeEntityLocationFactory.PlayerBodyId, context), out EntityPlacementSnapshot playerBody);
             EntityLocationResolutionResult player = runtime.ResolvePhysicalLocation(Person(PrototypeEntityLocationFactory.PlayerPersonId, context));
-            bool valid = runtime != null && validRuntime && hasBody && player.Succeeded && player.LocationId == "location.prototype.village" && runtime.ActivePlacementCount >= 8 && runtime.KnownEntityCount >= 12;
+            bool valid = runtime != null && validRuntime && hasBody && player.Succeeded && player.LocationId == "location.prototype.town" && runtime.ActivePlacementCount >= 8 && runtime.KnownEntityCount >= 12;
             return TestLabAssertions.True("step14-entity-location-readiness", "Seeded entity placements validate", valid, $"Valid={validRuntime} Failure={failure} Active={runtime?.ActivePlacementCount} Known={runtime?.KnownEntityCount} Player={player.Status}:{player.LocationId} Body={playerBody?.ExactLocationId}");
         }
 
@@ -799,7 +799,7 @@ namespace UnityIsekaiGame.Development.Automation
             EntityLocationOperationResult restore = restored.RestoreFromSaveData(save, Runtime(context), context.ScenarioContext.Runtimes.WorldId, restoring: true);
             EntityLocationResolutionResult player = restored.ResolvePhysicalLocation(Person(PrototypeEntityLocationFactory.PlayerPersonId, context));
             bool valid = restore.Succeeded
-                && player.LocationId == "location.prototype.village"
+                && player.LocationId == "location.prototype.town"
                 && restored.CreateSaveData().placements.Select(item => item.placementId).SequenceEqual(save.placements.Select(item => item.placementId));
             return TestLabAssertions.True("step14-entity-location-persistence", "Entity locations save and restore deterministically", valid, $"Restore={restore.Status} Player={player.Status}:{player.LocationId} Count={restored.PlacementCount}/{runtime.PlacementCount}");
         }
@@ -823,7 +823,7 @@ namespace UnityIsekaiGame.Development.Automation
             int before = runtime.ActivePlacementCount;
             EntityLocationReferenceData entity = new EntityLocationReferenceData { entityType = LocationOccupantEntityType.WorldEntity, entityId = context.ScenarioContext.ScopedId("world-entity.test", "fixture"), worldId = context.ScenarioContext.Runtimes.WorldId };
             runtime.RegisterKnownEntity(entity);
-            runtime.Place(new EntityPlacementRequest { transactionId = Tx(context, "entity-fixture"), entity = entity, exactLocationId = "location.prototype.village", category = EntityPlacementCategory.Present, worldTime = 160d });
+            runtime.Place(new EntityPlacementRequest { transactionId = Tx(context, "entity-fixture"), entity = entity, exactLocationId = "location.prototype.town", category = EntityPlacementCategory.Present, worldTime = 160d });
             bool restored = context.ScenarioContext.Runtimes.RestoreSnapshot(snapshot, out string failure);
             bool missing = !runtime.TryGetActivePlacement(entity, out _);
             bool valid = restored && missing && runtime.ActivePlacementCount == before;
@@ -922,7 +922,7 @@ namespace UnityIsekaiGame.Development.Automation
                 transactionId = Tx(context, "interaction-player-guild"),
                 newPlacementId = context.ScenarioContext.ScopedId("placement.test", "interaction-player-guild"),
                 entity = Body(PrototypeEntityLocationFactory.PlayerBodyId, context),
-                expectedOriginLocationId = "location.prototype.village",
+                expectedOriginLocationId = "location.prototype.town",
                 destinationLocationId = "location.prototype.adventurers-guild",
                 category = EntityPlacementCategory.Visiting,
                 worldTime = 100d
@@ -962,7 +962,7 @@ namespace UnityIsekaiGame.Development.Automation
                 transactionId = Tx(context, "interaction-player-board"),
                 newPlacementId = context.ScenarioContext.ScopedId("placement.test", "interaction-player-board"),
                 entity = Body(PrototypeEntityLocationFactory.PlayerBodyId, context),
-                expectedOriginLocationId = "location.prototype.village",
+                expectedOriginLocationId = "location.prototype.town",
                 destinationLocationId = "location.prototype.merchant-counter",
                 category = EntityPlacementCategory.Visiting,
                 worldTime = 110d
@@ -1021,7 +1021,7 @@ namespace UnityIsekaiGame.Development.Automation
                 transactionId = Tx(context, "interaction-route-player"),
                 newPlacementId = context.ScenarioContext.ScopedId("placement.test", "interaction-route-player"),
                 entity = Body(PrototypeEntityLocationFactory.PlayerBodyId, context),
-                expectedOriginLocationId = "location.prototype.village",
+                expectedOriginLocationId = "location.prototype.town",
                 destinationLocationId = "location.prototype.adventurers-guild",
                 category = EntityPlacementCategory.Visiting,
                 worldTime = 125d
@@ -1073,7 +1073,7 @@ namespace UnityIsekaiGame.Development.Automation
             DefinitionRegistry registry = context.ScenarioContext.Runtimes.DefinitionRegistry;
             bool hasDoor = registry.TryGet(PrototypeLocationConnectionDefinitionFactory.LockableDoorDefinitionId, out LocationConnectionDefinition door);
             bool hasPolicy = registry.TryGet(PrototypeLocationConnectionDefinitionFactory.GuildMemberAccessPolicyId, out LocationAccessPolicyDefinition policy);
-            bool hasVillage = runtime.TryGetConnection(PrototypeLocationConnectionDefinitionFactory.VillageGuildEntranceConnectionId, out LocationConnectionSnapshot village);
+            bool hasVillage = runtime.TryGetConnection(PrototypeLocationConnectionDefinitionFactory.TownGuildEntranceConnectionId, out LocationConnectionSnapshot village);
             bool hasHidden = runtime.GetOutgoingConnections("location.prototype.guildmaster-office", includeHidden: true).Any(item => item.ConnectionId == PrototypeLocationConnectionDefinitionFactory.HiddenPassageConnectionId);
             bool validation = runtime.ValidateCurrent(out string failure);
             bool valid = hasDoor && hasPolicy && hasVillage && hasHidden && validation && door.SupportsLockState && policy.Category == LocationAccessPolicyCategory.OrganizationMembers && village.SceneBindingCategory == LocationConnectionSceneBindingCategory.PrototypeMarker;
@@ -1161,12 +1161,12 @@ namespace UnityIsekaiGame.Development.Automation
             LocationConnectionAccessResult guildDenied = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guildmaster-office", AccessContext(context, actor)));
             LocationConnectionAccessResult guildOffice = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guildmaster-office", AccessContext(context, actor, offices: new[] { "office.prototype.guild-head" }, authorities: new[] { "permission.prototype.guild.rank-admin" })));
             LocationConnectionAccessResult mayor = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.MayorOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.mayor-office", AccessContext(context, actor, offices: new[] { "office.prototype.mayor" }, authorities: new[] { "authority.government.prototype" })));
-            LocationConnectionAccessResult recordsEmployment = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.mayor-office", AccessContext(context, actor, employments: new[] { "employment.prototype.records-clerk" })));
-            LocationConnectionAccessResult recordsPermit = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.mayor-office", AccessContext(context, actor, permits: new[] { "legal-right.prototype.records.restricted-read" })));
-            LocationConnectionAccessResult recordsWarrant = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.mayor-office", AccessContext(context, actor, warrants: new[] { "warrant.prototype.search" })));
-            LocationConnectionAccessResult storageOwner = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.GuildStorageConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.merchant-counter", AccessContext(context, actor, properties: new[] { "property.prototype.guild-storage" })));
-            LocationConnectionAccessResult storageKey = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.GuildStorageConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.merchant-counter", AccessContext(context, actor, keyDefinitions: new[] { "item.prototype-storage-key" })));
-            LocationConnectionAccessResult custody = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.PrisonCellConnectionId, actor, "location.prototype.civic-office", "location.prototype.basement-prison", AccessContext(context, actor, custodyRoles: new[] { "custody-role.prototype.guard" })));
+            LocationConnectionAccessResult recordsEmployment = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.records-office", AccessContext(context, actor, employments: new[] { "employment.prototype.records-clerk" })));
+            LocationConnectionAccessResult recordsPermit = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.records-office", AccessContext(context, actor, permits: new[] { "legal-right.prototype.records.restricted-read" })));
+            LocationConnectionAccessResult recordsWarrant = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.RecordsOfficeConnectionId, actor, "location.prototype.civic-office", "location.prototype.records-office", AccessContext(context, actor, warrants: new[] { "warrant.prototype.search" })));
+            LocationConnectionAccessResult storageOwner = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.GuildStorageConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guild-storage", AccessContext(context, actor, properties: new[] { "property.prototype.guild-storage" })));
+            LocationConnectionAccessResult storageKey = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.GuildStorageConnectionId, actor, "location.prototype.adventurers-guild", "location.prototype.guild-storage", AccessContext(context, actor, keyDefinitions: new[] { "item.prototype-storage-key" })));
+            LocationConnectionAccessResult custody = runtime.EvaluateAccess(Traversal(context, PrototypeLocationConnectionDefinitionFactory.PrisonCellConnectionId, actor, "location.prototype.guard-station", "location.prototype.basement-prison", AccessContext(context, actor, custodyRoles: new[] { "custody-role.prototype.guard" })));
 
             bool valid = guildDenied.accessState == LocationConnectionAccessState.MissingAuthority
                 && guildOffice.Allowed
@@ -1254,10 +1254,10 @@ namespace UnityIsekaiGame.Development.Automation
             DefinitionRegistry registry = context.ScenarioContext.Runtimes.DefinitionRegistry;
             bool hasWalking = registry.TryGet(PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId, out TravelModeDefinition walking);
             bool hasStreet = registry.TryGet(PrototypeLocationRouteDefinitionFactory.StreetSegmentDefinitionId, out RouteSegmentDefinition street);
-            bool hasSeed = runtime.TryGetSegment(PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId, out LocationRouteSegmentSnapshot seed);
-            bool hasNetwork = runtime.TryGetNetwork(PrototypeLocationRouteDefinitionFactory.VillageStreetNetworkId, out LocationRouteNetworkSnapshot network);
-            LocationRouteSearchResult plan = runtime.PlanRoute(RouteRequest(context, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
-            bool usesSeed = plan.Plan?.Steps.Any(step => step.EdgeKind == RouteEdgeKind.RouteSegment && step.EdgeId == PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId) == true;
+            bool hasSeed = runtime.TryGetSegment(PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId, out LocationRouteSegmentSnapshot seed);
+            bool hasNetwork = runtime.TryGetNetwork(PrototypeLocationRouteDefinitionFactory.TownStreetNetworkId, out LocationRouteNetworkSnapshot network);
+            LocationRouteSearchResult plan = runtime.PlanRoute(RouteRequest(context, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
+            bool usesSeed = plan.Plan?.Steps.Any(step => step.EdgeKind == RouteEdgeKind.RouteSegment && step.EdgeId == PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId) == true;
             bool valid = runtime != null && hasWalking && hasStreet && hasSeed && hasNetwork && plan.Succeeded && usesSeed;
             return TestLabAssertions.True("step14-route-readiness", "Route definitions and seeded graph are available", valid, $"Walking={hasWalking}:{walking?.Id} Street={hasStreet}:{street?.Id} Seed={hasSeed}:{seed?.SegmentId} Network={hasNetwork}:{network?.NetworkId} Plan={plan.Status} Edges={plan.Plan?.EdgeCount ?? 0}");
         }
@@ -1265,7 +1265,7 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult RouteMultiEdgePlanning(TestLabAutomationContext context)
         {
             LocationRouteRuntime runtime = RouteRuntime(context);
-            LocationRouteSearchResult plan = runtime.PlanRoute(RouteRequest(context, "location.prototype.village", "location.prototype.merchant-counter", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
+            LocationRouteSearchResult plan = runtime.PlanRoute(RouteRequest(context, "location.prototype.town", "location.prototype.merchant-counter", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
             bool includesRoute = plan.Plan?.Steps.Any(step => step.EdgeKind == RouteEdgeKind.RouteSegment) == true;
             bool includesConnection = plan.Plan?.Steps.Any(step => step.EdgeKind == RouteEdgeKind.LocalConnection) == true;
             bool valid = plan.Succeeded && includesRoute && includesConnection && plan.Plan.EdgeCount >= 2 && plan.Plan.OrderedLocationIds.SequenceEqual(plan.Plan.OrderedLocationIds.Distinct(StringComparer.Ordinal));
@@ -1275,13 +1275,13 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult RouteObjectivesTieBreaks(TestLabAutomationContext context)
         {
             LocationRouteRuntime runtime = RouteRuntime(context);
-            LocationRouteMutationResult created = CreateRouteSegment(context, "long-cheap", "location.prototype.village", "location.prototype.market-district", 180d, 5d);
-            LocationRouteSearchResult shortest = runtime.PlanRoute(RouteRequest(context, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess, objective: RoutePlanningObjective.ShortestDistance));
-            LocationRouteSearchResult cheapest = runtime.PlanRoute(RouteRequest(context, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess, objective: RoutePlanningObjective.LowestCost));
-            LocationRouteSearchResult cheapestAgain = runtime.PlanRoute(RouteRequest(context, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess, objective: RoutePlanningObjective.LowestCost));
+            LocationRouteMutationResult created = CreateRouteSegment(context, "long-cheap", "location.prototype.town", "location.prototype.market-district", 180d, 5d);
+            LocationRouteSearchResult shortest = runtime.PlanRoute(RouteRequest(context, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess, objective: RoutePlanningObjective.ShortestDistance));
+            LocationRouteSearchResult cheapest = runtime.PlanRoute(RouteRequest(context, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess, objective: RoutePlanningObjective.LowestCost));
+            LocationRouteSearchResult cheapestAgain = runtime.PlanRoute(RouteRequest(context, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess, objective: RoutePlanningObjective.LowestCost));
             bool deterministic = cheapest.Plan?.PlanId == cheapestAgain.Plan?.PlanId;
             bool valid = created.Succeeded && shortest.Succeeded && cheapest.Succeeded && deterministic
-                && shortest.Plan.Steps[0].EdgeId == PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId
+                && shortest.Plan.Steps[0].EdgeId == PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId
                 && cheapest.Plan.Steps[0].EdgeId == created.Segment.SegmentId;
             return TestLabAssertions.True("step14-route-objectives", "Planning objectives are deterministic across parallel edges", valid, $"Created={created.Status} Shortest={shortest.Plan?.Steps.FirstOrDefault()?.EdgeId} Cheapest={cheapest.Plan?.Steps.FirstOrDefault()?.EdgeId} Deterministic={deterministic}");
         }
@@ -1291,8 +1291,8 @@ namespace UnityIsekaiGame.Development.Automation
             LocationRouteRuntime runtime = RouteRuntime(context);
             EntityLocationReferenceData actor = Person(PrototypeEntityLocationFactory.PlayerPersonId, context);
             LocationConnectionAccessContextData authorized = AccessContext(context, actor, offices: new[] { "office.prototype.guild-head" }, authorities: new[] { "permission.prototype.guild.rank-admin" });
-            LocationRouteSearchResult denied = runtime.PlanRoute(RouteRequest(context, "location.prototype.village", "location.prototype.guildmaster-office", RouteAccessEvaluationMode.RequireCurrentAccess, authorized));
-            LocationRouteSearchResult unlockable = runtime.PlanRoute(RouteRequest(context, "location.prototype.village", "location.prototype.guildmaster-office", RouteAccessEvaluationMode.PermitUnlockableConnections, authorized));
+            LocationRouteSearchResult denied = runtime.PlanRoute(RouteRequest(context, "location.prototype.town", "location.prototype.guildmaster-office", RouteAccessEvaluationMode.RequireCurrentAccess, authorized));
+            LocationRouteSearchResult unlockable = runtime.PlanRoute(RouteRequest(context, "location.prototype.town", "location.prototype.guildmaster-office", RouteAccessEvaluationMode.PermitUnlockableConnections, authorized));
             bool connectionUnchanged = ConnectionRuntime(context).TryGetConnection(PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, out LocationConnectionSnapshot connection) && connection.OpenState == LocationConnectionOpenState.Closed && connection.LockState == LocationConnectionLockState.Locked;
             bool hasRequiredActions = unlockable.Plan?.Requirements.requiredActions.Any(action => action.StartsWith("open:", StringComparison.Ordinal) || action.StartsWith("unlock:", StringComparison.Ordinal)) == true;
             bool valid = !denied.Succeeded && unlockable.Succeeded && hasRequiredActions && connectionUnchanged;
@@ -1318,16 +1318,16 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult RouteStalePlanRevalidation(TestLabAutomationContext context)
         {
             LocationRouteRuntime runtime = RouteRuntime(context);
-            LocationRouteSearchResult plan = runtime.PlanRoute(RouteRequest(context, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
+            LocationRouteSearchResult plan = runtime.PlanRoute(RouteRequest(context, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
             LocationRouteMutationResult mutate = runtime.MutateSegment(new LocationRouteSegmentMutationRequest
             {
                 transactionId = Tx(context, "route-block-market"),
-                segmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                segmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                 blockageState = RouteSegmentBlockageState.TemporarilyBlocked,
                 worldTime = 25d
             });
-            LocationRouteRevalidationResult revalidate = runtime.RevalidatePlan(plan.Plan, RouteRequest(context, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
-            bool immutable = plan.Plan?.Steps.FirstOrDefault()?.EdgeId == PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId;
+            LocationRouteRevalidationResult revalidate = runtime.RevalidatePlan(plan.Plan, RouteRequest(context, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
+            bool immutable = plan.Plan?.Steps.FirstOrDefault()?.EdgeId == PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId;
             bool valid = plan.Succeeded && mutate.Succeeded && immutable && revalidate.Status == RoutePlanRevalidationStatus.ChangedAccess;
             return TestLabAssertions.True("step14-route-revalidation", "Route plans are immutable and revalidate against graph revisions", valid, $"Plan={plan.Status} Mutate={mutate.Status} Revalidate={revalidate.Status} Immutable={immutable}");
         }
@@ -1366,10 +1366,10 @@ namespace UnityIsekaiGame.Development.Automation
         {
             TravelJourneyRuntime runtime = JourneyRuntime(context);
             EntityLocationReferenceData traveler = Body(PrototypeEntityLocationFactory.PlayerBodyId, context);
-            LocationRouteSearchResult plan = RouteRuntime(context).PlanRoute(RouteRequest(context, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess, traveler: traveler));
+            LocationRouteSearchResult plan = RouteRuntime(context).PlanRoute(RouteRequest(context, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess, traveler: traveler));
             TravelJourneyOperationResult created = CreateJourney(context, "create", "location.prototype.market-district", acceptedRoutePlan: plan.Plan);
             bool exactStillOrigin = EntityRuntime(context).TryGetActivePlacement(Body(PrototypeEntityLocationFactory.PlayerBodyId, context), out EntityPlacementSnapshot placement)
-                && placement.ExactLocationId == "location.prototype.village";
+                && placement.ExactLocationId == "location.prototype.town";
             string validationFailure = string.Empty;
             bool valid = runtime != null
                 && plan.Succeeded
@@ -1386,7 +1386,7 @@ namespace UnityIsekaiGame.Development.Automation
             TravelJourneyOperationResult created = CreateJourney(context, "start", "location.prototype.market-district");
             TravelJourneyOperationResult started = JourneyRuntime(context).StartJourney(Lifecycle(context, created.Journey?.JourneyId, "start", worldTime: 22d));
             bool exactOrigin = EntityRuntime(context).TryGetActivePlacement(Body(PrototypeEntityLocationFactory.PlayerBodyId, context), out EntityPlacementSnapshot placement)
-                && placement.ExactLocationId == "location.prototype.village";
+                && placement.ExactLocationId == "location.prototype.town";
             bool valid = created.Succeeded && started.Succeeded && started.Journey?.LifecycleState == TravelJourneyLifecycleState.Active && exactOrigin;
             return TestLabAssertions.True("step14-journey-start", "Starting a journey does not mutate exact placement", valid, $"Create={created.Status} Start={started.Status} State={started.Journey?.LifecycleState} Exact={placement?.ExactLocationId}");
         }
@@ -1438,7 +1438,7 @@ namespace UnityIsekaiGame.Development.Automation
             TravelJourneyOperationResult resumed = runtime.ResumeJourney(Lifecycle(context, created.Journey?.JourneyId, "lifecycle-resume", worldTime: 14d, rate: 5d));
             TravelJourneyOperationResult cancelled = runtime.CancelJourney(Lifecycle(context, created.Journey?.JourneyId, "lifecycle-cancel", worldTime: 15d));
             bool exactOrigin = EntityRuntime(context).TryGetActivePlacement(Body(PrototypeEntityLocationFactory.PlayerBodyId, context), out EntityPlacementSnapshot placement)
-                && placement.ExactLocationId == "location.prototype.village";
+                && placement.ExactLocationId == "location.prototype.town";
             bool valid = created.Succeeded
                 && started.Succeeded
                 && partial.Succeeded
@@ -1461,12 +1461,12 @@ namespace UnityIsekaiGame.Development.Automation
             LocationRouteMutationResult blockedSegment = RouteRuntime(context).MutateSegment(new LocationRouteSegmentMutationRequest
             {
                 transactionId = Tx(context, "journey-block-market-segment"),
-                segmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                segmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                 blockageState = RouteSegmentBlockageState.TemporarilyBlocked,
                 worldTime = 11d
             });
             TravelJourneyOperationResult blocked = runtime.AdvanceJourney(Lifecycle(context, created.Journey?.JourneyId, "replan-blocked-advance", worldTime: 12d, rate: 5d));
-            LocationRouteMutationResult replacement = CreateRouteSegment(context, "journey-alt-market", "location.prototype.village", "location.prototype.market-district", 95d, 30d);
+            LocationRouteMutationResult replacement = CreateRouteSegment(context, "journey-alt-market", "location.prototype.town", "location.prototype.market-district", 95d, 30d);
             TravelJourneyOperationResult replanned = runtime.ReplanJourney(new TravelJourneyReplanRequest
             {
                 transactionId = Tx(context, "journey-replan"),
@@ -1477,7 +1477,7 @@ namespace UnityIsekaiGame.Development.Automation
                 movementRateOverrideMetersPerSecond = 5d
             });
             bool exactOrigin = EntityRuntime(context).TryGetActivePlacement(Body(PrototypeEntityLocationFactory.PlayerBodyId, context), out EntityPlacementSnapshot placement)
-                && placement.ExactLocationId == "location.prototype.village";
+                && placement.ExactLocationId == "location.prototype.town";
             bool valid = created.Succeeded
                 && started.Succeeded
                 && blockedSegment.Succeeded
@@ -1501,7 +1501,7 @@ namespace UnityIsekaiGame.Development.Automation
             TravelJourneySnapshot denied = runtime.GetProjection(new TravelJourneyProjectionRequest { journeyId = created.Journey?.JourneyId, requester = Person(PrototypeEntityLocationFactory.PlayerPersonId, context) });
             TravelJourneySnapshot redacted = runtime.GetProjection(new TravelJourneyProjectionRequest { journeyId = created.Journey?.JourneyId, requester = Person(PrototypeEntityLocationFactory.PlayerPersonId, context), includeHidden = true });
             TravelJourneySnapshot privileged = runtime.GetProjection(new TravelJourneyProjectionRequest { journeyId = created.Journey?.JourneyId, requester = Person(PrototypeEntityLocationFactory.PlayerPersonId, context), privileged = true });
-            bool exactOrigin = physical?.ExactPlacement?.ExactLocationId == "location.prototype.village";
+            bool exactOrigin = physical?.ExactPlacement?.ExactLocationId == "location.prototype.town";
             bool valid = created.Succeeded
                 && started.Succeeded
                 && partial.Succeeded
@@ -1566,9 +1566,9 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult TravelConditionRouteModifier(TestLabAutomationContext context)
         {
             TravelConditionRuntime conditions = ConditionRuntime(context);
-            LocationRouteSearchResult baseline = RouteRuntime(context).PlanRoute(RouteRequest(context, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
-            TravelConditionOperationResult created = CreateRouteCondition(context, conditions, "muddy-route", PrototypeTravelConditionDefinitionFactory.MuddyRoadConditionId, PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId);
-            LocationRouteSearchRequest request = RouteRequest(context, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess);
+            LocationRouteSearchResult baseline = RouteRuntime(context).PlanRoute(RouteRequest(context, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess));
+            TravelConditionOperationResult created = CreateRouteCondition(context, conditions, "muddy-route", PrototypeTravelConditionDefinitionFactory.MuddyRoadConditionId, PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId);
+            LocationRouteSearchRequest request = RouteRequest(context, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess);
             request.conditionEvaluationMode = TravelConditionEvaluationMode.CurrentConditions;
             LocationRouteSearchResult modified = RouteRuntime(context).PlanRoute(request);
             bool valid = baseline.Succeeded && created.Succeeded && modified.Succeeded && modified.Plan.TotalCost.units > baseline.Plan.TotalCost.units && modified.Plan.TotalDistance.meters > baseline.Plan.TotalDistance.meters;
@@ -1578,10 +1578,10 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult TravelConditionHardBlockRevalidation(TestLabAutomationContext context)
         {
             TravelConditionRuntime conditions = ConditionRuntime(context);
-            LocationRouteSearchRequest request = RouteRequest(context, "location.prototype.village", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess);
+            LocationRouteSearchRequest request = RouteRequest(context, "location.prototype.town", "location.prototype.market-district", accessMode: RouteAccessEvaluationMode.RequireCurrentAccess);
             request.conditionEvaluationMode = TravelConditionEvaluationMode.CurrentConditions;
             LocationRouteSearchResult before = RouteRuntime(context).PlanRoute(request);
-            TravelConditionOperationResult block = CreateRouteCondition(context, conditions, "collapsed", PrototypeTravelConditionDefinitionFactory.CollapsedPassConditionId, PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId);
+            TravelConditionOperationResult block = CreateRouteCondition(context, conditions, "collapsed", PrototypeTravelConditionDefinitionFactory.CollapsedPassConditionId, PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId);
             LocationRouteSearchResult after = RouteRuntime(context).PlanRoute(request);
             LocationRouteRevalidationResult revalidate = RouteRuntime(context).RevalidatePlan(before.Plan, request);
             bool valid = before.Succeeded && block.Succeeded && !after.Succeeded && after.Status == RoutePlanningStatus.NoRoute && revalidate.Status == RoutePlanRevalidationStatus.ChangedAccess;
@@ -1591,9 +1591,9 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult TravelConditionRequirements(TestLabAutomationContext context)
         {
             TravelConditionRuntime conditions = ConditionRuntime(context);
-            TravelConditionOperationResult created = CreateRouteCondition(context, conditions, "climb-required", PrototypeTravelConditionDefinitionFactory.ClimbingRequiredConditionId, PrototypeLocationRouteDefinitionFactory.VillageWildernessTrailSegmentId);
-            TravelConditionEvaluationResult missing = conditions.Evaluate(new TravelConditionEvaluationRequest { evaluationMode = TravelConditionEvaluationMode.CurrentConditions, target = RouteTarget(PrototypeLocationRouteDefinitionFactory.VillageWildernessTrailSegmentId, context), traveler = Body(PrototypeEntityLocationFactory.PlayerBodyId, context), travelModeDefinitionId = PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId, worldTime = 12d });
-            TravelConditionEvaluationResult allowed = conditions.Evaluate(new TravelConditionEvaluationRequest { evaluationMode = TravelConditionEvaluationMode.CurrentConditions, target = RouteTarget(PrototypeLocationRouteDefinitionFactory.VillageWildernessTrailSegmentId, context), traveler = Body(PrototypeEntityLocationFactory.PlayerBodyId, context), travelModeDefinitionId = PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId, travelerCapabilityIds = new[] { PrototypeTravelConditionDefinitionFactory.ClimbCapabilityId }, worldTime = 12d });
+            TravelConditionOperationResult created = CreateRouteCondition(context, conditions, "climb-required", PrototypeTravelConditionDefinitionFactory.ClimbingRequiredConditionId, PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId);
+            TravelConditionEvaluationResult missing = conditions.Evaluate(new TravelConditionEvaluationRequest { evaluationMode = TravelConditionEvaluationMode.CurrentConditions, target = RouteTarget(PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId, context), traveler = Body(PrototypeEntityLocationFactory.PlayerBodyId, context), travelModeDefinitionId = PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId, worldTime = 12d });
+            TravelConditionEvaluationResult allowed = conditions.Evaluate(new TravelConditionEvaluationRequest { evaluationMode = TravelConditionEvaluationMode.CurrentConditions, target = RouteTarget(PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId, context), traveler = Body(PrototypeEntityLocationFactory.PlayerBodyId, context), travelModeDefinitionId = PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId, travelerCapabilityIds = new[] { PrototypeTravelConditionDefinitionFactory.ClimbCapabilityId }, worldTime = 12d });
             bool noMutation = conditions.Revision == created.RevisionAfter;
             bool valid = created.Succeeded && missing.HardBlocked && missing.MissingCapabilityIds.Contains(PrototypeTravelConditionDefinitionFactory.ClimbCapabilityId) && !allowed.HardBlocked && noMutation;
             return TestLabAssertions.True("step14-travel-condition-requirements", "Requirements block without mutating condition state", valid, $"Create={created.Status} Missing={missing.HardBlocked}:{string.Join(",", missing.MissingCapabilityIds)} Allowed={allowed.HardBlocked} Revision={conditions.Revision}/{created.RevisionAfter}");
@@ -1602,9 +1602,9 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult TravelConditionHiddenKnowledgeSafety(TestLabAutomationContext context)
         {
             TravelConditionRuntime conditions = ConditionRuntime(context);
-            TravelConditionOperationResult created = CreateRouteCondition(context, conditions, "hidden-ambush", PrototypeTravelConditionDefinitionFactory.HiddenAmbushRiskConditionId, PrototypeLocationRouteDefinitionFactory.VillageWildernessTrailSegmentId);
-            TravelConditionEvaluationResult safe = conditions.Evaluate(new TravelConditionEvaluationRequest { evaluationMode = TravelConditionEvaluationMode.KnowledgeSafeCurrentConditions, target = RouteTarget(PrototypeLocationRouteDefinitionFactory.VillageWildernessTrailSegmentId, context), travelModeDefinitionId = PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId, worldTime = 10d });
-            TravelConditionEvaluationResult known = conditions.Evaluate(new TravelConditionEvaluationRequest { evaluationMode = TravelConditionEvaluationMode.KnowledgeSafeCurrentConditions, target = RouteTarget(PrototypeLocationRouteDefinitionFactory.VillageWildernessTrailSegmentId, context), travelModeDefinitionId = PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId, knownConditionIds = new[] { created.Condition.ConditionId }, knownEncounterIds = new[] { PrototypeTravelConditionDefinitionFactory.HiddenAmbushEncounterId }, worldTime = 10d });
+            TravelConditionOperationResult created = CreateRouteCondition(context, conditions, "hidden-ambush", PrototypeTravelConditionDefinitionFactory.HiddenAmbushRiskConditionId, PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId);
+            TravelConditionEvaluationResult safe = conditions.Evaluate(new TravelConditionEvaluationRequest { evaluationMode = TravelConditionEvaluationMode.KnowledgeSafeCurrentConditions, target = RouteTarget(PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId, context), travelModeDefinitionId = PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId, worldTime = 10d });
+            TravelConditionEvaluationResult known = conditions.Evaluate(new TravelConditionEvaluationRequest { evaluationMode = TravelConditionEvaluationMode.KnowledgeSafeCurrentConditions, target = RouteTarget(PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId, context), travelModeDefinitionId = PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId, knownConditionIds = new[] { created.Condition.ConditionId }, knownEncounterIds = new[] { PrototypeTravelConditionDefinitionFactory.HiddenAmbushEncounterId }, worldTime = 10d });
             bool valid = created.Succeeded && safe.ApplicableConditions.Count == 0 && !safe.EncounterRisk.HasVisibleRisk && known.ApplicableConditions.Count == 1 && known.EncounterRisk.HiddenKnownEncounterDefinitionIds.Contains(PrototypeTravelConditionDefinitionFactory.HiddenAmbushEncounterId);
             return TestLabAssertions.True("step14-travel-condition-hidden", "Hidden travel risk does not leak under knowledge-safe evaluation", valid, $"Create={created.Status} Safe={safe.ApplicableConditions.Count}/{safe.EncounterRisk.VisibleEncounterCount} Known={known.ApplicableConditions.Count}/{string.Join(",", known.EncounterRisk.HiddenKnownEncounterDefinitionIds)}");
         }
@@ -1612,7 +1612,7 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult TravelConditionJourneySlowdown(TestLabAutomationContext context)
         {
             TravelConditionRuntime conditions = ConditionRuntime(context);
-            TravelConditionOperationResult condition = CreateRouteCondition(context, conditions, "journey-muddy", PrototypeTravelConditionDefinitionFactory.MuddyRoadConditionId, PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId);
+            TravelConditionOperationResult condition = CreateRouteCondition(context, conditions, "journey-muddy", PrototypeTravelConditionDefinitionFactory.MuddyRoadConditionId, PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId);
             TravelJourneyOperationResult created = CreateJourney(context, "condition-slowdown", "location.prototype.market-district", rate: 100d, conditionMode: TravelConditionEvaluationMode.CurrentConditions);
             TravelJourneyOperationResult started = JourneyRuntime(context).StartJourney(Lifecycle(context, created.Journey?.JourneyId, "condition-slowdown-start", worldTime: 10d, rate: 100d, conditionMode: TravelConditionEvaluationMode.CurrentConditions));
             TravelJourneyOperationResult advanced = JourneyRuntime(context).AdvanceJourney(Lifecycle(context, created.Journey?.JourneyId, "condition-slowdown-advance", worldTime: 10.5d, rate: 100d, conditionMode: TravelConditionEvaluationMode.CurrentConditions));
@@ -1625,7 +1625,7 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult TravelConditionEncounterInterruption(TestLabAutomationContext context)
         {
             TravelConditionRuntime conditions = ConditionRuntime(context);
-            TravelConditionOperationResult condition = CreateRouteCondition(context, conditions, "checkpoint-ambush", PrototypeTravelConditionDefinitionFactory.HiddenAmbushRiskConditionId, PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId);
+            TravelConditionOperationResult condition = CreateRouteCondition(context, conditions, "checkpoint-ambush", PrototypeTravelConditionDefinitionFactory.HiddenAmbushRiskConditionId, PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId);
             TravelJourneyOperationResult created = CreateJourney(context, "condition-encounter", "location.prototype.market-district", rate: 100d, conditionMode: TravelConditionEvaluationMode.CurrentConditions);
             TravelJourneyOperationResult started = JourneyRuntime(context).StartJourney(Lifecycle(context, created.Journey?.JourneyId, "condition-encounter-start", worldTime: 10d, rate: 100d, conditionMode: TravelConditionEvaluationMode.CurrentConditions));
             bool interrupted = !started.Succeeded && started.Status == TravelJourneyMutationStatus.Blocked && started.Journey?.BlockReason == TravelJourneyBlockReason.EncounterInterrupted;
@@ -1646,7 +1646,7 @@ namespace UnityIsekaiGame.Development.Automation
                 {
                     scope = TravelConditionTargetScope.RouteNetwork,
                     targetId = PrototypeLocationRouteDefinitionFactory.RegionalTrailNetworkId,
-                    sourceLocationId = "location.prototype.village",
+                    sourceLocationId = "location.prototype.town",
                     destinationLocationId = "location.prototype.wilderness-ring",
                     traveler = Body(PrototypeEntityLocationFactory.PlayerBodyId, context)
                 },
@@ -1660,7 +1660,7 @@ namespace UnityIsekaiGame.Development.Automation
                 transactionId = Tx(context, "travel-condition-heat-hazard"),
                 hazardDefinitionId = PrototypeTravelConditionDefinitionFactory.HeatExposureHazardId,
                 sourceConditionId = condition.Condition?.ConditionId,
-                target = RouteTarget(PrototypeLocationRouteDefinitionFactory.VillageWildernessTrailSegmentId, context),
+                target = RouteTarget(PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId, context),
                 traveler = Body(PrototypeEntityLocationFactory.PlayerBodyId, context),
                 worldTime = 20d,
                 provenanceId = "automation.14.8"
@@ -1762,6 +1762,7 @@ namespace UnityIsekaiGame.Development.Automation
                 subjectId = fixture.TravelerPersonId,
                 territoryId = fixture.DestinationTerritoryId,
                 jurisdictionId = fixture.DestinationJurisdictionId,
+                placeIds = new[] { PoliticalTravelAutomationFixture.DestinationLocationId },
                 activeWorldTime = 0d,
                 visibility = PoliticalVisibility.Hidden
             });
@@ -1855,14 +1856,14 @@ namespace UnityIsekaiGame.Development.Automation
             EntityLocationReferenceData traveler = Body(PrototypeEntityLocationFactory.PlayerBodyId, context);
             HistoricalExactLocationResult before = history.ResolveExactLocationAt(traveler, 5d, MovementHistoryVisibilityMode.DevelopmentAuthoritative);
             HistoricalExactLocationResult during = history.ResolveExactLocationAt(traveler, 21d, MovementHistoryVisibilityMode.DevelopmentAuthoritative);
-            bool livePlacementUnchanged = EntityRuntime(context).TryGetActivePlacement(traveler, out EntityPlacementSnapshot placement) && placement.ExactLocationId == "location.prototype.village";
+            bool livePlacementUnchanged = EntityRuntime(context).TryGetActivePlacement(traveler, out EntityPlacementSnapshot placement) && placement.ExactLocationId == "location.prototype.town";
             bool valid = created.Succeeded
                 && started.Succeeded
                 && before.Status == HistoricalExactLocationStatus.ExactLocationFound
-                && before.ExactLocationId == "location.prototype.village"
+                && before.ExactLocationId == "location.prototype.town"
                 && during.Status == HistoricalExactLocationStatus.InTransit
                 && during.InTransit != null
-                && during.InTransit.PreviousLocationId == "location.prototype.village"
+                && during.InTransit.PreviousLocationId == "location.prototype.town"
                 && during.InTransit.NextLocationId == "location.prototype.market-district"
                 && livePlacementUnchanged;
             return TestLabAssertions.True("step14-history-exact-location", "Historical exact-location projection separates placement from travel state", valid, $"Create={created.Status} Start={started.Status} Before={before.Status}:{before.ExactLocationId} During={during.Status}:{during.InTransit?.JourneyId} Live={placement?.ExactLocationId}");
@@ -1886,13 +1887,13 @@ namespace UnityIsekaiGame.Development.Automation
             });
             MovementHistoryService history = History(context);
             HistoricalLocationPathResult path = history.ResolveHistoricalLocationPath("location.prototype.civic-office", 111d);
-            HistoricalOccupancyResult occupancy = history.GetHistoricalOccupancy("location.prototype.village", 111d, recursive: true, visibilityMode: MovementHistoryVisibilityMode.DevelopmentAuthoritative);
-            VisitedLocationSummary visits = history.GetVisitSummary(merchant, "location.prototype.village", 0d, 200d, exactOnly: false, MovementHistoryVisibilityMode.DevelopmentAuthoritative);
+            HistoricalOccupancyResult occupancy = history.GetHistoricalOccupancy("location.prototype.town", 111d, recursive: true, visibilityMode: MovementHistoryVisibilityMode.DevelopmentAuthoritative);
+            VisitedLocationSummary visits = history.GetVisitSummary(merchant, "location.prototype.town", 0d, 200d, exactOnly: false, MovementHistoryVisibilityMode.DevelopmentAuthoritative);
             MovementDistanceSummary distance = history.GetMovementDistance(merchant, 0d, 200d, MovementHistoryVisibilityMode.DevelopmentAuthoritative);
             bool deterministicOccupancy = occupancy.Placements.Select(item => item.entity?.StableKey ?? string.Empty).SequenceEqual(occupancy.Placements.Select(item => item.entity?.StableKey ?? string.Empty).OrderBy(id => id, StringComparer.Ordinal));
             bool valid = moved.Succeeded
                 && path.Succeeded
-                && path.LocationPathIds.Contains("location.prototype.village")
+                && path.LocationPathIds.Contains("location.prototype.town")
                 && occupancy.Placements.Any(item => item.entity?.entityId == PrototypeEntityLocationFactory.MerchantBodyId)
                 && deterministicOccupancy
                 && visits.VisitCount >= 1
@@ -1903,7 +1904,7 @@ namespace UnityIsekaiGame.Development.Automation
         private static TestLabAutomationStepResult HistoricalTimelineVisibility(TestLabAutomationContext context)
         {
             TravelConditionRuntime conditions = ConditionRuntime(context);
-            LocationRouteMutationResult segment = CreateRouteSegment(context, "history-hidden", "location.prototype.village", "location.prototype.wilderness-ring", 35d, 35d);
+            LocationRouteMutationResult segment = CreateRouteSegment(context, "history-hidden", "location.prototype.town", "location.prototype.wilderness-ring", 35d, 35d);
             TravelConditionOperationResult hidden = CreateRouteCondition(context, conditions, "history-hidden", PrototypeTravelConditionDefinitionFactory.HiddenAmbushRiskConditionId, segment.Segment?.SegmentId);
             MovementHistoryService history = History(context);
             EntityLocationReferenceData traveler = Body(PrototypeEntityLocationFactory.PlayerBodyId, context);
@@ -1921,7 +1922,14 @@ namespace UnityIsekaiGame.Development.Automation
                 endWorldTime = 1000d,
                 visibilityMode = MovementHistoryVisibilityMode.Public
             });
-            bool deterministic = development.Entries.Select(TimelineKey).SequenceEqual(development.Entries.Select(TimelineKey).OrderBy(id => id, StringComparer.Ordinal));
+            MovementTimelineResult repeated = history.BuildTimeline(new MovementHistoryQuery
+            {
+                routeSegmentId = segment.Segment?.SegmentId,
+                startWorldTime = 0d,
+                endWorldTime = 1000d,
+                visibilityMode = MovementHistoryVisibilityMode.DevelopmentAuthoritative
+            });
+            bool deterministic = development.Entries.Select(TimelineKey).SequenceEqual(repeated.Entries.Select(TimelineKey));
             bool hiddenVisibleToDevelopment = development.Entries.Any(item => item.SourceRecordId == hidden.Condition?.ConditionId);
             bool hiddenOmittedPublic = !publicView.Entries.Any(item => item.SourceRecordId == hidden.Condition?.ConditionId);
             bool sourceRefs = development.Entries.All(item => !string.IsNullOrWhiteSpace(item.SourceParticipantId) && !string.IsNullOrWhiteSpace(item.SourceRecordId));
@@ -1979,7 +1987,7 @@ namespace UnityIsekaiGame.Development.Automation
             try
             {
                 village = NewBinding<LocationSceneBinding>("scene-binding-village");
-                village.ConfigureLocation("location.prototype.village", "prototype.scene.location.village", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, PrototypeLocationDefinitionFactory.SettlementDefinitionId, requiredBinding: true);
+                village.ConfigureLocation("location.prototype.town", "prototype.scene.location.town", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, PrototypeLocationDefinitionFactory.SettlementDefinitionId, requiredBinding: true);
                 guild = NewBinding<LocationSceneBinding>("scene-binding-guild");
                 guild.ConfigureLocation("location.prototype.adventurers-guild", "prototype.scene.location.guild", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, PrototypeLocationDefinitionFactory.GuildHallDefinitionId, requiredBinding: true);
                 duplicateGuild = NewBinding<LocationSceneBinding>("scene-binding-guild-duplicate");
@@ -1993,7 +2001,7 @@ namespace UnityIsekaiGame.Development.Automation
                 runtime.Register(duplicateGuild);
                 runtime.Register(missingOptional);
                 WorldSceneBindingValidationReport report = runtime.Validate();
-                bool boundVillage = runtime.TryResolve(WorldSceneBindingCategory.Location, "location.prototype.village", out WorldSceneBindingComponent villageBinding) && villageBinding.Status == WorldSceneBindingStatus.Bound;
+                bool boundVillage = runtime.TryResolve(WorldSceneBindingCategory.Location, "location.prototype.town", out WorldSceneBindingComponent villageBinding) && villageBinding.Status == WorldSceneBindingStatus.Bound;
                 bool deterministicDuplicate = guild.Status == WorldSceneBindingStatus.Bound && duplicateGuild.Status == WorldSceneBindingStatus.Duplicate;
                 bool optionalWarning = missingOptional.Status == WorldSceneBindingStatus.WaitingForLogicalRecord && report.WarningCount == 1;
                 bool valid = boundVillage && deterministicDuplicate && optionalWarning && report.ErrorCount == 1 && report.DuplicateCount == 1 && !runtime.TryGetLocation(missingLocationId, out _);
@@ -2023,7 +2031,7 @@ namespace UnityIsekaiGame.Development.Automation
                 door = new GameObject("scene-binding-door-collider");
                 BoxCollider collider = door.AddComponent<BoxCollider>();
                 entrance = door.AddComponent<ConnectionSceneBinding>();
-                entrance.ConfigureConnection(PrototypeLocationConnectionDefinitionFactory.VillageGuildEntranceConnectionId, "prototype.scene.connection.guild-entrance", "location.prototype.village", "location.prototype.adventurers-guild", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, collider, true);
+                entrance.ConfigureConnection(PrototypeLocationConnectionDefinitionFactory.TownGuildEntranceConnectionId, "prototype.scene.connection.guild-entrance", "location.prototype.town", "location.prototype.adventurers-guild", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, collider, true);
                 officeDoorObject = new GameObject("scene-binding-office-door-collider");
                 BoxCollider officeCollider = officeDoorObject.AddComponent<BoxCollider>();
                 officeDoor = officeDoorObject.AddComponent<ConnectionSceneBinding>();
@@ -2042,11 +2050,20 @@ namespace UnityIsekaiGame.Development.Automation
                 LocationConnectionOperationResult close = runtime.RequestConnectionOpenState(Tx(context, "scene-binding-close-door"), PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, LocationConnectionOpenState.Closed, null, null, 22d, false);
                 runtime.SyncAllFromAuthoritative(false);
                 bool closedBlocks = close.Succeeded && officeCollider.enabled;
-                LocationConnectionOperationResult open = runtime.RequestConnectionOpenState(Tx(context, "scene-binding-open-door"), PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, LocationConnectionOpenState.Open, null, null, 23d, false);
+                EntityLocationReferenceData actor = Body(PrototypeEntityLocationFactory.PlayerBodyId, context);
+                LocationConnectionAccessContextData officeAccess = AccessContext(context, actor, privileged: true);
+                LocationConnectionOperationResult unlock = ConnectionRuntime(context).MutateState(new LocationConnectionStateMutationRequest
+                {
+                    transactionId = Tx(context, "scene-binding-unlock-door"),
+                    connectionId = PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId,
+                    lockState = LocationConnectionLockState.Unlocked,
+                    accessContext = officeAccess,
+                    worldTime = 22.5d
+                });
+                LocationConnectionOperationResult open = runtime.RequestConnectionOpenState(Tx(context, "scene-binding-open-door"), PrototypeLocationConnectionDefinitionFactory.GuildHeadOfficeConnectionId, LocationConnectionOpenState.Open, actor, officeAccess, 23d, false);
                 runtime.SyncAllFromAuthoritative(false);
                 bool openClears = open.Succeeded && !officeCollider.enabled;
 
-                EntityLocationReferenceData actor = Body(PrototypeEntityLocationFactory.PlayerBodyId, context);
                 SceneBindingTransitionResult traversal = entrance.RequestTraversal(actor, AccessContext(context, actor), 24d);
                 bool placed = EntityRuntime(context).TryGetActivePlacement(actor, out EntityPlacementSnapshot placement);
                 SceneBindingTransitionResult denied = runtime.RequestTransition(new SceneBindingTransitionRequest
@@ -2059,8 +2076,8 @@ namespace UnityIsekaiGame.Development.Automation
                     accessContext = AccessContext(context, actor),
                     worldTime = 25d
                 });
-                bool valid = canInteract && routedInteraction && closedBlocks && openClears && traversal.Succeeded && placed && placement.ExactLocationId == "location.prototype.adventurers-guild" && denied.Status == SceneBindingTransitionStatus.AccessDenied;
-                return TestLabAssertions.True("step14-scene-binding-interaction-connection", "Scene interaction and connection bindings delegate to authoritative runtimes", valid, $"CanInteract={canInteract} Routed={routedInteraction} Close={close.Status}:{closedBlocks} Open={open.Status}:{openClears} Traverse={traversal.Status} Placement={placement?.ExactLocationId} Denied={denied.Status}");
+                bool valid = canInteract && routedInteraction && closedBlocks && unlock.Succeeded && openClears && traversal.Succeeded && placed && placement.ExactLocationId == "location.prototype.adventurers-guild" && denied.Status == SceneBindingTransitionStatus.AccessDenied;
+                return TestLabAssertions.True("step14-scene-binding-interaction-connection", "Scene interaction and connection bindings delegate to authoritative runtimes", valid, $"CanInteract={canInteract} Routed={routedInteraction} Close={close.Status}:{closedBlocks} Unlock={unlock.Status} Open={open.Status}:{openClears} Traverse={traversal.Status} Placement={placement?.ExactLocationId} Denied={denied.Status}");
             }
             finally
             {
@@ -2089,7 +2106,7 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 village = NewBinding<LocationSceneBinding>("scene-binding-village-anchor");
                 village.transform.SetPositionAndRotation(new Vector3(-2f, 0f, -3f), Quaternion.Euler(0f, 20f, 0f));
-                village.ConfigureLocation("location.prototype.village", "prototype.scene.location.village.anchor", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, requiredBinding: true);
+                village.ConfigureLocation("location.prototype.town", "prototype.scene.location.town.anchor", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, requiredBinding: true);
                 guild = NewBinding<LocationSceneBinding>("scene-binding-guild-anchor");
                 guild.transform.SetPositionAndRotation(new Vector3(7f, 0f, 4f), Quaternion.Euler(0f, 90f, 0f));
                 guild.ConfigureLocation("location.prototype.adventurers-guild", "prototype.scene.location.guild.anchor", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, requiredBinding: true);
@@ -2110,7 +2127,7 @@ namespace UnityIsekaiGame.Development.Automation
                     transactionId = Tx(context, "scene-binding-relocate-player"),
                     newPlacementId = context.ScenarioContext.ScopedId("placement.scene-binding", "player-guild"),
                     entity = actor,
-                    expectedOriginLocationId = "location.prototype.village",
+                    expectedOriginLocationId = "location.prototype.town",
                     destinationLocationId = "location.prototype.adventurers-guild",
                     worldTime = 30d,
                     sourceEventId = "testlab.feature.14.11",
@@ -2146,8 +2163,8 @@ namespace UnityIsekaiGame.Development.Automation
                     transactionId = Tx(context, "scene-binding-checkpoint-create"),
                     checkpointId = context.ScenarioContext.ScopedId("checkpoint.prototype.scene-binding", "village-gate"),
                     displayName = "Scene Binding Village Gate",
-                    locationId = "location.prototype.village",
-                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                    locationId = "location.prototype.town",
+                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                     policy = BorderCheckpointPolicy.RequireInspection,
                     lifecycleState = BorderCheckpointLifecycleState.Active,
                     visibility = PoliticalVisibility.Public,
@@ -2157,7 +2174,7 @@ namespace UnityIsekaiGame.Development.Automation
                 });
 
                 route = NewBinding<RouteSegmentSceneBinding>("scene-binding-route-segment");
-                route.ConfigureBinding(PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId, "prototype.scene.route.village-market-street", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, WorldSceneBindingRole.Primary, true);
+                route.ConfigureBinding(PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId, "prototype.scene.route.town-market", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, WorldSceneBindingRole.Primary, true);
                 checkpoint = NewBinding<CheckpointSceneBinding>("scene-binding-checkpoint");
                 checkpoint.ConfigureBinding(createCheckpoint.Checkpoint?.CheckpointId, "prototype.scene.checkpoint.village-gate", "scene.prototype", context.ScenarioContext.Runtimes.WorldId, WorldSceneBindingRole.Primary, true);
 
@@ -2168,7 +2185,7 @@ namespace UnityIsekaiGame.Development.Automation
                 WorldSceneBindingValidationReport report = runtime.SyncAllFromAuthoritative(true);
                 long routeRevisionAfter = RouteRuntime(context).Revision;
                 long politicalRevisionAfter = political.Revision;
-                bool resolvedRoute = runtime.TryResolve(WorldSceneBindingCategory.RouteSegment, PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId, out WorldSceneBindingComponent routeBinding) && routeBinding.Status == WorldSceneBindingStatus.Bound;
+                bool resolvedRoute = runtime.TryResolve(WorldSceneBindingCategory.RouteSegment, PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId, out WorldSceneBindingComponent routeBinding) && routeBinding.Status == WorldSceneBindingStatus.Bound;
                 WorldSceneBindingComponent checkpointBinding = null;
                 bool resolvedCheckpoint = createCheckpoint.Succeeded && runtime.TryResolve(WorldSceneBindingCategory.Checkpoint, createCheckpoint.Checkpoint.CheckpointId, out checkpointBinding) && checkpointBinding.Status == WorldSceneBindingStatus.Bound;
                 bool noMutation = routeRevisionBefore == routeRevisionAfter && politicalRevisionBefore == politicalRevisionAfter;
@@ -2392,6 +2409,20 @@ namespace UnityIsekaiGame.Development.Automation
                 return false;
             }
 
+            // Step 14 seeds prototype physical entities in addition to the Test Lab owner.
+            // Align the Step 13 validation scope before projecting wanted state into travel.
+            string[] knownPeople = runtimes.KnownPersonIds
+                .Concat(new[] { PrototypeEntityLocationFactory.PlayerPersonId })
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            string[] knownPlaces = runtimes.Locations.Snapshots
+                .Select(value => value.LocationId)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            runtimes.Crimes.Configure(runtimes.DefinitionRegistry, runtimes.Governments, runtimes.Laws, runtimes.OrganizationAuthority, runtimes.Diplomacy, runtimes.WorldId, knownPeople, knownPlaces);
+
             string scope = string.IsNullOrWhiteSpace(suffix) ? "default" : suffix.Trim();
             fixture = new PoliticalTravelAutomationFixture(context, runtimes, runtime, scope);
             if (!fixture.SeedGovernmentGraph(out failure))
@@ -2410,7 +2441,7 @@ namespace UnityIsekaiGame.Development.Automation
 
         private sealed class PoliticalTravelAutomationFixture
         {
-            public const string OriginLocationId = "location.prototype.village";
+            public const string OriginLocationId = "location.prototype.town";
             public const string DestinationLocationId = "location.prototype.market-district";
 
             private readonly TestLabAutomationContext context;
@@ -2470,7 +2501,7 @@ namespace UnityIsekaiGame.Development.Automation
                     travelerPersonId = TravelerPersonId,
                     originLocationId = OriginLocationId,
                     destinationLocationId = DestinationLocationId,
-                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                     physicalTravelPossible = physicalTravelPossible,
                     legalComplianceMode = mode,
                     visibilityMode = visibility,
@@ -2487,7 +2518,7 @@ namespace UnityIsekaiGame.Development.Automation
                     travelerPersonId = TravelerPersonId,
                     originLocationId = OriginLocationId,
                     destinationLocationId = DestinationLocationId,
-                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                     physicalTravelPossible = true,
                     legalComplianceMode = mode,
                     visibilityMode = PoliticalTravelVisibilityMode.Privileged,
@@ -2502,7 +2533,7 @@ namespace UnityIsekaiGame.Development.Automation
                     transactionId = Tx($"checkpoint-{localSuffix}"),
                     checkpointId = Id("border-checkpoint", localSuffix),
                     displayName = "Market Gate",
-                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.VillageMarketStreetSegmentId,
+                    routeSegmentId = PrototypeLocationRouteDefinitionFactory.TownMarketStreetSegmentId,
                     sourceTerritoryId = OriginTerritoryId,
                     destinationTerritoryId = DestinationTerritoryId,
                     governingGovernmentId = DestinationGovernmentId,
@@ -2584,8 +2615,8 @@ namespace UnityIsekaiGame.Development.Automation
             {
                 scope = TravelConditionTargetScope.RouteSegment,
                 targetId = routeSegmentId,
-                sourceLocationId = "location.prototype.village",
-                destinationLocationId = routeSegmentId == PrototypeLocationRouteDefinitionFactory.VillageWildernessTrailSegmentId ? "location.prototype.wilderness-ring" : "location.prototype.market-district",
+                sourceLocationId = "location.prototype.town",
+                destinationLocationId = routeSegmentId == PrototypeLocationRouteDefinitionFactory.TownWildernessTrailSegmentId ? "location.prototype.wilderness-ring" : "location.prototype.market-district",
                 edgeKind = RouteEdgeKind.RouteSegment,
                 traveler = Body(PrototypeEntityLocationFactory.PlayerBodyId, context)
             };
@@ -2668,7 +2699,7 @@ namespace UnityIsekaiGame.Development.Automation
                 journeyId = context.ScenarioContext.ScopedId("travel-journey.prototype.test", suffix),
                 traveler = traveler,
                 controller = Person(PrototypeEntityLocationFactory.PlayerPersonId, context),
-                originLocationId = "location.prototype.village",
+                originLocationId = "location.prototype.town",
                 destinationLocationId = destination,
                 acceptedRoutePlan = acceptedRoutePlan,
                 travelModeDefinitionId = PrototypeLocationRouteDefinitionFactory.WalkingModeDefinitionId,
@@ -2772,6 +2803,7 @@ namespace UnityIsekaiGame.Development.Automation
 
         private static LocationConnectionOperationResult UnlockConnection(TestLabAutomationContext context, string connectionId)
         {
+            EntityLocationReferenceData actor = Body(PrototypeEntityLocationFactory.PlayerBodyId, context);
             return ConnectionRuntime(context).MutateState(new LocationConnectionStateMutationRequest
             {
                 transactionId = Tx(context, $"connection-unlock-{connectionId}"),
@@ -2779,6 +2811,7 @@ namespace UnityIsekaiGame.Development.Automation
                 openState = LocationConnectionOpenState.Open,
                 lockState = LocationConnectionLockState.Unlocked,
                 blockageState = LocationConnectionBlockageState.Clear,
+                accessContext = AccessContext(context, actor, privileged: true),
                 worldTime = 15d
             });
         }

@@ -725,6 +725,7 @@ namespace UnityIsekaiGame.WorldLocations
         public double worldTime;
         public bool privilegedVisibility;
         public bool requireDestinationRuntimeReady = true;
+        public bool physicalPresenceVerified;
     }
 
     public sealed class InteractionSessionStartRequest
@@ -744,6 +745,7 @@ namespace UnityIsekaiGame.WorldLocations
         public string provenanceId;
         public long expectedRevision = -1L;
         public bool preview;
+        public bool physicalPresenceVerified;
     }
 
     public sealed class InteractionSessionTransitionRequest
@@ -775,6 +777,7 @@ namespace UnityIsekaiGame.WorldLocations
         public long expectedRevision = -1L;
         public string provenanceId;
         public bool preview;
+        public bool physicalPresenceVerified;
     }
 
     public sealed class InteractionInvocationResult

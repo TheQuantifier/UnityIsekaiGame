@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f34028502fe79984ca827d2762f1f1ca, type: 3}
+  m_Name: interaction_service_prototype_register_merchant
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.WorldLocations:InteractionServiceDefinition
+  interactionServiceDefinitionId: interaction-service.prototype.register-merchant
+  displayName: Register Merchant
+  description: 
+  category: 2
+  compatibleInteractionPointDefinitionIds:
+  - interaction-point-definition.prototype.merchant-guild-counter
+  providerRequirement: 2
+  requiredConsumerType: 1
+  requiredProviderType: 1
+  consumerPresencePolicy: 3
+  providerPresencePolicy: 3
+  destinationRuntime: 2
+  authorityRequirementIds:
+  - organization-permission.prototype.admit-members
+  legalRequirementIds: []
+  membershipRequirementIds:
+  - organization-membership.prototype.guild.staff-member
+  rankRequirementIds: []
+  officeRequirementIds: []
+  itemRequirementIds: []
+  statusRequirementIds: []
+  mutatesDestinationState: 1
+  supportsPreview: 1
+  providerInteractionRequired: 1
+  visibility: 0
+  priority: 100
+  validationTags:
+  - prototype
+  - registration
+  version: 1

@@ -75,10 +75,12 @@ Prototype and Test Lab fixtures may explicitly seed logical records through the 
 
 Examples:
 
-- Entity bindings materialize to the anchor for their authoritative active placement.
+- Entity bindings materialize to the spawn anchor for their authoritative active placement when one is loaded, otherwise to the location anchor.
 - Connection bindings update colliders from authoritative open/closed/blocked state.
 - Interaction bindings expose prompt/readiness but do not own services.
 - Route, journey, and checkpoint bindings expose presentation mappings without mutating route or political-travel records.
+
+The prototype travel panel only offers public destinations that have a loaded location or spawn anchor, so a completed logical journey cannot leave the visible player at the previous destination.
 
 ## Manual PrototypeScene Binding Plan
 
@@ -95,7 +97,7 @@ Recommended bootstrap fields:
 
 Add `LocationSceneBinding` to scene anchors or parent objects:
 
-- Village: logical ID `location.prototype.village`, binding key `prototype.scene.location.village`
+- Town: logical ID `location.prototype.town`, binding key `prototype.scene.location.town`
 - Adventurer Guild: logical ID `location.prototype.adventurers-guild`, binding key `prototype.scene.location.guild`
 - Merchant Counter: logical ID `location.prototype.merchant-counter`, binding key `prototype.scene.merchant-counter`
 - Mayor Office: logical ID `location.prototype.mayor-office`, binding key `prototype.scene.location.mayor-office`
@@ -132,7 +134,7 @@ Add `InteractionPointSceneBinding` to the existing interaction marker objects:
 
 Add `ConnectionSceneBinding` to door, passage, or trigger objects:
 
-- Village/Guild Entrance: `location-connection.prototype.village-guild-entrance`, binding key `prototype.connection.village-guild`
+- Town/Guild Entrance: `location-connection.prototype.town-guild-entrance`, binding key `prototype.connection.town-guild`
 - Market/Merchant Counter: `location-connection.prototype.market-merchant-counter`, binding key `prototype.connection.market-merchant`
 - Guild Head Office Door: `location-connection.prototype.guild-head-office`, binding key `prototype.connection.guild-head-office`
 - Mayor Office Door: `location-connection.prototype.mayor-office`, binding key `prototype.connection.mayor-door`
@@ -152,7 +154,7 @@ Use body IDs for physical scene representation. Person IDs remain the stable ide
 
 Optional presentation markers:
 
-- Route segment marker: `location-route-segment.prototype.village-market-street`
+- Route segment marker: `route-segment.prototype.town-market-street`
 - Checkpoint marker: authored checkpoint ID from `PoliticalTravelRuntime`
 - Journey marker: active `JourneyId` from `TravelJourneyRuntime`
 

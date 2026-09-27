@@ -7,7 +7,7 @@ using UnityIsekaiGame.GameData;
 namespace UnityIsekaiGame.WorldLocations
 {
     [CreateAssetMenu(fileName = "LocationConnectionDefinition", menuName = "Unity Isekai Game/World/Location Connection Definition")]
-    public sealed class LocationConnectionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class LocationConnectionDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string connectionDefinitionId;
         [SerializeField] private string displayName;
@@ -152,7 +152,7 @@ namespace UnityIsekaiGame.WorldLocations
     }
 
     [CreateAssetMenu(fileName = "LocationAccessPolicyDefinition", menuName = "Unity Isekai Game/World/Location Access Policy Definition")]
-    public sealed class LocationAccessPolicyDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public class LocationAccessPolicyDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string accessPolicyDefinitionId;
         [SerializeField] private string displayName;

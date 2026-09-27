@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c69c54383f9fe364eb20fa4f816810d2, type: 3}
+  m_Name: travel_condition_definition_prototype_hidden_ambush_risk
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldLocations.TravelConditionDefinition
+  travelConditionDefinitionId: travel-condition-definition.prototype.hidden-ambush-risk
+  displayName: Prototype Hidden Ambush Risk
+  description: 
+  category: 7
+  validTargetScopes: 050000000700000003000000
+  defaultSeverity: 4
+  stackingPolicy: 1
+  defaultVisibility: 4
+  movementRateMultiplier: 0.9
+  routeCostMultiplier: 1.3
+  hardBlocksTravel: 0
+  restrictedTravelModeDefinitionIds: []
+  requiredCapabilityIds: []
+  requiredEquipmentDefinitionIds: []
+  requiresEquippedEquipment: 0
+  hazardDefinitionIds: []
+  encounterDefinitionIds:
+  - travel-encounter-definition.prototype.hidden-ambush
+  defaultDurationSeconds: -1
+  priority: 75
+  version: 1

@@ -24,6 +24,7 @@ namespace UnityIsekaiGame.WorldLocations
         private DefinitionRegistry registry;
         private LocationRuntime locations;
         private EntityLocationRuntime entityLocations;
+        private IInteractionRequirementResolver requirementResolver;
         private string worldId = PersistenceService.LocalWorldId;
         private bool disposed;
 
@@ -48,11 +49,12 @@ namespace UnityIsekaiGame.WorldLocations
         public IReadOnlyList<InteractionReservationSnapshot> Reservations => reservationsById.Values.OrderBy(item => item.reservationId, StringComparer.Ordinal).Select(BuildReservationSnapshot).ToArray();
         public IReadOnlyList<InteractionUseSessionSnapshot> UseSessions => sessionsById.Values.OrderBy(item => item.sessionId, StringComparer.Ordinal).Select(BuildSessionSnapshot).ToArray();
 
-        public void Configure(DefinitionRegistry definitionRegistry, LocationRuntime locationRuntime, EntityLocationRuntime entityLocationRuntime, string runtimeWorldId = PersistenceService.LocalWorldId)
+        public void Configure(DefinitionRegistry definitionRegistry, LocationRuntime locationRuntime, EntityLocationRuntime entityLocationRuntime, string runtimeWorldId = PersistenceService.LocalWorldId, IInteractionRequirementResolver declarativeRequirementResolver = null)
         {
             registry = definitionRegistry ?? registry;
             locations = locationRuntime ?? locations;
             entityLocations = entityLocationRuntime ?? entityLocations;
+            requirementResolver = declarativeRequirementResolver ?? requirementResolver;
             worldId = string.IsNullOrWhiteSpace(runtimeWorldId) ? worldId : runtimeWorldId.Trim();
             disposed = false;
         }
@@ -433,7 +435,7 @@ namespace UnityIsekaiGame.WorldLocations
 
             EntityLocationReferenceData consumer = request.consumerEntity?.Clone();
             if (service != null && service.RequiredConsumerType != LocationOccupantEntityType.Unknown && consumer != null && consumer.entityType != service.RequiredConsumerType) reasons.Add("consumer.type-mismatch");
-            if (service != null && service.ConsumerPresencePolicy != InteractionPhysicalPresencePolicy.NotRequired && service.ConsumerPresencePolicy != InteractionPhysicalPresencePolicy.RemoteAllowed)
+            if (!request.physicalPresenceVerified && service != null && service.ConsumerPresencePolicy != InteractionPhysicalPresencePolicy.NotRequired && service.ConsumerPresencePolicy != InteractionPhysicalPresencePolicy.RemoteAllowed)
             {
                 if (!EvaluatePresence(consumer, point.activeHostLocationId, service.ConsumerPresencePolicy, out string consumerFailure)) reasons.Add($"consumer.{consumerFailure}");
             }
@@ -457,7 +459,32 @@ namespace UnityIsekaiGame.WorldLocations
                 }
             }
 
-            if (service != null && service.HasDeclarativeRequirements) reasons.Add("requirements.declarative-placeholder");
+            if (service != null && service.HasDeclarativeRequirements)
+            {
+                if (requirementResolver == null)
+                {
+                    reasons.Add("requirements.resolver-unavailable");
+                }
+                else
+                {
+                    InteractionRequirementResolution resolution = requirementResolver.Evaluate(new InteractionRequirementContext
+                    {
+                        Point = snapshot,
+                        Service = service,
+                        Consumer = consumer,
+                        Provider = provider,
+                        WorldTime = request.worldTime
+                    });
+                    if (resolution == null)
+                    {
+                        reasons.Add("requirements.resolver-invalid");
+                    }
+                    else
+                    {
+                        reasons.AddRange(resolution.UnmetRequirementIds.Select(value => $"requirement.{value}"));
+                    }
+                }
+            }
             InteractionPointOperationStatus status = reasons.Count == 0 ? InteractionPointOperationStatus.Succeeded : ClassifyEligibilityFailure(reasons);
             string message = reasons.Count == 0 ? "Interaction service is eligible." : $"Interaction service is not eligible: {string.Join(", ", reasons.OrderBy(value => value, StringComparer.Ordinal))}.";
             return Eligibility(status, message, snapshot, serviceId, consumer, provider, point.activeHostLocationId, capacity, reasons, pointRevision, entityRevision, locationRevision);
@@ -548,7 +575,8 @@ namespace UnityIsekaiGame.WorldLocations
                 serviceDefinitionId = request.serviceDefinitionId,
                 consumerEntity = request.consumerEntity,
                 providerEntity = request.providerEntity,
-                worldTime = request.worldTime
+                worldTime = request.worldTime,
+                physicalPresenceVerified = request.physicalPresenceVerified
             });
             if (!eligibility.Eligible)
             {
