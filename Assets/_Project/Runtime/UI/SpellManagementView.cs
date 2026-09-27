@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityIsekaiGame.Magic;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI
 {
@@ -30,6 +31,7 @@ namespace UnityIsekaiGame.UI
             WireButtons(knownSpellButtons, InvokeKnownSpellSelected);
             WireButtons(assignSlotButtons, InvokeSlotAssigned);
             WireButtons(clearSlotButtons, InvokeSlotCleared);
+            ApplyTheme();
         }
 
         public void Render(PlayerSpellLoadout loadout, int selectedKnownIndex)
@@ -63,11 +65,12 @@ namespace UnityIsekaiGame.UI
                 if (knownSpellButtons[i] != null)
                 {
                     knownSpellButtons[i].gameObject.SetActive(spell != null);
+                    PrototypeUiTheme.StyleButton(knownSpellButtons[i], i == selectedKnownSpellIndex ? PrototypeUiButtonTone.Primary : PrototypeUiButtonTone.Neutral);
                 }
 
                 if (knownSpellLabels != null && i < knownSpellLabels.Length && knownSpellLabels[i] != null)
                 {
-                    string prefix = i == selectedKnownSpellIndex ? "> " : string.Empty;
+                    string prefix = i == selectedKnownSpellIndex ? "SELECTED  |  " : string.Empty;
                     knownSpellLabels[i].text = spell == null ? string.Empty : $"{prefix}{spell.DisplayName} ({spell.ManaCost:0} MP)";
                 }
             }
@@ -124,6 +127,20 @@ namespace UnityIsekaiGame.UI
         private void InvokeSlotCleared(int index)
         {
             slotCleared?.Invoke(index);
+        }
+
+        private void ApplyTheme()
+        {
+            StyleButtons(knownSpellButtons, PrototypeUiButtonTone.Neutral);
+            StyleButtons(assignSlotButtons, PrototypeUiButtonTone.Primary);
+            StyleButtons(clearSlotButtons, PrototypeUiButtonTone.Danger);
+            PrototypeUiTheme.StyleText(selectedSpellLabel, PrototypeUiTextRole.Heading);
+        }
+
+        private static void StyleButtons(Button[] buttons, PrototypeUiButtonTone tone)
+        {
+            if (buttons == null) return;
+            for (int i = 0; i < buttons.Length; i++) PrototypeUiTheme.StyleButton(buttons[i], tone);
         }
     }
 }

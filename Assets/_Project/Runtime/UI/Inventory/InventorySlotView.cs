@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI.Inventory
 {
@@ -17,15 +18,20 @@ namespace UnityIsekaiGame.UI.Inventory
         private int slotIndex = -1;
         private System.Action<int> selected;
         private System.Action<int, bool> hovered;
+        private bool isSelected;
+        private bool isHovered;
 
         private void Awake()
         {
+            normalColor = PrototypeUiTheme.PanelRaised;
+            selectedColor = PrototypeUiTheme.AccentSoft;
             ApplyTextLayout();
         }
 
         private void OnValidate()
         {
-            ApplyTextLayout();
+            ResolveBackgroundImage();
+            RefreshBackground();
         }
 
         public void Render(UnityIsekaiGame.Inventory.InventorySlot slot)
@@ -50,8 +56,10 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (iconImage != null)
             {
-                iconImage.sprite = slot.Item.Icon;
-                iconImage.enabled = slot.Item.Icon != null;
+                Sprite icon = InventoryItemIconResolver.Resolve(slot.Item);
+                iconImage.sprite = icon;
+                iconImage.enabled = icon != null;
+                iconImage.preserveAspect = true;
             }
         }
 
@@ -86,12 +94,9 @@ namespace UnityIsekaiGame.UI.Inventory
 
         public void SetSelected(bool isSelected)
         {
+            this.isSelected = isSelected;
             ResolveBackgroundImage();
-
-            if (backgroundImage != null)
-            {
-                backgroundImage.color = isSelected ? selectedColor : normalColor;
-            }
+            RefreshBackground();
         }
 
         public void OnPointerClick(PointerEventData eventData)
@@ -101,17 +106,22 @@ namespace UnityIsekaiGame.UI.Inventory
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            isHovered = true;
+            RefreshBackground();
             hovered?.Invoke(slotIndex, true);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            isHovered = false;
+            RefreshBackground();
             hovered?.Invoke(slotIndex, false);
         }
 
         private void ApplyTextLayout()
         {
             ResolveBackgroundImage();
+            ConfigureIconImage();
             ConfigureNameText();
             ConfigureQuantityText();
         }
@@ -133,13 +143,32 @@ namespace UnityIsekaiGame.UI.Inventory
 
             itemNameText.horizontalOverflow = HorizontalWrapMode.Wrap;
             itemNameText.verticalOverflow = VerticalWrapMode.Truncate;
-            itemNameText.alignment = TextAnchor.MiddleCenter;
+            itemNameText.alignment = TextAnchor.MiddleLeft;
+            itemNameText.color = PrototypeUiTheme.TextPrimary;
+            itemNameText.fontSize = Mathf.Max(12, itemNameText.fontSize);
+            itemNameText.fontStyle = FontStyle.Bold;
 
             RectTransform rectTransform = itemNameText.rectTransform;
-            rectTransform.anchorMin = new Vector2(0f, 0.42f);
-            rectTransform.anchorMax = new Vector2(1f, 1f);
-            rectTransform.offsetMin = new Vector2(8f, 8f);
-            rectTransform.offsetMax = new Vector2(-8f, -8f);
+            rectTransform.anchorMin = new Vector2(0.38f, 0.31f);
+            rectTransform.anchorMax = new Vector2(0.96f, 0.92f);
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+        }
+
+        private void ConfigureIconImage()
+        {
+            if (iconImage == null)
+            {
+                return;
+            }
+
+            iconImage.preserveAspect = true;
+            iconImage.raycastTarget = false;
+            RectTransform rectTransform = iconImage.rectTransform;
+            rectTransform.anchorMin = new Vector2(0.04f, 0.14f);
+            rectTransform.anchorMax = new Vector2(0.34f, 0.86f);
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
         }
 
         private void ConfigureQuantityText()
@@ -152,12 +181,28 @@ namespace UnityIsekaiGame.UI.Inventory
             quantityText.horizontalOverflow = HorizontalWrapMode.Overflow;
             quantityText.verticalOverflow = VerticalWrapMode.Truncate;
             quantityText.alignment = TextAnchor.LowerRight;
+            quantityText.color = PrototypeUiTheme.Accent;
+            quantityText.fontStyle = FontStyle.Bold;
 
             RectTransform rectTransform = quantityText.rectTransform;
-            rectTransform.anchorMin = new Vector2(0f, 0f);
-            rectTransform.anchorMax = new Vector2(1f, 0.42f);
-            rectTransform.offsetMin = new Vector2(78f, 8f);
-            rectTransform.offsetMax = new Vector2(-8f, -6f);
+            rectTransform.anchorMin = new Vector2(0.38f, 0.06f);
+            rectTransform.anchorMax = new Vector2(0.94f, 0.32f);
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+        }
+
+        private void RefreshBackground()
+        {
+            if (backgroundImage == null)
+            {
+                return;
+            }
+
+            backgroundImage.color = isSelected
+                ? selectedColor
+                : isHovered
+                    ? Color.Lerp(normalColor, PrototypeUiTheme.Secondary, 0.28f)
+                    : normalColor;
         }
     }
 }

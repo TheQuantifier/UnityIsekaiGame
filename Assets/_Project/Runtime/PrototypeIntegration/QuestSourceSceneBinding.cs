@@ -38,14 +38,15 @@ namespace UnityIsekaiGame.PrototypeIntegration
         {
             get
             {
-                PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
-                if (interactionPointId == PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId
-                    && services != null
-                    && !services.IsPlayerRegisteredAsAdventurer)
-                    return "Register as an Adventurer";
+                if (IsGuildDesk) return interactionPointId == PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId
+                    ? "Use Merchant Guild Desk"
+                    : "Use Adventurers Guild Desk";
                 return OpensConversation ? $"Speak at {DisplayName}" : $"Browse {DisplayName}";
             }
         }
+
+        private bool IsGuildDesk => interactionPointId == PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId
+            || interactionPointId == PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId;
 
         public bool CanHandleInteraction(in InteractionContext context, InteractionPointSnapshot point)
         {
@@ -56,12 +57,23 @@ namespace UnityIsekaiGame.PrototypeIntegration
         public void HandleInteraction(in InteractionContext context, InteractionPointSnapshot point)
         {
             PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
-            if (interactionPointId == PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId
-                && services != null
-                && !services.IsPlayerRegisteredAsAdventurer)
+            if (IsGuildDesk)
             {
-                PrototypeAdventurerRegistrationResult registration = services.RegisterPlayerAsAdventurerAtGuildDesk(point?.InteractionPointId ?? interactionPointId);
-                PrototypeHudMessageBus.Show(registration.Message);
+                PrototypeGuildDeskPanel desk = FindAnyObjectByType<PrototypeGuildDeskPanel>(FindObjectsInactive.Include);
+                if (desk == null)
+                {
+                    PrototypeHudMessageBus.Show("Guild desk services are unavailable.");
+                    return;
+                }
+
+                desk.Open(
+                    string.IsNullOrWhiteSpace(interactionPointId) ? point?.InteractionPointId : interactionPointId,
+                    questSourceId,
+                    conversationDefinitionId,
+                    providerPersonId,
+                    hostLocationId,
+                    DisplayName,
+                    context.Interactor);
                 return;
             }
 

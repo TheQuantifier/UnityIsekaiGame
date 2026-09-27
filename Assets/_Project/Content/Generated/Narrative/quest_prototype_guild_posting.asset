@@ -38,6 +38,12 @@ MonoBehaviour:
   refusalPolicy: 1
   abandonmentPolicy: 1
   assignmentCapacity: 1
+  requiredPartySize: 1
+  requireReadyPartyAtAcceptance: 1
+  partyRosterPolicy: 0
+  partyProgressPolicy: 0
+  partyAuthorityPolicy: 0
+  partyRewardPolicy: 0
   availabilityStartWorldTime: -1
   availabilityEndWorldTime: -1
   defaultOfferDuration: 7
@@ -46,23 +52,37 @@ MonoBehaviour:
   offeringAuthorityRequirementIds:
   - authority.prototype.guild.quest-offer
   eligibilityRequirementGroups:
-  - groupId: guild-context
+  - groupId: guild-membership
     policy: 1
     thresholdCount: 0
     requirements:
     - requirementId: OrganizationMembership.organization.prototype.adventurers-guild
       kind: 11
       requiredId: organization.prototype.adventurers-guild
+      secondaryId:
+      minimumValue: 0
+      maximumValue: 0
+      comparison: 1
+      revealFailure: 1
+      negate: 0
+    revealFailures: 1
+  - groupId: guild-acceptance-point
+    policy: 2
+    thresholdCount: 0
+    requirements:
+    - requirementId: InteractionPointPresence.interaction-point.prototype.adventurer-guild-counter
+      kind: 23
+      requiredId: interaction-point.prototype.adventurer-guild-counter
       secondaryId: 
       minimumValue: 0
       maximumValue: 0
       comparison: 1
       revealFailure: 1
       negate: 0
-    - requirementId: InteractionPointPresence.interaction-point.prototype.adventurer-guild-counter
+    - requirementId: InteractionPointPresence.interaction-point.prototype.quest-board
       kind: 23
-      requiredId: interaction-point.prototype.adventurer-guild-counter
-      secondaryId: 
+      requiredId: interaction-point.prototype.quest-board
+      secondaryId:
       minimumValue: 0
       maximumValue: 0
       comparison: 1

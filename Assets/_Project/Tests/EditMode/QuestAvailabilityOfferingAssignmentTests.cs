@@ -28,7 +28,31 @@ namespace UnityIsekaiGame.Tests
             Assert.That(registry.TryGet(PrototypeQuestDefinitionFactory.GuildPostingDefinitionId, out QuestDefinition guild), Is.True);
             Assert.That(guild.AssignmentPolicy, Is.EqualTo(QuestAssignmentPolicy.Exclusive));
             Assert.That(guild.ConsentPolicy, Is.EqualTo(QuestConsentPolicy.ExplicitRecipientConsentRequired));
-            Assert.That(guild.EligibilityRequirementGroups.Count, Is.EqualTo(1));
+            Assert.That(guild.EligibilityRequirementGroups.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void GuildPostingCanBeAcceptedAtCounterOrQuestBoard()
+        {
+            QuestParticipationOperationResult counter = AcceptGuildPostingAt("counter", "interaction-point.prototype.adventurer-guild-counter");
+            QuestParticipationOperationResult board = AcceptGuildPostingAt("board", "interaction-point.prototype.quest-board");
+
+            RuntimeFixture fixture = RuntimeFixture.Create();
+            QuestRuntimeOperationResult create = CreateGuildQuest(fixture.Quests, "tx.quest.guild.invalid-points", "quest.runtime.guild.invalid-points");
+            QuestEligibilityResult elsewhere = fixture.Participation.EvaluateEligibility(
+                create.Snapshot.QuestId,
+                GuildContext("person.prototype.elsewhere", "interaction-point.prototype.market", member: true));
+            QuestEligibilityResult nonmember = fixture.Participation.EvaluateEligibility(
+                create.Snapshot.QuestId,
+                GuildContext("person.prototype.nonmember", "interaction-point.prototype.quest-board", member: false));
+
+            Assert.That(counter.Succeeded, Is.True, counter.Message);
+            Assert.That(counter.Assignment, Is.Not.Null);
+            Assert.That(board.Succeeded, Is.True, board.Message);
+            Assert.That(board.Assignment, Is.Not.Null);
+            Assert.That(elsewhere.Eligible, Is.False);
+            Assert.That(nonmember.Eligible, Is.False);
+            Assert.That(nonmember.VisibleFailureReasons, Does.Contain("requirement.OrganizationMembership.organization.prototype.adventurers-guild.OrganizationMembership.missing"));
         }
 
         [Test]
@@ -227,6 +251,57 @@ namespace UnityIsekaiGame.Tests
                         authorityGrants: new[] { "authority.prototype.guild.quest-offer" })
                     : QuestEligibilityFactSet.Empty
             };
+        }
+
+        private static QuestEligibilityContext GuildContext(string personId, string interactionPointId, bool member)
+        {
+            return new QuestEligibilityContext
+            {
+                personId = personId,
+                interactionPointId = interactionPointId,
+                locationId = "location.prototype.adventurers-guild",
+                worldTime = 1d,
+                privilegedDiagnostics = true,
+                facts = member
+                    ? new QuestEligibilityFactSet(
+                        organizationMemberships: new[] { "organization.prototype.adventurers-guild" },
+                        authorityGrants: new[] { "authority.prototype.guild.quest-offer" })
+                    : QuestEligibilityFactSet.Empty
+            };
+        }
+
+        private static QuestParticipationOperationResult AcceptGuildPostingAt(string suffix, string interactionPointId)
+        {
+            RuntimeFixture fixture = RuntimeFixture.Create();
+            string personId = $"person.prototype.{suffix}";
+            QuestRuntimeOperationResult quest = CreateGuildQuest(fixture.Quests, $"tx.quest.guild.{suffix}", $"quest.runtime.guild.{suffix}");
+            QuestEligibilityContext context = GuildContext(personId, interactionPointId, member: true);
+            QuestParticipationOperationResult offer = fixture.Participation.CreateOffer(new QuestOfferRequest
+            {
+                transactionId = $"tx.quest.offer.{suffix}",
+                questId = quest.Snapshot.QuestId,
+                recipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = personId },
+                institutionalIssuer = quest.Snapshot.Issuer,
+                offeringProvider = quest.Snapshot.Issuer,
+                channel = interactionPointId == "interaction-point.prototype.quest-board" ? QuestOfferChannel.QuestBoard : QuestOfferChannel.GuildCounter,
+                sourceInteractionPointId = interactionPointId,
+                sourceLocationId = "location.prototype.adventurers-guild",
+                authorityBasisId = "authority.prototype.guild.quest-offer",
+                eligibilityContext = context,
+                worldTime = 1d
+            });
+            if (!offer.Succeeded) return offer;
+
+            return fixture.Participation.AcceptOffer(new QuestAcceptOfferRequest
+            {
+                transactionId = $"tx.quest.accept.{suffix}",
+                offerId = offer.Offer.OfferId,
+                personId = personId,
+                explicitConsent = true,
+                consentRecordId = $"consent.prototype.{suffix}",
+                eligibilityContext = context,
+                worldTime = 1d
+            });
         }
 
         private static QuestSubjectLinkData Subject(string id, QuestSubjectRole role, InformationSubjectType type)

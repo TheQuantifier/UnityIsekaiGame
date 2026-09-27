@@ -401,6 +401,14 @@ namespace UnityIsekaiGame.Social.Networks
                 if (definitionRegistry == null || !definitionRegistry.TryGet(group.groupDefinitionId, out InformalSocialGroupDefinition definition) || !definition.SupportsRole(membership.roleId)) { failure = $"Social Network membership '{membership.membershipId}' uses invalid role '{membership.roleId}'."; return false; }
                 if (membership.status == SocialGroupMembershipStatus.Active && !activePairs.Add($"{membership.groupId}|{membership.personId}")) { failure = $"Social Network group '{membership.groupId}' has duplicate active membership for '{membership.personId}'."; return false; }
             }
+            foreach (SocialGroupRecordData group in saveData.groups ?? new List<SocialGroupRecordData>())
+            {
+                if (definitionRegistry == null || !definitionRegistry.TryGet(group.groupDefinitionId, out InformalSocialGroupDefinition definition)) continue;
+                int activeMemberCount = (saveData.memberships ?? new List<SocialGroupMembershipRecordData>()).Count(membership => membership != null && membership.groupId == group.groupId && membership.status == SocialGroupMembershipStatus.Active);
+                if (activeMemberCount > definition.MaximumMembers) { failure = $"Social Network group '{group.groupId}' exceeds its maximum of {definition.MaximumMembers} active members."; return false; }
+                int activeLeaderCount = (saveData.memberships ?? new List<SocialGroupMembershipRecordData>()).Count(membership => membership != null && membership.groupId == group.groupId && membership.status == SocialGroupMembershipStatus.Active && definition.IsLeaderRole(membership.roleId));
+                if (!definition.AllowsMultipleLeaders && activeLeaderCount > 1) { failure = $"Social Network group '{group.groupId}' has multiple active leaders."; return false; }
+            }
             return true;
         }
 
@@ -452,6 +460,8 @@ namespace UnityIsekaiGame.Social.Networks
             if (!knownPersonIds.Contains(personId)) return SocialNetworkMutationResult.Failure(SocialNetworkOperationStatus.UnknownPerson, $"Unknown Person '{personId}'.", request.TransactionId, before);
             if (!definition.SupportsRole(roleId)) return SocialNetworkMutationResult.Failure(SocialNetworkOperationStatus.InvalidRole, $"Role '{roleId}' is not supported by group definition '{definition.Id}'.", request.TransactionId, before);
             if (membershipsById.Values.Any(item => item.status == SocialGroupMembershipStatus.Active && item.groupId == group.groupId && item.personId == personId)) return SocialNetworkMutationResult.Failure(SocialNetworkOperationStatus.DuplicateActiveMembership, $"Person '{personId}' is already active in group '{group.groupId}'.", request.TransactionId, before);
+            int activeMemberCount = membershipsById.Values.Count(item => item.status == SocialGroupMembershipStatus.Active && item.groupId == group.groupId);
+            if (activeMemberCount >= definition.MaximumMembers) return SocialNetworkMutationResult.Failure(SocialNetworkOperationStatus.LimitExceeded, $"Group '{group.groupId}' already has its maximum of {definition.MaximumMembers} active members.", request.TransactionId, before);
             if (definition.IsLeaderRole(roleId) && !definition.AllowsMultipleLeaders && membershipsById.Values.Any(item => item.status == SocialGroupMembershipStatus.Active && item.groupId == group.groupId && definition.IsLeaderRole(item.roleId))) return SocialNetworkMutationResult.Failure(SocialNetworkOperationStatus.InvalidRole, $"Group '{group.groupId}' already has an active leader.", request.TransactionId, before);
             SocialGroupMembershipRecordData data = new SocialGroupMembershipRecordData { membershipId = membershipId, groupId = group.groupId, personId = personId, roleId = roleId, status = SocialGroupMembershipStatus.Active, joinedWorldTime = request.WorldTime, sourceRecordId = request.SourceRecordId ?? string.Empty, tags = SocialGroupRecordData.Clean(request.Tags), revision = Revision + (request.Preview ? 0L : 1L) };
             if (!request.Preview) membershipsById[membershipId] = data;
@@ -465,6 +475,7 @@ namespace UnityIsekaiGame.Social.Networks
             if (!TryGetGroupDefinition(group.groupDefinitionId, out InformalSocialGroupDefinition definition, out failure, request, before)) return failure;
             string roleId = request.RoleId?.Trim() ?? string.Empty;
             if (!definition.SupportsRole(roleId)) return SocialNetworkMutationResult.Failure(SocialNetworkOperationStatus.InvalidRole, $"Role '{roleId}' is not supported.", request.TransactionId, before);
+            if (definition.IsLeaderRole(roleId) && !definition.AllowsMultipleLeaders && membershipsById.Values.Any(item => item.status == SocialGroupMembershipStatus.Active && item.groupId == group.groupId && item.membershipId != membership.membershipId && definition.IsLeaderRole(item.roleId))) return SocialNetworkMutationResult.Failure(SocialNetworkOperationStatus.InvalidRole, $"Group '{group.groupId}' already has an active leader.", request.TransactionId, before);
             SocialGroupMembershipRecordData changed = membership.Clone();
             changed.roleId = roleId;
             changed.revision = Revision + (request.Preview ? 0L : 1L);
@@ -492,7 +503,16 @@ namespace UnityIsekaiGame.Social.Networks
             dissolved.lifecycle = InformalSocialGroupLifecycleStatus.Dissolved;
             dissolved.dissolvedWorldTime = request.WorldTime;
             dissolved.revision = Revision + (request.Preview ? 0L : 1L);
-            if (!request.Preview) groupsById[dissolved.groupId] = dissolved;
+            if (!request.Preview)
+            {
+                groupsById[dissolved.groupId] = dissolved;
+                foreach (SocialGroupMembershipRecordData membership in membershipsById.Values.Where(item => item.groupId == dissolved.groupId && item.status == SocialGroupMembershipStatus.Active).ToArray())
+                {
+                    membership.status = SocialGroupMembershipStatus.Departed;
+                    membership.endedWorldTime = request.WorldTime;
+                    membership.revision = Revision + 1L;
+                }
+            }
             return SocialNetworkMutationResult.Success(request.Preview ? SocialNetworkOperationStatus.Preview : SocialNetworkOperationStatus.Succeeded, "Social group dissolved.", request.TransactionId, new SocialGroupSnapshot(dissolved), null, before, before, preview: request.Preview);
         }
 

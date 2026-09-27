@@ -335,7 +335,7 @@ namespace UnityIsekaiGame.Tests
                     explicitConsent = true,
                     assignedBy = new QuestIssuerReferenceData { issuerType = QuestIssuerType.System, issuerId = "system.quest" },
                     authorityBasisId = "authority.prototype.bounty-board.post",
-                    eligibilityContext = new QuestEligibilityContext { personId = personId, interactionPointId = "interaction-point.prototype.bounty-board", privilegedDiagnostics = true, facts = new QuestEligibilityFactSet(authorityGrants: new[] { "authority.prototype.bounty-board.post" }) },
+                    eligibilityContext = new QuestEligibilityContext { personId = personId, partyId = "party.prototype.bounty-test", partyMemberPersonIds = new[] { personId, "person.prototype.bounty-companion" }, readyPartyMemberPersonIds = new[] { personId, "person.prototype.bounty-companion" }, interactionPointId = "interaction-point.prototype.bounty-board", privilegedDiagnostics = true, facts = new QuestEligibilityFactSet(authorityGrants: new[] { "authority.prototype.bounty-board.post" }) },
                     worldTime = 1d
                 });
                 return assign.Assignment;

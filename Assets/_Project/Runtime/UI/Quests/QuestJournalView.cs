@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Quests;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI.Quests
 {
@@ -29,6 +30,7 @@ namespace UnityIsekaiGame.UI.Quests
         private void Awake()
         {
             if (questButtonTemplate != null) questButtonTemplate.gameObject.SetActive(false);
+            ApplyTheme();
         }
 
         public void Initialize(Action<int> onQuestSelected, Action onAbandonRequested, Action onRewardClaimRequested)
@@ -57,7 +59,14 @@ namespace UnityIsekaiGame.UI.Quests
 
         public void SetFeedback(string message)
         {
-            if (feedbackLabel != null) feedbackLabel.text = message;
+            if (feedbackLabel != null)
+            {
+                feedbackLabel.text = message;
+                PrototypeUiTheme.StyleText(feedbackLabel,
+                    message != null && message.IndexOf("fail", StringComparison.OrdinalIgnoreCase) >= 0
+                        ? PrototypeUiTextRole.Danger
+                        : PrototypeUiTextRole.Feedback);
+            }
         }
 
         private void RenderQuestList(IReadOnlyList<PrototypeQuestJournalEntry> quests, int selectedIndex)
@@ -71,11 +80,15 @@ namespace UnityIsekaiGame.UI.Quests
                 Button button = Instantiate(questButtonTemplate, questListRoot);
                 button.gameObject.SetActive(true);
                 button.onClick.AddListener(() => questSelected?.Invoke(index));
+                PrototypeUiTheme.StyleButton(button, i == selectedIndex ? PrototypeUiButtonTone.Primary : PrototypeUiButtonTone.Neutral);
                 Text label = button.GetComponentInChildren<Text>(true);
                 if (label != null)
                 {
-                    string marker = i == selectedIndex ? "> " : string.Empty;
-                    label.text = $"{marker}{quest.Title}\n{quest.Assignment?.LifecycleState}";
+                    string marker = i == selectedIndex ? "SELECTED  |  " : string.Empty;
+                    string party = quest.Assignment?.IsPartyAssignment == true
+                        ? $"PARTY {quest.Assignment.ParticipantPersonIds.Count}"
+                        : "SOLO";
+                    label.text = $"{marker}{quest.Title}\n{quest.Assignment?.LifecycleState}  |  {party}";
                 }
                 questButtons.Add(button);
             }
@@ -84,11 +97,20 @@ namespace UnityIsekaiGame.UI.Quests
         private void RenderDetails(PrototypeQuestJournalEntry quest)
         {
             if (titleLabel != null) titleLabel.text = quest?.Title ?? "No Quest Selected";
-            if (descriptionLabel != null) descriptionLabel.text = quest == null ? "Browse a quest source to accept work." : $"{quest.Summary}\nState: {quest.Assignment?.LifecycleState}";
+            if (descriptionLabel != null) descriptionLabel.text = quest == null ? "Select a journal entry to inspect its objectives, party requirement, and rewards." : BuildDescription(quest);
             if (objectiveLabel != null) objectiveLabel.text = BuildObjectiveText(quest);
             if (rewardLabel != null) rewardLabel.text = BuildRewardText(quest);
             if (abandonButton != null) abandonButton.gameObject.SetActive(quest?.CanAbandon == true);
             if (claimRewardButton != null) claimRewardButton.gameObject.SetActive(quest?.ClaimableReward != null);
+        }
+
+        private static string BuildDescription(PrototypeQuestJournalEntry quest)
+        {
+            QuestAssignmentSnapshot assignment = quest.Assignment;
+            string partyLine = assignment?.IsPartyAssignment == true
+                ? $"Party: {assignment.ParticipantPersonIds.Count} member(s) ({assignment.UndertakingPartyId})"
+                : "Party: Solo";
+            return $"{quest.Summary}\nState: {assignment?.LifecycleState}\n{partyLine}\nRequired at acceptance: {assignment?.RequiredPartySizeAtAcceptance ?? quest.Definition?.RequiredPartySize ?? 1}";
         }
 
         private static string BuildObjectiveText(PrototypeQuestJournalEntry quest)
@@ -98,7 +120,7 @@ namespace UnityIsekaiGame.UI.Quests
             foreach (QuestObjectiveSnapshot objective in quest.Objectives)
             {
                 builder.AppendLine();
-                builder.Append("- ");
+                builder.Append(objective.Satisfied ? "[Complete] " : "[Active] ");
                 builder.Append(objective.Category);
                 builder.Append(" (");
                 builder.Append(objective.CurrentValue);
@@ -125,5 +147,16 @@ namespace UnityIsekaiGame.UI.Quests
 
         private void InvokeAbandonRequested() => abandonRequested?.Invoke();
         private void InvokeRewardClaimRequested() => rewardClaimRequested?.Invoke();
+
+        private void ApplyTheme()
+        {
+            PrototypeUiTheme.StyleText(titleLabel, PrototypeUiTextRole.Title);
+            PrototypeUiTheme.StyleText(descriptionLabel, PrototypeUiTextRole.Muted);
+            PrototypeUiTheme.StyleText(objectiveLabel, PrototypeUiTextRole.Body);
+            PrototypeUiTheme.StyleText(rewardLabel, PrototypeUiTextRole.Body);
+            PrototypeUiTheme.StyleText(feedbackLabel, PrototypeUiTextRole.Feedback);
+            PrototypeUiTheme.StyleButton(abandonButton, PrototypeUiButtonTone.Danger);
+            PrototypeUiTheme.StyleButton(claimRewardButton, PrototypeUiButtonTone.Positive);
+        }
     }
 }

@@ -38,6 +38,12 @@ MonoBehaviour:
   refusalPolicy: 2
   abandonmentPolicy: 2
   assignmentCapacity: 2
+  requiredPartySize: 1
+  requireReadyPartyAtAcceptance: 1
+  partyRosterPolicy: 0
+  partyProgressPolicy: 0
+  partyAuthorityPolicy: 0
+  partyRewardPolicy: 0
   availabilityStartWorldTime: -1
   availabilityEndWorldTime: -1
   defaultOfferDuration: 5

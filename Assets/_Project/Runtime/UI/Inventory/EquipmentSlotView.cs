@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityIsekaiGame.Equipment;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI.Inventory
 {
@@ -20,6 +21,9 @@ namespace UnityIsekaiGame.UI.Inventory
             slotType = type;
             selected = onSelected;
             ResolveReferences();
+            normalColor = PrototypeUiTheme.PanelRaised;
+            selectedColor = PrototypeUiTheme.AccentSoft;
+            PrototypeUiTheme.StyleText(label);
         }
 
         public void Render(EquipmentSlotState slot)

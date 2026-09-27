@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityIsekaiGame.Presentation;
+using UnityIsekaiGame.Input;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -8,21 +10,39 @@ namespace UnityIsekaiGame.Gameplay
     public sealed class PrototypeSocialDebugPanel : MonoBehaviour
     {
         private PrototypePersistenceServiceBehaviour services;
+        private PlayerInputReader input;
         private bool visible;
         private string targetPersonId = string.Empty;
-        private Rect window = new Rect(20f, 20f, 520f, 245f);
+        private Rect window = new Rect(20f, 20f, 560f, 380f);
+        private Vector2 scroll;
 
-        public void Configure(PrototypePersistenceServiceBehaviour value) => services = value;
+        public void Configure(PrototypePersistenceServiceBehaviour value)
+        {
+            services = value;
+            input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+        }
+
+        private void Awake()
+        {
+            input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            SetVisible(visible);
+        }
 
         private void Update()
         {
 #if ENABLE_INPUT_SYSTEM
             if (Keyboard.current != null && Keyboard.current.f8Key.wasPressedThisFrame)
             {
-                visible = !visible;
+                SetVisible(!visible);
+            }
+            else if (visible && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                SetVisible(false);
             }
 #endif
         }
+
+        private void OnDisable() => SetVisible(false);
 
         private void OnGUI()
         {
@@ -31,16 +51,30 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            window = GUI.Window(917214, window, DrawWindow, "Social State (F8)");
+            window.width = Mathf.Min(window.width, Screen.width - 20f);
+            window.height = Mathf.Min(window.height, Screen.height - 20f);
+            window = GUI.Window(917214, window, DrawWindow, "SOCIAL STATE  [F8]", PrototypeUiTheme.WindowStyle);
         }
 
         private void DrawWindow(int id)
         {
-            GUILayout.Label("Target Person ID (blank selects the first NPC)");
+            GUILayout.Label("TARGET PERSON ID", PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label("Leave blank to inspect the first available NPC.", PrototypeUiTheme.MutedStyle);
             targetPersonId = GUILayout.TextField(targetPersonId ?? string.Empty);
-            GUILayout.Space(4f);
-            GUILayout.Label(services.BuildSocialDebugReport(targetPersonId));
-            GUI.DragWindow(new Rect(0f, 0f, window.width, 24f));
+            GUILayout.Space(8f);
+            scroll = GUILayout.BeginScrollView(scroll);
+            GUILayout.Label(services.BuildSocialDebugReport(targetPersonId), PrototypeUiTheme.BodyStyle);
+            GUILayout.EndScrollView();
+            if (GUILayout.Button("Close", PrototypeUiTheme.DangerButtonStyle, GUILayout.Height(32f))) SetVisible(false);
+            GUI.DragWindow(new Rect(0f, 0f, window.width, 30f));
+        }
+
+        private void SetVisible(bool value)
+        {
+            visible = value;
+            if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            if (input != null) input.SetMenuInputBlocked(this, visible);
+            else PlayerCursorMode.SetMenuOpen(this, visible);
         }
     }
 }

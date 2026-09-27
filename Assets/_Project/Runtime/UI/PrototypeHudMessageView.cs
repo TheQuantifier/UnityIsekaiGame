@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI
 {
@@ -17,6 +18,10 @@ namespace UnityIsekaiGame.UI
             {
                 label = GetComponent<Text>();
             }
+
+
+            PrototypeUiTheme.StyleText(label, PrototypeUiTextRole.Feedback);
+            PrototypeUiTheme.EnsureTextShadow(label, 2f);
 
             Hide();
         }

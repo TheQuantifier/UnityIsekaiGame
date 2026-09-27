@@ -205,6 +205,9 @@ namespace UnityIsekaiGame.Quests
     public sealed class QuestEligibilityContext
     {
         public string personId;
+        public string partyId;
+        public string[] partyMemberPersonIds = Array.Empty<string>();
+        public string[] readyPartyMemberPersonIds = Array.Empty<string>();
         public string locationId;
         public string interactionPointId;
         public double worldTime;
@@ -212,11 +215,37 @@ namespace UnityIsekaiGame.Quests
         public bool privilegedDiagnostics;
         public QuestEligibilityFactSet facts = QuestEligibilityFactSet.Empty;
 
+        public int PartySize
+        {
+            get
+            {
+                string[] members = CleanPartyMembers(partyMemberPersonIds);
+                if (members.Length > 0)
+                {
+                    return members.Length;
+                }
+
+                return string.IsNullOrWhiteSpace(personId) ? 0 : 1;
+            }
+        }
+
+        public int ReadyPartySize
+        {
+            get
+            {
+                string[] members = CleanPartyMembers(readyPartyMemberPersonIds);
+                return !string.IsNullOrWhiteSpace(partyId) ? members.Length : PartySize;
+            }
+        }
+
         public QuestEligibilityContext Clone()
         {
             return new QuestEligibilityContext
             {
                 personId = N(personId),
+                partyId = N(partyId),
+                partyMemberPersonIds = CleanPartyMembers(partyMemberPersonIds),
+                readyPartyMemberPersonIds = CleanPartyMembers(readyPartyMemberPersonIds),
                 locationId = N(locationId),
                 interactionPointId = N(interactionPointId),
                 worldTime = worldTime,
@@ -224,6 +253,16 @@ namespace UnityIsekaiGame.Quests
                 privilegedDiagnostics = privilegedDiagnostics,
                 facts = facts ?? QuestEligibilityFactSet.Empty
             };
+        }
+
+        private static string[] CleanPartyMembers(IEnumerable<string> values)
+        {
+            return (values ?? Array.Empty<string>())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
         }
 
         private static string N(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -287,6 +326,9 @@ namespace UnityIsekaiGame.Quests
         public string offerId;
         public string worldId;
         public string assigneePersonId;
+        public string undertakingPartyId;
+        public string[] participantPersonIds = Array.Empty<string>();
+        public int requiredPartySizeAtAcceptance = 1;
         public QuestIssuerReferenceData institutionalIssuer = new QuestIssuerReferenceData();
         public QuestIssuerReferenceData assignedBy = new QuestIssuerReferenceData();
         public QuestAssignmentLifecycleState lifecycleState = QuestAssignmentLifecycleState.Active;
@@ -309,6 +351,9 @@ namespace UnityIsekaiGame.Quests
                 offerId = N(offerId),
                 worldId = N(worldId),
                 assigneePersonId = N(assigneePersonId),
+                undertakingPartyId = N(undertakingPartyId),
+                participantPersonIds = CleanParticipants(participantPersonIds, assigneePersonId),
+                requiredPartySizeAtAcceptance = Math.Max(1, requiredPartySizeAtAcceptance),
                 institutionalIssuer = institutionalIssuer?.Clone() ?? new QuestIssuerReferenceData(),
                 assignedBy = assignedBy?.Clone() ?? new QuestIssuerReferenceData(),
                 lifecycleState = lifecycleState,
@@ -322,6 +367,18 @@ namespace UnityIsekaiGame.Quests
                 provenanceId = N(provenanceId),
                 revision = revision
             };
+        }
+
+        internal static string[] CleanParticipants(IEnumerable<string> values, string fallbackAssignee = null)
+        {
+            IEnumerable<string> participants = values ?? Array.Empty<string>();
+            if (!string.IsNullOrWhiteSpace(fallbackAssignee)) participants = participants.Concat(new[] { fallbackAssignee });
+            return participants
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
         }
 
         private static string N(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -503,6 +560,10 @@ namespace UnityIsekaiGame.Quests
         public string OfferId => data.offerId ?? string.Empty;
         public string WorldId => data.worldId ?? string.Empty;
         public string AssigneePersonId => data.assigneePersonId ?? string.Empty;
+        public string UndertakingPartyId => data.undertakingPartyId ?? string.Empty;
+        public IReadOnlyList<string> ParticipantPersonIds => QuestAssignmentRecordData.CleanParticipants(data.participantPersonIds, data.assigneePersonId);
+        public int RequiredPartySizeAtAcceptance => Math.Max(1, data.requiredPartySizeAtAcceptance);
+        public bool IsPartyAssignment => !string.IsNullOrWhiteSpace(UndertakingPartyId) || ParticipantPersonIds.Count > 1;
         public QuestIssuerReferenceData InstitutionalIssuer => data.institutionalIssuer?.Clone() ?? new QuestIssuerReferenceData();
         public QuestIssuerReferenceData AssignedBy => data.assignedBy?.Clone() ?? new QuestIssuerReferenceData();
         public QuestAssignmentLifecycleState LifecycleState => data.lifecycleState;
@@ -616,6 +677,7 @@ namespace UnityIsekaiGame.Quests
         public string questId;
         public string assignmentId;
         public string assigneePersonId;
+        public string participantPersonId;
         public string issuerId;
         public QuestAssignmentLifecycleState? lifecycleState;
         public bool includeHistorical;

@@ -99,7 +99,14 @@ namespace UnityIsekaiGame.Quests
                         capacity: 1,
                         offerDuration: 7d,
                         authorityRequirements: new[] { "authority.prototype.guild.quest-offer" },
-                        eligibilityGroups: new[] { All("guild-context", Membership("organization.prototype.adventurers-guild"), Interaction(UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId)) });
+                        eligibilityGroups: new[]
+                        {
+                            All("guild-membership", Membership("organization.prototype.adventurers-guild")),
+                            Any(
+                                "guild-acceptance-point",
+                                Interaction(UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId),
+                                Interaction(UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.QuestBoardPointId))
+                        });
                     break;
                 case MerchantDeliveryDefinitionId:
                     definition.DevelopmentConfigureParticipation(
@@ -141,9 +148,11 @@ namespace UnityIsekaiGame.Quests
                         refusal: QuestRefusalPolicy.MayReoffer,
                         abandonment: QuestAbandonmentPolicy.AllowedReleasesCapacity,
                         capacity: 4,
+                        minimumPartySize: 2,
                         offerDuration: 2d,
                         authorityRequirements: new[] { "authority.prototype.bounty-board.post" },
-                        eligibilityGroups: new[] { All("bounty-board", Interaction("interaction-point.prototype.bounty-board")) });
+                        eligibilityGroups: new[] { All("bounty-board", Interaction("interaction-point.prototype.bounty-board")) },
+                        rewardPolicy: QuestPartyRewardPolicy.SplitCurrency);
                     break;
                 default:
                     definition.DevelopmentConfigureParticipation();

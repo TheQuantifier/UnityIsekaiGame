@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.Combat
 {
@@ -28,6 +29,9 @@ namespace UnityIsekaiGame.Combat
             {
                 targetRenderer = GetComponentInChildren<Renderer>();
             }
+
+            PrototypeUiTheme.StyleText(healthLabel, PrototypeUiTextRole.Body);
+            PrototypeUiTheme.EnsureTextShadow(healthLabel, 2f);
 
             SetColor(normalColor);
             previousHealth = health == null ? -1f : health.CurrentHealth;
@@ -122,6 +126,12 @@ namespace UnityIsekaiGame.Combat
 
             string status = health.IsDefeated ? "Defeated" : $"{health.CurrentHealth:0} / {health.MaximumHealth:0}";
             healthLabel.text = $"{name}: {status}";
+            float ratio = health.MaximumHealth <= 0f ? 0f : health.CurrentHealth / health.MaximumHealth;
+            healthLabel.color = health.IsDefeated
+                ? PrototypeUiTheme.TextMuted
+                : ratio <= 0.25f
+                    ? PrototypeUiTheme.Danger
+                    : PrototypeUiTheme.TextPrimary;
         }
 
         private void SetColor(Color color)

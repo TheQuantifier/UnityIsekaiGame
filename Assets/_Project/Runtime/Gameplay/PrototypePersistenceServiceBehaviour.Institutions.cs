@@ -63,6 +63,18 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
+        public bool IsPlayerRegisteredWithMerchantGuild
+        {
+            get
+            {
+                EnsureGroup10InstitutionalRuntime();
+                return worldOrganizationMemberships != null
+                    && worldOrganizationMemberships.TryGetMembership(PrototypeInstitutionalContentIds.PlayerMerchantGuildMembershipId(ResolvePlayerPersonId()), out OrganizationMembershipSnapshot membership)
+                    && membership.IsActive
+                    && string.Equals(membership.OrganizationId, PrototypeInstitutionalContentIds.MerchantGuild, StringComparison.Ordinal);
+            }
+        }
+
         public PrototypeAdventurerRegistrationResult RegisterPlayerAsAdventurerAtGuildDesk(string interactionPointId)
         {
             EnsureGroup10InstitutionalRuntime();
@@ -155,6 +167,74 @@ namespace UnityIsekaiGame.Gameplay
 
             dirtyTracker?.MarkDirty("Player registered with the Adventurers Guild at G rank.");
             return PrototypeAdventurerRegistrationResult.Success(rank.Membership, "Registration complete. You are now a G-rank adventurer.");
+        }
+
+        public PrototypeMerchantRegistrationResult RegisterPlayerWithMerchantGuildAtDesk(string interactionPointId)
+        {
+            EnsureGroup10InstitutionalRuntime();
+            string playerId = ResolvePlayerPersonId();
+            string membershipId = PrototypeInstitutionalContentIds.PlayerMerchantGuildMembershipId(playerId);
+            if (!string.Equals(interactionPointId, PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId, StringComparison.Ordinal))
+            {
+                return PrototypeMerchantRegistrationResult.Failure("Merchant registration is only available at the Merchant Guild counter.");
+            }
+
+            bool receptionistAssigned = worldInteractionPoints != null
+                && worldInteractionPoints.GetProviderAssignments(interactionPointId, includeHidden: true).Any(assignment =>
+                    assignment.IsActive
+                    && string.Equals(assignment.ServiceDefinitionId, PrototypeInteractionPointDefinitionFactory.RegisterMerchantServiceId, StringComparison.Ordinal)
+                    && string.Equals(assignment.ProviderEntity?.entityId, PrototypeInstitutionalContentIds.MerchantGuildReceptionistPerson, StringComparison.Ordinal));
+            if (!receptionistAssigned)
+            {
+                return PrototypeMerchantRegistrationResult.Failure("The Merchant Guild receptionist is not available to process registration.");
+            }
+
+            if (worldOrganizationMemberships.TryGetMembership(membershipId, out OrganizationMembershipSnapshot existing) && existing.IsActive)
+            {
+                return PrototypeMerchantRegistrationResult.ExistingRegistration(existing, "You are already registered with the Merchant Guild.");
+            }
+
+            double worldTime = playTimeTracker == null ? Time.unscaledTimeAsDouble : playTimeTracker.CumulativeSeconds;
+            string operationSuffix = $"{NormalizeRuntimeRecordSuffix(playerId)}.{worldOrganizationMemberships.Revision + 1}";
+            OrganizationAuthorizationResult authorization = worldOrganizationAuthority.EvaluateAuthorization(new OrganizationAuthorizationRequest
+            {
+                operationId = $"merchant-registration.authorize.{operationSuffix}",
+                actorPersonId = PrototypeInstitutionalContentIds.MerchantGuildReceptionistPerson,
+                organizationId = PrototypeInstitutionalContentIds.MerchantGuild,
+                actionDefinitionId = PrototypeOrganizationAuthorityDefinitionFactory.AdmitMemberActionId,
+                scope = OrganizationAuthorityScopeData.ForOrganization(PrototypeInstitutionalContentIds.MerchantGuild),
+                targetPersonId = playerId,
+                targetRecordId = membershipId,
+                worldTime = worldTime
+            });
+            if (!authorization.Succeeded)
+            {
+                return PrototypeMerchantRegistrationResult.Failure($"The Merchant Guild receptionist cannot complete registration: {authorization.Message}");
+            }
+
+            OrganizationMembershipOperationResult membership = worldOrganizationMemberships.ApplyMembership(new OrganizationMembershipRequest
+            {
+                transactionId = $"merchant-registration.membership.{operationSuffix}",
+                membershipId = membershipId,
+                organizationId = PrototypeInstitutionalContentIds.MerchantGuild,
+                personId = playerId,
+                membershipDefinitionId = PrototypeOrganizationMembershipDefinitionFactory.GuildFullMemberId,
+                targetStatus = OrganizationMembershipStatus.Active,
+                sourceKind = OrganizationMembershipSourceKind.Application,
+                explicitConsent = true,
+                sourceEventId = interactionPointId,
+                sourceRecordId = PrototypeInteractionPointDefinitionFactory.RegisterMerchantServiceId,
+                provenanceId = "merchant-guild-counter-registration",
+                tags = new[] { "merchant", "registered-at-guild-counter" },
+                worldTime = worldTime
+            });
+            if (!membership.Succeeded)
+            {
+                return PrototypeMerchantRegistrationResult.Failure($"Merchant Guild registration failed: {membership.Message}");
+            }
+
+            dirtyTracker?.MarkDirty("Player registered with the Merchant Guild.");
+            return PrototypeMerchantRegistrationResult.Success(membership.Membership, "Registration complete. You are now a member of the Merchant Guild.");
         }
 
         private void EnsureGroup10InstitutionalRuntime()

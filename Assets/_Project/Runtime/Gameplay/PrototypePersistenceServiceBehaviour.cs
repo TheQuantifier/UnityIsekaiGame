@@ -50,6 +50,7 @@ using UnityIsekaiGame.Knowledge.Sources;
 using UnityIsekaiGame.Magic;
 using UnityIsekaiGame.Narrative;
 using UnityIsekaiGame.Organizations;
+using UnityIsekaiGame.Parties;
 using UnityIsekaiGame.Persistence;
 using UnityIsekaiGame.People;
 using UnityIsekaiGame.Places;
@@ -295,6 +296,7 @@ namespace UnityIsekaiGame.Gameplay
         private SocialInteractionRuntime worldSocialInteractions;
         private SocialNormRuntime worldSocialNorms;
         private SocialNetworkRuntime worldSocialNetworks;
+        private AdventuringPartyService adventuringParties;
         private SocialDecisionRuntime worldSocialDecisions;
         private SocialInfluenceRuntime worldSocialInfluence;
         private SocialEmotionRuntime worldSocialEmotions;
@@ -499,6 +501,7 @@ namespace UnityIsekaiGame.Gameplay
                 return worldSocialNetworks;
             }
         }
+        public AdventuringPartyService AdventuringParties => adventuringParties ??= new AdventuringPartyService(SocialNetworks, GetDefinitionRegistry());
 
         public SocialDecisionRuntime SocialDecisions
         {
@@ -907,8 +910,9 @@ namespace UnityIsekaiGame.Gameplay
             if (GetComponent<PrototypeTravelPanel>() == null) gameObject.AddComponent<PrototypeTravelPanel>();
             if (GetComponent<PrototypeQuestSourcePanel>() == null) gameObject.AddComponent<PrototypeQuestSourcePanel>();
             if (GetComponent<PrototypeDialoguePanel>() == null) gameObject.AddComponent<PrototypeDialoguePanel>();
+            if (GetComponent<PrototypeGuildDeskPanel>() == null) gameObject.AddComponent<PrototypeGuildDeskPanel>();
+            if (GetComponent<PrototypeTextChatPanel>() == null) gameObject.AddComponent<PrototypeTextChatPanel>();
         }
-
         private void Update()
         {
             worldNarrativeCoordinator?.Advance();
@@ -941,6 +945,7 @@ namespace UnityIsekaiGame.Gameplay
 
         private void OnDisable()
         {
+            ShutdownPartyOperations();
             if (playerService != null && inventoryEquipmentParticipant != null)
             {
                 UnregisterParticipant(inventoryEquipmentParticipant);
@@ -1437,6 +1442,7 @@ namespace UnityIsekaiGame.Gameplay
             EnsureWorldSocialInteractionParticipant();
             EnsureWorldSocialNormParticipant();
             EnsureWorldSocialNetworkParticipant();
+            EnsureWorldPartyOperationalParticipant();
             EnsureWorldSocialInfluenceParticipant();
             EnsureWorldSocialEmotionParticipant();
             EnsureWorldFamilyRelationshipParticipant();

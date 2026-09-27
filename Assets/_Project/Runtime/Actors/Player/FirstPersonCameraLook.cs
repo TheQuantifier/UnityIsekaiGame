@@ -16,11 +16,7 @@ namespace UnityIsekaiGame.Player
 
         private void Start()
         {
-            if (lockCursorOnStart)
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
+            PlayerCursorMode.SetMouseLookEnabled(lockCursorOnStart);
         }
 
         private void Update()

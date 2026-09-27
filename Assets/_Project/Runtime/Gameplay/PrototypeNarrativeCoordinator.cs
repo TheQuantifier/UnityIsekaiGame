@@ -8,6 +8,7 @@ using UnityIsekaiGame.Knowledge;
 using UnityIsekaiGame.Knowledge.Access;
 using UnityIsekaiGame.Narrative;
 using UnityIsekaiGame.Organizations;
+using UnityIsekaiGame.Parties;
 using UnityIsekaiGame.PrototypeIntegration;
 using UnityIsekaiGame.Quests;
 using UnityIsekaiGame.WorldLocations;
@@ -37,6 +38,7 @@ namespace UnityIsekaiGame.Gameplay
             QuestObjectiveSignalBus.SignalReported += HandleObjectiveSignal;
             services.WorldDialogue.EventCommitted += HandleDialogueEvent;
             if (services.PlayerInventory != null) services.PlayerInventory.ItemAdded += HandleItemAdded;
+            services.AdventuringParties.Changed += HandlePartyChanged;
         }
 
         public event Action Changed;
@@ -52,6 +54,7 @@ namespace UnityIsekaiGame.Gameplay
         public NarrativeEventRuntime NarrativeEvents => services.WorldNarrativeEvents;
         public NarrativeStateRuntime NarrativeState => services.WorldNarrativeState;
         public NarrativeArcRuntime NarrativeArcs => services.WorldNarrativeArcs;
+        public AdventuringPartyService Parties => services.AdventuringParties;
         public string PlayerPersonId => services.PlayerPersonId;
         public double WorldTime => services.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble;
 
@@ -536,6 +539,7 @@ namespace UnityIsekaiGame.Gameplay
             QuestObjectiveSignalBus.SignalReported -= HandleObjectiveSignal;
             if (services.WorldDialogue != null) services.WorldDialogue.EventCommitted -= HandleDialogueEvent;
             if (services.PlayerInventory != null) services.PlayerInventory.ItemAdded -= HandleItemAdded;
+            services.AdventuringParties.Changed -= HandlePartyChanged;
             Changed = null;
             DialogueChanged = null;
         }
@@ -546,6 +550,13 @@ namespace UnityIsekaiGame.Gameplay
             ReportObjective(QuestObjectiveCategory.ObtainItem, item.Id, quantity, "player.inventory.add");
             int possessed = services.PlayerInventory?.CountItem(item) ?? quantity;
             ReportObjective(QuestObjectiveCategory.PossessItem, item.Id, Math.Max(1, possessed), "player.inventory.state");
+        }
+
+        private void HandlePartyChanged()
+        {
+            if (disposed) return;
+            services.DirtyTracker?.MarkDirty("Adventuring party membership changed.");
+            Changed?.Invoke();
         }
 
         private bool TryGetObjectiveDefinition(QuestObjectiveSnapshot objective, out QuestObjectiveDefinitionData definition)
@@ -658,6 +669,13 @@ namespace UnityIsekaiGame.Gameplay
             QuestObjectiveOperationResult result = Objectives.ApplySignal(signal);
             if (!result.Succeeded) return result;
 
+            string contributingPerson = string.IsNullOrWhiteSpace(signal.participantPersonId) ? signal.actorPersonId : signal.participantPersonId;
+            PartySnapshot contributingParty = services.AdventuringParties.GetPartyForPerson(contributingPerson);
+            if (contributingParty != null)
+            {
+                services.PartyOperations.RecordContribution(contributingParty.PartyId, contributingPerson, Math.Max(1, signal.amount));
+            }
+
             foreach (QuestAssignmentSnapshot assignment in Participation.QueryAssignments(new QuestAssignmentQuery
             {
                 assigneePersonId = PlayerPersonId,
@@ -710,6 +728,14 @@ namespace UnityIsekaiGame.Gameplay
         private QuestEligibilityContext BuildEligibility(string interactionPointId)
         {
             string person = PlayerPersonId;
+            PartySnapshot party = services.AdventuringParties.GetPartyForPerson(person);
+            string[] undertakingMembers = party?.MemberPersonIds?.ToArray() ?? new[] { person };
+            string playerLocation = ResolvePlayerLocation();
+            if (party != null)
+            {
+                services.PartyOperations.ReportMemberState(party.PartyId, person, PartyMemberReadiness.Ready, playerLocation, 0f, true, true, true);
+            }
+            string[] readyMembers = party == null ? new[] { person } : services.PartyOperations.GetReadyMemberIds(party.PartyId, playerLocation).ToArray();
             OrganizationMembershipSnapshot[] memberships = services.OrganizationMemberships?.QueryMemberships(person, activeOnly: true).ToArray() ?? Array.Empty<OrganizationMembershipSnapshot>();
             string[] organizations = memberships.Select(value => value.OrganizationId).ToArray();
             string[] ranks = memberships.SelectMany(value => value.RankAssignments).Where(value => value.IsActive).Select(value => value.rankDefinitionId).ToArray();
@@ -717,7 +743,10 @@ namespace UnityIsekaiGame.Gameplay
             return new QuestEligibilityContext
             {
                 personId = person,
-                locationId = ResolvePlayerLocation(),
+                partyId = party?.PartyId ?? string.Empty,
+                partyMemberPersonIds = undertakingMembers,
+                readyPartyMemberPersonIds = readyMembers,
+                locationId = playerLocation,
                 interactionPointId = interactionPointId ?? string.Empty,
                 worldTime = WorldTime,
                 access = QuestVisibilityAccess.Recipient,
@@ -733,6 +762,7 @@ namespace UnityIsekaiGame.Gameplay
         private DialogueConditionContext BuildDialogueContext(string providerPersonId, string interactionPointId, string locationId)
         {
             QuestEligibilityContext eligibility = BuildEligibility(interactionPointId);
+            PartySnapshot dialogueParty = services.AdventuringParties.GetPartyForPerson(PlayerPersonId);
             QuestAssignmentSnapshot[] assignments = Participation.QueryAssignments(new QuestAssignmentQuery
             {
                 assigneePersonId = PlayerPersonId,
@@ -752,6 +782,10 @@ namespace UnityIsekaiGame.Gameplay
                 activeAssignmentQuestIds = assignments.Where(value => value.LifecycleState == QuestAssignmentLifecycleState.Active).Select(value => value.QuestId),
                 completedQuestIds = Outcomes.QueryOutcomes(new QuestOutcomeQuery { requesterPersonId = PlayerPersonId, outcomeKind = QuestTerminalOutcomeKind.Completed, access = QuestVisibilityAccess.Recipient }).Select(value => value.QuestId),
                 claimableRewardIds = Outcomes.QueryRewards(new QuestRewardQuery { requesterPersonId = PlayerPersonId, recipientPersonId = PlayerPersonId, access = QuestVisibilityAccess.Recipient }).Where(value => value.State == QuestRewardEntitlementState.Claimable).Select(value => value.EntitlementId),
+                partyId = dialogueParty?.PartyId ?? string.Empty,
+                partyLeaderPersonId = dialogueParty?.LeaderPersonId ?? string.Empty,
+                partyMemberPersonIds = dialogueParty?.MemberPersonIds ?? Array.Empty<string>(),
+                readyPartyMemberPersonIds = dialogueParty == null ? new[] { PlayerPersonId } : services.PartyOperations.GetReadyMemberIds(dialogueParty.PartyId),
                 access = ConversationAccessLevel.Participant
             };
         }
@@ -766,16 +800,46 @@ namespace UnityIsekaiGame.Gameplay
                 lifecycleState = QuestOfferLifecycleState.Active,
                 access = QuestVisibilityAccess.Recipient
             }).FirstOrDefault(value => value.OfferId == target || value.QuestId == target || QuestDefinitionMatches(value.QuestId, target));
-            if (offer == null) return request.effect.requirement == DialogueEffectRequirement.Required ? DialogueEffectExecutionResult.Failure("No matching active quest offer exists.") : DialogueEffectExecutionResult.Success("quest.offer", target);
+
+            if (offer == null)
+            {
+                QuestSnapshot quest = Quests.Query(new QuestQuery { definitionId = target, recipientId = request.actorPersonId }).FirstOrDefault()
+                    ?? Quests.Query(new QuestQuery { definitionId = target }).FirstOrDefault();
+                if (quest == null || !registry.TryGet(quest.QuestDefinitionId, out QuestDefinition definition))
+                    return DialogueEffectExecutionResult.Failure($"Quest '{target}' is unavailable.");
+
+                QuestIssuerReferenceData provider = quest.Issuer;
+                provider.actingPersonId = request.conditionContext?.speakerPersonId;
+                QuestParticipationOperationResult created = Participation.CreateOffer(new QuestOfferRequest
+                {
+                    transactionId = $"dialogue.effect.{request.effect.effectId}.{request.flowId}.offer",
+                    questId = quest.QuestId,
+                    recipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = request.actorPersonId },
+                    institutionalIssuer = quest.Issuer,
+                    offeringProvider = provider,
+                    channel = QuestOfferChannel.GuildCounter,
+                    sourceInteractionPointId = request.conditionContext?.interactionPointId,
+                    sourceLocationId = request.conditionContext?.locationId,
+                    authorityBasisId = definition.OfferingAuthorityRequirementIds.FirstOrDefault(),
+                    eligibilityContext = BuildEligibility(request.conditionContext?.interactionPointId),
+                    worldTime = request.worldTime,
+                    preview = request.preview
+                });
+                if (!created.Succeeded) return DialogueEffectExecutionResult.Failure(created.Message);
+                if (request.preview) return DialogueEffectExecutionResult.Success("quest.offer", created.Offer?.OfferId);
+                offer = created.Offer;
+            }
+
             QuestParticipationOperationResult accepted = Participation.AcceptOffer(new QuestAcceptOfferRequest
             {
-                transactionId = $"dialogue.effect.{request.effect.effectId}.{request.flowId}",
+                transactionId = $"dialogue.effect.{request.effect.effectId}.{request.flowId}.accept",
                 offerId = offer.OfferId,
                 personId = request.actorPersonId,
                 explicitConsent = true,
                 consentRecordId = $"consent.dialogue.{Sanitize(request.flowId)}.{Sanitize(offer.OfferId)}",
                 eligibilityContext = BuildEligibility(request.conditionContext?.interactionPointId),
-                worldTime = request.worldTime
+                worldTime = request.worldTime,
+                preview = request.preview
             });
             if (!accepted.Succeeded) return DialogueEffectExecutionResult.Failure(accepted.Message);
             if (accepted.Assignment != null) InitializeAssignment(accepted.Assignment);

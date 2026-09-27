@@ -6,6 +6,7 @@ using UnityIsekaiGame.Dialogue;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Quests;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.Gameplay
 {
@@ -14,8 +15,6 @@ namespace UnityIsekaiGame.Gameplay
         protected PrototypePersistenceServiceBehaviour Services { get; private set; }
         protected PlayerInputReader Input { get; private set; }
         protected bool IsOpen { get; private set; }
-        private CursorLockMode priorLockMode;
-        private bool priorCursorVisible;
 
         protected virtual void Awake() => Services = GetComponent<PrototypePersistenceServiceBehaviour>();
 
@@ -29,13 +28,10 @@ namespace UnityIsekaiGame.Gameplay
             if (IsOpen) return;
             Input = interactor == null ? null : interactor.GetComponentInParent<PlayerInputReader>();
             if (Input == null) Input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
-            priorLockMode = Cursor.lockState;
-            priorCursorVisible = Cursor.visible;
             IsOpen = true;
             PrototypeGameplayModalState.SetNarrativeActive(true);
-            Input?.SetGameplayInputBlocked(true);
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            if (Input != null) Input.SetMenuInputBlocked(this, true);
+            else PlayerCursorMode.SetMenuOpen(this, true);
         }
 
         public virtual void Close()
@@ -43,9 +39,8 @@ namespace UnityIsekaiGame.Gameplay
             if (!IsOpen) return;
             IsOpen = false;
             PrototypeGameplayModalState.SetNarrativeActive(false);
-            Input?.SetGameplayInputBlocked(false);
-            Cursor.lockState = priorLockMode;
-            Cursor.visible = priorCursorVisible;
+            if (Input != null) Input.SetMenuInputBlocked(this, false);
+            else PlayerCursorMode.SetMenuOpen(this, false);
         }
 
         protected virtual void OnDisable() => Close();
@@ -82,12 +77,12 @@ namespace UnityIsekaiGame.Gameplay
             float width = Mathf.Min(680f, Screen.width - 30f);
             float height = Mathf.Min(620f, Screen.height - 30f);
             Rect window = new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height);
-            GUI.Box(window, GUIContent.none);
+            PrototypeUiTheme.DrawPanelFrame(window, modal: true);
             GUILayout.BeginArea(new Rect(window.x + 18f, window.y + 16f, window.width - 36f, window.height - 32f));
             GUILayout.BeginHorizontal();
-            GUILayout.Label(title, HeaderStyle());
+            GUILayout.Label(title, PrototypeUiTheme.TitleStyle);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Close", GUILayout.Width(90f), GUILayout.Height(30f)))
+            if (GUILayout.Button("Close", PrototypeUiTheme.DangerButtonStyle, GUILayout.Width(90f), GUILayout.Height(34f)))
             {
                 Close();
                 GUILayout.EndHorizontal();
@@ -95,12 +90,12 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
             GUILayout.EndHorizontal();
-            GUILayout.Label(status ?? string.Empty, WrapStyle());
+            GUILayout.Label(status ?? string.Empty, PrototypeUiTheme.StatusStyle);
             GUILayout.Space(8f);
             scroll = GUILayout.BeginScrollView(scroll);
             if (browseResult?.Listings == null || browseResult.Listings.Count == 0)
             {
-                GUILayout.Label("No postings are currently available.");
+                GUILayout.Label("No postings are currently available. Check another quest source or return later.", PrototypeUiTheme.MutedStyle);
             }
             else
             {
@@ -118,19 +113,27 @@ namespace UnityIsekaiGame.Gameplay
         {
             QuestDefinition definition = null;
             if (visible?.Quest != null) Services.RuntimeDefinitionRegistry.TryGet(visible.Quest.QuestDefinitionId, out definition);
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label(definition?.Title ?? visible?.Quest?.QuestDefinitionId ?? "Unknown Quest", SubheaderStyle());
-            if (!string.IsNullOrWhiteSpace(definition?.Summary)) GUILayout.Label(definition.Summary, WrapStyle());
+            GUILayout.BeginVertical(PrototypeUiTheme.CardStyle);
+            GUILayout.Label(definition?.Title ?? visible?.Quest?.QuestDefinitionId ?? "Unknown Quest", PrototypeUiTheme.HeadingStyle);
+            if (!string.IsNullOrWhiteSpace(definition?.Summary)) GUILayout.Label(definition.Summary, PrototypeUiTheme.BodyStyle);
+            if (definition != null)
+            {
+                int currentPartySize = Services.NarrativeCoordinator.Parties.GetPartyForPerson(Services.PlayerPersonId)?.MemberCount ?? 1;
+                string requirement = definition.RequiresParty
+                    ? $"Requires a party of at least {definition.RequiredPartySize}. Current party: {currentPartySize}."
+                    : $"Solo or party quest. Current party: {currentPartySize}.";
+                GUILayout.Label(requirement, definition.RequiresParty ? PrototypeUiTheme.StatusStyle : PrototypeUiTheme.MutedStyle);
+            }
             bool canAccept = visible != null && visible.Eligible && !visible.Taken && visible.Listing?.LifecycleState == QuestListingLifecycleState.Published;
             if (!canAccept)
             {
                 string reason = visible?.Taken == true
                     ? "Already taken."
                     : string.Join(" ", visible?.Eligibility?.VisibleFailureReasons ?? Array.Empty<string>());
-                GUILayout.Label(string.IsNullOrWhiteSpace(reason) ? "Currently unavailable." : reason, WrapStyle());
+                GUILayout.Label(string.IsNullOrWhiteSpace(reason) ? "Currently unavailable." : reason, PrototypeUiTheme.MutedStyle);
             }
             GUI.enabled = canAccept;
-            if (GUILayout.Button("Accept", GUILayout.Height(32f)))
+            if (GUILayout.Button("Accept Quest", PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(36f)))
             {
                 QuestSourceOperationResult result = Services.NarrativeCoordinator.AcceptListing(visible.Listing.QuestListingId, interactionPointId);
                 status = result.Message;
@@ -141,9 +144,6 @@ namespace UnityIsekaiGame.Gameplay
             GUILayout.EndVertical();
         }
 
-        private static GUIStyle HeaderStyle() => new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold };
-        private static GUIStyle SubheaderStyle() => new GUIStyle(GUI.skin.label) { fontSize = 17, fontStyle = FontStyle.Bold };
-        private static GUIStyle WrapStyle() => new GUIStyle(GUI.skin.label) { wordWrap = true };
     }
 
     public sealed class PrototypeDialoguePanel : PrototypeNarrativeModalPanel
@@ -180,12 +180,12 @@ namespace UnityIsekaiGame.Gameplay
             float width = Mathf.Min(720f, Screen.width - 30f);
             float height = Mathf.Min(520f, Screen.height - 30f);
             Rect window = new Rect((Screen.width - width) * 0.5f, Screen.height - height - 20f, width, height);
-            GUI.Box(window, GUIContent.none);
+            PrototypeUiTheme.DrawPanelFrame(window, modal: true);
             GUILayout.BeginArea(new Rect(window.x + 18f, window.y + 16f, window.width - 36f, window.height - 32f));
             GUILayout.BeginHorizontal();
-            GUILayout.Label(speakerName, new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold });
+            GUILayout.Label(speakerName, PrototypeUiTheme.TitleStyle);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("End", GUILayout.Width(90f), GUILayout.Height(30f)))
+            if (GUILayout.Button("End", PrototypeUiTheme.DangerButtonStyle, GUILayout.Width(90f), GUILayout.Height(34f)))
             {
                 Close();
                 GUILayout.EndHorizontal();
@@ -194,11 +194,21 @@ namespace UnityIsekaiGame.Gameplay
             }
             GUILayout.EndHorizontal();
             scroll = GUILayout.BeginScrollView(scroll);
-            GUILayout.Label(flow.AuthoredText, new GUIStyle(GUI.skin.label) { wordWrap = true, fontSize = 16 });
+            GUILayout.BeginVertical(PrototypeUiTheme.CardStyle);
+            GUILayout.Label(flow.AuthoredText, PrototypeUiTheme.HeadingStyle);
+            GUILayout.EndVertical();
             GUILayout.Space(12f);
-            foreach (DialogueChoiceSnapshot choice in flow.VisibleChoices.Where(value => value.Evaluation.Selectable))
+            foreach (DialogueChoiceSnapshot choice in flow.VisibleChoices)
             {
-                if (!GUILayout.Button(choice.DisplayText, GUILayout.MinHeight(38f))) continue;
+                bool selectable = choice.Evaluation.Selectable;
+                GUI.enabled = selectable;
+                bool selected = GUILayout.Button(choice.DisplayText, selectable ? PrototypeUiTheme.PrimaryButtonStyle : PrototypeUiTheme.ButtonStyle, GUILayout.MinHeight(40f));
+                GUI.enabled = true;
+                if (!selectable && choice.Evaluation.VisibleFailureReasons.Count > 0)
+                {
+                    GUILayout.Label(string.Join(" ", choice.Evaluation.VisibleFailureReasons), PrototypeUiTheme.MutedStyle);
+                }
+                if (!selected || !selectable) continue;
                 DialogueFlowOperationResult result = Services.NarrativeCoordinator.SelectDialogueChoice(flow.FlowId, choice.ChoiceId);
                 status = result.Message;
                 if (!result.Succeeded)
@@ -214,7 +224,7 @@ namespace UnityIsekaiGame.Gameplay
                 }
             }
             GUILayout.EndScrollView();
-            if (!string.IsNullOrWhiteSpace(status)) GUILayout.Label(status, new GUIStyle(GUI.skin.label) { wordWrap = true });
+            if (!string.IsNullOrWhiteSpace(status)) GUILayout.Label(status, PrototypeUiTheme.StatusStyle);
             GUILayout.EndArea();
         }
     }

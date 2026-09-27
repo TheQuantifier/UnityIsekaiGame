@@ -86,6 +86,12 @@ namespace UnityIsekaiGame.Organizations
             string value = string.IsNullOrWhiteSpace(playerPersonId) ? "unknown-player" : playerPersonId.Trim().ToLowerInvariant();
             return $"organization-membership.prototype.adventurers-guild.{new string(value.Select(character => char.IsLetterOrDigit(character) || character is '.' or '-' or '_' ? character : '-').ToArray())}";
         }
+
+        public static string PlayerMerchantGuildMembershipId(string playerPersonId)
+        {
+            string value = string.IsNullOrWhiteSpace(playerPersonId) ? "unknown-player" : playerPersonId.Trim().ToLowerInvariant();
+            return $"organization-membership.prototype.merchant-guild.{new string(value.Select(character => char.IsLetterOrDigit(character) || character is '.' or '-' or '_' ? character : '-').ToArray())}";
+        }
     }
 
     public sealed class PrototypeInstitutionalBootstrapReport

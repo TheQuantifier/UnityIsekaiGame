@@ -552,29 +552,44 @@ namespace UnityIsekaiGame.Quests
                 foreach (QuestRewardDefinitionData reward in package.rewards.Where(value => value != null).OrderBy(value => value.rewardDefinitionId, StringComparer.Ordinal))
                 {
                     if (reward.optional && (completionPolicy == null || !completionPolicy.allowOptionalBonusRewards)) continue;
-                    string entitlementId = BuildEntitlementId(outcome.terminalOutcomeId, reward.rewardDefinitionId);
-                    yield return new QuestRewardEntitlementRecordData
+                    string[] recipients = definition.PartyRewardPolicy == QuestPartyRewardPolicy.LeaderOnly
+                        ? new[] { assignment.AssigneePersonId }
+                        : assignment.ParticipantPersonIds.DefaultIfEmpty(assignment.AssigneePersonId).Distinct(StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+                    for (int recipientIndex = 0; recipientIndex < recipients.Length; recipientIndex++)
                     {
+                        string recipient = recipients[recipientIndex];
+                        string entitlementId = BuildEntitlementId(outcome.terminalOutcomeId, reward.rewardDefinitionId) + (recipients.Length > 1 ? $".{recipientIndex + 1:00}" : string.Empty);
+                        int quantity = Math.Max(1, reward.quantity);
+                        if (definition.PartyRewardPolicy == QuestPartyRewardPolicy.SplitCurrency && reward.category == QuestRewardCategory.Currency)
+                        {
+                            int baseShare = reward.quantity / recipients.Length;
+                            int remainder = reward.quantity % recipients.Length;
+                            quantity = Math.Max(0, baseShare + (recipientIndex < remainder ? 1 : 0));
+                            if (quantity <= 0) continue;
+                        }
+                        yield return new QuestRewardEntitlementRecordData
+                        {
                         entitlementId = entitlementId,
                         rewardPackageId = package.rewardPackageId,
                         rewardDefinitionId = reward.rewardDefinitionId,
                         terminalOutcomeId = outcome.terminalOutcomeId,
                         questId = assignment.QuestId,
                         assignmentId = assignment.AssignmentId,
-                        recipientPersonId = assignment.AssigneePersonId,
+                        recipientPersonId = recipient,
                         worldId = worldId,
                         category = reward.category,
                         deliveryPolicy = delivery,
                         targetDefinitionId = reward.targetDefinitionId,
                         secondaryTargetId = reward.secondaryTargetId,
-                        quantity = Math.Max(1, reward.quantity),
+                        quantity = quantity,
                         optional = reward.optional,
                         hidden = reward.hidden,
                         state = delivery == QuestRewardDeliveryPolicy.GrantOnCompletion ? QuestRewardEntitlementState.Pending : QuestRewardEntitlementState.Claimable,
                         createdWorldTime = worldTime,
                         grantedWorldTime = -1d,
                         revision = 1L
-                    };
+                        };
+                    }
                 }
             }
         }

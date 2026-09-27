@@ -341,6 +341,11 @@ namespace UnityIsekaiGame.Gameplay
             IReadOnlyList<WorldTravelResult> results = worldTravelCoordinator.AdvanceActiveJourneys(playTimeTracker.CumulativeSeconds);
             if (!results.Any(result => result.Succeeded)) return;
 
+            foreach (WorldTravelResult completed in results.Where(result => result.Succeeded && result.Journey != null && result.Journey.LifecycleState == TravelJourneyLifecycleState.Completed))
+            {
+                PartyTravel.CompleteTravel(PlayerPersonId, completed.Journey.DestinationLocationId);
+            }
+
             dirtyTracker?.MarkDirty("Authoritative world travel advanced.");
             if (worldEntityLocations != null && worldEntityLocations.Revision != entityRevisionBefore)
             {

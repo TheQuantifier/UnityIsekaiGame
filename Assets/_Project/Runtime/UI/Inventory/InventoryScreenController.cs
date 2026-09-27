@@ -42,8 +42,6 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private PrototypePersistenceServiceBehaviour saveLoadPersistence;
         [SerializeField, Min(1)] private int columns = 4;
 
-        private CursorLockMode previousLockState;
-        private bool previousCursorVisible;
         private bool isOpen;
         private int selectedSlotIndex;
         private int hoveredSlotIndex = -1;
@@ -211,13 +209,11 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (input != null)
             {
-                input.SetGameplayInputBlocked(true);
+                input.SetMenuInputBlocked(this, true);
                 input.ClearGameplayActionQueues();
                 input.ClearInventoryUiActions();
             }
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            else PlayerCursorMode.SetMenuOpen(this, true);
             view?.Show();
         }
 
@@ -230,13 +226,11 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (input != null)
             {
-                input.SetGameplayInputBlocked(true);
+                input.SetMenuInputBlocked(this, true);
                 input.ClearGameplayActionQueues();
                 input.ClearInventoryUiActions();
             }
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            else PlayerCursorMode.SetMenuOpen(this, true);
             Refresh();
             view?.Show();
         }
@@ -248,20 +242,16 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
-            previousLockState = Cursor.lockState;
-            previousCursorVisible = Cursor.visible;
             isOpen = true;
             saveLoadPersistence?.PlayTime?.SetMenuOpen(true);
 
             if (input != null)
             {
-                input.SetGameplayInputBlocked(true);
+                input.SetMenuInputBlocked(this, true);
                 input.ClearCancel();
                 input.ClearInventoryUiActions();
             }
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            else PlayerCursorMode.SetMenuOpen(this, true);
             Refresh();
 
             if (view != null)
@@ -276,18 +266,13 @@ namespace UnityIsekaiGame.UI.Inventory
             {
                 input.ClearGameplayActionQueues();
                 input.ClearInventoryUiActions();
-                input.SetGameplayInputBlocked(false);
+                input.SetMenuInputBlocked(this, false);
             }
+            else PlayerCursorMode.SetMenuOpen(this, false);
 
             if (view != null)
             {
                 view.Hide();
-            }
-
-            if (restoreCursor)
-            {
-                Cursor.lockState = previousLockState;
-                Cursor.visible = previousCursorVisible;
             }
 
             isOpen = false;
@@ -475,14 +460,14 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void RenderHoveredSlotDetails()
         {
-            if (view == null || inventory == null || hoveredSlotIndex < 0)
+            if (view == null || inventory == null)
             {
-                view?.RenderSelectedItemDetails(null);
                 return;
             }
 
-            InventorySlot hoveredSlot = inventory.GetSlot(hoveredSlotIndex);
-            view.RenderSelectedItemDetails(hoveredSlot, includeDescription: true);
+            int inspectedSlotIndex = hoveredSlotIndex >= 0 ? hoveredSlotIndex : selectedSlotIndex;
+            InventorySlot inspectedSlot = inventory.GetSlot(inspectedSlotIndex);
+            view.RenderSelectedItemDetails(inspectedSlot, includeDescription: true);
         }
 
         private void MoveSelection(Vector2 direction)

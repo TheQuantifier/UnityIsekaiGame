@@ -167,6 +167,8 @@ namespace UnityIsekaiGame.Tests
                 .Select(item => item.gameObject)
                 .ToArray();
             Assert.That(sceneObjects.Where(item => obsoleteNames.Contains(item.name)).Select(item => item.name).ToArray(), Is.Empty);
+            GameObject legacyDialogueCanvas = sceneObjects.Single(item => item.name == "Dialogue Canvas");
+            Assert.That(legacyDialogueCanvas.activeSelf, Is.False, "The unbound legacy dialogue placeholder must not render over normal gameplay.");
             AssertScenePhysicalInteractionBinding(PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId, "AdventurerGuildCounter");
             AssertScenePhysicalInteractionBinding(PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId, "MerchantGuildCounter");
             AssertScenePhysicalInteractionBinding(PrototypeInteractionPointDefinitionFactory.QuestBoardPointId, "Quest Board");

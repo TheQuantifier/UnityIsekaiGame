@@ -34,6 +34,13 @@ namespace UnityIsekaiGame.Quests
         [SerializeField] private QuestRefusalPolicy refusalPolicy = QuestRefusalPolicy.MayReoffer;
         [SerializeField] private QuestAbandonmentPolicy abandonmentPolicy = QuestAbandonmentPolicy.AllowedReleasesCapacity;
         [SerializeField] private int assignmentCapacity = 1;
+        [Tooltip("Minimum number of active party members required to accept and undertake this quest. A value of 1 permits solo play.")]
+        [SerializeField, Min(1)] private int requiredPartySize = 1;
+        [SerializeField] private bool requireReadyPartyAtAcceptance = true;
+        [SerializeField] private QuestPartyRosterPolicy partyRosterPolicy = QuestPartyRosterPolicy.FrozenAtAcceptance;
+        [SerializeField] private QuestPartyProgressPolicy partyProgressPolicy = QuestPartyProgressPolicy.AnyParticipant;
+        [SerializeField] private QuestPartyAuthorityPolicy partyAuthorityPolicy = QuestPartyAuthorityPolicy.LeaderOnly;
+        [SerializeField] private QuestPartyRewardPolicy partyRewardPolicy = QuestPartyRewardPolicy.LeaderOnly;
         [SerializeField] private double availabilityStartWorldTime = -1d;
         [SerializeField] private double availabilityEndWorldTime = -1d;
         [SerializeField] private double defaultOfferDuration = -1d;
@@ -76,6 +83,13 @@ namespace UnityIsekaiGame.Quests
         public QuestRefusalPolicy RefusalPolicy => refusalPolicy == QuestRefusalPolicy.Unknown ? QuestRefusalPolicy.MayReoffer : refusalPolicy;
         public QuestAbandonmentPolicy AbandonmentPolicy => abandonmentPolicy;
         public int AssignmentCapacity => AssignmentPolicy == QuestAssignmentPolicy.Nonexclusive ? Math.Max(assignmentCapacity, 0) : Math.Max(1, assignmentCapacity);
+        public int RequiredPartySize => Math.Max(1, requiredPartySize);
+        public bool RequiresParty => RequiredPartySize > 1;
+        public bool RequireReadyPartyAtAcceptance => requireReadyPartyAtAcceptance;
+        public QuestPartyRosterPolicy PartyRosterPolicy => partyRosterPolicy;
+        public QuestPartyProgressPolicy PartyProgressPolicy => partyProgressPolicy;
+        public QuestPartyAuthorityPolicy PartyAuthorityPolicy => partyAuthorityPolicy;
+        public QuestPartyRewardPolicy PartyRewardPolicy => partyRewardPolicy;
         public double AvailabilityStartWorldTime => availabilityStartWorldTime;
         public double AvailabilityEndWorldTime => availabilityEndWorldTime;
         public double DefaultOfferDuration => defaultOfferDuration;
@@ -144,19 +158,31 @@ namespace UnityIsekaiGame.Quests
             QuestRefusalPolicy refusal = QuestRefusalPolicy.MayReoffer,
             QuestAbandonmentPolicy abandonment = QuestAbandonmentPolicy.AllowedReleasesCapacity,
             int capacity = 1,
+            int minimumPartySize = 1,
             double availableFrom = -1d,
             double availableUntil = -1d,
             double offerDuration = -1d,
             bool withdrawalAllowed = true,
             bool prevalidateOffers = true,
             IEnumerable<string> authorityRequirements = null,
-            IEnumerable<QuestEligibilityRequirementGroupData> eligibilityGroups = null)
+            IEnumerable<QuestEligibilityRequirementGroupData> eligibilityGroups = null,
+            bool requireReadyParty = true,
+            QuestPartyRosterPolicy rosterPolicy = QuestPartyRosterPolicy.FrozenAtAcceptance,
+            QuestPartyProgressPolicy progressPolicy = QuestPartyProgressPolicy.AnyParticipant,
+            QuestPartyAuthorityPolicy authorityPolicy = QuestPartyAuthorityPolicy.LeaderOnly,
+            QuestPartyRewardPolicy rewardPolicy = QuestPartyRewardPolicy.LeaderOnly)
         {
             assignmentPolicy = assignment == QuestAssignmentPolicy.Unknown ? QuestAssignmentPolicy.Exclusive : assignment;
             consentPolicy = consent == QuestConsentPolicy.Unknown ? QuestConsentPolicy.ExplicitRecipientConsentRequired : consent;
             refusalPolicy = refusal == QuestRefusalPolicy.Unknown ? QuestRefusalPolicy.MayReoffer : refusal;
             abandonmentPolicy = abandonment == QuestAbandonmentPolicy.Unknown ? QuestAbandonmentPolicy.AllowedReleasesCapacity : abandonment;
             assignmentCapacity = Math.Max(assignmentPolicy == QuestAssignmentPolicy.Nonexclusive ? 0 : 1, capacity);
+            requiredPartySize = Math.Max(1, minimumPartySize);
+            requireReadyPartyAtAcceptance = requireReadyParty;
+            partyRosterPolicy = rosterPolicy;
+            partyProgressPolicy = progressPolicy;
+            partyAuthorityPolicy = authorityPolicy;
+            partyRewardPolicy = rewardPolicy;
             availabilityStartWorldTime = availableFrom;
             availabilityEndWorldTime = availableUntil;
             defaultOfferDuration = offerDuration;
@@ -254,6 +280,11 @@ namespace UnityIsekaiGame.Quests
             if (AssignmentPolicy != QuestAssignmentPolicy.Nonexclusive && AssignmentCapacity <= 0)
             {
                 report.AddError($"QuestDefinition '{Title}' assignment capacity must be positive for limited or exclusive assignment.");
+            }
+
+            if (requiredPartySize < 1)
+            {
+                report.AddError($"QuestDefinition '{Title}' required party size must be at least one.");
             }
 
             if (AvailabilityEndWorldTime >= 0d && AvailabilityStartWorldTime >= 0d && AvailabilityEndWorldTime < AvailabilityStartWorldTime)

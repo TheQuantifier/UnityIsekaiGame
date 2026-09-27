@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Interaction;
+using UnityIsekaiGame.Presentation;
 using UnityIsekaiGame.Inventory.Crafting;
 using UnityIsekaiGame.Inventory.Disassembly;
 using UnityIsekaiGame.Inventory.Recipes;
@@ -22,8 +24,6 @@ namespace UnityIsekaiGame.Gameplay
         private bool open;
         private Vector2 scroll;
         private string status = string.Empty;
-        private CursorLockMode priorLockMode;
-        private bool priorCursorVisible;
         private PrototypePersistenceServiceBehaviour subscribedServices;
         private string selectedRecipeId = string.Empty;
         private SlotCraftingRequest configuredRequest;
@@ -49,16 +49,9 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            if (!open)
-            {
-                priorLockMode = Cursor.lockState;
-                priorCursorVisible = Cursor.visible;
-            }
-
             open = true;
-            input?.SetGameplayInputBlocked(true);
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            if (input != null) input.SetMenuInputBlocked(this, true);
+            else PlayerCursorMode.SetMenuOpen(this, true);
             status = "Choose an item type, then place resources into its component slots.";
             showItemRecovery = false;
             selectedRecipeId = string.Empty;
@@ -72,6 +65,11 @@ namespace UnityIsekaiGame.Gameplay
             Close();
         }
 
+        private void Update()
+        {
+            if (open && Keyboard.current?.escapeKey.wasPressedThisFrame == true) Close();
+        }
+
         private void OnGUI()
         {
             if (!open)
@@ -82,12 +80,12 @@ namespace UnityIsekaiGame.Gameplay
             float width = Mathf.Min(windowSize.x, Screen.width - 30f);
             float height = Mathf.Min(windowSize.y, Screen.height - 30f);
             Rect window = new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height);
-            GUI.Box(window, GUIContent.none);
+            PrototypeUiTheme.DrawPanelFrame(window, modal: true);
             GUILayout.BeginArea(new Rect(window.x + 16f, window.y + 14f, window.width - 32f, window.height - 28f));
             GUILayout.BeginHorizontal();
-            GUILayout.Label(title, new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold });
+            GUILayout.Label(title, PrototypeUiTheme.TitleStyle);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Close", GUILayout.Width(90f), GUILayout.Height(30f)))
+            if (GUILayout.Button("Close", PrototypeUiTheme.DangerButtonStyle, GUILayout.Width(90f), GUILayout.Height(34f)))
             {
                 Close();
                 GUILayout.EndHorizontal();
@@ -98,11 +96,11 @@ namespace UnityIsekaiGame.Gameplay
             GUILayout.EndHorizontal();
             GUILayout.Space(8f);
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Craft", GUILayout.Height(30f))) { showItemRecovery = false; status = "Choose an item type, then place resources into its component slots."; }
-            if (GUILayout.Button("Disassemble", GUILayout.Height(30f))) { showItemRecovery = true; selectedRecipeId = string.Empty; configuredRequest = null; status = "Choose a crafted item to recover its recorded component materials."; }
+            if (GUILayout.Button("Craft", !showItemRecovery ? PrototypeUiTheme.PrimaryButtonStyle : PrototypeUiTheme.ButtonStyle, GUILayout.Height(34f))) { showItemRecovery = false; status = "Choose an item type, then place resources into its component slots."; }
+            if (GUILayout.Button("Disassemble", showItemRecovery ? PrototypeUiTheme.PrimaryButtonStyle : PrototypeUiTheme.ButtonStyle, GUILayout.Height(34f))) { showItemRecovery = true; selectedRecipeId = string.Empty; configuredRequest = null; status = "Choose a crafted item to recover its recorded component materials."; }
             GUILayout.EndHorizontal();
             GUILayout.Space(8f);
-            GUILayout.Label(status, new GUIStyle(GUI.skin.label) { wordWrap = true });
+            GUILayout.Label(status, PrototypeUiTheme.StatusStyle);
             GUILayout.Space(8f);
 
             PrototypeActiveCraftSnapshot activeCraft = services.ActivePrototypeCraft;
@@ -143,15 +141,15 @@ namespace UnityIsekaiGame.Gameplay
 
         private void DrawItemRecovery()
         {
-            GUILayout.Label("Disassembly", new GUIStyle(GUI.skin.label) { fontSize = 18, fontStyle = FontStyle.Bold });
-            GUILayout.Label("Break crafted inventory items into their recorded components. Damage limits what physically remains; Salvaging is a separate field role used when gathering fallen resource pickups.", new GUIStyle(GUI.skin.label) { wordWrap = true });
+            GUILayout.Label("DISASSEMBLY", PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label("Break crafted inventory items into their recorded components. Damage limits what physically remains; salvaging is a separate field role used when gathering fallen resource pickups.", PrototypeUiTheme.MutedStyle);
             PrototypeItemRecoveryChoice[] choices = services.GetPrototypeItemRecoveryChoices().ToArray();
-            if (choices.Length == 0) { GUILayout.Label("No crafted inventory items have recoverable composition records."); return; }
+            if (choices.Length == 0) { GUILayout.Label("No crafted inventory items have recoverable composition records.", PrototypeUiTheme.MutedStyle); return; }
             foreach (PrototypeItemRecoveryChoice choice in choices)
             {
                 DisassemblyOperationRecordData preview = choice.Preview;
-                GUILayout.BeginVertical(GUI.skin.box);
-                GUILayout.Label(choice.DisplayName, new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold });
+                GUILayout.BeginVertical(PrototypeUiTheme.CardStyle);
+                GUILayout.Label(choice.DisplayName, PrototypeUiTheme.HeadingStyle);
                 GUILayout.Label($"{choice.OperationLabel} | Item level {preview.itemLevel} | Skill: {(preview.skillUsed ? $"{preview.skillId} {(UnityIsekaiGame.Skills.SkillGrade)preview.skillGrade}" : "Unskilled")}");
                 GUILayout.Label($"Expected efficiency: {preview.expectedEfficiency:P0} | Rolled tier: {preview.efficiencyTier}");
                 foreach (DisassemblyComponentOutcomeData outcome in preview.outcomes)
@@ -159,7 +157,7 @@ namespace UnityIsekaiGame.Gameplay
                     string component = string.IsNullOrWhiteSpace(outcome.componentEntryId) ? "Component" : ComponentLabel(new RecipeInputSpecificationData { componentRoleId = outcome.componentEntryId });
                     GUILayout.Label($"{component}: {outcome.returnedQuantity}/{outcome.sourceQuantity:0.##} returned | {outcome.recoveryChance:P0} chance | {outcome.componentCondition:P0} condition | component rarity {outcome.componentRarityRank}");
                 }
-                if (GUILayout.Button($"{choice.OperationLabel} {choice.DisplayName}", GUILayout.Height(30f)))
+                if (GUILayout.Button($"{choice.OperationLabel} {choice.DisplayName}", PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(36f)))
                 {
                     DisassemblyResult result = services.RecoverPrototypeItem(choice.ItemInstanceId);
                     status = result.Message;
@@ -172,14 +170,10 @@ namespace UnityIsekaiGame.Gameplay
 
         private void DrawActiveCraft(PrototypeActiveCraftSnapshot activeCraft)
         {
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label($"Crafting: {activeCraft.RecipeDisplayName}", new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold });
+            GUILayout.BeginVertical(PrototypeUiTheme.CardStyle);
+            GUILayout.Label($"Crafting: {activeCraft.RecipeDisplayName}", PrototypeUiTheme.HeadingStyle);
             Rect progressRect = GUILayoutUtility.GetRect(1f, 22f, GUILayout.ExpandWidth(true));
-            GUI.Box(progressRect, GUIContent.none);
-            Rect fill = progressRect;
-            fill.width *= activeCraft.ProgressNormalized;
-            GUI.Box(fill, GUIContent.none);
-            GUI.Label(progressRect, $"{activeCraft.ProgressNormalized:P0} - {activeCraft.RemainingSeconds:0.0}s remaining", new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter });
+            PrototypeUiTheme.DrawProgress(progressRect, activeCraft.ProgressNormalized, $"{activeCraft.ProgressNormalized:P0} - {activeCraft.RemainingSeconds:0.0}s remaining");
             GUILayout.Label($"Skill: {activeCraft.Scaling.SkillLabel} | Expected quality: {activeCraft.Scaling.ExpectedQuality:P0} | Expected stat scale: {activeCraft.Scaling.ExpectedEquipmentStatMultiplier:P0}");
             CraftingSlotEntryData activeCatalyst = activeCraft.SlotRequest?.slots?.FirstOrDefault(slot => slot.kind == CraftingSlotKind.OptionalCatalyst);
             if (activeCatalyst != null)
@@ -187,7 +181,7 @@ namespace UnityIsekaiGame.Gameplay
                 GUILayout.Label($"Catalyst: {activeCatalyst.quantity} x {DisplayItemName(activeCatalyst.itemDefinitionId)}");
             }
 
-            if (GUILayout.Button("Cancel Craft", GUILayout.Height(28f)))
+            if (GUILayout.Button("Cancel Craft", PrototypeUiTheme.DangerButtonStyle, GUILayout.Height(32f)))
             {
                 services.CancelActivePrototypeCraft();
                 status = "Craft cancelled. No materials were consumed.";
@@ -200,19 +194,19 @@ namespace UnityIsekaiGame.Gameplay
         private void DrawCraftableSelection(IEnumerable<RecipeDefinition> recipes, bool craftActive)
         {
             GUILayout.Space(6f);
-            GUILayout.Label("Choose What To Craft", new GUIStyle(GUI.skin.label) { fontSize = 18, fontStyle = FontStyle.Bold });
-            GUILayout.Label("Each choice is an authored craftable tag. Selecting one opens its component layout.", new GUIStyle(GUI.skin.label) { wordWrap = true });
+            GUILayout.Label("CHOOSE WHAT TO CRAFT", PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label("Each choice is an authored craftable tag. Selecting one opens its component layout.", PrototypeUiTheme.MutedStyle);
             GUILayout.Space(8f);
             foreach (RecipeDefinition recipe in recipes.OrderBy(recipe => CraftableLabel(recipe), StringComparer.Ordinal))
             {
-                GUILayout.BeginVertical(GUI.skin.box);
-                GUILayout.Label(CraftableLabel(recipe), new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold });
+                GUILayout.BeginVertical(PrototypeUiTheme.CardStyle);
+                GUILayout.Label(CraftableLabel(recipe), PrototypeUiTheme.HeadingStyle);
                 GUILayout.Label(recipe.DisplayName);
                 GUILayout.Label($"Requires: {services.DescribeRecipeRequirements(recipe)}");
                 CraftingScalingCalculation scaling = services.GetCraftingScaling(recipe.Id);
                 if (scaling != null) GUILayout.Label($"Time: {scaling.FinalDurationSeconds:0.0}s | {scaling.SkillLabel} | Quality: {scaling.ExpectedQuality:P0} | Stats: {scaling.ExpectedEquipmentStatMultiplier:P0}");
                 GUI.enabled = !craftActive;
-                if (GUILayout.Button($"Craft {CraftableLabel(recipe)}", GUILayout.Height(30f))) SelectRecipe(recipe.Id);
+                if (GUILayout.Button($"Craft {CraftableLabel(recipe)}", PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(36f))) SelectRecipe(recipe.Id);
                 GUI.enabled = true;
                 GUILayout.EndVertical();
                 GUILayout.Space(6f);
@@ -222,7 +216,7 @@ namespace UnityIsekaiGame.Gameplay
         private void DrawConfiguredCraft(RecipeDefinition recipe, bool craftActive)
         {
             GUI.enabled = !craftActive;
-            if (GUILayout.Button("← Back to Item Types", GUILayout.Width(170f), GUILayout.Height(28f)))
+            if (GUILayout.Button("Back to Item Types", PrototypeUiTheme.ButtonStyle, GUILayout.Width(180f), GUILayout.Height(32f)))
             {
                 selectedRecipeId = string.Empty;
                 configuredRequest = null;
@@ -233,8 +227,8 @@ namespace UnityIsekaiGame.Gameplay
             GUI.enabled = true;
 
             GUILayout.Space(8f);
-            GUILayout.Label(CraftableLabel(recipe), new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter });
-            GUILayout.Label("Place one compatible resource type into each item-part slot.", new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter });
+            GUILayout.Label(CraftableLabel(recipe).ToUpperInvariant(), PrototypeUiTheme.TitleStyle);
+            GUILayout.Label("Place one compatible resource type into each item-part slot.", PrototypeUiTheme.CenteredStyle);
             GUILayout.Space(8f);
 
             RecipeInputSpecificationData[] componentInputs = recipe.Inputs
@@ -246,11 +240,11 @@ namespace UnityIsekaiGame.Gameplay
             for (int index = 0; index < componentInputs.Length; index += 2) DrawComponentSlot(recipe, componentInputs[index], craftActive);
             GUILayout.EndVertical();
 
-            GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(190f), GUILayout.MinHeight(230f));
+            GUILayout.BeginVertical(PrototypeUiTheme.CardStyle, GUILayout.Width(190f), GUILayout.MinHeight(230f));
             GUILayout.FlexibleSpace();
-            GUILayout.Label($"[ {CraftableLabel(recipe).ToUpperInvariant()} ]", new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 18, fontStyle = FontStyle.Bold }, GUILayout.Height(55f));
-            GUILayout.Label("Item Outline", new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter });
-            GUILayout.Label($"{componentInputs.Length} components", new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter });
+            GUILayout.Label($"[ {CraftableLabel(recipe).ToUpperInvariant()} ]", PrototypeUiTheme.CenteredStyle, GUILayout.Height(55f));
+            GUILayout.Label("Item Outline", PrototypeUiTheme.CenteredStyle);
+            GUILayout.Label($"{componentInputs.Length} components", PrototypeUiTheme.MutedStyle);
             GUILayout.FlexibleSpace();
             GUILayout.EndVertical();
 
@@ -260,7 +254,7 @@ namespace UnityIsekaiGame.Gameplay
             GUILayout.EndHorizontal();
 
             GUI.enabled = !craftActive;
-            if (GUILayout.Button("Auto-fill All Component Slots", GUILayout.Height(28f)))
+            if (GUILayout.Button("Auto-fill All Component Slots", PrototypeUiTheme.ButtonStyle, GUILayout.Height(32f)))
             {
                 configuredRequest = services.BuildAutoFilledSlotCraftingRequest(recipe.Id);
                 status = "Component slots auto-filled from compatible resources in inventory.";
@@ -269,9 +263,9 @@ namespace UnityIsekaiGame.Gameplay
             GUI.enabled = true;
 
             GUILayout.Space(8f);
-            GUILayout.Label("Optional Infusion / Catalyst Slot", new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold });
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label("The catalyst is consumed even when its effect roll fails. More copies increase both chance and potential affix tier.", new GUIStyle(GUI.skin.label) { wordWrap = true });
+            GUILayout.Label("OPTIONAL INFUSION / CATALYST", PrototypeUiTheme.HeadingStyle);
+            GUILayout.BeginVertical(PrototypeUiTheme.CardStyle);
+            GUILayout.Label("The catalyst is consumed even when its effect roll fails. More copies increase both chance and potential affix tier.", PrototypeUiTheme.MutedStyle);
             if (GUILayout.Button("No Catalyst", GUILayout.Height(24f)))
             {
                 selectedCatalystInstanceId = string.Empty;
@@ -301,17 +295,17 @@ namespace UnityIsekaiGame.Gameplay
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Quantity", GUILayout.Width(70f));
                 if (GUILayout.Button("-", GUILayout.Width(32f))) catalystQuantity = Math.Max(1, catalystQuantity - 1);
-                GUILayout.Label(catalystQuantity.ToString(), new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter }, GUILayout.Width(45f));
+                GUILayout.Label(catalystQuantity.ToString(), PrototypeUiTheme.CenteredStyle, GUILayout.Width(45f));
                 if (GUILayout.Button("+", GUILayout.Width(32f))) catalystQuantity = Math.Min(maximum, catalystQuantity + 1);
                 GUILayout.Label($"Available for catalyst: {maximum}");
                 GUILayout.EndHorizontal();
-                GUILayout.Label(services.DescribePrototypeCraftingCatalyst(recipe.Id, selectedCatalyst.ItemDefinitionId, catalystQuantity), new GUIStyle(GUI.skin.label) { wordWrap = true });
+                GUILayout.Label(services.DescribePrototypeCraftingCatalyst(recipe.Id, selectedCatalyst.ItemDefinitionId, catalystQuantity), PrototypeUiTheme.BodyStyle);
             }
             GUILayout.EndVertical();
 
             GUILayout.Space(8f);
             GUI.enabled = !craftActive;
-            if (GUILayout.Button($"Start {recipe.DisplayName}", GUILayout.Height(36f)))
+            if (GUILayout.Button($"Start {recipe.DisplayName}", PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(40f)))
             {
                 SlotCraftingRequest request = configuredRequest?.Clone() ?? services.BuildAutoFilledSlotCraftingRequest(recipe.Id);
                 if (request != null && selectedCatalyst != null)
@@ -349,19 +343,20 @@ namespace UnityIsekaiGame.Gameplay
             int required = Mathf.RoundToInt(inputSpecification.quantity);
             CraftingSlotEntryData current = configuredRequest?.slots?.FirstOrDefault(slot => slot.kind == CraftingSlotKind.RequiredInput && string.Equals(slot.recipeInputId, inputSpecification.inputId, StringComparison.Ordinal));
             string componentName = ComponentLabel(inputSpecification);
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label(componentName, new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold });
-            GUILayout.Label($"{services.DescribeRecipeInput(inputSpecification)} × {required}");
+            GUILayout.BeginVertical(PrototypeUiTheme.CardStyle);
+            GUILayout.Label(componentName, PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label($"{services.DescribeRecipeInput(inputSpecification)} x {required}", PrototypeUiTheme.MutedStyle);
             GUILayout.Label(assigned == required
                 ? $"Placed: {DisplayItemName(current?.itemDefinitionId)}"
-                : $"Empty / missing {Math.Max(0, required - assigned)}");
+                : $"Empty / missing {Math.Max(0, required - assigned)}",
+                assigned == required ? PrototypeUiTheme.BodyStyle : PrototypeUiTheme.StatusStyle);
             foreach (PrototypeCraftingMaterialChoice choice in services.GetPrototypeCraftingMaterialChoices(recipe.Id, inputSpecification.inputId))
             {
                 bool selected = string.Equals(current?.itemDefinitionId, choice.ItemDefinitionId, StringComparison.Ordinal) && assigned == required;
                 Color prior = GUI.backgroundColor;
                 if (selected) GUI.backgroundColor = new Color(0.62f, 0.9f, 0.68f);
                 GUI.enabled = !craftActive && choice.AvailableQuantity >= required;
-                if (GUILayout.Button($"{choice.DisplayName} ({choice.AvailableQuantity}){(selected ? " ✓" : string.Empty)}", GUILayout.Height(24f)))
+                if (GUILayout.Button($"{choice.DisplayName} ({choice.AvailableQuantity}){(selected ? " [Selected]" : string.Empty)}", selected ? PrototypeUiTheme.PrimaryButtonStyle : PrototypeUiTheme.ButtonStyle, GUILayout.Height(28f)))
                 {
                     configuredRequest = services.AssignPrototypeCraftingMaterial(configuredRequest, inputSpecification.inputId, choice.ItemDefinitionId);
                     status = $"Placed {choice.DisplayName} into {componentName}.";
@@ -441,9 +436,8 @@ namespace UnityIsekaiGame.Gameplay
         {
             if (!open) return;
             open = false;
-            input?.SetGameplayInputBlocked(false);
-            Cursor.lockState = priorLockMode;
-            Cursor.visible = priorCursorVisible;
+            if (input != null) input.SetMenuInputBlocked(this, false);
+            else PlayerCursorMode.SetMenuOpen(this, false);
         }
     }
 }

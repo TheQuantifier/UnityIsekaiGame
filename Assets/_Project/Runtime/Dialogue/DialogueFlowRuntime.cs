@@ -491,6 +491,10 @@ namespace UnityIsekaiGame.Dialogue
                 DialogueConditionKind.LocalFlag => LocalFlag(flow, condition.requiredId),
                 DialogueConditionKind.LocalCounter => Compare(LocalCounter(flow, condition.requiredId), condition),
                 DialogueConditionKind.Custom => context.facts.Contains(QuestEligibilityRequirementKind.Custom, condition.requiredId),
+                DialogueConditionKind.PartySize => Compare((context.partyMemberPersonIds ?? Array.Empty<string>()).Count(), condition),
+                DialogueConditionKind.PartyHasMember => Contains(context.partyMemberPersonIds, condition.requiredId),
+                DialogueConditionKind.PartyLeader => string.Equals(N(context.partyLeaderPersonId), string.IsNullOrWhiteSpace(condition.requiredId) ? N(context.actorPersonId) : N(condition.requiredId), StringComparison.Ordinal),
+                DialogueConditionKind.PartyReady => Contains(context.readyPartyMemberPersonIds, condition.requiredId),
                 _ => false
             };
             return condition.negate ? !result : result;
