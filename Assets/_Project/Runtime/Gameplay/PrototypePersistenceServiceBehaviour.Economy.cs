@@ -473,7 +473,7 @@ namespace UnityIsekaiGame.Gameplay
 
         private void EnsurePrototypeEconomyInitialized()
         {
-            if (prototypeEconomyInitialized)
+            if (prototypeEconomyInitialized && Economy.TryGetAccount(PlayerEconomyAccountId, out _))
             {
                 return;
             }

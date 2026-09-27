@@ -3,11 +3,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
+using UnityIsekaiGame.Editor;
 
 namespace UnityIsekaiGame.Tests
 {
     public sealed class ProjectStructureValidationTests
     {
+        [Test]
+        public void CompleteProjectStructureValidatorHasNoFindings()
+        {
+            ProjectStructureValidationReport report = ProjectStructureValidationMenu.Validate();
+
+            Assert.That(report.ErrorCount, Is.Zero, report.GetSummary());
+            Assert.That(report.WarningCount, Is.Zero, report.GetSummary());
+        }
+
         [Test]
         public void ProjectOwnedAssetsLiveUnderProjectRoot()
         {
@@ -30,7 +40,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(File.Exists("Assets/_Project/Content/Characters/Attributes/StrengthAttribute.asset"), Is.True);
             Assert.That(File.Exists("Assets/_Project/Content/Characters/CalculatedStats/Definitions/MaximumHealthCalculatedStat.asset"), Is.True);
             Assert.That(File.Exists("Assets/_Project/Content/Characters/Resources/HealthResource.asset"), Is.True);
-            Assert.That(File.Exists("Assets/_Project/Prototype/Content/Items/HealthPotion.asset"), Is.True);
+            Assert.That(File.Exists("Assets/_Project/Content/Items/Definitions/HealthPotion.asset"), Is.True);
         }
 
         [Test]

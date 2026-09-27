@@ -1,5 +1,5 @@
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityIsekaiGame.Gameplay;
@@ -10,11 +10,16 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 {
     public sealed class PrototypeTravelPanel : MonoBehaviour
     {
+        private const float DestinationRefreshIntervalSeconds = 1f;
+
         [SerializeField] private bool visible;
         private PrototypePersistenceServiceBehaviour persistence;
         private PlayerInputReader input;
         private string status = "Select a destination.";
         private Vector2 scroll;
+        private readonly List<LocationSnapshot> visibleDestinations = new List<LocationSnapshot>();
+        private string currentLocationId = string.Empty;
+        private float nextDestinationRefreshAt;
 
         private void Awake()
         {
@@ -27,6 +32,11 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
         {
             if (Keyboard.current?.tKey.wasPressedThisFrame == true) SetVisible(!visible);
             else if (visible && Keyboard.current?.escapeKey.wasPressedThisFrame == true) SetVisible(false);
+
+            if (visible && Time.unscaledTime >= nextDestinationRefreshAt)
+            {
+                RefreshDestinations();
+            }
         }
 
         private void OnDisable() => SetVisible(false);
@@ -51,22 +61,14 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             }
             GUILayout.EndHorizontal();
             EntityLocationReferenceData player = PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId, persistence.WorldLocations.WorldId);
-            string current = persistence.WorldEntityLocations != null && persistence.WorldEntityLocations.TryGetActivePlacement(player, out EntityPlacementSnapshot placement)
-                ? placement.ExactLocationId
-                : string.Empty;
-            GUILayout.Label($"CURRENT LOCATION\n{(string.IsNullOrWhiteSpace(current) ? "Unknown" : current)}", PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label($"CURRENT LOCATION\n{(string.IsNullOrWhiteSpace(currentLocationId) ? "Unknown" : currentLocationId)}", PrototypeUiTheme.HeadingStyle);
             GUILayout.Label(status, PrototypeUiTheme.StatusStyle);
             GUILayout.Space(6f);
             GUILayout.Label("AVAILABLE DESTINATIONS", PrototypeUiTheme.HeadingStyle);
             scroll = GUILayout.BeginScrollView(scroll);
-            WorldSceneBindingRuntime sceneBindings = WorldSceneBindingRuntime.Default;
-            foreach (LocationSnapshot destination in persistence.WorldLocations.Snapshots
-                         .Where(value => value.Visibility == LocationVisibility.Public
-                             && value.LifecycleState == LocationLifecycleState.Active
-                             && value.LocationId != current
-                             && sceneBindings.CanMaterializeAtLocation(value.LocationId))
-                         .OrderBy(value => value.OfficialName, StringComparer.Ordinal))
+            for (int i = 0; i < visibleDestinations.Count; i++)
             {
+                LocationSnapshot destination = visibleDestinations[i];
                 if (!GUILayout.Button(destination.OfficialName, PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(38f))) continue;
                 if (!persistence.PartyTravel.CanTravel(persistence.PlayerPersonId, requireAllReady: true, out string partyTravelMessage))
                 {
@@ -95,9 +97,44 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
         private void SetVisible(bool value)
         {
             visible = value;
+            if (visible)
+            {
+                RefreshDestinations();
+            }
             if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
             if (input != null) input.SetMenuInputBlocked(this, visible);
             else PlayerCursorMode.SetMenuOpen(this, visible);
+        }
+
+        private void RefreshDestinations()
+        {
+            nextDestinationRefreshAt = Time.unscaledTime + DestinationRefreshIntervalSeconds;
+            visibleDestinations.Clear();
+            currentLocationId = string.Empty;
+            if (persistence?.WorldLocations == null) return;
+
+            EntityLocationReferenceData player = PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId, persistence.WorldLocations.WorldId);
+            if (persistence.WorldEntityLocations != null
+                && persistence.WorldEntityLocations.TryGetActivePlacement(player, out EntityPlacementSnapshot placement))
+            {
+                currentLocationId = placement.ExactLocationId;
+            }
+
+            WorldSceneBindingRuntime sceneBindings = WorldSceneBindingRuntime.Default;
+            IReadOnlyList<LocationSnapshot> snapshots = persistence.WorldLocations.Snapshots;
+            for (int i = 0; i < snapshots.Count; i++)
+            {
+                LocationSnapshot destination = snapshots[i];
+                if (destination.Visibility == LocationVisibility.Public
+                    && destination.LifecycleState == LocationLifecycleState.Active
+                    && !string.Equals(destination.LocationId, currentLocationId, StringComparison.Ordinal)
+                    && sceneBindings.CanMaterializeAtLocation(destination.LocationId))
+                {
+                    visibleDestinations.Add(destination);
+                }
+            }
+
+            visibleDestinations.Sort((left, right) => string.Compare(left.OfficialName, right.OfficialName, StringComparison.Ordinal));
         }
     }
 }

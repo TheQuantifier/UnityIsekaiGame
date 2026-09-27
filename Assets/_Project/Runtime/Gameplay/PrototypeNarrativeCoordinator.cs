@@ -620,31 +620,70 @@ namespace UnityIsekaiGame.Gameplay
 
             string suffix = $"{Sanitize(definition.Id)}.{++transactionSequence:000000}";
             string questId = $"quest.development.{suffix}";
-            QuestIssuerReferenceData system = new QuestIssuerReferenceData { issuerType = QuestIssuerType.System, issuerId = "system.development" };
+            if (definition.UniquePerWorld || definition.UniquePerRecipient)
+            {
+                foreach (QuestSnapshot existing in Quests.Query(new QuestQuery
+                {
+                    access = QuestVisibilityAccess.PrivilegedDiagnostic,
+                    definitionId = definition.Id,
+                    recipientId = definition.UniquePerRecipient ? PlayerPersonId : string.Empty,
+                    worldId = definition.UniquePerWorld ? services.WorldService?.WorldId : string.Empty
+                }))
+                {
+                    Quests.TransitionLifecycle(new QuestLifecycleTransitionRequest
+                    {
+                        transactionId = $"tx.quest.development.retire.{Sanitize(existing.QuestId)}.{suffix}",
+                        questId = existing.QuestId,
+                        targetState = QuestRuntimeLifecycleState.Historical,
+                        worldTime = WorldTime,
+                        provenanceId = provenanceId ?? "development"
+                    });
+                }
+            }
+
+            QuestIssuerType issuerType = definition.SupportedIssuerTypes
+                .FirstOrDefault(type => type != QuestIssuerType.Unknown);
+            if (issuerType == QuestIssuerType.Unknown)
+            {
+                issuerType = QuestIssuerType.System;
+            }
+
+            QuestIssuerReferenceData issuer = new QuestIssuerReferenceData
+            {
+                issuerType = issuerType,
+                issuerId = DevelopmentIssuerId(issuerType)
+            };
+            QuestSourceChannel sourceChannel = definition.DefaultSourceChannel == QuestSourceChannel.Unknown
+                ? QuestSourceChannel.System
+                : definition.DefaultSourceChannel;
+            QuestOriginReferenceData origin = DevelopmentQuestOrigin(sourceChannel, provenanceId);
             QuestRuntimeOperationResult created = Quests.CreateQuest(new QuestCreateRequest
             {
                 transactionId = $"tx.quest.development.create.{suffix}",
                 questId = questId,
                 questDefinitionId = definition.Id,
-                issuer = system,
+                issuer = issuer,
                 intendedRecipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = PlayerPersonId },
-                origin = new QuestOriginReferenceData { sourceChannel = QuestSourceChannel.System },
+                origin = origin,
                 createdWorldTime = WorldTime,
                 provenanceId = provenanceId ?? "development"
             });
             if (!created.Succeeded)
                 return QuestParticipationOperationResult.Failure(QuestParticipationOperationStatus.MissingQuest, created.Message, Participation.Revision);
 
-            QuestEligibilityContext eligibility = BuildEligibility(string.Empty);
+            QuestEligibilityContext eligibility = BuildEligibility(origin.interactionPointId);
             eligibility.privilegedDiagnostics = true;
+            eligibility.locationId = origin.locationId;
+            eligibility.interactionPointId = origin.interactionPointId;
+            eligibility.facts = DevelopmentEligibilityFacts(definition, PlayerPersonId);
             QuestParticipationOperationResult assigned = Participation.DirectAssign(new QuestDirectAssignmentRequest
             {
                 transactionId = $"tx.quest.development.assign.{suffix}",
                 assignmentId = $"quest-assignment.development.{suffix}",
                 questId = questId,
                 assigneePersonId = PlayerPersonId,
-                institutionalIssuer = system,
-                assignedBy = system,
+                institutionalIssuer = issuer,
+                assignedBy = issuer,
                 explicitConsent = true,
                 consentRecordId = $"consent.development.{suffix}",
                 eligibilityContext = eligibility,
@@ -657,6 +696,100 @@ namespace UnityIsekaiGame.Gameplay
                 Changed?.Invoke();
             }
             return assigned;
+        }
+
+        private static string DevelopmentIssuerId(QuestIssuerType issuerType)
+        {
+            return issuerType switch
+            {
+                QuestIssuerType.Person => "person.prototype.quest-giver",
+                QuestIssuerType.Organization => "organization.prototype.adventurers-guild",
+                QuestIssuerType.Office => "office.prototype.mayor",
+                QuestIssuerType.Government => "government.prototype.civic",
+                QuestIssuerType.Faction => "faction.prototype.settlement",
+                QuestIssuerType.Business => "business.prototype.merchant",
+                QuestIssuerType.Anonymous => string.Empty,
+                QuestIssuerType.Custom => "custom.development",
+                _ => "system.development"
+            };
+        }
+
+        private static QuestOriginReferenceData DevelopmentQuestOrigin(QuestSourceChannel channel, string provenanceId)
+        {
+            return channel switch
+            {
+                QuestSourceChannel.QuestBoard => new QuestOriginReferenceData
+                {
+                    sourceChannel = channel,
+                    locationId = "location.prototype.adventurers-guild",
+                    interactionPointId = PrototypeInteractionPointDefinitionFactory.QuestBoardPointId,
+                    provenanceId = provenanceId ?? "development"
+                },
+                QuestSourceChannel.Contract => new QuestOriginReferenceData
+                {
+                    sourceChannel = channel,
+                    locationId = "location.prototype.merchant-counter",
+                    interactionPointId = PrototypeInteractionPointDefinitionFactory.MerchantGuildCounterPointId,
+                    provenanceId = provenanceId ?? "development"
+                },
+                QuestSourceChannel.Government => new QuestOriginReferenceData
+                {
+                    sourceChannel = channel,
+                    locationId = "location.prototype.mayor-office",
+                    interactionPointId = PrototypeInteractionPointDefinitionFactory.MayorDeskPointId,
+                    provenanceId = provenanceId ?? "development"
+                },
+                _ => new QuestOriginReferenceData
+                {
+                    sourceChannel = channel,
+                    locationId = channel == QuestSourceChannel.System ? string.Empty : "location.prototype.development",
+                    provenanceId = provenanceId ?? "development"
+                }
+            };
+        }
+
+        private static QuestEligibilityFactSet DevelopmentEligibilityFacts(QuestDefinition definition, string personId)
+        {
+            QuestEligibilityRequirementData[] requirements = definition.EligibilityRequirementGroups
+                .SelectMany(group => group.requirements ?? Array.Empty<QuestEligibilityRequirementData>())
+                .Where(requirement => requirement != null && !string.IsNullOrWhiteSpace(requirement.requiredId))
+                .ToArray();
+            IEnumerable<string> Values(QuestEligibilityRequirementKind kind) => requirements
+                .Where(requirement => requirement.kind == kind)
+                .Select(requirement => requirement.requiredId);
+            Dictionary<string, int> ValuesWithScores(QuestEligibilityRequirementKind kind) => requirements
+                .Where(requirement => requirement.kind == kind)
+                .GroupBy(requirement => requirement.requiredId, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Max(requirement => Math.Max(requirement.minimumValue, 1000)), StringComparer.Ordinal);
+
+            return new QuestEligibilityFactSet(
+                activePersons: new[] { personId },
+                capabilities: Values(QuestEligibilityRequirementKind.Capability).Concat(Values(QuestEligibilityRequirementKind.Custom)),
+                skills: ValuesWithScores(QuestEligibilityRequirementKind.Skill),
+                traits: Values(QuestEligibilityRequirementKind.Trait),
+                possessedItems: Values(QuestEligibilityRequirementKind.ItemPossessed),
+                equippedItems: Values(QuestEligibilityRequirementKind.ItemEquipped),
+                professions: Values(QuestEligibilityRequirementKind.Profession),
+                qualifications: Values(QuestEligibilityRequirementKind.Qualification),
+                credentials: Values(QuestEligibilityRequirementKind.Credential),
+                employments: Values(QuestEligibilityRequirementKind.Employment),
+                organizationMemberships: Values(QuestEligibilityRequirementKind.OrganizationMembership),
+                organizationRanks: Values(QuestEligibilityRequirementKind.OrganizationRank),
+                offices: Values(QuestEligibilityRequirementKind.Office),
+                authorityGrants: Values(QuestEligibilityRequirementKind.InstitutionalAuthority)
+                    .Concat(Values(QuestEligibilityRequirementKind.Custom))
+                    .Concat(definition.OfferingAuthorityRequirementIds),
+                factions: Values(QuestEligibilityRequirementKind.FactionAffiliation),
+                reputations: ValuesWithScores(QuestEligibilityRequirementKind.Reputation),
+                relationships: ValuesWithScores(QuestEligibilityRequirementKind.Relationship),
+                citizenships: Values(QuestEligibilityRequirementKind.Citizenship),
+                residencies: Values(QuestEligibilityRequirementKind.Residency),
+                legalStatuses: Values(QuestEligibilityRequirementKind.LegalStatus),
+                permits: Values(QuestEligibilityRequirementKind.Permit),
+                knownSubjects: Values(QuestEligibilityRequirementKind.Knowledge),
+                priorQuestStates: Values(QuestEligibilityRequirementKind.PriorQuestState),
+                historyFacts: Values(QuestEligibilityRequirementKind.WorldHistoryFact),
+                narrativeStates: Values(QuestEligibilityRequirementKind.NarrativeState));
         }
 
         private QuestObjectiveOperationResult ApplyObjectiveSignal(QuestObjectiveSignal signal)

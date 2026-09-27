@@ -3870,7 +3870,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.WorldEntities.WorldEntityIdentity
   identityKind: 0
-  localAuthoredId: 
+  localAuthoredId: player
   runtimeEntityId: 
   sceneKey: scene.prototype
   worldId: local-world

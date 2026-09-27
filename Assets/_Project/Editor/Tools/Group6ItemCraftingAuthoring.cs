@@ -23,7 +23,7 @@ namespace UnityIsekaiGame.Editor
     public static class Group6ItemCraftingAuthoring
     {
         private const string Root = "Assets/_Project/Content/Items/Crafting";
-        private const string PrototypeItems = "Assets/_Project/Prototype/Content/Items";
+        private const string ItemDefinitionsRoot = "Assets/_Project/Content/Items/Definitions";
         private const string PickupRoot = "Assets/_Project/Prototype/Prefabs/Items/Pickup";
         private const string ScenePath = "Assets/_Project/Scenes/Prototype/PrototypeScene.unity";
         private const string CompositionPolicyId = "composition-policy.input-derived";
@@ -48,7 +48,7 @@ namespace UnityIsekaiGame.Editor
 
             ItemDefinition woodLog = EnsureWoodLogItem(wood);
             ItemDefinition leatherStrip = EnsureLeatherStripItem(leather);
-            Dictionary<string, ItemDefinition> items = LoadPrototypeItems().ToDictionary(item => item.Id, StringComparer.Ordinal);
+            Dictionary<string, ItemDefinition> items = LoadItemDefinitions().ToDictionary(item => item.Id, StringComparer.Ordinal);
             items[woodLog.Id] = woodLog;
             items[leatherStrip.Id] = leatherStrip;
 
@@ -247,7 +247,7 @@ namespace UnityIsekaiGame.Editor
 
         private static ItemDefinition EnsureWoodLogItem(MaterialDefinition wood)
         {
-            ItemDefinition item = Asset<ItemDefinition>($"{PrototypeItems}/WoodLog.asset");
+            ItemDefinition item = Asset<ItemDefinition>($"{ItemDefinitionsRoot}/WoodLog.asset");
             Set(item, "itemId", "item.wood-log");
             Set(item, "displayName", "Wood Log");
             Set(item, "description", "A basic wooden resource used for bows, shields, arrows, and future construction recipes.");
@@ -266,7 +266,7 @@ namespace UnityIsekaiGame.Editor
 
         private static ItemDefinition EnsureLeatherStripItem(MaterialDefinition leather)
         {
-            ItemDefinition item = Asset<ItemDefinition>($"{PrototypeItems}/LeatherStrip.asset");
+            ItemDefinition item = Asset<ItemDefinition>($"{ItemDefinitionsRoot}/LeatherStrip.asset");
             Set(item, "itemId", "item.leather-strip");
             Set(item, "displayName", "Leather Strip");
             Set(item, "description", "A prepared leather resource used for grips, bindings, armor, and future crafting recipes.");
@@ -283,9 +283,9 @@ namespace UnityIsekaiGame.Editor
             return item;
         }
 
-        private static IEnumerable<ItemDefinition> LoadPrototypeItems()
+        private static IEnumerable<ItemDefinition> LoadItemDefinitions()
         {
-            return AssetDatabase.FindAssets("t:ItemDefinition", new[] { PrototypeItems })
+            return AssetDatabase.FindAssets("t:ItemDefinition", new[] { ItemDefinitionsRoot })
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .Select(AssetDatabase.LoadAssetAtPath<ItemDefinition>)
                 .Where(item => item != null);

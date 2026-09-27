@@ -29,7 +29,12 @@ namespace UnityIsekaiGame.Parties
         public static bool AreAllies(AdventuringPartyService parties, string firstPersonId, string secondPersonId)
         {
             PartySnapshot party = parties?.GetPartyForPerson(firstPersonId);
-            return party != null && party.MemberPersonIds.Contains(secondPersonId, StringComparer.Ordinal);
+            if (party == null) return false;
+            for (int i = 0; i < party.MemberPersonIds.Count; i++)
+            {
+                if (string.Equals(party.MemberPersonIds[i], secondPersonId, StringComparison.Ordinal)) return true;
+            }
+            return false;
         }
 
         public static bool CanDamage(AdventuringPartyService parties, PartyOperationalRuntime operations, string sourcePersonId, string targetPersonId)
@@ -64,6 +69,9 @@ namespace UnityIsekaiGame.Parties
     /// <summary>Attach to an NPC with a PersonIdentity to make it obey the saved party command.</summary>
     public sealed class PartyCompanionAgent : MonoBehaviour
     {
+        private const double StateReportIntervalSeconds = 0.25d;
+        private const double LeaderSearchIntervalSeconds = 1d;
+
         [SerializeField] private PersonIdentity identity;
         [SerializeField] private Transform leader;
         [SerializeField, Min(0.1f)] private float movementSpeed = 4f;
@@ -74,8 +82,18 @@ namespace UnityIsekaiGame.Parties
         [SerializeField] private string locationId;
 
         private PrototypePersistenceServiceBehaviour persistence;
+        private AdventuringPartyService partyService;
+        private PartyOperationalRuntime partyOperations;
+        private PartySnapshot activeParty;
+        private PartyMemberOperationalData memberState;
+        private PartySettingsData partySettings;
         private Vector3 heldPosition;
         private bool holding;
+        private bool partySubscriptionActive;
+        private bool partyCacheDirty = true;
+        private long cachedOperationalRevision = -1;
+        private double nextStateReportAt;
+        private double nextLeaderSearchAt;
 
         public string PersonId => identity == null ? string.Empty : identity.PersonId;
         public PartyCommand CurrentCommand { get; private set; } = PartyCommand.Follow;
@@ -83,21 +101,36 @@ namespace UnityIsekaiGame.Parties
         private void Awake()
         {
             if (identity == null) identity = GetComponent<PersonIdentity>();
-            persistence = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            ResolveServices();
+        }
+
+        private void OnEnable() => ResolveServices();
+
+        private void OnDisable()
+        {
+            if (partySubscriptionActive && partyService != null)
+            {
+                partyService.Changed -= InvalidatePartyCache;
+            }
+
+            partySubscriptionActive = false;
         }
 
         private void Update()
         {
+            if (persistence == null)
+            {
+                ResolveServices();
+            }
+
             if (persistence == null || string.IsNullOrWhiteSpace(PersonId)) return;
-            PartySnapshot party = persistence.AdventuringParties.GetPartyForPerson(PersonId);
-            if (party == null) return;
-            PartyMemberOperationalData state = persistence.PartyOperations.GetMember(party.PartyId, PersonId);
-            if (state == null) return;
-            CurrentCommand = state.command;
-            ResolveLeader(party);
+            RefreshCachedState();
+            if (activeParty == null || memberState == null) return;
+            CurrentCommand = memberState.command;
+            ResolveLeader(activeParty);
             if (leader == null)
             {
-                persistence.PartyOperations.ReportMemberState(party.PartyId, PersonId, PartyMemberReadiness.Missing, locationId, 0f, isActiveAndEnabled, true, true);
+                ReportState(PartyMemberReadiness.Missing, 0f);
                 return;
             }
 
@@ -110,15 +143,14 @@ namespace UnityIsekaiGame.Parties
             else
             {
                 holding = false;
-                PartySettingsData settings = persistence.PartyOperations.GetSettings(party.PartyId);
-                Vector3 target = leader.TransformPoint(PartyFormationLayout.Offset(settings.formation, state.formationSlot));
+                Vector3 target = leader.TransformPoint(PartyFormationLayout.Offset(partySettings?.formation ?? PartyFormation.Wedge, memberState.formationSlot));
                 float preferred = CurrentCommand == PartyCommand.Support ? stopDistance * 2.5f : stopDistance;
                 if (CurrentCommand == PartyCommand.Regroup && allowRegroupTeleport && distance >= regroupTeleportDistance) transform.position = target;
                 else if (distance > preferred) MoveTowards(target);
             }
 
             PartyMemberReadiness readiness = distance > tooFarDistance ? PartyMemberReadiness.TooFar : PartyMemberReadiness.Ready;
-            persistence.PartyOperations.ReportMemberState(party.PartyId, PersonId, readiness, locationId, distance, isActiveAndEnabled, true, true);
+            ReportState(readiness, distance);
         }
 
         public void SetLeader(Transform value) => leader = value;
@@ -127,8 +159,74 @@ namespace UnityIsekaiGame.Parties
         private void ResolveLeader(PartySnapshot party)
         {
             if (leader != null) return;
+            double now = Time.unscaledTimeAsDouble;
+            if (now < nextLeaderSearchAt) return;
+            nextLeaderSearchAt = now + LeaderSearchIntervalSeconds;
             foreach (PersonIdentity candidate in FindObjectsByType<PersonIdentity>(FindObjectsInactive.Exclude))
                 if (candidate.PersonId == party.LeaderPersonId) { leader = candidate.transform; return; }
+        }
+
+        private void ResolveServices()
+        {
+            persistence ??= FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            if (persistence == null) return;
+
+            AdventuringPartyService resolvedPartyService = persistence.AdventuringParties;
+            if (!ReferenceEquals(partyService, resolvedPartyService))
+            {
+                if (partySubscriptionActive && partyService != null) partyService.Changed -= InvalidatePartyCache;
+                partyService = resolvedPartyService;
+                partySubscriptionActive = false;
+                partyCacheDirty = true;
+            }
+
+            partyOperations = persistence.PartyOperations;
+            if (!partySubscriptionActive && partyService != null && isActiveAndEnabled)
+            {
+                partyService.Changed += InvalidatePartyCache;
+                partySubscriptionActive = true;
+            }
+        }
+
+        private void InvalidatePartyCache()
+        {
+            partyCacheDirty = true;
+            leader = null;
+            nextLeaderSearchAt = 0d;
+        }
+
+        private void RefreshCachedState()
+        {
+            if (partyCacheDirty)
+            {
+                activeParty = partyService?.GetPartyForPerson(PersonId);
+                partyCacheDirty = false;
+                cachedOperationalRevision = -1;
+            }
+
+            if (activeParty == null || partyOperations == null)
+            {
+                memberState = null;
+                partySettings = null;
+                return;
+            }
+
+            if (cachedOperationalRevision == partyOperations.Revision)
+            {
+                return;
+            }
+
+            memberState = partyOperations.GetMember(activeParty.PartyId, PersonId);
+            partySettings = partyOperations.GetSettings(activeParty.PartyId);
+            cachedOperationalRevision = partyOperations.Revision;
+        }
+
+        private void ReportState(PartyMemberReadiness readiness, float distance)
+        {
+            double now = Time.unscaledTimeAsDouble;
+            if (activeParty == null || partyOperations == null || now < nextStateReportAt) return;
+            nextStateReportAt = now + StateReportIntervalSeconds;
+            partyOperations.ReportMemberState(activeParty.PartyId, PersonId, readiness, locationId, distance, isActiveAndEnabled, true, true);
         }
     }
 
@@ -171,29 +269,110 @@ namespace UnityIsekaiGame.Parties
 
     public sealed class PartyHudOverlay : MonoBehaviour
     {
+        private const float RefreshIntervalSeconds = 0.25f;
+
         [SerializeField] private bool visible = true;
         private PrototypePersistenceServiceBehaviour persistence;
-        private void Awake() => persistence = GetComponent<PrototypePersistenceServiceBehaviour>();
+        private AdventuringPartyService partyService;
+        private PartyOperationalRuntime partyOperations;
+        private PartySnapshot cachedParty;
+        private readonly System.Collections.Generic.List<PartyHudMemberRow> cachedRows = new System.Collections.Generic.List<PartyHudMemberRow>();
+        private string cachedHeader = string.Empty;
+        private bool partyCacheDirty = true;
+        private long cachedOperationalRevision = -1;
+        private float nextRefreshAt;
+
+        private void Awake()
+        {
+            persistence = GetComponent<PrototypePersistenceServiceBehaviour>();
+            partyService = persistence?.AdventuringParties;
+            partyOperations = persistence?.PartyOperations;
+        }
+
+        private void OnEnable()
+        {
+            if (partyService != null) partyService.Changed += InvalidatePartyCache;
+            partyCacheDirty = true;
+            RefreshCache();
+        }
+
+        private void OnDisable()
+        {
+            if (partyService != null) partyService.Changed -= InvalidatePartyCache;
+        }
+
+        private void Update()
+        {
+            if (!visible || Time.unscaledTime < nextRefreshAt) return;
+            RefreshCache();
+        }
+
         private void OnGUI()
         {
             if (!visible || persistence == null) return;
-            PartySnapshot party = persistence.AdventuringParties.GetPartyForPerson(persistence.PlayerPersonId);
-            if (party == null) return;
+            if (cachedParty == null) return;
             float width = Mathf.Min(310f, Screen.width - 30f);
-            Rect panel = new Rect(Screen.width - width - 18f, 18f, width, 54f + 27f * party.MemberCount);
+            Rect panel = new Rect(Screen.width - width - 18f, 18f, width, 54f + 27f * cachedRows.Count);
             PrototypeUiTheme.DrawPanelFrame(panel);
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 10f, panel.width - 24f, panel.height - 20f));
-            GUILayout.Label($"{party.DisplayName.ToUpperInvariant()}  {party.MemberCount}/{party.MaximumMembers}", PrototypeUiTheme.HeadingStyle);
-            foreach (PartyMemberSnapshot member in party.Members)
+            GUILayout.Label(cachedHeader, PrototypeUiTheme.HeadingStyle);
+            for (int i = 0; i < cachedRows.Count; i++)
             {
-                PartyMemberOperationalData state = persistence.PartyOperations.GetMember(party.PartyId, member.PersonId);
+                PartyHudMemberRow row = cachedRows[i];
+                GUILayout.Label(row.Label, row.Ready ? PrototypeUiTheme.BodyStyle : PrototypeUiTheme.MutedStyle, GUILayout.Height(23f));
+            }
+            GUILayout.EndArea();
+        }
+
+        private void InvalidatePartyCache() => partyCacheDirty = true;
+
+        private void RefreshCache()
+        {
+            nextRefreshAt = Time.unscaledTime + RefreshIntervalSeconds;
+            if (persistence == null) return;
+            partyService ??= persistence.AdventuringParties;
+            partyOperations ??= persistence.PartyOperations;
+            if (partyCacheDirty)
+            {
+                cachedParty = partyService?.GetPartyForPerson(persistence.PlayerPersonId);
+                partyCacheDirty = false;
+                cachedOperationalRevision = -1;
+            }
+
+            if (cachedParty == null)
+            {
+                cachedHeader = string.Empty;
+                cachedRows.Clear();
+                return;
+            }
+
+            if (cachedOperationalRevision == partyOperations.Revision && cachedRows.Count == cachedParty.MemberCount) return;
+            cachedOperationalRevision = partyOperations.Revision;
+            cachedHeader = $"{cachedParty.DisplayName.ToUpperInvariant()}  {cachedParty.MemberCount}/{cachedParty.MaximumMembers}";
+            cachedRows.Clear();
+            for (int i = 0; i < cachedParty.Members.Count; i++)
+            {
+                PartyMemberSnapshot member = cachedParty.Members[i];
+                PartyMemberOperationalData state = partyOperations.GetMember(cachedParty.PartyId, member.PersonId);
                 string marker = member.IsLeader ? "LEADER" : "ALLY";
                 string displayName = PersonRegistry.TryGetIdentity(member.PersonId, out PersonIdentity identity) ? identity.DisplayName : member.PersonId;
                 PartyMemberReadiness readiness = state?.readiness ?? PartyMemberReadiness.Missing;
-                GUIStyle style = readiness == PartyMemberReadiness.Ready ? PrototypeUiTheme.BodyStyle : PrototypeUiTheme.MutedStyle;
-                GUILayout.Label($"{marker}  {displayName}  |  {readiness}  |  {state?.command ?? PartyCommand.Follow}", style, GUILayout.Height(23f));
+                cachedRows.Add(new PartyHudMemberRow(
+                    $"{marker}  {displayName}  |  {readiness}  |  {state?.command ?? PartyCommand.Follow}",
+                    readiness == PartyMemberReadiness.Ready));
             }
-            GUILayout.EndArea();
+        }
+
+        private readonly struct PartyHudMemberRow
+        {
+            public PartyHudMemberRow(string label, bool ready)
+            {
+                Label = label;
+                Ready = ready;
+            }
+
+            public string Label { get; }
+            public bool Ready { get; }
         }
     }
 

@@ -8,10 +8,15 @@ namespace UnityIsekaiGame.UI
 {
     public sealed class StatusEffectReadoutView : MonoBehaviour
     {
+        private const float TimedStatusRefreshIntervalSeconds = 0.1f;
+
         [SerializeField] private StatusEffectController statusController;
         [SerializeField] private Text label;
 
+        private readonly StringBuilder textBuilder = new StringBuilder(192);
         private bool subscribed;
+        private bool hasVisibleTimedStatus;
+        private float nextTimedStatusRefreshAt;
 
         private void Awake()
         {
@@ -39,6 +44,11 @@ namespace UnityIsekaiGame.UI
 
         private void Update()
         {
+            if (!hasVisibleTimedStatus || Time.unscaledTime < nextTimedStatusRefreshAt)
+            {
+                return;
+            }
+
             Refresh();
         }
 
@@ -105,8 +115,10 @@ namespace UnityIsekaiGame.UI
                 }
             }
 
-            StringBuilder builder = new StringBuilder();
+            StringBuilder builder = textBuilder;
+            builder.Clear();
             builder.AppendLine("STATUS EFFECTS");
+            hasVisibleTimedStatus = false;
 
             if (statusController == null || statusController.ActiveStatuses.Count == 0)
             {
@@ -135,6 +147,7 @@ namespace UnityIsekaiGame.UI
 
                 if (status.Definition.DurationModel == StatusDurationModel.Timed)
                 {
+                    hasVisibleTimedStatus = true;
                     builder.Append(" (");
                     builder.Append(status.RemainingDuration.ToString("0.0"));
                     builder.Append("s)");
@@ -153,6 +166,7 @@ namespace UnityIsekaiGame.UI
             }
 
             label.text = builder.ToString().TrimEnd();
+            nextTimedStatusRefreshAt = Time.unscaledTime + TimedStatusRefreshIntervalSeconds;
         }
     }
 }

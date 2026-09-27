@@ -387,22 +387,24 @@ namespace UnityIsekaiGame.Development.Automation
 
         private static TestLabAutomationStepResult Step13IntegrationActionPipeline(TestLabAutomationContext context)
         {
+            string actorId = PrimaryAuthorityActorId(context);
+            CreateAuthorityGuildmaster(context, actorId, "integration-action");
             Step13InstitutionalIntegrationFacade facade = CreateIntegrationFacade(context);
             Step13InstitutionalActionContext validContext = new Step13InstitutionalActionContext(
-                PrimaryAuthorityActorId(context),
+                actorId,
                 "organization.prototype.adventurers-guild",
-                "government.prototype.village",
+                string.Empty,
                 $"office-assignment.testlab.integration.{context.RunId}",
-                $"authority-grant.testlab.integration.{context.RunId}",
-                new Step13InstitutionalSubjectReference(Step13InstitutionalSubjectType.Warrant, $"warrant.testlab.integration.{context.RunId}", context.ScenarioContext.Runtimes.WorldId, nameof(CrimeRuntime)),
-                "institutional-action.prototype.issue-warrant",
-                "place.testlab.capital",
-                "political-territory.testlab.integration",
-                "jurisdiction.testlab.integration",
-                "legal-subject.prototype.public-order",
+                string.Empty,
+                new Step13InstitutionalSubjectReference(Step13InstitutionalSubjectType.Office, PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, context.ScenarioContext.Runtimes.WorldId, nameof(OrganizationMembershipRuntime)),
+                PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholderActionId,
                 string.Empty,
                 string.Empty,
-                $"incident.testlab.integration.{context.RunId}",
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
                 string.Empty,
                 100d,
                 $"provenance.testlab.integration.{context.RunId}",
@@ -413,15 +415,15 @@ namespace UnityIsekaiGame.Development.Automation
                 string.Empty,
                 string.Empty,
                 string.Empty,
-                new Step13InstitutionalSubjectReference(Step13InstitutionalSubjectType.Warrant, $"warrant.testlab.integration.{context.RunId}", context.ScenarioContext.Runtimes.WorldId, nameof(CrimeRuntime)),
-                "institutional-action.prototype.issue-warrant",
-                "place.testlab.capital",
-                "political-territory.testlab.integration",
-                "jurisdiction.testlab.integration",
-                "legal-subject.prototype.public-order",
+                new Step13InstitutionalSubjectReference(Step13InstitutionalSubjectType.Office, PrototypeOrganizationMembershipDefinitionFactory.GuildmasterOfficeId, context.ScenarioContext.Runtimes.WorldId, nameof(OrganizationMembershipRuntime)),
+                PrototypeOrganizationAuthorityDefinitionFactory.AppointOfficeholderActionId,
                 string.Empty,
                 string.Empty,
-                $"incident.testlab.integration.{context.RunId}",
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
                 string.Empty,
                 100d);
 

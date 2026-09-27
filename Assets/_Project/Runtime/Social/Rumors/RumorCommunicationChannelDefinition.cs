@@ -28,7 +28,8 @@ namespace UnityIsekaiGame.Social.Rumors
         public int DefaultCredibilityModifier => Math.Max(0, Math.Min(1000, defaultCredibilityModifier));
         public int Version => Math.Max(1, version);
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // Prototype definitions are also created by the runtime registry in release players,
+        // so this configurator must remain available outside editor/development builds.
         public void DevelopmentConfigure(
             string id,
             string name,
@@ -48,8 +49,6 @@ namespace UnityIsekaiGame.Social.Rumors
             defaultMaxListeners = Math.Max(1, maxListeners);
             defaultCredibilityModifier = Math.Max(0, Math.Min(1000, credibilityModifier));
         }
-#endif
-
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
             if (report == null)

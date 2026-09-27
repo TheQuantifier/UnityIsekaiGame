@@ -379,7 +379,10 @@ namespace UnityIsekaiGame.Editor
         {
             HashSet<string> developmentScriptGuids = ReadGuidsUnder("Assets/_Project/Development", ".cs.meta");
             HashSet<string> testLabScriptGuids = ReadGuidsUnder("Assets/_Project/Development/TestLab", ".cs.meta");
-            HashSet<string> prototypeAssetGuids = ReadGuidsUnder("Assets/_Project/Prototype", ".meta");
+            // Production data must not depend on prototype-only data definitions. Presentation
+            // placeholders (models, materials, and prefabs) may still be shared while the game is
+            // in vertical-slice development, so only the Prototype/Content boundary is enforced here.
+            HashSet<string> prototypeAssetGuids = ReadGuidsUnder("Assets/_Project/Prototype/Content", ".meta");
 
             foreach (string prefabPath in Directory.EnumerateFiles("Assets/_Project", "*.prefab", SearchOption.AllDirectories))
             {
@@ -422,7 +425,7 @@ namespace UnityIsekaiGame.Editor
                 string contents = File.ReadAllText(normalized);
                 if (ContainsAnyGuid(contents, prototypeAssetGuids))
                 {
-                    report.AddError($"Production ScriptableObject '{normalized}' references a prototype-only asset.");
+                    report.AddError($"Production ScriptableObject '{normalized}' references prototype-only game data.");
                 }
             }
         }
@@ -599,7 +602,7 @@ namespace UnityIsekaiGame.Editor
             RequireAsset(report, "Assets/_Project/Content/Characters/Attributes/StrengthAttribute.asset");
             RequireAsset(report, "Assets/_Project/Content/Characters/CalculatedStats/Definitions/MaximumHealthCalculatedStat.asset");
             RequireAsset(report, "Assets/_Project/Content/Characters/Resources/HealthResource.asset");
-            RequireAsset(report, "Assets/_Project/Prototype/Content/Items/HealthPotion.asset");
+            RequireAsset(report, "Assets/_Project/Content/Items/Definitions/HealthPotion.asset");
         }
 
         private static void RequireAsset(ProjectStructureValidationReport report, string path)

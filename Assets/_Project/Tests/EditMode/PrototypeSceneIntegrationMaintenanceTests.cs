@@ -15,6 +15,7 @@ using UnityIsekaiGame.PrototypeIntegration;
 using UnityIsekaiGame.Quests;
 using UnityIsekaiGame.WorldLocations;
 using UnityIsekaiGame.WorldLocations.SceneBinding;
+using UnityIsekaiGame.WorldEntities;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -186,6 +187,30 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(ownedColliders.Any(collider => collider.enabled && collider.isTrigger), Is.True, interactable.name);
                 Assert.That(((IInteractable)interactable).InteractionPrompt, Is.Not.Empty, interactable.name);
             }
+        }
+
+        [Test]
+        public void PrototypeSceneWorldEntityIdentitiesAreValidAndUnique()
+        {
+            EditorSceneManager.OpenScene(PrototypeScenePath);
+            WorldEntityIdentity[] identities = UnityEngine.Object.FindObjectsByType<WorldEntityIdentity>(FindObjectsInactive.Include);
+            string[] failures = identities
+                .Where(identity => identity != null && identity.IdentityKind != WorldEntityIdentityKind.Transient)
+                .Where(identity => !identity.ValidateIdentity(out _))
+                .Select(identity => identity.ValidateIdentity(out string failure) ? string.Empty : $"{identity.name}: {failure}")
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .ToArray();
+            string[] duplicateIds = identities
+                .Where(identity => identity != null && identity.IdentityKind != WorldEntityIdentityKind.Transient)
+                .Select(identity => identity.EntityId)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .GroupBy(value => value, StringComparer.Ordinal)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToArray();
+
+            Assert.That(failures, Is.Empty, string.Join(Environment.NewLine, failures));
+            Assert.That(duplicateIds, Is.Empty, $"Duplicate world entity IDs: {string.Join(", ", duplicateIds)}");
         }
 
         private static void AssertInteraction(GameObject prefab, string objectName, string interactionPointId, bool requiresCollider = false)

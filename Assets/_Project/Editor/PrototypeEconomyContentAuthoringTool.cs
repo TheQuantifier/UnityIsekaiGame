@@ -33,11 +33,11 @@ namespace UnityIsekaiGame.Editor
         public static void Generate()
         {
             CurrencyDefinition gold = Load<CurrencyDefinition>("Assets/_Project/Content/Core/Currencies/GoldCurrency.asset");
-            ItemDefinition ironOre = Load<ItemDefinition>("Assets/_Project/Prototype/Content/Items/PrototypeIronOre.asset");
-            ItemDefinition woodLog = Load<ItemDefinition>("Assets/_Project/Prototype/Content/Items/WoodLog.asset");
-            ItemDefinition leatherStrip = Load<ItemDefinition>("Assets/_Project/Prototype/Content/Items/LeatherStrip.asset");
-            ItemDefinition sword = Load<ItemDefinition>("Assets/_Project/Prototype/Content/Items/PrototypeSword.asset");
-            ItemDefinition bow = Load<ItemDefinition>("Assets/_Project/Prototype/Content/Items/PrototypeBow.asset");
+            ItemDefinition ironOre = Load<ItemDefinition>("Assets/_Project/Content/Items/Definitions/PrototypeIronOre.asset");
+            ItemDefinition woodLog = Load<ItemDefinition>("Assets/_Project/Content/Items/Definitions/WoodLog.asset");
+            ItemDefinition leatherStrip = Load<ItemDefinition>("Assets/_Project/Content/Items/Definitions/LeatherStrip.asset");
+            ItemDefinition sword = Load<ItemDefinition>("Assets/_Project/Content/Items/Definitions/PrototypeSword.asset");
+            ItemDefinition bow = Load<ItemDefinition>("Assets/_Project/Content/Items/Definitions/PrototypeBow.asset");
 
             MarketDefinition market = GetOrCreate<MarketDefinitionAsset>($"{Root}/Markets/PrototypeTownMarket.asset");
             market.Initialize(PrototypeEconomyContentIds.MarketTown, "Prototype Town Market", gold, MarketCategory.LocalSettlement, MarketScopeType.Settlement);
