@@ -27,6 +27,26 @@ namespace UnityIsekaiGame.Gameplay
         public static PrototypeAdventurerRegistrationResult Failure(string message) => new PrototypeAdventurerRegistrationResult(false, false, null, message);
     }
 
+    public sealed class PrototypeMerchantRegistrationResult
+    {
+        private PrototypeMerchantRegistrationResult(bool succeeded, bool alreadyRegistered, OrganizationMembershipSnapshot membership, string message)
+        {
+            Succeeded = succeeded;
+            AlreadyRegistered = alreadyRegistered;
+            Membership = membership;
+            Message = message ?? string.Empty;
+        }
+
+        public bool Succeeded { get; }
+        public bool AlreadyRegistered { get; }
+        public OrganizationMembershipSnapshot Membership { get; }
+        public string Message { get; }
+
+        public static PrototypeMerchantRegistrationResult Success(OrganizationMembershipSnapshot membership, string message) => new PrototypeMerchantRegistrationResult(true, false, membership, message);
+        public static PrototypeMerchantRegistrationResult ExistingRegistration(OrganizationMembershipSnapshot membership, string message) => new PrototypeMerchantRegistrationResult(true, true, membership, message);
+        public static PrototypeMerchantRegistrationResult Failure(string message) => new PrototypeMerchantRegistrationResult(false, false, null, message);
+    }
+
     [DisallowMultipleComponent]
     public sealed class PrototypeAdventurerGuildRegistrationDesk : MonoBehaviour, IInteractionPointDestinationHandler
     {
@@ -37,9 +57,7 @@ namespace UnityIsekaiGame.Gameplay
             get
             {
                 ResolveServices();
-                return services != null && services.IsPlayerRegisteredAsAdventurer
-                    ? "Speak with Adventurers Guild Receptionist"
-                    : "Register as an Adventurer";
+                return "Use Adventurers Guild Desk";
             }
         }
 
@@ -61,9 +79,14 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
-            PrototypeAdventurerRegistrationResult result = services.RegisterPlayerAsAdventurerAtGuildDesk(point?.InteractionPointId ?? string.Empty);
-            PrototypeHudMessageBus.Show(result.Message);
-            if (!result.Succeeded) Debug.LogWarning(result.Message);
+            PrototypeGuildDeskPanel panel = FindAnyObjectByType<PrototypeGuildDeskPanel>(FindObjectsInactive.Include);
+            if (panel == null)
+            {
+                PrototypeHudMessageBus.Show("Guild desk services are unavailable.");
+                return;
+            }
+
+            panel.OpenAdventurersGuildDesk(point?.InteractionPointId, context.Interactor);
         }
 
         private void ResolveServices()

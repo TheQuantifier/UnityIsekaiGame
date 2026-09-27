@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47b3552c0d92a394ab398b5bb99fc98c, type: 3}
+  m_Name: conversation_definition_prototype_adventurer_guild_counter
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Dialogue.ConversationDefinition
+  definitionId: conversation-definition.prototype.adventurer-guild-counter
+  displayName: Adventurer Guild Counter Conversation
+  category: 2
+  defaultVisibility: 2
+  coLocationPolicy: 3
+  overlapPolicy: 2
+  providerRequirements:
+  - kind: 4
+    requirementId: organization.prototype.adventurers-guild
+    hidden: 0
+  requiredRoles: 01000000050000000d000000
+  supportedQuestSourceDefinitionIds:
+  - quest-source-definition.prototype.adventurers-guild-counter
+  supportedQuestTagIds:
+  - guild
+  authorityRequirementIds:
+  - authority.prototype.guild.quest-offer
+  tagIds:
+  - counter
+  - guild
+  - prototype
+  - quest

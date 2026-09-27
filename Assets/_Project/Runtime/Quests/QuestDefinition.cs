@@ -2,10 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityIsekaiGame.Contracts;
-using UnityIsekaiGame.Factions;
 using UnityIsekaiGame.GameData;
-using UnityIsekaiGame.People;
 
 namespace UnityIsekaiGame.Quests
 {
@@ -17,16 +14,6 @@ namespace UnityIsekaiGame.Quests
         [SerializeField, TextArea(2, 4)] private string summary;
         [SerializeField, TextArea(3, 8)] private string detailedDescription;
         [SerializeField] private QuestCategory category = QuestCategory.SideQuest;
-        [SerializeField] private PersonDefinition questGiver;
-        [SerializeField] private FactionDefinition questSourceFaction;
-        [SerializeField] private FactionDefinition relatedFaction;
-        [Tooltip("Legacy fallback used only when Quest Giver is not assigned.")]
-        [SerializeField] private string questGiverId;
-        [Tooltip("Legacy fallback used only when Quest Giver is not assigned.")]
-        [SerializeField] private string questGiverDisplayName;
-        [SerializeField] private QuestStageDefinition[] stages;
-        [SerializeField] private ContractRewardDefinition reward;
-        [SerializeField] private string[] prerequisiteQuestIds;
         [Header("Identity Metadata")]
         [SerializeField] private QuestDefinitionImportance importance = QuestDefinitionImportance.Standard;
         [SerializeField] private QuestDefinitionRepeatabilityPolicy repeatabilityPolicy = QuestDefinitionRepeatabilityPolicy.Unique;
@@ -47,6 +34,13 @@ namespace UnityIsekaiGame.Quests
         [SerializeField] private QuestRefusalPolicy refusalPolicy = QuestRefusalPolicy.MayReoffer;
         [SerializeField] private QuestAbandonmentPolicy abandonmentPolicy = QuestAbandonmentPolicy.AllowedReleasesCapacity;
         [SerializeField] private int assignmentCapacity = 1;
+        [Tooltip("Minimum number of active party members required to accept and undertake this quest. A value of 1 permits solo play.")]
+        [SerializeField, Min(1)] private int requiredPartySize = 1;
+        [SerializeField] private bool requireReadyPartyAtAcceptance = true;
+        [SerializeField] private QuestPartyRosterPolicy partyRosterPolicy = QuestPartyRosterPolicy.FrozenAtAcceptance;
+        [SerializeField] private QuestPartyProgressPolicy partyProgressPolicy = QuestPartyProgressPolicy.AnyParticipant;
+        [SerializeField] private QuestPartyAuthorityPolicy partyAuthorityPolicy = QuestPartyAuthorityPolicy.LeaderOnly;
+        [SerializeField] private QuestPartyRewardPolicy partyRewardPolicy = QuestPartyRewardPolicy.LeaderOnly;
         [SerializeField] private double availabilityStartWorldTime = -1d;
         [SerializeField] private double availabilityEndWorldTime = -1d;
         [SerializeField] private double defaultOfferDuration = -1d;
@@ -63,9 +57,6 @@ namespace UnityIsekaiGame.Quests
         [SerializeField] private QuestFailureConditionDefinitionData[] failureConditions = Array.Empty<QuestFailureConditionDefinitionData>();
         [SerializeField] private QuestRewardPackageDefinitionData[] rewardPackages = Array.Empty<QuestRewardPackageDefinitionData>();
         [SerializeField] private QuestConsequenceDefinitionData[] consequenceDefinitions = Array.Empty<QuestConsequenceDefinitionData>();
-        [SerializeField] private bool repeatable;
-        [SerializeField] private bool hiddenUntilDiscovered;
-        [SerializeField] private bool canAbandon = true;
 
         public string QuestId => questId;
         public string Id => questId;
@@ -74,37 +65,31 @@ namespace UnityIsekaiGame.Quests
         public string Summary => summary;
         public string DetailedDescription => detailedDescription;
         public QuestCategory Category => category;
-        public PersonDefinition QuestGiver => questGiver;
-        public FactionDefinition QuestSourceFaction => questSourceFaction;
-        public FactionDefinition RelatedFaction => relatedFaction;
-        public string QuestSourceDisplayName => questSourceFaction == null ? QuestGiverDisplayName : questSourceFaction.DisplayName;
-        public string QuestGiverId => questGiver == null ? questGiverId : questGiver.PersonId;
-        public string QuestGiverDisplayName => questGiver == null
-            ? questGiverDisplayName
-            : string.IsNullOrWhiteSpace(questGiver.Title)
-                ? questGiver.DisplayName
-                : $"{questGiver.DisplayName}, {questGiver.Title}";
-        public IReadOnlyList<QuestStageDefinition> Stages => stages ?? Array.Empty<QuestStageDefinition>();
-        public ContractRewardDefinition Reward => reward;
-        public IReadOnlyList<string> PrerequisiteQuestIds => prerequisiteQuestIds ?? Array.Empty<string>();
         public QuestDefinitionImportance Importance => importance;
-        public QuestDefinitionRepeatabilityPolicy RepeatabilityPolicy => repeatabilityPolicy == QuestDefinitionRepeatabilityPolicy.Unknown && repeatable ? QuestDefinitionRepeatabilityPolicy.Reusable : repeatabilityPolicy;
-        public QuestVisibility DefaultVisibility => hiddenUntilDiscovered && defaultVisibility == QuestVisibility.Public ? QuestVisibility.Hidden : defaultVisibility;
+        public QuestDefinitionRepeatabilityPolicy RepeatabilityPolicy => repeatabilityPolicy;
+        public QuestVisibility DefaultVisibility => defaultVisibility;
         public QuestSourceChannel DefaultSourceChannel => defaultSourceChannel;
         public IReadOnlyList<QuestIssuerType> SupportedIssuerTypes => supportedIssuerTypes ?? Array.Empty<QuestIssuerType>();
         public IReadOnlyList<QuestRecipientScope> SupportedRecipientScopes => supportedRecipientScopes ?? Array.Empty<QuestRecipientScope>();
         public IReadOnlyList<string> DefaultTagIds => defaultTagIds ?? Array.Empty<string>();
         public IReadOnlyList<string> SupportedSubjectRoleIds => supportedSubjectRoleIds ?? Array.Empty<string>();
         public bool AllowDynamicInstances => allowDynamicInstances || RepeatabilityPolicy == QuestDefinitionRepeatabilityPolicy.DynamicTemplate;
-        public bool AllowMultipleSimultaneousInstances => allowMultipleSimultaneousInstances || repeatable || RepeatabilityPolicy == QuestDefinitionRepeatabilityPolicy.Reusable || RepeatabilityPolicy == QuestDefinitionRepeatabilityPolicy.DynamicTemplate;
+        public bool AllowMultipleSimultaneousInstances => allowMultipleSimultaneousInstances || RepeatabilityPolicy == QuestDefinitionRepeatabilityPolicy.Reusable || RepeatabilityPolicy == QuestDefinitionRepeatabilityPolicy.DynamicTemplate;
         public bool UniquePerWorld => uniquePerWorld && !AllowMultipleSimultaneousInstances;
         public bool UniquePerRecipient => uniquePerRecipient;
         public string IdentityNotes => identityNotes ?? string.Empty;
         public QuestAssignmentPolicy AssignmentPolicy => assignmentPolicy == QuestAssignmentPolicy.Unknown ? QuestAssignmentPolicy.Exclusive : assignmentPolicy;
         public QuestConsentPolicy ConsentPolicy => consentPolicy == QuestConsentPolicy.Unknown ? QuestConsentPolicy.ExplicitRecipientConsentRequired : consentPolicy;
         public QuestRefusalPolicy RefusalPolicy => refusalPolicy == QuestRefusalPolicy.Unknown ? QuestRefusalPolicy.MayReoffer : refusalPolicy;
-        public QuestAbandonmentPolicy AbandonmentPolicy => abandonmentPolicy == QuestAbandonmentPolicy.Unknown ? canAbandon ? QuestAbandonmentPolicy.AllowedReleasesCapacity : QuestAbandonmentPolicy.NotAllowed : abandonmentPolicy;
+        public QuestAbandonmentPolicy AbandonmentPolicy => abandonmentPolicy;
         public int AssignmentCapacity => AssignmentPolicy == QuestAssignmentPolicy.Nonexclusive ? Math.Max(assignmentCapacity, 0) : Math.Max(1, assignmentCapacity);
+        public int RequiredPartySize => Math.Max(1, requiredPartySize);
+        public bool RequiresParty => RequiredPartySize > 1;
+        public bool RequireReadyPartyAtAcceptance => requireReadyPartyAtAcceptance;
+        public QuestPartyRosterPolicy PartyRosterPolicy => partyRosterPolicy;
+        public QuestPartyProgressPolicy PartyProgressPolicy => partyProgressPolicy;
+        public QuestPartyAuthorityPolicy PartyAuthorityPolicy => partyAuthorityPolicy;
+        public QuestPartyRewardPolicy PartyRewardPolicy => partyRewardPolicy;
         public double AvailabilityStartWorldTime => availabilityStartWorldTime;
         public double AvailabilityEndWorldTime => availabilityEndWorldTime;
         public double DefaultOfferDuration => defaultOfferDuration;
@@ -119,9 +104,9 @@ namespace UnityIsekaiGame.Quests
         public IReadOnlyList<QuestFailureConditionDefinitionData> FailureConditions => (failureConditions ?? Array.Empty<QuestFailureConditionDefinitionData>()).Where(value => value != null).Select(value => value.Clone()).OrderBy(value => value.failureConditionId, StringComparer.Ordinal).ToArray();
         public IReadOnlyList<QuestRewardPackageDefinitionData> RewardPackages => (rewardPackages ?? Array.Empty<QuestRewardPackageDefinitionData>()).Where(value => value != null).Select(value => value.Clone()).OrderBy(value => value.rewardPackageId, StringComparer.Ordinal).ToArray();
         public IReadOnlyList<QuestConsequenceDefinitionData> ConsequenceDefinitions => (consequenceDefinitions ?? Array.Empty<QuestConsequenceDefinitionData>()).Where(value => value != null).Select(value => value.Clone()).OrderBy(value => value.consequenceDefinitionId, StringComparer.Ordinal).ToArray();
-        public bool Repeatable => repeatable;
-        public bool HiddenUntilDiscovered => hiddenUntilDiscovered;
-        public bool CanAbandon => canAbandon;
+        public bool Repeatable => RepeatabilityPolicy != QuestDefinitionRepeatabilityPolicy.Unique;
+        public bool HiddenUntilDiscovered => DefaultVisibility == QuestVisibility.Hidden || DefaultVisibility == QuestVisibility.Secret;
+        public bool CanAbandon => AbandonmentPolicy != QuestAbandonmentPolicy.NotAllowed;
 
         public void ValidateCatalogDefinition(IReadOnlyDictionary<string, IGameDefinition> definitionsById, DefinitionValidationReport report)
         {
@@ -130,13 +115,9 @@ namespace UnityIsekaiGame.Quests
                 return;
             }
 
-            ValidateStageAndObjectiveIds(report);
             ValidateIdentityMetadata(report);
             ValidateObjectiveProgressDefinitions(report);
             ValidateOutcomeDefinitions(report);
-            ValidatePersonReference(questGiver, nameof(QuestGiver), definitionsById, report);
-            ValidateFactionReference(questSourceFaction, nameof(QuestSourceFaction), definitionsById, report);
-            ValidateFactionReference(relatedFaction, nameof(RelatedFaction), definitionsById, report);
         }
 
         public void DevelopmentConfigureIdentity(
@@ -169,8 +150,6 @@ namespace UnityIsekaiGame.Quests
             allowMultipleSimultaneousInstances = multipleSimultaneousInstances;
             uniquePerWorld = perWorldUnique;
             uniquePerRecipient = perRecipientUnique;
-            repeatable = repeatPolicy == QuestDefinitionRepeatabilityPolicy.Reusable || repeatPolicy == QuestDefinitionRepeatabilityPolicy.RepeatablePerIssuer || repeatPolicy == QuestDefinitionRepeatabilityPolicy.RepeatablePerRecipient || repeatPolicy == QuestDefinitionRepeatabilityPolicy.DynamicTemplate;
-            hiddenUntilDiscovered = visibility == QuestVisibility.Hidden || visibility == QuestVisibility.Secret;
         }
 
         public void DevelopmentConfigureParticipation(
@@ -179,19 +158,31 @@ namespace UnityIsekaiGame.Quests
             QuestRefusalPolicy refusal = QuestRefusalPolicy.MayReoffer,
             QuestAbandonmentPolicy abandonment = QuestAbandonmentPolicy.AllowedReleasesCapacity,
             int capacity = 1,
+            int minimumPartySize = 1,
             double availableFrom = -1d,
             double availableUntil = -1d,
             double offerDuration = -1d,
             bool withdrawalAllowed = true,
             bool prevalidateOffers = true,
             IEnumerable<string> authorityRequirements = null,
-            IEnumerable<QuestEligibilityRequirementGroupData> eligibilityGroups = null)
+            IEnumerable<QuestEligibilityRequirementGroupData> eligibilityGroups = null,
+            bool requireReadyParty = true,
+            QuestPartyRosterPolicy rosterPolicy = QuestPartyRosterPolicy.FrozenAtAcceptance,
+            QuestPartyProgressPolicy progressPolicy = QuestPartyProgressPolicy.AnyParticipant,
+            QuestPartyAuthorityPolicy authorityPolicy = QuestPartyAuthorityPolicy.LeaderOnly,
+            QuestPartyRewardPolicy rewardPolicy = QuestPartyRewardPolicy.LeaderOnly)
         {
             assignmentPolicy = assignment == QuestAssignmentPolicy.Unknown ? QuestAssignmentPolicy.Exclusive : assignment;
             consentPolicy = consent == QuestConsentPolicy.Unknown ? QuestConsentPolicy.ExplicitRecipientConsentRequired : consent;
             refusalPolicy = refusal == QuestRefusalPolicy.Unknown ? QuestRefusalPolicy.MayReoffer : refusal;
             abandonmentPolicy = abandonment == QuestAbandonmentPolicy.Unknown ? QuestAbandonmentPolicy.AllowedReleasesCapacity : abandonment;
             assignmentCapacity = Math.Max(assignmentPolicy == QuestAssignmentPolicy.Nonexclusive ? 0 : 1, capacity);
+            requiredPartySize = Math.Max(1, minimumPartySize);
+            requireReadyPartyAtAcceptance = requireReadyParty;
+            partyRosterPolicy = rosterPolicy;
+            partyProgressPolicy = progressPolicy;
+            partyAuthorityPolicy = authorityPolicy;
+            partyRewardPolicy = rewardPolicy;
             availabilityStartWorldTime = availableFrom;
             availabilityEndWorldTime = availableUntil;
             defaultOfferDuration = offerDuration;
@@ -199,7 +190,6 @@ namespace UnityIsekaiGame.Quests
             prevalidateEligibilityForOffers = prevalidateOffers;
             offeringAuthorityRequirementIds = Clean(authorityRequirements);
             eligibilityRequirementGroups = (eligibilityGroups ?? Array.Empty<QuestEligibilityRequirementGroupData>()).Where(value => value != null).Select(value => value.Clone()).ToArray();
-            canAbandon = AbandonmentPolicy != QuestAbandonmentPolicy.NotAllowed;
         }
 
         public void DevelopmentConfigureObjectives(
@@ -250,49 +240,6 @@ namespace UnityIsekaiGame.Quests
                 .ToArray();
         }
 
-        private void ValidateStageAndObjectiveIds(DefinitionValidationReport report)
-        {
-            HashSet<string> stageIds = new HashSet<string>();
-            for (int stageIndex = 0; stageIndex < Stages.Count; stageIndex++)
-            {
-                QuestStageDefinition stage = Stages[stageIndex];
-                if (stage == null)
-                {
-                    report.AddError($"QuestDefinition '{Title}' stage {stageIndex} is missing.");
-                    continue;
-                }
-
-                if (string.IsNullOrWhiteSpace(stage.StageId))
-                {
-                    report.AddError($"QuestDefinition '{Title}' stage {stageIndex} is missing a stable stage ID.");
-                }
-                else if (!stageIds.Add(stage.StageId))
-                {
-                    report.AddError($"QuestDefinition '{Title}' has duplicate stage ID '{stage.StageId}'.");
-                }
-
-                HashSet<string> objectiveIds = new HashSet<string>();
-                for (int objectiveIndex = 0; objectiveIndex < stage.Objectives.Count; objectiveIndex++)
-                {
-                    ContractObjectiveDefinition objective = stage.Objectives[objectiveIndex];
-                    if (objective == null)
-                    {
-                        report.AddError($"QuestDefinition '{Title}' stage '{stage.StageId}' objective {objectiveIndex} is missing.");
-                        continue;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(objective.ObjectiveId))
-                    {
-                        report.AddError($"QuestDefinition '{Title}' stage '{stage.StageId}' objective {objectiveIndex} is missing a stable objective ID.");
-                    }
-                    else if (!objectiveIds.Add(objective.ObjectiveId))
-                    {
-                        report.AddError($"QuestDefinition '{Title}' stage '{stage.StageId}' has duplicate objective ID '{objective.ObjectiveId}'.");
-                    }
-                }
-            }
-        }
-
         private void ValidateIdentityMetadata(DefinitionValidationReport report)
         {
             if (string.IsNullOrWhiteSpace(questId))
@@ -333,6 +280,11 @@ namespace UnityIsekaiGame.Quests
             if (AssignmentPolicy != QuestAssignmentPolicy.Nonexclusive && AssignmentCapacity <= 0)
             {
                 report.AddError($"QuestDefinition '{Title}' assignment capacity must be positive for limited or exclusive assignment.");
+            }
+
+            if (requiredPartySize < 1)
+            {
+                report.AddError($"QuestDefinition '{Title}' required party size must be at least one.");
             }
 
             if (AvailabilityEndWorldTime >= 0d && AvailabilityStartWorldTime >= 0d && AvailabilityEndWorldTime < AvailabilityStartWorldTime)
@@ -660,40 +612,6 @@ namespace UnityIsekaiGame.Quests
                 {
                     report.AddError($"QuestDefinition '{Title}' consequence '{consequence.consequenceDefinitionId}' has unknown category.");
                 }
-            }
-        }
-
-        private void ValidatePersonReference(
-            PersonDefinition person,
-            string label,
-            IReadOnlyDictionary<string, IGameDefinition> definitionsById,
-            DefinitionValidationReport report)
-        {
-            if (person == null)
-            {
-                return;
-            }
-
-            if (!definitionsById.TryGetValue(person.Id, out IGameDefinition found) || found is not PersonDefinition)
-            {
-                report.AddError($"QuestDefinition '{Title}' references {label} '{person.Id}', which is not in the configured catalog.");
-            }
-        }
-
-        private void ValidateFactionReference(
-            FactionDefinition faction,
-            string label,
-            IReadOnlyDictionary<string, IGameDefinition> definitionsById,
-            DefinitionValidationReport report)
-        {
-            if (faction == null)
-            {
-                return;
-            }
-
-            if (!definitionsById.TryGetValue(faction.Id, out IGameDefinition found) || found is not FactionDefinition)
-            {
-                report.AddError($"QuestDefinition '{Title}' references {label} '{faction.Id}', which is not in the configured catalog.");
             }
         }
 

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityIsekaiGame.Magic;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI
 {
@@ -13,6 +14,8 @@ namespace UnityIsekaiGame.UI
 
         public void Render(int slotIndex, SpellDefinition spell, bool selected)
         {
+            normalColor = PrototypeUiTheme.PanelRaised;
+            selectedColor = PrototypeUiTheme.AccentSoft;
             if (backgroundImage == null)
             {
                 backgroundImage = GetComponent<Image>();
@@ -25,6 +28,7 @@ namespace UnityIsekaiGame.UI
 
             if (label != null)
             {
+                PrototypeUiTheme.StyleText(label, selected ? PrototypeUiTextRole.Heading : PrototypeUiTextRole.Body);
                 string spellText = spell == null ? "Empty" : $"{spell.DisplayName}\n{spell.ManaCost:0} MP";
                 label.text = $"{slotIndex + 1}\n{spellText}";
             }

@@ -1,0 +1,258 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 638360f107104d5a97e8b67e994193b0, type: 3}
+  m_Name: dialogue_graph_prototype_adventurer_guild_counter
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Dialogue.DialogueGraphDefinition
+  graphId: dialogue-graph.prototype.adventurer-guild-counter
+  displayName: Adventurer Guild Counter Dialogue
+  conversationDefinitionId: conversation-definition.prototype.adventurer-guild-counter
+  canonicalEntryNodeId: guild.entry
+  fallbackNodeId: guild.end
+  automaticTransitionLimit: 8
+  nodes:
+  - nodeId: guild.entry
+    category: 4
+    speaker:
+      kind: 6
+      role: 3
+      personId: 
+      officeId: 
+      organizationId: 
+      customSelectorId: 
+    listener:
+      kind: 2
+      role: 4
+      personId: 
+      customSelectorId: 
+    authoredText: Welcome to the Adventurers Guild. Looking for work, records, or
+      rank services?
+    localizationKey: 
+    visibility: 1
+    entryConditions: []
+    choices:
+    - choiceId: guild.choice.accept-posting
+      displayText: Accept the counter posting
+      category: 6
+      visibility: 1
+      actorRole: 1
+      repeatPolicy: 3
+      targetNodeId: guild.accepted
+      unavailableReason: 
+      hideUnavailableReason: 0
+      conditions: []
+      effects:
+      - effectId: effect.guild.accept-posting
+        kind: 7
+        requirement: 0
+        targetId: quest.prototype.guild-posting
+        secondaryTargetId: 
+        value: 
+        quantity: 1
+        successNodeId: 
+        failureNodeId: 
+        runOnNodeEntry: 0
+        oneShot: 1
+        hidden: 0
+      effectFailureNodeId: 
+      tagIds: []
+    - choiceId: guild.choice.ask-work
+      displayText: Ask for available work
+      category: 2
+      visibility: 1
+      actorRole: 1
+      repeatPolicy: 1
+      targetNodeId: guild.work
+      unavailableReason: 
+      hideUnavailableReason: 0
+      conditions: []
+      effects:
+      - effectId: effect.guild.asked-work
+        kind: 2
+        requirement: 0
+        targetId: flag.guild.asked-work
+        secondaryTargetId: 
+        value: 
+        quantity: 1
+        successNodeId: 
+        failureNodeId: 
+        runOnNodeEntry: 0
+        oneShot: 1
+        hidden: 0
+      effectFailureNodeId: 
+      tagIds: []
+    - choiceId: guild.choice.leave
+      displayText: End conversation
+      category: 13
+      visibility: 1
+      actorRole: 1
+      repeatPolicy: 1
+      targetNodeId: guild.end
+      unavailableReason: 
+      hideUnavailableReason: 0
+      conditions: []
+      effects: []
+      effectFailureNodeId: 
+      tagIds: []
+    - choiceId: guild.choice.silver-rank
+      displayText: Ask about silver-rank contracts
+      category: 11
+      visibility: 9
+      actorRole: 1
+      repeatPolicy: 1
+      targetNodeId: guild.silver
+      unavailableReason: 
+      hideUnavailableReason: 0
+      conditions:
+      - conditionId: condition.guild.silver-rank
+        kind: 11
+        evaluationMode: 1
+        requiredId: rank.prototype.adventurers.silver
+        secondaryId: 
+        minimumValue: 1
+        maximumValue: 1
+        comparison: 0
+        hidden: 1
+        revealFailure: 0
+        negate: 0
+      effects: []
+      effectFailureNodeId: 
+      tagIds: []
+    transitions: []
+    entryEffects: []
+    canCancel: 1
+    canSuspend: 1
+    tagIds: []
+  - nodeId: guild.work
+    category: 3
+    speaker:
+      kind: 6
+      role: 3
+      personId: 
+      officeId: 
+      organizationId: 
+      customSelectorId: 
+    listener:
+      kind: 2
+      role: 4
+      personId: 
+      customSelectorId: 
+    authoredText: The public board has monster work, escort work, and delivery requests.
+      The clerk can turn a posting into an assignment when you accept it.
+    localizationKey: 
+    visibility: 1
+    entryConditions: []
+    choices: []
+    transitions:
+    - transitionId: guild.return-from-work
+      targetNodeId: guild.entry
+      category: 2
+      priority: 0
+      conditions: []
+      effects: []
+      fallback: 0
+    entryEffects: []
+    canCancel: 1
+    canSuspend: 1
+    tagIds: []
+  - nodeId: guild.accepted
+    category: 7
+    speaker:
+      kind: 6
+      role: 3
+      personId: 
+      officeId: 
+      organizationId: 
+      customSelectorId: 
+    listener:
+      kind: 2
+      role: 4
+      personId: 
+      customSelectorId: 
+    authoredText: Your acceptance was recorded. The quest system owns the assignment;
+      this dialogue only records that you selected the branch.
+    localizationKey: 
+    visibility: 1
+    entryConditions: []
+    choices: []
+    transitions:
+    - transitionId: guild.return-from-accepted
+      targetNodeId: guild.entry
+      category: 2
+      priority: 0
+      conditions: []
+      effects: []
+      fallback: 0
+    entryEffects: []
+    canCancel: 1
+    canSuspend: 1
+    tagIds: []
+  - nodeId: guild.silver
+    category: 3
+    speaker:
+      kind: 6
+      role: 3
+      personId: 
+      officeId: 
+      organizationId: 
+      customSelectorId: 
+    listener:
+      kind: 2
+      role: 4
+      personId: 
+      customSelectorId: 
+    authoredText: Silver-rank work is restricted to trusted adventurers and is hidden
+      from ordinary visitors.
+    localizationKey: 
+    visibility: 1
+    entryConditions: []
+    choices: []
+    transitions:
+    - transitionId: guild.return-from-silver
+      targetNodeId: guild.entry
+      category: 2
+      priority: 0
+      conditions: []
+      effects: []
+      fallback: 0
+    entryEffects: []
+    canCancel: 1
+    canSuspend: 1
+    tagIds: []
+  - nodeId: guild.end
+    category: 12
+    speaker:
+      kind: 1
+      role: 3
+      personId: 
+      officeId: 
+      organizationId: 
+      customSelectorId: 
+    listener:
+      kind: 2
+      role: 4
+      personId: 
+      customSelectorId: 
+    authoredText: Conversation ended.
+    localizationKey: 
+    visibility: 1
+    entryConditions: []
+    choices: []
+    transitions: []
+    entryEffects: []
+    canCancel: 1
+    canSuspend: 1
+    tagIds: []
+  entryConditions: []
+  tagIds:
+  - guild
+  - prototype
+  - quest

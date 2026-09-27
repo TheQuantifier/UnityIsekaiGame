@@ -32,7 +32,7 @@ namespace UnityIsekaiGame.Quests
         public int sequenceOrder;
         public bool requiredForCompletion = true;
         public bool allowProgressWhileLocked;
-        public string failureConditionPlaceholderId;
+        public string failureConditionId;
         public string validationNotes;
 
         public QuestObjectiveDefinitionData Clone()
@@ -62,7 +62,7 @@ namespace UnityIsekaiGame.Quests
                 sequenceOrder = sequenceOrder,
                 requiredForCompletion = requiredForCompletion,
                 allowProgressWhileLocked = allowProgressWhileLocked,
-                failureConditionPlaceholderId = N(failureConditionPlaceholderId),
+                failureConditionId = N(failureConditionId),
                 validationNotes = validationNotes ?? string.Empty
             };
         }

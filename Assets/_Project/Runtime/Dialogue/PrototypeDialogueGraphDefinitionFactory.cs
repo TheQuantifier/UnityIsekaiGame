@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Quests;
 
 namespace UnityIsekaiGame.Dialogue
 {
@@ -45,7 +46,7 @@ namespace UnityIsekaiGame.Dialogue
                     speaker: Provider(), choices: new[]
                     {
                         Choice("guild.choice.ask-work", "Ask for available work", "guild.work", DialogueChoiceCategory.Question, effects: new[] { Flag("effect.guild.asked-work", "flag.guild.asked-work") }),
-                        Choice("guild.choice.accept-posting", "Accept the counter posting", "guild.accepted", DialogueChoiceCategory.QuestAccept, repeat: DialogueChoiceRepeatPolicy.OneShotPerActor, effects: new[] { OptionalOwner("effect.guild.accept-posting", DialogueEffectKind.AcceptQuestOffer, "quest.prototype.guild.counter") }),
+                        Choice("guild.choice.accept-posting", "Accept the counter posting", "guild.accepted", DialogueChoiceCategory.QuestAccept, repeat: DialogueChoiceRepeatPolicy.OneShotPerActor, effects: new[] { OptionalOwner("effect.guild.accept-posting", DialogueEffectKind.AcceptQuestOffer, PrototypeQuestDefinitionFactory.GuildPostingDefinitionId) }),
                         Choice("guild.choice.silver-rank", "Ask about silver-rank contracts", "guild.silver", DialogueChoiceCategory.InformationRequest, visibility: ConversationVisibility.Hidden, conditions: new[] { Condition("condition.guild.silver-rank", DialogueConditionKind.OrganizationRank, "rank.prototype.adventurers.silver", hidden: true) }),
                         EndChoice("guild.choice.leave")
                     }),
@@ -170,7 +171,8 @@ namespace UnityIsekaiGame.Dialogue
 
         private static DialogueChoiceDefinitionData EndChoice(string id)
         {
-            return Choice(id, "End conversation", string.Empty, DialogueChoiceCategory.EndConversation);
+            string prefix = string.IsNullOrWhiteSpace(id) ? string.Empty : id.Split('.')[0];
+            return Choice(id, "End conversation", string.IsNullOrWhiteSpace(prefix) ? string.Empty : $"{prefix}.end", DialogueChoiceCategory.EndConversation);
         }
 
         private static DialogueTransitionDefinitionData Transition(string id, string target)

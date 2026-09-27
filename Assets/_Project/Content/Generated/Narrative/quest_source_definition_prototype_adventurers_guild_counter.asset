@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a67c4140241bc249833df8406de2a04, type: 3}
+  m_Name: quest_source_definition_prototype_adventurers_guild_counter
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Quests.QuestSourceDefinition
+  definitionId: quest-source-definition.prototype.adventurers-guild-counter
+  displayName: Adventurer Guild Counter
+  category: 2
+  defaultVisibility: 2
+  discoveryPolicy: 3
+  listingDiscoveryPolicy: 2
+  eligibilityDisplayPolicy: 2
+  publicationPolicy:
+    maxActiveListings: 6
+    duplicatePolicy: 1
+    expirationPolicy: 3
+    defaultListingDuration: 7
+    acceptedListingPolicy: 2
+    repeatableListingPolicy: 1
+  filters:
+    allowedQuestCategories: 03000000
+    requiredQuestTagIds:
+    - guild
+    allowedIssuerIds:
+    - organization.prototype.adventurers-guild
+    allowedRepeatabilityPolicies: 
+  providerRequirements:
+  - kind: 3
+    requirementId: organization.prototype.adventurers-guild
+    hidden: 0
+  publicationAuthorityRequirementIds:
+  - authority.prototype.guild.quest-offer
+  sourceRoleIds:
+  - quest-source-role.acceptance
+  - quest-source-role.discovery
+  - quest-source-role.listing
+  - quest-source-role.offer
+  - quest-source-role.rewardclaim
+  - quest-source-role.turnin
+  tags:
+  - counter
+  - guild
+  - prototype

@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a67c4140241bc249833df8406de2a04, type: 3}
+  m_Name: quest_source_definition_prototype_adventurers_guild_board
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Quests.QuestSourceDefinition
+  definitionId: quest-source-definition.prototype.adventurers-guild-board
+  displayName: Adventurer Guild Quest Board
+  category: 1
+  defaultVisibility: 1
+  discoveryPolicy: 2
+  listingDiscoveryPolicy: 1
+  eligibilityDisplayPolicy: 2
+  publicationPolicy:
+    maxActiveListings: 12
+    duplicatePolicy: 1
+    expirationPolicy: 1
+    defaultListingDuration: -1
+    acceptedListingPolicy: 1
+    repeatableListingPolicy: 1
+  filters:
+    allowedQuestCategories: 0a00000003000000
+    requiredQuestTagIds: []
+    allowedIssuerIds:
+    - organization.prototype.adventurers-guild
+    allowedRepeatabilityPolicies: 
+  providerRequirements: []
+  publicationAuthorityRequirementIds:
+  - authority.prototype.guild.board-post
+  sourceRoleIds:
+  - quest-source-role.acceptance
+  - quest-source-role.discovery
+  - quest-source-role.listing
+  - quest-source-role.offer
+  - quest-source-role.rewardclaim
+  - quest-source-role.turnin
+  tags:
+  - board
+  - guild
+  - prototype
+  - public

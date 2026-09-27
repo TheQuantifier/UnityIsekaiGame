@@ -896,7 +896,7 @@ namespace UnityIsekaiGame.Narrative
                 NarrativeEventScope.OncePerPerson => First(data.actorPersonId, source?.actorPersonId, data.subjectId),
                 NarrativeEventScope.OncePerQuest => First(data.questId, source?.targetId),
                 NarrativeEventScope.OncePerConversation => First(data.conversationId, source?.targetId),
-                NarrativeEventScope.OncePerLocationPlaceholder => First(data.locationId, source?.targetId),
+                NarrativeEventScope.OncePerLocation => First(data.locationId, source?.targetId),
                 NarrativeEventScope.PerSubject => First(data.subjectId, source?.subjectId, source?.targetId),
                 NarrativeEventScope.Repeatable => $"{worldId}:{source?.StableOccurrenceKey ?? BuildRepeatableScopeKey(definition)}",
                 _ => First(data.subjectId, source?.subjectId, worldId)
@@ -1369,7 +1369,7 @@ namespace UnityIsekaiGame.Narrative
                 NarrativeActionCategory.ActivateTravelCondition or NarrativeActionCategory.ResolveTravelCondition or NarrativeActionCategory.TriggerTravelEncounter => "TravelConditionRuntime",
                 NarrativeActionCategory.RequestConnectionStateChange => "LocationConnectionRuntime",
                 NarrativeActionCategory.TriggerSocialInteraction => "SocialInteractionRuntime",
-                NarrativeActionCategory.RequestOrganizationMembership or NarrativeActionCategory.RequestRankChange or NarrativeActionCategory.RequestOfficeActionPlaceholder => "OrganizationMembershipRuntime",
+                NarrativeActionCategory.RequestOrganizationMembership or NarrativeActionCategory.RequestRankChange or NarrativeActionCategory.RequestOfficeAction => "OrganizationMembershipRuntime",
                 NarrativeActionCategory.RequestPermit or NarrativeActionCategory.CreateIncidentReport => "LegalRuntime",
                 _ => "NarrativeEventRuntime"
             };

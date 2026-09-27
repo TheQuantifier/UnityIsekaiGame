@@ -14,10 +14,12 @@ namespace SceneZoneTool.Editor
             string[] guids = AssetDatabase.FindAssets("t:SceneZoneLayerAsset");
             int invalid = 0;
             int repaired = 0;
+            int removed = 0;
             foreach (string guid in guids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 SceneZoneLayerAsset layer = AssetDatabase.LoadAssetAtPath<SceneZoneLayerAsset>(path);
+                removed += RemoveIncompleteZones(layer, path);
                 repaired += RepairMissingOrDuplicateIds(layer, path);
                 string failure = "Asset could not be loaded.";
                 if (layer != null && layer.Validate(out failure)) continue;
@@ -26,11 +28,12 @@ namespace SceneZoneTool.Editor
             }
 
             AssetDatabase.SaveAssets();
+            string removalSummary = removed > 0 ? $" Removed {removed} incomplete zone sub-asset(s)." : string.Empty;
             string repairSummary = repaired > 0 ? $" Repaired {repaired} missing or duplicate identity field(s)." : string.Empty;
             if (invalid == 0)
-                EditorUtility.DisplayDialog("Scene Zone Tool Validation", $"Validated {guids.Length} layer asset(s).{repairSummary} No remaining problems were found.", "OK");
+                EditorUtility.DisplayDialog("Scene Zone Tool Validation", $"Validated {guids.Length} layer asset(s).{removalSummary}{repairSummary} No remaining problems were found.", "OK");
             else
-                EditorUtility.DisplayDialog("Scene Zone Tool Validation", $"{repairSummary} Found {invalid} layer asset(s) with remaining problems. See the Console for details.", "OK");
+                EditorUtility.DisplayDialog("Scene Zone Tool Validation", $"{removalSummary}{repairSummary} Found {invalid} layer asset(s) with remaining problems. See the Console for details.", "OK");
         }
 
         [MenuItem("Tools/Scene Zone Tools/Project Settings", false, 221)]
@@ -47,6 +50,42 @@ namespace SceneZoneTool.Editor
 
         [MenuItem("Tools/Scene Zone Tools/About", false, 241)]
         private static void About() => SceneZoneAboutWindow.ShowWindow();
+
+        internal static int RemoveIncompleteZones(SceneZoneLayerAsset layer, string assetPath)
+        {
+            if (layer == null || string.IsNullOrWhiteSpace(assetPath)) return 0;
+
+            SceneZoneAsset[] incomplete = AssetDatabase.LoadAllAssetsAtPath(assetPath)
+                .OfType<SceneZoneAsset>()
+                .Where(zone => zone != null && zone.IsIncomplete)
+                .Distinct()
+                .ToArray();
+            if (incomplete.Length == 0) return 0;
+
+            HashSet<SceneZoneAsset> removed = incomplete.ToHashSet();
+            SceneZoneAsset[] remaining = layer.Zones
+                .Where(zone => zone != null && !removed.Contains(zone))
+                .Distinct()
+                .ToArray();
+
+            Undo.RecordObject(layer, "Remove Incomplete Scene Zones");
+            SerializedObject serializedLayer = new SerializedObject(layer);
+            SerializedProperty zones = serializedLayer.FindProperty("zones");
+            zones.arraySize = remaining.Length;
+            for (int index = 0; index < remaining.Length; index++)
+                zones.GetArrayElementAtIndex(index).objectReferenceValue = remaining[index];
+            serializedLayer.ApplyModifiedProperties();
+            EditorUtility.SetDirty(layer);
+
+            string[] removedNames = incomplete.Select(zone => zone.DisplayName).ToArray();
+            foreach (SceneZoneAsset incompleteZone in incomplete)
+                Undo.DestroyObjectImmediate(incompleteZone);
+
+            Debug.LogWarning(
+                $"Scene Zone Tool: removed {incomplete.Length} incomplete zone sub-asset(s) from '{assetPath}': {string.Join(", ", removedNames)}.",
+                layer);
+            return incomplete.Length;
+        }
 
         internal static int RepairMissingOrDuplicateIds(SceneZoneLayerAsset layer, string assetPath)
         {

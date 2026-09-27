@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityIsekaiGame.Contracts;
+using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Quests;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI.Quests
 {
@@ -27,10 +29,8 @@ namespace UnityIsekaiGame.UI.Quests
 
         private void Awake()
         {
-            if (questButtonTemplate != null)
-            {
-                questButtonTemplate.gameObject.SetActive(false);
-            }
+            if (questButtonTemplate != null) questButtonTemplate.gameObject.SetActive(false);
+            ApplyTheme();
         }
 
         public void Initialize(Action<int> onQuestSelected, Action onAbandonRequested, Action onRewardClaimRequested)
@@ -38,13 +38,11 @@ namespace UnityIsekaiGame.UI.Quests
             questSelected = onQuestSelected;
             abandonRequested = onAbandonRequested;
             rewardClaimRequested = onRewardClaimRequested;
-
             if (abandonButton != null)
             {
                 abandonButton.onClick.RemoveListener(InvokeAbandonRequested);
                 abandonButton.onClick.AddListener(InvokeAbandonRequested);
             }
-
             if (claimRewardButton != null)
             {
                 claimRewardButton.onClick.RemoveListener(InvokeRewardClaimRequested);
@@ -52,10 +50,10 @@ namespace UnityIsekaiGame.UI.Quests
             }
         }
 
-        public void Render(IReadOnlyList<QuestInstance> quests, int selectedIndex)
+        public void Render(IReadOnlyList<PrototypeQuestJournalEntry> quests, int selectedIndex)
         {
             RenderQuestList(quests, selectedIndex);
-            QuestInstance selected = quests != null && selectedIndex >= 0 && selectedIndex < quests.Count ? quests[selectedIndex] : null;
+            PrototypeQuestJournalEntry selected = quests != null && selectedIndex >= 0 && selectedIndex < quests.Count ? quests[selectedIndex] : null;
             RenderDetails(selected);
         }
 
@@ -64,145 +62,101 @@ namespace UnityIsekaiGame.UI.Quests
             if (feedbackLabel != null)
             {
                 feedbackLabel.text = message;
+                PrototypeUiTheme.StyleText(feedbackLabel,
+                    message != null && message.IndexOf("fail", StringComparison.OrdinalIgnoreCase) >= 0
+                        ? PrototypeUiTextRole.Danger
+                        : PrototypeUiTextRole.Feedback);
             }
         }
 
-        private void RenderQuestList(IReadOnlyList<QuestInstance> quests, int selectedIndex)
+        private void RenderQuestList(IReadOnlyList<PrototypeQuestJournalEntry> quests, int selectedIndex)
         {
             ClearQuestButtons();
-            if (quests == null || questButtonTemplate == null || questListRoot == null)
-            {
-                return;
-            }
-
+            if (quests == null || questButtonTemplate == null || questListRoot == null) return;
             for (int i = 0; i < quests.Count; i++)
             {
                 int index = i;
-                QuestInstance quest = quests[i];
+                PrototypeQuestJournalEntry quest = quests[i];
                 Button button = Instantiate(questButtonTemplate, questListRoot);
                 button.gameObject.SetActive(true);
                 button.onClick.AddListener(() => questSelected?.Invoke(index));
-
+                PrototypeUiTheme.StyleButton(button, i == selectedIndex ? PrototypeUiButtonTone.Primary : PrototypeUiButtonTone.Neutral);
                 Text label = button.GetComponentInChildren<Text>(true);
                 if (label != null)
                 {
-                    string marker = i == selectedIndex ? "> " : string.Empty;
-                    string title = quest?.Definition == null ? "Missing Quest" : quest.Definition.Title;
-                    label.text = $"{marker}{title}\n{quest?.Definition?.Category} - {quest?.State}";
+                    string marker = i == selectedIndex ? "SELECTED  |  " : string.Empty;
+                    string party = quest.Assignment?.IsPartyAssignment == true
+                        ? $"PARTY {quest.Assignment.ParticipantPersonIds.Count}"
+                        : "SOLO";
+                    label.text = $"{marker}{quest.Title}\n{quest.Assignment?.LifecycleState}  |  {party}";
                 }
-
                 questButtons.Add(button);
             }
         }
 
-        private void RenderDetails(QuestInstance quest)
+        private void RenderDetails(PrototypeQuestJournalEntry quest)
         {
-            if (titleLabel != null)
-            {
-                titleLabel.text = quest?.Definition == null ? "No Quest Selected" : quest.Definition.Title;
-            }
-
-            if (descriptionLabel != null)
-            {
-                descriptionLabel.text = quest?.Definition == null
-                    ? "Speak with the prototype NPC to start a side quest."
-                    : BuildDescription(quest);
-            }
-
-            if (objectiveLabel != null)
-            {
-                objectiveLabel.text = BuildObjectiveText(quest);
-            }
-
-            if (rewardLabel != null)
-            {
-                rewardLabel.text = quest?.Definition?.Reward == null ? "Reward: None" : $"Reward: {quest.Definition.Reward.GetSummary()}";
-            }
-
-            if (abandonButton != null)
-            {
-                abandonButton.gameObject.SetActive(quest != null && quest.State == QuestState.Active && quest.Definition.CanAbandon);
-            }
-
-            if (claimRewardButton != null)
-            {
-                claimRewardButton.gameObject.SetActive(quest != null && quest.State == QuestState.Completed);
-            }
+            if (titleLabel != null) titleLabel.text = quest?.Title ?? "No Quest Selected";
+            if (descriptionLabel != null) descriptionLabel.text = quest == null ? "Select a journal entry to inspect its objectives, party requirement, and rewards." : BuildDescription(quest);
+            if (objectiveLabel != null) objectiveLabel.text = BuildObjectiveText(quest);
+            if (rewardLabel != null) rewardLabel.text = BuildRewardText(quest);
+            if (abandonButton != null) abandonButton.gameObject.SetActive(quest?.CanAbandon == true);
+            if (claimRewardButton != null) claimRewardButton.gameObject.SetActive(quest?.ClaimableReward != null);
         }
 
-        private static string BuildDescription(QuestInstance quest)
+        private static string BuildDescription(PrototypeQuestJournalEntry quest)
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(quest.Definition.Category);
-            if (!string.IsNullOrWhiteSpace(quest.Definition.QuestSourceDisplayName))
-            {
-                builder.Append(" - ");
-                builder.Append(quest.Definition.QuestSourceDisplayName);
-            }
-
-            builder.AppendLine();
-            builder.AppendLine(quest.Definition.Summary);
-            builder.Append("State: ");
-            builder.Append(quest.State);
-            builder.Append(" | Stage ");
-            builder.Append(quest.CurrentStageIndex + 1);
-            builder.AppendLine();
-            builder.Append(quest.CurrentStage == null ? "No active stage." : quest.CurrentStage.Description);
-            return builder.ToString();
+            QuestAssignmentSnapshot assignment = quest.Assignment;
+            string partyLine = assignment?.IsPartyAssignment == true
+                ? $"Party: {assignment.ParticipantPersonIds.Count} member(s) ({assignment.UndertakingPartyId})"
+                : "Party: Solo";
+            return $"{quest.Summary}\nState: {assignment?.LifecycleState}\n{partyLine}\nRequired at acceptance: {assignment?.RequiredPartySizeAtAcceptance ?? quest.Definition?.RequiredPartySize ?? 1}";
         }
 
-        private static string BuildObjectiveText(QuestInstance quest)
+        private static string BuildObjectiveText(PrototypeQuestJournalEntry quest)
         {
-            if (quest == null)
-            {
-                return "Objectives: None";
-            }
-
+            if (quest == null || quest.Objectives.Count == 0) return "Objectives: None";
             StringBuilder builder = new StringBuilder("Objectives:");
-            IReadOnlyList<ContractObjectiveInstance> objectives = quest.CurrentObjectives;
-            if (objectives.Count == 0)
+            foreach (QuestObjectiveSnapshot objective in quest.Objectives)
             {
-                builder.Append(" Complete");
-                return builder.ToString();
-            }
-
-            for (int i = 0; i < objectives.Count; i++)
-            {
-                ContractObjectiveInstance objective = objectives[i];
                 builder.AppendLine();
-                builder.Append("- ");
-                builder.Append(objective.Description);
+                builder.Append(objective.Satisfied ? "[Complete] " : "[Active] ");
+                builder.Append(objective.Category);
                 builder.Append(" (");
-                builder.Append(objective.CurrentProgress);
+                builder.Append(objective.CurrentValue);
                 builder.Append(" / ");
-                builder.Append(objective.RequiredProgress);
-                builder.Append(objective.IsComplete ? ", complete)" : ")");
+                builder.Append(objective.TargetValue);
+                if (objective.Satisfied) builder.Append(", complete");
+                builder.Append(')');
             }
-
             return builder.ToString();
+        }
+
+        private static string BuildRewardText(PrototypeQuestJournalEntry quest)
+        {
+            if (quest == null || quest.Rewards.Count == 0) return "Rewards: Pending or none";
+            return "Rewards:\n" + string.Join("\n", quest.Rewards.Select(value => $"- {value.Quantity} {value.Category}: {value.TargetDefinitionId} ({value.State})"));
         }
 
         private void ClearQuestButtons()
         {
             for (int i = questButtons.Count - 1; i >= 0; i--)
-            {
-                if (questButtons[i] != null)
-                {
-                    Destroy(questButtons[i].gameObject);
-                }
-            }
-
+                if (questButtons[i] != null) Destroy(questButtons[i].gameObject);
             questButtons.Clear();
         }
 
-        private void InvokeAbandonRequested()
-        {
-            abandonRequested?.Invoke();
-        }
+        private void InvokeAbandonRequested() => abandonRequested?.Invoke();
+        private void InvokeRewardClaimRequested() => rewardClaimRequested?.Invoke();
 
-        private void InvokeRewardClaimRequested()
+        private void ApplyTheme()
         {
-            rewardClaimRequested?.Invoke();
+            PrototypeUiTheme.StyleText(titleLabel, PrototypeUiTextRole.Title);
+            PrototypeUiTheme.StyleText(descriptionLabel, PrototypeUiTextRole.Muted);
+            PrototypeUiTheme.StyleText(objectiveLabel, PrototypeUiTextRole.Body);
+            PrototypeUiTheme.StyleText(rewardLabel, PrototypeUiTextRole.Body);
+            PrototypeUiTheme.StyleText(feedbackLabel, PrototypeUiTextRole.Feedback);
+            PrototypeUiTheme.StyleButton(abandonButton, PrototypeUiButtonTone.Danger);
+            PrototypeUiTheme.StyleButton(claimRewardButton, PrototypeUiButtonTone.Positive);
         }
     }
 }

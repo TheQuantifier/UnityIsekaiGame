@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityIsekaiGame.Combat;
-using UnityIsekaiGame.Contracts;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.People;
@@ -29,7 +28,7 @@ namespace UnityIsekaiGame.Development.Automation
         private static ITestLabAutomationSuite BuildRuntimeTaxonomySuite()
         {
             return Suite("feature.3.runtime-taxonomy", "Step 3 Runtime Taxonomy", "3.x", 300,
-                Required("PrototypeTestLabService", "Inventory", "QuestLog", "ContractJournal"),
+                Required("PrototypeTestLabService", "Inventory", "Narrative Coordinator"),
                 Scenario("item-instance-equipment-flow", "Item instances and equipment flow", 10,
                     Step("clear-inventory", "Clear inventory", context => Operation(context.Prototype().ClearInventory(true), context, "step3-clear-inventory")),
                     Step("grant-stack", "Grant stackable item", context => Operation(context.Prototype().GrantItem(FirstStackableItem(context), 2), context, "step3-grant-stack")),
@@ -42,13 +41,10 @@ namespace UnityIsekaiGame.Development.Automation
                     Step("status", "Apply status", context => Operation(context.Prototype().ApplyStatus(First<StatusEffectDefinition>(context), toEnemy: false), context, "step3-apply-status")),
                     Step("damage", "Apply typed damage", context => Operation(context.Prototype().ApplyTypedDamage(First<DamageTypeDefinition>(context), 5f, targetEnemy: false, sourcePlayer: false), context, "step3-typed-damage")),
                     Step("remove-status", "Remove status", context => Operation(context.Prototype().RemoveStatus(First<StatusEffectDefinition>(context), fromEnemy: false), context, "step3-remove-status"))),
-                Scenario("quest-contract-objective-signals", "Quest and contract objective signals", 30,
-                    Step("clear-quests", "Clear quest log", context => Operation(context.Prototype().ClearQuestLog(true), context, "step3-clear-quests")),
-                    Step("clear-contracts", "Clear contract journal", context => Operation(context.Prototype().ClearContractJournal(true), context, "step3-clear-contracts")),
+                Scenario("quest-objective-signals", "Quest objective signals", 30,
                     Step("start-quest", "Start quest", context => Operation(context.Prototype().StartQuest(First<QuestDefinition>(context)), context, "step3-start-quest")),
                     Step("report-talk", "Report talk", context => Operation(context.Prototype().ReportTalk(First<PersonDefinition>(context)), context, "step3-report-talk")),
                     Step("report-reach", "Report reach", context => Operation(context.Prototype().ReportReach(First<PlaceDefinition>(context)), context, "step3-report-reach")),
-                    Step("accept-contract", "Accept contract", context => Operation(context.Prototype().AcceptContract(First<ContractDefinition>(context)), context, "step3-accept-contract")),
                     Step("report-defeat", "Report defeat", context => Operation(context.Prototype().ReportDefeat("prototype_enemy"), context, "step3-report-defeat"))),
                 Scenario("ranged-weapon-ammo-flow", "Bow, arrow, and ranged weapon flow", 35,
                     Step("validate-ranged-definitions", "Validate ranged item definitions", ValidatePrototypeRangedDefinitions),

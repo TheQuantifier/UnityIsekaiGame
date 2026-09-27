@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI
 {
@@ -19,6 +20,9 @@ namespace UnityIsekaiGame.UI
             {
                 label = GetComponent<Text>();
             }
+
+            PrototypeUiTheme.StyleText(label, PrototypeUiTextRole.Heading);
+            PrototypeUiTheme.EnsureTextShadow(label, 2f);
 
             Refresh();
         }
@@ -88,9 +92,9 @@ namespace UnityIsekaiGame.UI
                 return;
             }
 
-            string healthText = health == null ? "Health: -- / --" : $"Health: {health.CurrentHealth} / {health.MaximumHealth}";
-            string staminaText = stamina == null ? "Stamina: -- / --" : $"Stamina: {stamina.CurrentStamina:0} / {stamina.MaximumStamina:0}";
-            string manaText = mana == null ? "Mana: -- / --" : $"Mana: {mana.CurrentMana:0} / {mana.MaximumMana:0}";
+            string healthText = health == null ? "HEALTH   -- / --" : $"HEALTH   {health.CurrentHealth} / {health.MaximumHealth}";
+            string staminaText = stamina == null ? "STAMINA  -- / --" : $"STAMINA  {stamina.CurrentStamina:0} / {stamina.MaximumStamina:0}";
+            string manaText = mana == null ? "MANA     -- / --" : $"MANA     {mana.CurrentMana:0} / {mana.MaximumMana:0}";
             string defeatedText = health != null && health.IsDefeated ? "\nDefeated - Press R to reset" : string.Empty;
             string text = $"{healthText}\n{staminaText}\n{manaText}{defeatedText}";
             if (string.Equals(text, lastRenderedText, System.StringComparison.Ordinal))

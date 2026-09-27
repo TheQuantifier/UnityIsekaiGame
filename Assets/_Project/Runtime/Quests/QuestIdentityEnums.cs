@@ -61,15 +61,15 @@ namespace UnityIsekaiGame.Quests
         Profession,
         FactionMembers,
         Citizens,
-        PartyPlaceholder,
-        MultiplePersonsPlaceholder,
+        Party,
+        MultiplePersons,
         Custom
     }
 
     public enum QuestRuntimeLifecycleState
     {
         Unknown,
-        DraftPlaceholder,
+        Draft,
         Instantiated,
         Available,
         Unavailable,

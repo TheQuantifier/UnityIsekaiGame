@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityIsekaiGame.Gameplay;
 
 namespace UnityIsekaiGame.Input
 {
@@ -65,12 +67,21 @@ namespace UnityIsekaiGame.Input
         private bool pointerLook;
         private bool gameplayInputBlocked;
         private bool defeatedInputBlocked;
+        private readonly HashSet<UnityEngine.Object> menuInputBlockOwners = new HashSet<UnityEngine.Object>();
 
         public Vector2 Move => GameplayInputBlocked || moveAction == null ? Vector2.zero : moveAction.ReadValue<Vector2>();
-        public Vector2 Look => GameplayInputBlocked || lookAction == null ? Vector2.zero : lookAction.ReadValue<Vector2>();
+        public Vector2 Look => GameplayInputBlocked || !PlayerCursorMode.IsMouseLookActive || lookAction == null ? Vector2.zero : lookAction.ReadValue<Vector2>();
         public bool SprintHeld => !GameplayInputBlocked && sprintAction != null && sprintAction.IsPressed();
         public bool IsPointerLook => pointerLook;
-        public bool GameplayInputBlocked => gameplayInputBlocked || defeatedInputBlocked;
+        public bool GameplayInputBlocked
+        {
+            get
+            {
+                menuInputBlockOwners.RemoveWhere(owner => owner == null);
+                return gameplayInputBlocked || defeatedInputBlocked || menuInputBlockOwners.Count > 0;
+            }
+        }
+        public bool MouseLookEnabled => PlayerCursorMode.MouseLookEnabled;
 
         private void Awake()
         {
@@ -180,6 +191,33 @@ namespace UnityIsekaiGame.Input
             if (lookAction != null)
             {
                 lookAction.performed += OnLookPerformed;
+            }
+
+            PlayerCursorMode.ApplyCursorState();
+        }
+
+        private void Update()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null)
+            {
+                return;
+            }
+
+            if (keyboard.escapeKey.wasPressedThisFrame)
+            {
+                bool wasLockedForLook = PlayerCursorMode.MouseLookEnabled;
+                PlayerCursorMode.UnlockMouse();
+                if (wasLockedForLook) PrototypeHudMessageBus.Show("Mouse unlocked. Press L to enable mouse look.");
+                return;
+            }
+
+            if (keyboard.lKey.wasPressedThisFrame && !IsTypingInUiField())
+            {
+                PlayerCursorMode.ToggleMouseLook();
+                PrototypeHudMessageBus.Show(PlayerCursorMode.MouseLookEnabled
+                    ? "Mouse look enabled."
+                    : "Mouse unlocked. Press L to enable mouse look.");
             }
         }
 
@@ -451,6 +489,19 @@ namespace UnityIsekaiGame.Input
             ClearGameplayActionQueues();
         }
 
+        public void SetMenuInputBlocked(UnityEngine.Object owner, bool blocked)
+        {
+            if (owner != null)
+            {
+                if (blocked) menuInputBlockOwners.Add(owner);
+                else menuInputBlockOwners.Remove(owner);
+            }
+
+            PlayerCursorMode.SetMenuOpen(owner, blocked);
+            ClearGameplayActionQueues();
+            ClearInventoryUiActions();
+        }
+
         public void SetDefeatedInputBlocked(bool blocked)
         {
             defeatedInputBlocked = blocked;
@@ -681,6 +732,11 @@ namespace UnityIsekaiGame.Input
 
         private static bool IsTypingInUiField()
         {
+            if (PrototypeTextChatPanel.IsChatOpen)
+            {
+                return true;
+            }
+
             GameObject selected = EventSystem.current == null ? null : EventSystem.current.currentSelectedGameObject;
             return selected != null && selected.GetComponent<InputField>() != null;
         }

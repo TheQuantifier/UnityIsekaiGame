@@ -170,7 +170,7 @@ namespace UnityIsekaiGame.Quests
                 return QuestRuntimeOperationResult.Failure(QuestRuntimeOperationStatus.MissingQuest, $"Quest '{questId}' is missing.", revision);
             }
 
-            if (request.targetState == QuestRuntimeLifecycleState.Unknown || request.targetState == QuestRuntimeLifecycleState.DraftPlaceholder)
+            if (request.targetState == QuestRuntimeLifecycleState.Unknown || request.targetState == QuestRuntimeLifecycleState.Draft)
             {
                 return QuestRuntimeOperationResult.Failure(QuestRuntimeOperationStatus.InvalidLifecycleTransition, $"Quest cannot transition to '{request.targetState}'.", revision);
             }
@@ -644,7 +644,7 @@ namespace UnityIsekaiGame.Quests
 
         private static bool RequiresRecipientId(QuestRecipientScope recipientScope)
         {
-            return recipientScope != QuestRecipientScope.Open && recipientScope != QuestRecipientScope.PartyPlaceholder && recipientScope != QuestRecipientScope.MultiplePersonsPlaceholder;
+            return recipientScope != QuestRecipientScope.Open && recipientScope != QuestRecipientScope.Party && recipientScope != QuestRecipientScope.MultiplePersons;
         }
 
         private static bool RequiresOriginId(QuestOriginReferenceData origin)

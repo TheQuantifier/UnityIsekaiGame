@@ -18,10 +18,12 @@ namespace SceneZoneTool.Editor
                 {
                     EditorGUILayout.LabelField("Layer", EditorStyles.boldLabel);
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button(new GUIContent("+", "Create a new zone layer file"), EditorStyles.miniButton, GUILayout.Width(24f))) CreateLayer();
+                    if (GUILayout.Button(new GUIContent("+", "Create a new zone layer file"), EditorStyles.miniButton, GUILayout.Width(24f)))
+                        QueueEditorOperation(CreateLayer);
                     using (new EditorGUI.DisabledScope(zoneLayer == null))
                     {
-                        if (GUILayout.Button(new GUIContent("-", "Delete the selected layer and all zones stored in it"), EditorStyles.miniButton, GUILayout.Width(24f))) DeleteSelectedLayer();
+                        if (GUILayout.Button(new GUIContent("-", "Delete the selected layer and all zones stored in it"), EditorStyles.miniButton, GUILayout.Width(24f)))
+                            QueueEditorOperation(DeleteSelectedLayer);
                     }
                 }
 
@@ -45,7 +47,7 @@ namespace SceneZoneTool.Editor
                         if (GUILayout.Button(new GUIContent("-", tooltip), EditorStyles.miniButton, GUILayout.Width(24f)))
                         {
                             if (pendingNewZone) CancelPendingZone();
-                            else DeleteSelectedZone();
+                            else QueueEditorOperation(DeleteSelectedZone);
                         }
                     }
                 }
@@ -76,7 +78,12 @@ namespace SceneZoneTool.Editor
                 {
                     if (ToolButton(new GUIContent(string.Empty, GetSelectHandIcon(), "Select Zone: click inside an existing zone to select it"), paintMode == SceneZonePaintMode.SelectZone))
                         SelectPaintMode(SceneZonePaintMode.SelectZone);
-                    if (ToolButton(new GUIContent(string.Empty, GetCircleOutlineIcon(), "Circle Zone: click its center, then click its radius"), paintMode == SceneZonePaintMode.CenterPoint && zone != null && zone.Shape == SceneZoneShape.Circle))
+                    if (ToolButton(
+                            new GUIContent(string.Empty, GetCircleOutlineIcon(), "Circle Zone: click its center, then click its radius"),
+                            paintMode == SceneZonePaintMode.CenterPoint
+                            && zone != null
+                            && zone.Shape == SceneZoneShape.Circle
+                            && (pendingNewZone || replacingCircle)))
                         BeginNewZone(SceneZoneShape.Circle);
                     if (ToolButton(new GUIContent(string.Empty, GetPolygonOutlineIcon(), "Polygon Zone: place unrestricted world X/Z points"), paintMode == SceneZonePaintMode.PolygonPoints && drawing))
                         BeginNewZone(SceneZoneShape.Polygon);

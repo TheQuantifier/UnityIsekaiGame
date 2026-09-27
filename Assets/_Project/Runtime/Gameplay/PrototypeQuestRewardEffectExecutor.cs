@@ -1,4 +1,7 @@
 using UnityIsekaiGame.Economy;
+using UnityIsekaiGame.Governments;
+using UnityIsekaiGame.Inventory;
+using UnityIsekaiGame.Laws;
 using UnityIsekaiGame.Quests;
 using UnityIsekaiGame.Social.Reputation;
 
@@ -58,6 +61,45 @@ namespace UnityIsekaiGame.Gameplay
                 });
                 return result.Succeeded
                     ? QuestRewardEffectResult.Success("world.reputation", result.RecordId, result.Duplicate)
+                    : QuestRewardEffectResult.Failure(result.Message);
+            }
+
+            if (request.category == QuestRewardCategory.Item)
+            {
+                if (!services.RuntimeDefinitionRegistry.TryGet(request.targetDefinitionId, out ItemDefinition item))
+                    return QuestRewardEffectResult.Failure($"Quest reward item '{request.targetDefinitionId}' is not registered.");
+                if (services.PlayerInventory == null || !services.PlayerInventory.CanAddItemOrInstances(item, request.quantity))
+                    return QuestRewardEffectResult.Failure("The player inventory cannot hold the complete quest reward.");
+                InventoryAddResult added = services.PlayerInventory.AddItemOrInstances(item, request.quantity);
+                return added.AddedAll
+                    ? QuestRewardEffectResult.Success("player.inventory", request.grantId)
+                    : QuestRewardEffectResult.Failure("The quest reward could not be added to inventory.");
+            }
+
+            if (request.category == QuestRewardCategory.Knowledge)
+            {
+                bool granted = services.NarrativeCoordinator?.GrantInformation(request.targetDefinitionId) == true;
+                return granted
+                    ? QuestRewardEffectResult.Success("player.knowledge", request.grantId)
+                    : QuestRewardEffectResult.Failure("The quest knowledge reward could not be recorded.");
+            }
+
+            if (request.category == QuestRewardCategory.LegalPermitStatus)
+            {
+                LegalOperationResult result = services.Laws.GrantEntitlement(new LegalEntitlementRequest
+                {
+                    transactionId = $"quest.reward.{request.grantId}",
+                    entitlementId = $"legal-entitlement.quest-reward.{request.grantId}",
+                    effect = LegalEffectCategory.Permission,
+                    personId = request.recipientPersonId,
+                    actionId = request.targetDefinitionId,
+                    effectiveWorldTime = request.worldTime,
+                    visibility = PoliticalVisibility.Restricted,
+                    provenanceId = request.terminalOutcomeId,
+                    trustedSystemOperation = true
+                });
+                return result.Succeeded
+                    ? QuestRewardEffectResult.Success("world.law", result.SubjectId, result.Duplicate)
                     : QuestRewardEffectResult.Failure(result.Message);
             }
 

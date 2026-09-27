@@ -12,10 +12,10 @@ namespace UnityIsekaiGame.Quests
         Business,
         Faction,
         PublicNotice,
-        RecordPlaceholder,
-        LetterPlaceholder,
+        Record,
+        Letter,
         TravelEncounter,
-        WorldEventPlaceholder,
+        WorldEvent,
         System,
         Custom
     }
@@ -35,7 +35,7 @@ namespace UnityIsekaiGame.Quests
     public enum QuestListingLifecycleState
     {
         Unknown,
-        DraftPlaceholder,
+        Draft,
         Published,
         Suspended,
         Claimed,

@@ -430,10 +430,19 @@ namespace UnityIsekaiGame.Quests
                 .Where(record => record != null && !record.IsTerminal)
                 .Where(record => string.IsNullOrWhiteSpace(signal.assignmentId) || string.Equals(record.assignmentId, signal.assignmentId, StringComparison.Ordinal))
                 .Where(record => string.IsNullOrWhiteSpace(signal.questId) || string.Equals(record.questId, signal.questId, StringComparison.Ordinal))
-                .Where(record => string.IsNullOrWhiteSpace(signal.participantPersonId) || string.Equals(record.assigneePersonId, signal.participantPersonId, StringComparison.Ordinal))
-                .Where(record => string.IsNullOrWhiteSpace(signal.actorPersonId) || string.Equals(record.assigneePersonId, signal.actorPersonId, StringComparison.Ordinal))
+                .Where(record => ParticipantMatches(record, signal.participantPersonId))
+                .Where(record => ParticipantMatches(record, signal.actorPersonId))
                 .Where(record => record.lifecycleState == QuestObjectiveLifecycleState.Active || record.lifecycleState == QuestObjectiveLifecycleState.Satisfied || AllowsLockedProgress(record))
                 .Where(record => TargetMatches(record, signal));
+        }
+
+        private bool ParticipantMatches(QuestObjectiveRecordData record, string personId)
+        {
+            if (string.IsNullOrWhiteSpace(personId)) return true;
+            if (string.Equals(record.assigneePersonId, personId, StringComparison.Ordinal)) return true;
+            return participationRuntime != null
+                && participationRuntime.TryGetAssignment(record.assignmentId, out QuestAssignmentSnapshot assignment)
+                && assignment.ParticipantPersonIds.Contains(personId, StringComparer.Ordinal);
         }
 
         private bool TryApplySignalToRecord(QuestObjectiveRecordData record, QuestObjectiveSignal signal, out QuestObjectiveRecordData updated, out QuestObjectiveOperationStatus skippedStatus)

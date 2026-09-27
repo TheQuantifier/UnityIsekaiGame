@@ -13,6 +13,7 @@ namespace UnityIsekaiGame.Inventory
         public IReadOnlyList<InventorySlot> Slots => slots;
         public int SlotCapacity => slotCapacity;
         public event Action InventoryChanged;
+        public event Action<ItemDefinition, int> ItemAdded;
 
         private void Awake()
         {
@@ -58,6 +59,7 @@ namespace UnityIsekaiGame.Inventory
             if (addedQuantity > 0)
             {
                 InventoryChanged?.Invoke();
+                ItemAdded?.Invoke(item, addedQuantity);
             }
 
             return new InventoryAddResult(status, requestedQuantity, addedQuantity);
@@ -73,6 +75,7 @@ namespace UnityIsekaiGame.Inventory
             int emptySlotIndex = FindEmptySlotIndex();
             slots[emptySlotIndex].SetIdentity(item, itemInstanceId, Mathf.Max(1, quantity));
             InventoryChanged?.Invoke();
+            ItemAdded?.Invoke(item, Mathf.Max(1, quantity));
 
             return InventoryInstanceOperationResult.Success($"Added {item.DisplayName}.", emptySlotIndex);
         }

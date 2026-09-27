@@ -17,12 +17,17 @@ MonoBehaviour:
     sceneGuid: e05b77e4d2cc25845adb762e95d51873
     scenePath: Assets/_Project/Scenes/Prototype/PrototypeScene.unity
     sceneName: PrototypeScene
-    layerAssetGuid: 3145946d2da4d3b4592513d90df1b696
+    layerAssetGuid: 07decdef3eee2094e8d677149ed000a7
   - sceneKey: guid:3f87a01fe1c6ab94fa6a58330056e955
     sceneGuid: 3f87a01fe1c6ab94fa6a58330056e955
     scenePath: Assets/SceneZoneTool/Samples/BasicUsage/BasicZoneDemo.unity
     sceneName: BasicZoneDemo
     layerAssetGuid: 67ce9e97fff5a37419087ce61241105b
+  - sceneKey: guid:9aa96f77e288edb4199066e02313299f
+    sceneGuid: 9aa96f77e288edb4199066e02313299f
+    scenePath: Assets/_Project/Scenes/Prototype/BuildingSetups.unity
+    sceneName: BuildingSetups
+    layerAssetGuid: b18618c9716394d43a1e7e54930ec951
   defaultSaveFolder: Assets/SceneZones
   defaultDisplayHeight: 0
   allowDragDrawing: 1

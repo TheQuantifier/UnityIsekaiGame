@@ -29,7 +29,7 @@ namespace UnityIsekaiGame.Narrative
         OncePerPerson,
         OncePerQuest,
         OncePerConversation,
-        OncePerLocationPlaceholder,
+        OncePerLocation,
         PerSubject,
         Repeatable,
         Custom
@@ -42,8 +42,8 @@ namespace UnityIsekaiGame.Narrative
         OncePerScope,
         Repeatable,
         RearmExplicitly,
-        RepeatAfterCooldownPlaceholder,
-        RepeatUntilConditionPlaceholder,
+        RepeatAfterCooldown,
+        RepeatUntilCondition,
         Custom
     }
 
@@ -145,7 +145,7 @@ namespace UnityIsekaiGame.Narrative
         TriggerImmediatelyWhenMatched,
         QueueForExecution,
         TriggerAfterDelay,
-        RequireExplicitActivationAfterMatchPlaceholder,
+        RequireExplicitActivationAfterMatch,
         Custom
     }
 
@@ -175,12 +175,12 @@ namespace UnityIsekaiGame.Narrative
         ResolveTravelCondition,
         TriggerTravelEncounter,
         RequestConnectionStateChange,
-        GrantAccessPlaceholder,
+        GrantAccess,
         InvokeInteractionService,
         TriggerSocialInteraction,
         RequestOrganizationMembership,
         RequestRankChange,
-        RequestOfficeActionPlaceholder,
+        RequestOfficeAction,
         RequestPermit,
         CreateIncidentReport,
         HistoricalEventRequest,
@@ -196,7 +196,7 @@ namespace UnityIsekaiGame.Narrative
     {
         Required,
         OptionalBestEffort,
-        DeferredPlaceholder
+        Deferred
     }
 
     public enum NarrativeActionAtomicityPolicy
@@ -223,7 +223,7 @@ namespace UnityIsekaiGame.Narrative
     {
         NeverRetryAutomatically,
         RetryExplicitly,
-        RetryAfterConditionPlaceholder
+        RetryAfterCondition
     }
 
     public enum NarrativeEventVisibility

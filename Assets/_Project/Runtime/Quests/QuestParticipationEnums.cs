@@ -100,6 +100,11 @@ namespace UnityIsekaiGame.Quests
         NotAllowed
     }
 
+    public enum QuestPartyRosterPolicy { FrozenAtAcceptance = 0, LiveParty = 1, AllowReplacements = 2 }
+    public enum QuestPartyProgressPolicy { AnyParticipant = 0, LeaderOnly = 1, AllParticipants = 2 }
+    public enum QuestPartyAuthorityPolicy { LeaderOnly = 0, AnyParticipant = 1 }
+    public enum QuestPartyRewardPolicy { LeaderOnly = 0, EachParticipant = 1, SplitCurrency = 2 }
+
     public enum QuestOfferChannel
     {
         Unknown,
@@ -109,10 +114,10 @@ namespace UnityIsekaiGame.Quests
         QuestBoard,
         GovernmentDesk,
         GuildCounter,
-        LetterPlaceholder,
-        RecordPlaceholder,
+        Letter,
+        Record,
         TravelEncounter,
-        NarrativeEventPlaceholder,
+        NarrativeEvent,
         SystemGenerated,
         Custom
     }

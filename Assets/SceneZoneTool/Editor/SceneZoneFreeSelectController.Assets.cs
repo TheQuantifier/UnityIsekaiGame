@@ -209,12 +209,17 @@ namespace SceneZoneTool.Editor
         private void PersistPendingZone()
         {
             if (!pendingNewZone || zone == null || zoneLayer == null) return;
+            Undo.IncrementCurrentGroup();
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName($"Create {zone.Shape} Zone");
             zone.hideFlags = HideFlags.None;
             AssetDatabase.AddObjectToAsset(zone, zoneLayer);
+            Undo.RegisterCreatedObjectUndo(zone, $"Create {zone.Shape} Zone");
             pendingNewZone = false;
             SetLayerZones(layerZones.Append(zone));
             EditorUtility.SetDirty(zone);
             AssetDatabase.SaveAssets();
+            Undo.CollapseUndoOperations(undoGroup);
             RefreshLayerZones();
         }
 
@@ -356,9 +361,47 @@ namespace SceneZoneTool.Editor
             {
                 layerZones.AddRange(zoneLayer.Zones.Where(value => value != null && value.Layer == zoneLayer));
                 layerZones.Sort((left, right) => string.Compare(left.ZoneId, right.ZoneId, StringComparison.Ordinal));
+                WarnAboutIncompleteZones();
                 NormalizeUniqueFillColors();
             }
             RefreshSceneLayers();
+        }
+
+        private void OnUndoRedoPerformed()
+        {
+            RefreshLayerZones();
+            if (zone == null || !layerZones.Contains(zone)) zone = layerZones.FirstOrDefault();
+            if (zone != null) hiddenZones.Remove(zone);
+            pendingNewZone = false;
+            drawing = false;
+            definingCircleRadius = false;
+            movingPendingCircleCenter = false;
+            replacingCircle = false;
+            draftPoints.Clear();
+            blockedBy = null;
+            ClearOverlapError();
+            SceneView.RepaintAll();
+            Repaint();
+        }
+
+        private void WarnAboutIncompleteZones()
+        {
+            if (zoneLayer == null) return;
+            string layerPath = AssetDatabase.GetAssetPath(zoneLayer);
+            foreach (SceneZoneAsset incompleteZone in layerZones.Where(candidate => candidate != null && candidate.IsIncomplete))
+            {
+                string warningKey;
+                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(incompleteZone, out string guid, out long localId))
+                    warningKey = $"{guid}:{localId}";
+                else
+                    warningKey = $"instance:{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(incompleteZone)}";
+                if (!warnedIncompleteZones.Add(warningKey)) continue;
+
+                Debug.LogWarning(
+                    $"Scene Zone Tool: incomplete zone '{incompleteZone.DisplayName}' found in layer '{zoneLayer.DisplayName}' at '{layerPath}'. " +
+                    "Run Tools > Scene Zone Tools > Validate Project to remove incomplete zone assets.",
+                    incompleteZone);
+            }
         }
 
         private void RefreshSceneLayers()

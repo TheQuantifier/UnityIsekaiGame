@@ -1,0 +1,187 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae127f1fb11847bd9c01a706ab051189, type: 3}
+  m_Name: quest_prototype_hidden_dungeon_rumor
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Quests.QuestDefinition
+  questId: quest.prototype.hidden-dungeon-rumor
+  title: Hidden Dungeon Rumor
+  summary: 
+  detailedDescription: 
+  category: 21
+  importance: 1
+  repeatabilityPolicy: 1
+  defaultVisibility: 9
+  defaultSourceChannel: 7
+  supportedIssuerTypes: 0700000008000000
+  supportedRecipientScopes: 01000000
+  defaultTagIds:
+  - dungeon
+  - hidden
+  - rumor
+  supportedSubjectRoleIds: []
+  allowDynamicInstances: 0
+  allowMultipleSimultaneousInstances: 0
+  uniquePerWorld: 1
+  uniquePerRecipient: 0
+  identityNotes: 
+  assignmentPolicy: 1
+  consentPolicy: 1
+  refusalPolicy: 1
+  abandonmentPolicy: 1
+  assignmentCapacity: 1
+  requiredPartySize: 1
+  requireReadyPartyAtAcceptance: 1
+  partyRosterPolicy: 0
+  partyProgressPolicy: 0
+  partyAuthorityPolicy: 0
+  partyRewardPolicy: 0
+  availabilityStartWorldTime: -1
+  availabilityEndWorldTime: -1
+  defaultOfferDuration: -1
+  issuerWithdrawalAllowed: 1
+  prevalidateEligibilityForOffers: 0
+  offeringAuthorityRequirementIds: []
+  eligibilityRequirementGroups:
+  - groupId: rumor-discovered
+    policy: 2
+    thresholdCount: 0
+    requirements:
+    - requirementId: Knowledge.subject.prototype.hidden-dungeon
+      kind: 24
+      requiredId: subject.prototype.hidden-dungeon
+      secondaryId: 
+      minimumValue: 0
+      maximumValue: 0
+      comparison: 1
+      revealFailure: 1
+      negate: 0
+    - requirementId: WorldHistoryFact.history.prototype.heard-dungeon-rumor
+      kind: 26
+      requiredId: history.prototype.heard-dungeon-rumor
+      secondaryId: 
+      minimumValue: 0
+      maximumValue: 0
+      comparison: 1
+      revealFailure: 1
+      negate: 0
+    revealFailures: 1
+  objectiveDefinitions:
+  - objectiveDefinitionId: quest-objective-definition.prototype.hidden.discover-dungeon
+    groupDefinitionId: 
+    label: Discover Hidden Dungeon
+    description: Discover Hidden Dungeon
+    category: 24
+    progressModel: 2
+    progressSource: 2
+    classification: 4
+    visibility: 5
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 22
+      subjectId: location.prototype.secret-dungeon-entry
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds: []
+    tagIds:
+    - discovery
+    - hidden
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 10
+    requiredForCompletion: 1
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  - objectiveDefinitionId: quest-objective-definition.prototype.hidden.reach-shrine
+    groupDefinitionId: 
+    label: Reach Forgotten Shrine
+    description: Reach Forgotten Shrine
+    category: 2
+    progressModel: 2
+    progressSource: 2
+    classification: 2
+    visibility: 5
+    satisfactionPolicy: 1
+    repetitionPolicy: 2
+    beforeActivationPolicy: 1
+    ownershipScope: 1
+    target:
+      subjectType: 22
+      subjectId: location.prototype.forgotten-shrine
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    secondaryTarget:
+      subjectType: 0
+      subjectId: 
+      parentSubjectId: 
+      ownerPersonId: 
+      controllingEntityId: 
+      tags: []
+    alternativeTargetIds: []
+    prerequisiteObjectiveDefinitionIds:
+    - quest-objective-definition.prototype.hidden.discover-dungeon
+    tagIds:
+    - hidden
+    - optional
+    targetAmount: 1
+    thresholdValue: 1
+    sequenceOrder: 20
+    requiredForCompletion: 0
+    allowProgressWhileLocked: 0
+    failureConditionId: 
+    validationNotes: 
+  objectiveGroups:
+  - groupDefinitionId: quest-objective-group.prototype.hidden.required
+    label: quest-objective-group.prototype.hidden.required
+    policy: 1
+    thresholdCount: 1
+    objectiveDefinitionIds:
+    - quest-objective-definition.prototype.hidden.discover-dungeon
+    requiredForCompletion: 1
+    sequenceOrder: 0
+  completionPolicy:
+    policy: 1
+    requiredInteractionPointId: 
+    requiredIssuerId: 
+    requireAllRequiredObjectives: 1
+    allowOptionalBonusRewards: 1
+  deadlineDefinitions: []
+  failureConditions: []
+  rewardPackages:
+  - rewardPackageId: quest-reward-package.prototype.hidden.base
+    deliveryPolicy: 1
+    atomicityPolicy: 1
+    rewards:
+    - rewardDefinitionId: quest-reward.prototype.hidden.knowledge
+      category: 8
+      targetDefinitionId: knowledge.prototype.hidden-dungeon-confirmed
+      secondaryTargetId: 
+      quantity: 1
+      optional: 0
+      hidden: 1
+      metadata: 
+  consequenceDefinitions: []

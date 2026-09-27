@@ -9,11 +9,11 @@ namespace UnityIsekaiGame.Quests
 {
     public static class PrototypeQuestDefinitionFactory
     {
-        public const string GuildPostingDefinitionId = "quest-definition.prototype.guild-posting";
-        public const string MerchantDeliveryDefinitionId = "quest-definition.prototype.merchant-delivery";
-        public const string CivicInvestigationDefinitionId = "quest-definition.prototype.civic-investigation";
-        public const string HiddenDungeonRumorDefinitionId = "quest-definition.prototype.hidden-dungeon-rumor";
-        public const string DynamicBountyDefinitionId = "quest-definition.prototype.dynamic-bounty";
+        public const string GuildPostingDefinitionId = "quest.prototype.guild-posting";
+        public const string MerchantDeliveryDefinitionId = "quest.prototype.merchant-delivery";
+        public const string CivicInvestigationDefinitionId = "quest.prototype.civic-investigation";
+        public const string HiddenDungeonRumorDefinitionId = "quest.prototype.hidden-dungeon-rumor";
+        public const string DynamicBountyDefinitionId = "quest.prototype.dynamic-bounty";
 
         public static readonly string[] PrototypeDefinitionIds =
         {
@@ -49,7 +49,7 @@ namespace UnityIsekaiGame.Quests
             Add(definitions, ids, MerchantDeliveryDefinitionId, "Merchant Delivery", QuestCategory.Delivery, QuestDefinitionImportance.Standard, QuestDefinitionRepeatabilityPolicy.RepeatablePerRecipient, QuestVisibility.LocallyKnown, QuestSourceChannel.Contract, new[] { QuestIssuerType.Organization, QuestIssuerType.Business }, new[] { QuestRecipientScope.Person }, new[] { "merchant", "delivery", "contract" }, multiple: true, perWorldUnique: false, perRecipientUnique: true);
             Add(definitions, ids, CivicInvestigationDefinitionId, "Civic Investigation", QuestCategory.Investigation, QuestDefinitionImportance.Important, QuestDefinitionRepeatabilityPolicy.Unique, QuestVisibility.Restricted, QuestSourceChannel.Government, new[] { QuestIssuerType.Government, QuestIssuerType.Office }, new[] { QuestRecipientScope.Person, QuestRecipientScope.Officeholder }, new[] { "civic", "investigation", "restricted" });
             Add(definitions, ids, HiddenDungeonRumorDefinitionId, "Hidden Dungeon Rumor", QuestCategory.Discovery, QuestDefinitionImportance.Minor, QuestDefinitionRepeatabilityPolicy.Unique, QuestVisibility.Hidden, QuestSourceChannel.Discovery, new[] { QuestIssuerType.Anonymous, QuestIssuerType.System }, new[] { QuestRecipientScope.Open }, new[] { "hidden", "dungeon", "rumor" });
-            Add(definitions, ids, DynamicBountyDefinitionId, "Dynamic Bounty", QuestCategory.BountyPlaceholder, QuestDefinitionImportance.Standard, QuestDefinitionRepeatabilityPolicy.DynamicTemplate, QuestVisibility.Public, QuestSourceChannel.QuestBoard, new[] { QuestIssuerType.Organization, QuestIssuerType.Government }, new[] { QuestRecipientScope.Open, QuestRecipientScope.Person }, new[] { "bounty", "dynamic" }, dynamic: true, multiple: true, perWorldUnique: false);
+            Add(definitions, ids, DynamicBountyDefinitionId, "Dynamic Bounty", QuestCategory.Bounty, QuestDefinitionImportance.Standard, QuestDefinitionRepeatabilityPolicy.DynamicTemplate, QuestVisibility.Public, QuestSourceChannel.QuestBoard, new[] { QuestIssuerType.Organization, QuestIssuerType.Government }, new[] { QuestRecipientScope.Open, QuestRecipientScope.Person }, new[] { "bounty", "dynamic" }, dynamic: true, multiple: true, perWorldUnique: false);
             return definitions;
         }
 
@@ -99,7 +99,14 @@ namespace UnityIsekaiGame.Quests
                         capacity: 1,
                         offerDuration: 7d,
                         authorityRequirements: new[] { "authority.prototype.guild.quest-offer" },
-                        eligibilityGroups: new[] { All("guild-context", Membership("organization.prototype.adventurers-guild"), Interaction(UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId)) });
+                        eligibilityGroups: new[]
+                        {
+                            All("guild-membership", Membership("organization.prototype.adventurers-guild")),
+                            Any(
+                                "guild-acceptance-point",
+                                Interaction(UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId),
+                                Interaction(UnityIsekaiGame.WorldLocations.PrototypeInteractionPointDefinitionFactory.QuestBoardPointId))
+                        });
                     break;
                 case MerchantDeliveryDefinitionId:
                     definition.DevelopmentConfigureParticipation(
@@ -141,9 +148,11 @@ namespace UnityIsekaiGame.Quests
                         refusal: QuestRefusalPolicy.MayReoffer,
                         abandonment: QuestAbandonmentPolicy.AllowedReleasesCapacity,
                         capacity: 4,
+                        minimumPartySize: 2,
                         offerDuration: 2d,
                         authorityRequirements: new[] { "authority.prototype.bounty-board.post" },
-                        eligibilityGroups: new[] { All("bounty-board", Interaction("interaction-point.prototype.bounty-board")) });
+                        eligibilityGroups: new[] { All("bounty-board", Interaction("interaction-point.prototype.bounty-board")) },
+                        rewardPolicy: QuestPartyRewardPolicy.SplitCurrency);
                     break;
                 default:
                     definition.DevelopmentConfigureParticipation();

@@ -28,7 +28,7 @@ namespace UnityIsekaiGame.Quests
         LearnFact,
         DiscoverLocation,
         ObtainRecord,
-        SpeakToPersonPlaceholder,
+        SpeakToPerson,
         SocialInteraction,
         RelationshipState,
         ReputationState,
@@ -67,7 +67,7 @@ namespace UnityIsekaiGame.Quests
         CurrentStateQuery,
         DomainEvent,
         HistoricalQuery,
-        ExplicitNarrativeSignalPlaceholder,
+        ExplicitNarrativeSignal,
         ManualDevelopment,
         Custom
     }
@@ -120,7 +120,7 @@ namespace UnityIsekaiGame.Quests
         Unknown,
         PerAssignment,
         SharedQuest,
-        SharedGroupPlaceholder,
+        SharedGroup,
         Custom
     }
 

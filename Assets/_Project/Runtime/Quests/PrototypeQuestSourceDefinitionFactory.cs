@@ -58,7 +58,7 @@ namespace UnityIsekaiGame.Quests
                 QuestListingDiscoveryPolicy.BrowseRevealsListing,
                 QuestEligibilityDisplayPolicy.VisibleIneligibleWithPublicReason,
                 new QuestSourcePublicationPolicyData { maxActiveListings = 12, duplicatePolicy = QuestListingDuplicatePolicy.RejectActiveDuplicate, expirationPolicy = QuestListingExpirationPolicy.NeverExpires, acceptedListingPolicy = QuestAcceptedListingDisplayPolicy.HideWhenAccepted, repeatableListingPolicy = QuestRepeatableListingDisplayPolicy.KeepListed },
-                new QuestSourceFilterData { allowedQuestCategories = new[] { QuestCategory.GuildQuest, QuestCategory.BountyPlaceholder }, requiredQuestTagIds = Array.Empty<string>(), allowedIssuerIds = new[] { "organization.prototype.adventurers-guild" }, allowedRepeatabilityPolicies = Array.Empty<QuestDefinitionRepeatabilityPolicy>() },
+                new QuestSourceFilterData { allowedQuestCategories = new[] { QuestCategory.GuildQuest, QuestCategory.Bounty }, requiredQuestTagIds = Array.Empty<string>(), allowedIssuerIds = new[] { "organization.prototype.adventurers-guild" }, allowedRepeatabilityPolicies = Array.Empty<QuestDefinitionRepeatabilityPolicy>() },
                 authority: new[] { "authority.prototype.guild.board-post" },
                 roles: new[] { QuestSourceRole.Discovery, QuestSourceRole.Listing, QuestSourceRole.Offer, QuestSourceRole.Acceptance, QuestSourceRole.TurnIn, QuestSourceRole.RewardClaim },
                 tags: new[] { "guild", "board", "public", "prototype" });
@@ -134,7 +134,7 @@ namespace UnityIsekaiGame.Quests
                 ids,
                 EmptyArchiveDefinitionId,
                 "Empty Quest Archive",
-                QuestSourceCategory.RecordPlaceholder,
+                QuestSourceCategory.Record,
                 QuestSourceVisibility.Restricted,
                 QuestSourceDiscoveryPolicy.PrivilegedOnly,
                 QuestListingDiscoveryPolicy.NoAutomaticDiscovery,

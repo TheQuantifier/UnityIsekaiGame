@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f03a805d15f439cb19a687e73b58075, type: 3}
+  m_Name: narrative_event_definition_prototype_dungeon_entry_quest
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Narrative.NarrativeEventDefinition
+  data:
+    eventDefinitionId: narrative-event-definition.prototype.dungeon-entry-quest
+    displayName: Dungeon Entry Quest Unlock
+    category: 4
+    scope: 2
+    repeatPolicy: 2
+    armingPolicy: 1
+    triggerMode: 1
+    delayedRevalidationPolicy: 0
+    atomicityPolicy: 0
+    retryPolicy: 0
+    visibility: 2
+    conditionGroupPolicy: 0
+    atLeastConditionCount: 1
+    priority: 10
+    activationStartTime: -1
+    activationEndTime: -1
+    delayDuration: -1
+    cascadeDepthLimit: 8
+    scopeSelectorId: actorPersonId
+    historyPolicyId: 
+    failurePolicyId: 
+    tagIds:
+    - location
+    - prototype
+    - quest
+    triggers:
+    - triggerDefinitionId: trigger.dungeon-entry
+      category: 11
+      requiredSourceId: narrative-signal-definition.prototype.location.dungeon-entry
+      requiredSubjectId: location.prototype.dungeon-entry
+      committedOnly: 1
+      ignoreRestoreReplay: 1
+      hidden: 0
+    conditions:
+    - conditionDefinitionId: condition.guild-member
+      category: 12
+      requiredId: organization.prototype.adventurers-guild
+      secondaryId: 
+      minimumValue: 1
+      negate: 0
+      hidden: 0
+      revealFailure: 1
+    actions:
+    - actionDefinitionId: action.create-guild-quest
+      category: 2
+      requirement: 0
+      targetId: quest.prototype.guild-posting
+      secondaryTargetId: organization.prototype.adventurers-guild
+      outputSlotId: createdQuest
+      inputSlotId: 
+      order: 10
+      priority: 0
+      hidden: 0
+    - actionDefinitionId: action.publish-guild-quest
+      category: 3
+      requirement: 1
+      targetId: quest-source.prototype.guild-board
+      secondaryTargetId: authority.prototype.guild.board-post
+      outputSlotId: 
+      inputSlotId: createdQuest
+      order: 20
+      priority: 0
+      hidden: 0

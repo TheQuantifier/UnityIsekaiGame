@@ -87,7 +87,11 @@ namespace UnityIsekaiGame.Dialogue
         NarrativeState,
         LocalFlag,
         LocalCounter,
-        Custom
+        Custom,
+        PartySize,
+        PartyHasMember,
+        PartyLeader,
+        PartyReady
     }
 
     public enum DialogueConditionEvaluationMode

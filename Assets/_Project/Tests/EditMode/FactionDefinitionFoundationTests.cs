@@ -63,7 +63,7 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void CatalogValidation_AcceptsPersonPlaceQuestAndContractFactionReferences()
+        public void CatalogValidation_AcceptsPersonAndPlaceFactionReferencesAlongsideModernQuests()
         {
             ScriptableObject town = CreatePlace("place.settlement.prototype-town", "Prototype Town", "Settlement");
             ScriptableObject person = CreatePerson("person.prototype.npc", "Prototype NPC");
@@ -74,19 +74,12 @@ namespace UnityIsekaiGame.Tests
             SetString(person, "publicRoleTitle", "Guild Representative");
             SetObject(town, "defaultGoverningFaction", guild);
             ScriptableObject quest = CreateQuest("quest.prototype", "Prototype Quest");
-            SetObject(quest, "questSourceFaction", guild);
-            SetObject(quest, "relatedFaction", guild);
-            ScriptableObject contract = CreateContract("contract.prototype", "Prototype Contract", "Prototype Board");
-            SetObject(contract, "requesterFaction", guild);
-            SetObject(contract, "postingFaction", guild);
-
-            DefinitionValidationReport report = DefinitionCatalogValidator.Validate(CreateCatalog(town, person, guild, quest, contract));
+            DefinitionValidationReport report = DefinitionCatalogValidator.Validate(CreateCatalog(town, person, guild, quest));
 
             Assert.That(report.HasErrors, Is.False, report.GetSummary());
             Assert.That(Get<UnityEngine.Object>(person, "PrimaryFaction"), Is.SameAs(guild));
             Assert.That(Get<UnityEngine.Object>(town, "DefaultGoverningFaction"), Is.SameAs(guild));
-            Assert.That(Get<string>(contract, "RequesterDisplayName"), Is.EqualTo("Adventurer's Guild"));
-            Assert.That(Get<string>(quest, "QuestSourceDisplayName"), Is.EqualTo("Adventurer's Guild"));
+            Assert.That(Get<string>(quest, "Title"), Is.EqualTo("Prototype Quest"));
         }
 
         [Test]
@@ -150,15 +143,6 @@ namespace UnityIsekaiGame.Tests
             SetString(quest, "questId", id);
             SetString(quest, "title", title);
             return quest;
-        }
-
-        private static ScriptableObject CreateContract(string id, string title, string requesterName)
-        {
-            ScriptableObject contract = ScriptableObject.CreateInstance(RequiredType("UnityIsekaiGame.Contracts.ContractDefinition"));
-            SetString(contract, "contractId", id);
-            SetString(contract, "displayTitle", title);
-            SetString(contract, "requesterName", requesterName);
-            return contract;
         }
 
         private static CategoryDefinition CreateCategory(string id, CategoryDomain domain)

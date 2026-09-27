@@ -49,8 +49,7 @@ namespace UnityIsekaiGame.Tests
             AssertRegistered(registry, "actor-profile.enemy-prototype", "UnityIsekaiGame.Beings.ActorProfileDefinition");
             AssertRegistered(registry, "place.building.prototype-guild-board-area", "UnityIsekaiGame.Places.PlaceDefinition");
             AssertRegistered(registry, "faction.guild.adventurers", "UnityIsekaiGame.Factions.FactionDefinition");
-            AssertRegistered(registry, "contract.prototype-enemy-elimination", "UnityIsekaiGame.Contracts.ContractDefinition");
-            AssertRegistered(registry, "quest.prototype-strange-disturbance", "UnityIsekaiGame.Quests.QuestDefinition");
+            AssertRegistered(registry, "quest.prototype.guild-posting", "UnityIsekaiGame.Quests.QuestDefinition");
             AssertRegistered(registry, "person.prototype.npc", "UnityIsekaiGame.People.PersonDefinition");
             AssertRegistered(registry, "damage.magic.arcane", "UnityIsekaiGame.Combat.DamageTypeDefinition");
         }
@@ -121,14 +120,9 @@ namespace UnityIsekaiGame.Tests
             IGameDefinition adventurersGuild = Required(registry, "faction.guild.adventurers");
             Assert.That(Get<IGameDefinition>(adventurersGuild, "HeadquartersPlace").Id, Is.EqualTo("place.building.prototype-guild-board-area"));
 
-            IGameDefinition enemyContract = Required(registry, "contract.prototype-enemy-elimination");
-            Assert.That(Get<IGameDefinition>(enemyContract, "RequesterFaction").Id, Is.EqualTo("faction.guild.adventurers"));
-            Assert.That(Get<IGameDefinition>(enemyContract, "PostingFaction").Id, Is.EqualTo("faction.guild.adventurers"));
-
-            IGameDefinition quest = Required(registry, "quest.prototype-strange-disturbance");
-            Assert.That(Get<IGameDefinition>(quest, "QuestGiver").Id, Is.EqualTo("person.prototype.npc"));
-            Assert.That(Get<IGameDefinition>(quest, "QuestSourceFaction").Id, Is.EqualTo("faction.guild.adventurers"));
-            Assert.That(Get<IGameDefinition>(quest, "RelatedFaction").Id, Is.EqualTo("faction.guild.adventurers"));
+            IGameDefinition quest = Required(registry, "quest.prototype.guild-posting");
+            Assert.That(Get<object>(quest, "Category").ToString(), Is.EqualTo("GuildQuest"));
+            Assert.That(Get<object>(quest, "DefaultSourceChannel").ToString(), Is.EqualTo("QuestBoard"));
         }
 
         [Test]

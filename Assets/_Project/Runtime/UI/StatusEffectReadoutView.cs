@@ -2,6 +2,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityIsekaiGame.StatusEffects;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI
 {
@@ -18,6 +19,9 @@ namespace UnityIsekaiGame.UI
             {
                 label = GetComponent<Text>();
             }
+
+            PrototypeUiTheme.StyleText(label, PrototypeUiTextRole.Body);
+            PrototypeUiTheme.EnsureTextShadow(label);
 
             Refresh();
         }
@@ -102,7 +106,7 @@ namespace UnityIsekaiGame.UI
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("Status Effects");
+            builder.AppendLine("STATUS EFFECTS");
 
             if (statusController == null || statusController.ActiveStatuses.Count == 0)
             {
@@ -121,7 +125,7 @@ namespace UnityIsekaiGame.UI
                 }
 
                 appendedAny = true;
-                builder.Append("- ");
+                builder.Append("• ");
                 builder.Append(status.Definition.DisplayName);
                 if (status.StackCount > 1)
                 {

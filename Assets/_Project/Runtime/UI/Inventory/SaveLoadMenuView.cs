@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI.Inventory
 {
@@ -94,7 +95,7 @@ namespace UnityIsekaiGame.UI.Inventory
             panelRect.anchorMax = Vector2.one;
             panelRect.offsetMin = Vector2.zero;
             panelRect.offsetMax = Vector2.zero;
-            panel.GetComponent<Image>().color = new Color(0.055f, 0.065f, 0.075f, 0.96f);
+            panel.GetComponent<Image>().color = PrototypeUiTheme.Panel;
 
             VerticalLayoutGroup layout = panel.GetComponent<VerticalLayoutGroup>();
             layout.spacing = 8f;
@@ -105,7 +106,7 @@ namespace UnityIsekaiGame.UI.Inventory
             layout.childForceExpandHeight = false;
 
             Text header = AddText(panel.transform, font, "Save / Load", 16, 28, FontStyle.Bold);
-            header.color = new Color(0.92f, 0.95f, 0.98f, 1f);
+            PrototypeUiTheme.StyleText(header, PrototypeUiTextRole.Title);
 
             slotValueText = AddSelectorRow(
                 panel.transform,
@@ -131,6 +132,8 @@ namespace UnityIsekaiGame.UI.Inventory
 
             detailsText = AddText(panel.transform, font, "No save slot selected.", 13, 300);
             feedbackText = AddText(panel.transform, font, string.Empty, 12, 48);
+            PrototypeUiTheme.StyleText(detailsText, PrototypeUiTextRole.Muted);
+            PrototypeUiTheme.StyleText(feedbackText, PrototypeUiTextRole.Feedback);
         }
 
         private void Render()
@@ -439,6 +442,11 @@ namespace UnityIsekaiGame.UI.Inventory
             if (feedbackText != null)
             {
                 feedbackText.text = message ?? string.Empty;
+                PrototypeUiTheme.StyleText(feedbackText,
+                    message != null && (message.IndexOf("fail", StringComparison.OrdinalIgnoreCase) >= 0
+                        || message.IndexOf("invalid", StringComparison.OrdinalIgnoreCase) >= 0)
+                        ? PrototypeUiTextRole.Danger
+                        : PrototypeUiTextRole.Feedback);
             }
         }
 
@@ -480,7 +488,7 @@ namespace UnityIsekaiGame.UI.Inventory
             previousButton = AddButton(row.transform, font, "Prev", previous, 11);
             SetElement(previousButton.gameObject, 70f, 30f, 0f);
             Text valueText = AddText(row.transform, font, "None", 12, 30);
-            valueText.color = new Color(0.86f, 0.92f, 0.96f, 1f);
+            PrototypeUiTheme.StyleText(valueText, PrototypeUiTextRole.Body);
             SetElement(valueText.gameObject, 0f, 30f, 1f);
             nextButton = AddButton(row.transform, font, "Next", next, 11);
             SetElement(nextButton.gameObject, 70f, 30f, 0f);
@@ -519,7 +527,6 @@ namespace UnityIsekaiGame.UI.Inventory
         private static Button AddButton(Transform parent, Font font, string label, Action action, int fontSize)
         {
             GameObject root = CreateChild(label, parent, typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
-            root.GetComponent<Image>().color = new Color(0.12f, 0.14f, 0.16f, 0.95f);
             SetElement(root, 96f, 32f, 1f);
 
             Text text = AddText(root.transform, font, label, fontSize, 28, FontStyle.Bold);
@@ -532,6 +539,7 @@ namespace UnityIsekaiGame.UI.Inventory
             textRect.offsetMax = new Vector2(-4f, -2f);
 
             Button button = root.GetComponent<Button>();
+            PrototypeUiTheme.StyleButton(button, PrototypeUiTheme.InferButtonTone(label));
             button.onClick.AddListener(() => action?.Invoke());
             return button;
         }

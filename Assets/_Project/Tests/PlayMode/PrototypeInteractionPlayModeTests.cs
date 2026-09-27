@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityIsekaiGame.Interaction;
+using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.WorldLocations.SceneBinding;
 
 namespace UnityIsekaiGame.Tests
@@ -120,6 +121,11 @@ namespace UnityIsekaiGame.Tests
                     interactable.Interact(actionContext);
                     Assert.That(invokedConnection.LastInteractionResult.Duplicate, Is.False, $"{HierarchyPath(component.transform)} reused a rapid-input transaction ID.");
                 }
+
+                // Narrative interactions intentionally hold modal focus until the player closes
+                // their panel. Close them between independently audited interaction surfaces.
+                Object.FindAnyObjectByType<PrototypeQuestSourcePanel>(FindObjectsInactive.Include)?.Close();
+                Object.FindAnyObjectByType<PrototypeDialoguePanel>(FindObjectsInactive.Include)?.Close();
             }
 
             Assert.That(counterCaptureDirection, Is.Not.EqualTo(Vector3.zero));

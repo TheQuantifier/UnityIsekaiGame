@@ -104,7 +104,7 @@ namespace UnityIsekaiGame.Development.Automation
             "feature.4.1.save-file-foundation",
             "feature.4.2.inventory-equipment-persistence",
             "feature.4.3.vitals-status-persistence",
-            "feature.4.4.quest-contract-persistence",
+            "feature.4.4.quest-persistence",
             "feature.4.5.location-persistence",
             "feature.4.6.world-entity-identity",
             "feature.4.7.save-slots-autosave-load-ui",

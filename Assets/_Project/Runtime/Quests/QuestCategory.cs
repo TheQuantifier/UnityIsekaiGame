@@ -12,7 +12,7 @@ namespace UnityIsekaiGame.Quests
         ProfessionQuest,
         PersonalQuest,
         SpecialAssignment,
-        BountyPlaceholder,
+        Bounty,
         Investigation,
         Delivery,
         Character,

@@ -443,7 +443,7 @@ namespace UnityIsekaiGame.Development.Automation
             bool hasAll = PrototypeQuestDefinitionFactory.PrototypeDefinitionIds.All(id => registry.TryGet(id, out QuestDefinition _));
             bool metadata = registry.TryGet(PrototypeQuestDefinitionFactory.DynamicBountyDefinitionId, out QuestDefinition bounty)
                 && bounty.AllowDynamicInstances
-                && bounty.Category == QuestCategory.BountyPlaceholder
+                && bounty.Category == QuestCategory.Bounty
                 && bounty.DefaultTagIds.Contains("dynamic");
             DefinitionValidationReport report = new DefinitionValidationReport();
             foreach (QuestDefinition definition in PrototypeQuestDefinitionFactory.CreateMissingQuestDefinitions(Array.Empty<string>()))
@@ -681,7 +681,7 @@ namespace UnityIsekaiGame.Development.Automation
                 recipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = "person.prototype.scout" },
                 offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.System, issuerId = "system.quest" },
                 eligibilityContext = new QuestEligibilityContext { personId = "person.prototype.scout", privilegedDiagnostics = true, worldTime = 5d },
-                channel = QuestOfferChannel.NarrativeEventPlaceholder,
+                channel = QuestOfferChannel.NarrativeEvent,
                 worldTime = 5d
             });
             int publicOffers = participation.QueryOffers(new QuestOfferQuery { access = QuestVisibilityAccess.PublicOnly }).Count;

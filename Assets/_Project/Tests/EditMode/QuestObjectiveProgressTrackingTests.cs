@@ -307,7 +307,7 @@ namespace UnityIsekaiGame.Tests
                     questId = create.Snapshot.QuestId,
                     recipient = new QuestRecipientReferenceData { recipientScope = QuestRecipientScope.Person, recipientId = "person.prototype.scout" },
                     offeringProvider = new QuestIssuerReferenceData { issuerType = QuestIssuerType.System, issuerId = "system.quest" },
-                    channel = QuestOfferChannel.NarrativeEventPlaceholder,
+                    channel = QuestOfferChannel.NarrativeEvent,
                     eligibilityContext = new QuestEligibilityContext { personId = "person.prototype.scout", privilegedDiagnostics = true },
                     worldTime = 1d
                 });
@@ -335,7 +335,7 @@ namespace UnityIsekaiGame.Tests
                     explicitConsent = true,
                     assignedBy = new QuestIssuerReferenceData { issuerType = QuestIssuerType.System, issuerId = "system.quest" },
                     authorityBasisId = "authority.prototype.bounty-board.post",
-                    eligibilityContext = new QuestEligibilityContext { personId = personId, interactionPointId = "interaction-point.prototype.bounty-board", privilegedDiagnostics = true, facts = new QuestEligibilityFactSet(authorityGrants: new[] { "authority.prototype.bounty-board.post" }) },
+                    eligibilityContext = new QuestEligibilityContext { personId = personId, partyId = "party.prototype.bounty-test", partyMemberPersonIds = new[] { personId, "person.prototype.bounty-companion" }, readyPartyMemberPersonIds = new[] { personId, "person.prototype.bounty-companion" }, interactionPointId = "interaction-point.prototype.bounty-board", privilegedDiagnostics = true, facts = new QuestEligibilityFactSet(authorityGrants: new[] { "authority.prototype.bounty-board.post" }) },
                     worldTime = 1d
                 });
                 return assign.Assignment;

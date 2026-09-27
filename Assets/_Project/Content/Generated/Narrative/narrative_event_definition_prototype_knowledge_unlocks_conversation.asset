@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f03a805d15f439cb19a687e73b58075, type: 3}
+  m_Name: narrative_event_definition_prototype_knowledge_unlocks_conversation
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Narrative.NarrativeEventDefinition
+  data:
+    eventDefinitionId: narrative-event-definition.prototype.knowledge-unlocks-conversation
+    displayName: Knowledge Unlocks Conversation
+    category: 13
+    scope: 2
+    repeatPolicy: 2
+    armingPolicy: 1
+    triggerMode: 1
+    delayedRevalidationPolicy: 0
+    atomicityPolicy: 0
+    retryPolicy: 0
+    visibility: 1
+    conditionGroupPolicy: 0
+    atLeastConditionCount: 1
+    priority: 0
+    activationStartTime: -1
+    activationEndTime: -1
+    delayDuration: -1
+    cascadeDepthLimit: 8
+    scopeSelectorId: actorPersonId
+    historyPolicyId: 
+    failurePolicyId: 
+    tagIds:
+    - conversation
+    - knowledge
+    - prototype
+    triggers:
+    - triggerDefinitionId: trigger.knowledge
+      category: 24
+      requiredSourceId: narrative-signal-definition.prototype.knowledge.hidden-dungeon
+      requiredSubjectId: subject.prototype.hidden-dungeon
+      committedOnly: 1
+      ignoreRestoreReplay: 1
+      hidden: 0
+    conditions:
+    - conditionDefinitionId: condition.knows-hidden
+      category: 3
+      requiredId: subject.prototype.hidden-dungeon
+      secondaryId: 
+      minimumValue: 1
+      negate: 0
+      hidden: 0
+      revealFailure: 1
+    actions:
+    - actionDefinitionId: action.start-prisoner-conversation
+      category: 8
+      requirement: 1
+      targetId: conversation-definition.prototype.prisoner-interview
+      secondaryTargetId: 
+      outputSlotId: 
+      inputSlotId: 
+      order: 10
+      priority: 0
+      hidden: 0

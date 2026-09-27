@@ -45,6 +45,7 @@ namespace SceneZoneTool.Editor
         private readonly List<SceneZoneAsset> layerZones = new List<SceneZoneAsset>();
         private readonly List<SceneZoneLayerAsset> sceneLayers = new List<SceneZoneLayerAsset>();
         private readonly HashSet<SceneZoneAsset> hiddenZones = new HashSet<SceneZoneAsset>();
+        private readonly HashSet<string> warnedIncompleteZones = new HashSet<string>(StringComparer.Ordinal);
         private Vector3 hoverPoint;
         private bool hasHover;
         private bool hoveringReusablePoint;
@@ -68,6 +69,8 @@ namespace SceneZoneTool.Editor
         private GUIStyle zoneNameStyle;
         private SceneView owningSceneView;
         private bool overlayVisible;
+        private Action pendingEditorOperation;
+        private bool editorOperationScheduled;
 
         internal static SceneZoneFreeSelectController CreateOverlayController()
         {
@@ -85,6 +88,7 @@ namespace SceneZoneTool.Editor
             SceneView.duringSceneGui += OnSceneGUI;
             EditorApplication.projectChanged += OnProjectChange;
             EditorSceneManager.activeSceneChangedInEditMode += OnActiveSceneChanged;
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
             if (zoneLayer == null) RestorePreferredLayer();
             RefreshLayerZones();
             if (zone == null) zone = layerZones.FirstOrDefault();
@@ -116,6 +120,10 @@ namespace SceneZoneTool.Editor
             SceneView.duringSceneGui -= OnSceneGUI;
             EditorApplication.projectChanged -= OnProjectChange;
             EditorSceneManager.activeSceneChangedInEditMode -= OnActiveSceneChanged;
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            EditorApplication.delayCall -= ExecutePendingEditorOperation;
+            pendingEditorOperation = null;
+            editorOperationScheduled = false;
             CancelPendingZone();
             owningSceneView = null;
             overlayVisible = false;
@@ -129,6 +137,42 @@ namespace SceneZoneTool.Editor
         }
 
         private static void Repaint() => SceneView.RepaintAll();
+
+        /// <summary>
+        /// Runs modal dialogs and asset operations after the current IMGUI event has
+        /// finished. Opening a native dialog from inside a GUILayout scope can reset
+        /// Unity's layout stack and cause an EndLayoutGroup mismatch when the scope
+        /// is disposed.
+        /// </summary>
+        internal void QueueEditorOperation(Action operation)
+        {
+            if (operation == null) return;
+
+            pendingEditorOperation = operation;
+            if (editorOperationScheduled) return;
+
+            editorOperationScheduled = true;
+            EditorApplication.delayCall += ExecutePendingEditorOperation;
+        }
+
+        internal void ExecutePendingEditorOperation()
+        {
+            EditorApplication.delayCall -= ExecutePendingEditorOperation;
+            editorOperationScheduled = false;
+
+            Action operation = pendingEditorOperation;
+            pendingEditorOperation = null;
+            if (operation == null || this == null) return;
+
+            try
+            {
+                operation();
+            }
+            finally
+            {
+                Repaint();
+            }
+        }
 
         private static void ShowNotification(GUIContent content)
         {

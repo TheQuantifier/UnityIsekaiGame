@@ -96,6 +96,19 @@ namespace SceneZoneTool
         public float LineWidth => lineWidth;
         /// <summary>Serialized data schema version.</summary>
         public int DataVersion => dataVersion;
+        /// <summary>
+        /// True when authoring stopped before the zone received the minimum geometry
+        /// required for its shape. Validators may safely remove these abandoned drafts.
+        /// </summary>
+        public bool IsIncomplete
+        {
+            get
+            {
+                if (shape == SceneZoneShape.Circle)
+                    return !IsFinite(circleCenter) || !IsFinite(circleRadius) || circleRadius <= 0.01f;
+                return polygonPoints == null || polygonPoints.Length < 3;
+            }
+        }
         public bool IsUsable
         {
             get

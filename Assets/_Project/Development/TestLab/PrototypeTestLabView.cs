@@ -18,7 +18,6 @@ using UnityIsekaiGame.Combat.Execution;
 using UnityIsekaiGame.Combat.OngoingEffects;
 using UnityIsekaiGame.Combat.Reactions;
 using UnityIsekaiGame.Combat.Contributions;
-using UnityIsekaiGame.Contracts;
 using UnityIsekaiGame.Development.Automation;
 using UnityIsekaiGame.Factions;
 using UnityIsekaiGame.GameData;
@@ -169,7 +168,6 @@ namespace UnityIsekaiGame.Development
         private Text automationScenarioValueText;
         private Text ongoingEffectValueText;
         private Text questValueText;
-        private Text contractValueText;
         private Text placeValueText;
         private Text personValueText;
         private Text testPointValueText;
@@ -189,7 +187,6 @@ namespace UnityIsekaiGame.Development
         private int selectedAutomationScenarioIndex;
         private int selectedOngoingEffectIndex;
         private int selectedQuestIndex;
-        private int selectedContractIndex;
         private int selectedPlaceIndex;
         private int selectedPersonIndex;
         private int selectedTestPointIndex;
@@ -210,7 +207,6 @@ namespace UnityIsekaiGame.Development
         private readonly List<ITestLabAutomationScenario> automationScenarios = new List<ITestLabAutomationScenario>();
         private readonly List<OngoingEffectDefinition> ongoingEffects = new List<OngoingEffectDefinition>();
         private readonly List<QuestDefinition> quests = new List<QuestDefinition>();
-        private readonly List<ContractDefinition> contracts = new List<ContractDefinition>();
         private readonly List<PlaceDefinition> places = new List<PlaceDefinition>();
         private readonly List<PersonDefinition> people = new List<PersonDefinition>();
         private readonly List<PrototypeTestPoint> testPoints = new List<PrototypeTestPoint>();
@@ -415,7 +411,6 @@ namespace UnityIsekaiGame.Development
             defenseValueText = AddSelectorRow(parent, font, "Defense", () => CycleSelection(ref selectedDefenseIndex, defensiveActions.Count, -1), () => CycleSelection(ref selectedDefenseIndex, defensiveActions.Count, 1));
             ongoingEffectValueText = AddSelectorRow(parent, font, "Ongoing", () => CycleSelection(ref selectedOngoingEffectIndex, ongoingEffects.Count, -1), () => CycleSelection(ref selectedOngoingEffectIndex, ongoingEffects.Count, 1));
             questValueText = AddSelectorRow(parent, font, "Quest", () => CycleSelection(ref selectedQuestIndex, quests.Count, -1), () => CycleSelection(ref selectedQuestIndex, quests.Count, 1));
-            contractValueText = AddSelectorRow(parent, font, "Contract", () => CycleSelection(ref selectedContractIndex, contracts.Count, -1), () => CycleSelection(ref selectedContractIndex, contracts.Count, 1));
             placeValueText = AddSelectorRow(parent, font, "Place", () => CycleSelection(ref selectedPlaceIndex, places.Count, -1), () => CycleSelection(ref selectedPlaceIndex, places.Count, 1));
             personValueText = AddSelectorRow(parent, font, "Person", () => CycleSelection(ref selectedPersonIndex, people.Count, -1), () => CycleSelection(ref selectedPersonIndex, people.Count, 1));
             testPointValueText = AddSelectorRow(parent, font, "Test Point", () => CycleSelection(ref selectedTestPointIndex, testPoints.Count, -1), () => CycleSelection(ref selectedTestPointIndex, testPoints.Count, 1));
@@ -1401,9 +1396,7 @@ namespace UnityIsekaiGame.Development
                 ("Report Reach", () => service.ReportReach(GetSelected(places, selectedPlaceIndex))),
                 ("Report Defeat", () => service.ReportDefeat("prototype_enemy")));
             AddButtonRow(parent, font,
-                ("Accept Contract", () => service.AcceptContract(GetSelected(contracts, selectedContractIndex))),
-                ("Clear Quests", () => service.ClearQuestLog(confirmed: false)),
-                ("Clear Contracts", () => service.ClearContractJournal(confirmed: false)));
+                ("Clear Quests", () => service.ClearQuestLog(confirmed: false)));
         }
 
         private void BuildPersistenceSection(Transform parent, Font font)
@@ -1485,13 +1478,12 @@ namespace UnityIsekaiGame.Development
         private void BuildScenarioSection(Transform parent, Font font)
         {
             AddButtonRow(parent, font,
-                ("Clean", () => service.RunScenario("clean", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(contracts, selectedContractIndex), GetSelected(damageTypes, selectedDamageIndex))),
-                ("Combat", () => service.RunScenario("combat", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(contracts, selectedContractIndex), GetSelected(damageTypes, selectedDamageIndex))),
-                ("Full Inventory", () => service.RunScenario("full-inventory", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(contracts, selectedContractIndex), GetSelected(damageTypes, selectedDamageIndex))));
+                ("Clean", () => service.RunScenario("clean", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(damageTypes, selectedDamageIndex))),
+                ("Combat", () => service.RunScenario("combat", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(damageTypes, selectedDamageIndex))),
+                ("Full Inventory", () => service.RunScenario("full-inventory", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(damageTypes, selectedDamageIndex))));
             AddButtonRow(parent, font,
-                ("Quest", () => service.RunScenario("quest", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(contracts, selectedContractIndex), GetSelected(damageTypes, selectedDamageIndex))),
-                ("Contract", () => service.RunScenario("contract", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(contracts, selectedContractIndex), GetSelected(damageTypes, selectedDamageIndex))),
-                ("Persistence", () => service.RunScenario("persistence", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(contracts, selectedContractIndex), GetSelected(damageTypes, selectedDamageIndex))));
+                ("Quest", () => service.RunScenario("quest", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(damageTypes, selectedDamageIndex))),
+                ("Persistence", () => service.RunScenario("persistence", GetSelected(items, selectedItemIndex), GetSelected(quests, selectedQuestIndex), GetSelected(damageTypes, selectedDamageIndex))));
         }
 
         private void BuildDiagnosticsSection(Transform parent, Font font)
@@ -1523,7 +1515,6 @@ namespace UnityIsekaiGame.Development
             RefreshAutomationScenarioOptions();
             SetOptions(ongoingEffects, service.GetDefinitions<OngoingEffectDefinition>(), ref selectedOngoingEffectIndex);
             SetOptions(quests, service.GetDefinitions<QuestDefinition>(), ref selectedQuestIndex);
-            SetOptions(contracts, service.GetDefinitions<ContractDefinition>(), ref selectedContractIndex);
             SetOptions(places, service.GetDefinitions<PlaceDefinition>(), ref selectedPlaceIndex);
             SetOptions(people, service.GetDefinitions<PersonDefinition>(), ref selectedPersonIndex);
             SetOptions(testPoints, service.GetTestPoints(), ref selectedTestPointIndex);
@@ -1547,7 +1538,6 @@ namespace UnityIsekaiGame.Development
             SetValue(automationScenarioValueText, FormatSelected(automationScenarios, selectedAutomationScenarioIndex, scenario => $"{scenario.DisplayName} ({scenario.ScenarioId})"));
             SetValue(ongoingEffectValueText, FormatSelected(ongoingEffects, selectedOngoingEffectIndex, PrototypeTestLabService.FormatDefinition));
             SetValue(questValueText, FormatSelected(quests, selectedQuestIndex, PrototypeTestLabService.FormatDefinition));
-            SetValue(contractValueText, FormatSelected(contracts, selectedContractIndex, PrototypeTestLabService.FormatDefinition));
             SetValue(placeValueText, FormatSelected(places, selectedPlaceIndex, PrototypeTestLabService.FormatDefinition));
             SetValue(personValueText, FormatSelected(people, selectedPersonIndex, PrototypeTestLabService.FormatDefinition));
             SetValue(testPointValueText, FormatSelected(testPoints, selectedTestPointIndex, point => $"{point.DisplayName} ({point.TestPointId})"));

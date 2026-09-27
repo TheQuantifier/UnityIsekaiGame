@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Persistence;
 using UnityIsekaiGame.Places;
+using UnityIsekaiGame.Input;
 
 namespace UnityIsekaiGame.Quests
 {
@@ -45,7 +46,7 @@ namespace UnityIsekaiGame.Quests
                 return;
             }
 
-            if (other == null || other.GetComponentInParent<PlayerQuestLog>() == null)
+            if (other == null || other.GetComponentInParent<PlayerInputReader>() == null)
             {
                 return;
             }
@@ -65,7 +66,8 @@ namespace UnityIsekaiGame.Quests
                 nextPrototypeHudMessageTime = Time.time + prototypeHudMessageCooldown;
             }
 
-            QuestObjectiveSignalBus.ReportReachLocation(ReportedLocationId);
+            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+            QuestObjectiveSignalBus.ReportReachLocation(ReportedLocationId, services?.PlayerPersonId, services?.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble);
         }
 
         private void NotifyPlaceTracker(Collider other, bool entered)

@@ -5,7 +5,6 @@ using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Combat.CombatState;
 using UnityIsekaiGame.Combat.OngoingEffects;
-using UnityIsekaiGame.Contracts;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Gameplay;
@@ -49,8 +48,7 @@ namespace UnityIsekaiGame.Development
         public PlayerIdentityProgression IdentityProgression;
         public PlayerSpellcaster Spellcaster;
         public PlayerSpellLoadout SpellLoadout;
-        public PlayerQuestLog QuestLog;
-        public PlayerContractJournal ContractJournal;
+        public PrototypeNarrativeCoordinator Narrative;
         public PrototypeTestController TestController;
         public PrototypePersistenceServiceBehaviour Persistence;
         public Transform PlayerTransform;

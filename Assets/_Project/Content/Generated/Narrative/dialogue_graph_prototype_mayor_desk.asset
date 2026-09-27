@@ -1,0 +1,189 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 638360f107104d5a97e8b67e994193b0, type: 3}
+  m_Name: dialogue_graph_prototype_mayor_desk
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Dialogue.DialogueGraphDefinition
+  graphId: dialogue-graph.prototype.mayor-desk
+  displayName: Mayor Desk Dialogue
+  conversationDefinitionId: conversation-definition.prototype.mayor-desk
+  canonicalEntryNodeId: mayor.entry
+  fallbackNodeId: mayor.end
+  automaticTransitionLimit: 8
+  nodes:
+  - nodeId: mayor.entry
+    category: 4
+    speaker:
+      kind: 7
+      role: 3
+      personId: 
+      officeId: 
+      organizationId: 
+      customSelectorId: 
+    listener:
+      kind: 2
+      role: 4
+      personId: 
+      customSelectorId: 
+    authoredText: The mayor's office can discuss civic notices, permits, and city
+      authority.
+    localizationKey: 
+    visibility: 1
+    entryConditions: []
+    choices:
+    - choiceId: mayor.choice.leave
+      displayText: End conversation
+      category: 13
+      visibility: 1
+      actorRole: 1
+      repeatPolicy: 1
+      targetNodeId: mayor.end
+      unavailableReason: 
+      hideUnavailableReason: 0
+      conditions: []
+      effects: []
+      effectFailureNodeId: 
+      tagIds: []
+    - choiceId: mayor.choice.notice
+      displayText: Ask about civic notices
+      category: 11
+      visibility: 1
+      actorRole: 1
+      repeatPolicy: 1
+      targetNodeId: mayor.notice
+      unavailableReason: 
+      hideUnavailableReason: 0
+      conditions: []
+      effects: []
+      effectFailureNodeId: 
+      tagIds: []
+    - choiceId: mayor.choice.permit
+      displayText: Request permit review
+      category: 10
+      visibility: 1
+      actorRole: 1
+      repeatPolicy: 1
+      targetNodeId: mayor.permit
+      unavailableReason: 
+      hideUnavailableReason: 0
+      conditions:
+      - conditionId: condition.mayor.authority
+        kind: 13
+        evaluationMode: 1
+        requiredId: authority.prototype.city.quest-assign
+        secondaryId: 
+        minimumValue: 1
+        maximumValue: 1
+        comparison: 0
+        hidden: 0
+        revealFailure: 1
+        negate: 0
+      effects: []
+      effectFailureNodeId: 
+      tagIds: []
+    transitions: []
+    entryEffects: []
+    canCancel: 1
+    canSuspend: 1
+    tagIds: []
+  - nodeId: mayor.notice
+    category: 3
+    speaker:
+      kind: 7
+      role: 3
+      personId: 
+      officeId: 
+      organizationId: 
+      customSelectorId: 
+    listener:
+      kind: 2
+      role: 4
+      personId: 
+      customSelectorId: 
+    authoredText: Public notices are safe to disclose. Restricted government details
+      still require Step 8 access.
+    localizationKey: 
+    visibility: 1
+    entryConditions: []
+    choices: []
+    transitions:
+    - transitionId: mayor.return-notice
+      targetNodeId: mayor.entry
+      category: 2
+      priority: 0
+      conditions: []
+      effects: []
+      fallback: 0
+    entryEffects: []
+    canCancel: 1
+    canSuspend: 1
+    tagIds: []
+  - nodeId: mayor.permit
+    category: 11
+    speaker:
+      kind: 7
+      role: 3
+      personId: 
+      officeId: 
+      organizationId: 
+      customSelectorId: 
+    listener:
+      kind: 2
+      role: 4
+      personId: 
+      customSelectorId: 
+    authoredText: Permit review is delegated to the legal and government runtimes
+      when those services execute the effect.
+    localizationKey: 
+    visibility: 1
+    entryConditions: []
+    choices: []
+    transitions:
+    - transitionId: mayor.return-permit
+      targetNodeId: mayor.entry
+      category: 2
+      priority: 0
+      conditions: []
+      effects: []
+      fallback: 0
+    entryEffects: []
+    canCancel: 1
+    canSuspend: 1
+    tagIds: []
+  - nodeId: mayor.end
+    category: 12
+    speaker:
+      kind: 1
+      role: 3
+      personId: 
+      officeId: 
+      organizationId: 
+      customSelectorId: 
+    listener:
+      kind: 2
+      role: 4
+      personId: 
+      customSelectorId: 
+    authoredText: Conversation ended.
+    localizationKey: 
+    visibility: 1
+    entryConditions: []
+    choices: []
+    transitions: []
+    entryEffects: []
+    canCancel: 1
+    canSuspend: 1
+    tagIds: []
+  entryConditions: []
+  tagIds:
+  - government
+  - mayor
+  - prototype

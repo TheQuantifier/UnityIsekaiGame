@@ -522,6 +522,10 @@ namespace UnityIsekaiGame.Dialogue
         public IEnumerable<string> activeAssignmentQuestIds;
         public IEnumerable<string> completedQuestIds;
         public IEnumerable<string> claimableRewardIds;
+        public string partyId;
+        public string partyLeaderPersonId;
+        public IEnumerable<string> partyMemberPersonIds;
+        public IEnumerable<string> readyPartyMemberPersonIds;
         public ConversationAccessLevel access = ConversationAccessLevel.Public;
         public bool privilegedDiagnostics;
 
@@ -541,6 +545,10 @@ namespace UnityIsekaiGame.Dialogue
                 activeAssignmentQuestIds = Clean(activeAssignmentQuestIds),
                 completedQuestIds = Clean(completedQuestIds),
                 claimableRewardIds = Clean(claimableRewardIds),
+                partyId = N(partyId),
+                partyLeaderPersonId = N(partyLeaderPersonId),
+                partyMemberPersonIds = Clean(partyMemberPersonIds),
+                readyPartyMemberPersonIds = Clean(readyPartyMemberPersonIds),
                 access = access,
                 privilegedDiagnostics = privilegedDiagnostics
             };

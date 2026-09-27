@@ -1,0 +1,279 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01ef61394384a7246a72bd9689b4acc5, type: 3}
+  m_Name: narrative_state_definition_prototype_royal_succession
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Narrative.NarrativeStateDefinition
+  data:
+    stateDefinitionId: narrative-state-definition.prototype.royal-succession
+    displayName: Prototype Royal Succession
+    scope: 1
+    visibility: 3
+    domainId: narrative-domain.prototype.royal-succession
+    tagIds:
+    - branch
+    - prototype
+    - royal
+    variables:
+    - variableDefinitionId: narrative-variable.prototype.royal-succession.branch
+      displayName: Royal succession branch
+      kind: 3
+      scope: 1
+      visibility: 3
+      mutabilityPolicy: 1
+      defaultValue:
+        kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.royal-succession.unresolved
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      allowedValues:
+      - valueDefinitionId: narrative-state-value.prototype.royal-succession.unresolved
+        displayName: Unresolved
+        terminal: 0
+        branchDefinitionId: 
+        mergeGroupId: 
+        tagIds: []
+      - valueDefinitionId: narrative-state-value.prototype.royal-succession.support-heir
+        displayName: Support heir
+        terminal: 0
+        branchDefinitionId: narrative-branch.prototype.royal.heir
+        mergeGroupId: 
+        tagIds: []
+      - valueDefinitionId: narrative-state-value.prototype.royal-succession.support-rival
+        displayName: Support rival
+        terminal: 0
+        branchDefinitionId: narrative-branch.prototype.royal.rival
+        mergeGroupId: 
+        tagIds: []
+      - valueDefinitionId: narrative-state-value.prototype.royal-succession.reconciled
+        displayName: Reconciled
+        terminal: 0
+        branchDefinitionId: 
+        mergeGroupId: narrative-merge.prototype.royal.reconciled
+        tagIds: []
+      - valueDefinitionId: narrative-state-value.prototype.royal-succession.crowned
+        displayName: Crowned
+        terminal: 1
+        branchDefinitionId: 
+        mergeGroupId: 
+        tagIds: []
+      minimumValue: -2147483648
+      maximumValue: 2147483647
+      exclusionGroupId: narrative-exclusion.prototype.royal-succession
+      recordInitialDefaultHistory: 0
+      tagIds: []
+    - variableDefinitionId: narrative-variable.prototype.royal-succession.chosen-successor
+      displayName: Chosen successor
+      kind: 5
+      scope: 1
+      visibility: 3
+      mutabilityPolicy: 1
+      defaultValue:
+        kind: 5
+        boolValue: 0
+        intValue: 0
+        tokenValue: 
+        subjectReference:
+          subjectType: 19
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      allowedValues: []
+      minimumValue: -2147483648
+      maximumValue: 2147483647
+      exclusionGroupId: 
+      recordInitialDefaultHistory: 0
+      tagIds: []
+    transitions:
+    - transitionDefinitionId: narrative-transition-definition.prototype.royal-succession.support-heir
+      displayName: 
+      variableDefinitionId: narrative-variable.prototype.royal-succession.branch
+      allowedSourceValues:
+      - kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.royal-succession.unresolved
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      targetValue:
+        kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.royal-succession.support-heir
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      conditions: []
+      consequences: []
+      repeatPolicy: 2
+      reentryPolicy: 3
+      visibility: 1
+      order: 10
+      automatic: 0
+      hidden: 0
+    - transitionDefinitionId: narrative-transition-definition.prototype.royal-succession.support-rival
+      displayName: 
+      variableDefinitionId: narrative-variable.prototype.royal-succession.branch
+      allowedSourceValues:
+      - kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.royal-succession.unresolved
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      targetValue:
+        kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.royal-succession.support-rival
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      conditions: []
+      consequences: []
+      repeatPolicy: 2
+      reentryPolicy: 3
+      visibility: 1
+      order: 20
+      automatic: 0
+      hidden: 0
+    - transitionDefinitionId: narrative-transition-definition.prototype.royal-succession.reconcile
+      displayName: 
+      variableDefinitionId: narrative-variable.prototype.royal-succession.branch
+      allowedSourceValues:
+      - kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.royal-succession.support-heir
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      - kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.royal-succession.support-rival
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      targetValue:
+        kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.royal-succession.reconciled
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      conditions: []
+      consequences: []
+      repeatPolicy: 3
+      reentryPolicy: 1
+      visibility: 1
+      order: 30
+      automatic: 0
+      hidden: 0
+    - transitionDefinitionId: narrative-transition-definition.prototype.royal-succession.crown-heir
+      displayName: 
+      variableDefinitionId: narrative-variable.prototype.royal-succession.branch
+      allowedSourceValues:
+      - kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.royal-succession.reconciled
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      targetValue:
+        kind: 3
+        boolValue: 0
+        intValue: 0
+        tokenValue: narrative-state-value.prototype.royal-succession.crowned
+        subjectReference:
+          subjectType: 0
+          subjectId: 
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      conditions: []
+      consequences: []
+      repeatPolicy: 2
+      reentryPolicy: 3
+      visibility: 1
+      order: 40
+      automatic: 0
+      hidden: 0
+    - transitionDefinitionId: narrative-transition-definition.prototype.royal-succession.choose-successor
+      displayName: Choose successor subject
+      variableDefinitionId: narrative-variable.prototype.royal-succession.chosen-successor
+      allowedSourceValues: []
+      targetValue:
+        kind: 5
+        boolValue: 0
+        intValue: 0
+        tokenValue: 
+        subjectReference:
+          subjectType: 19
+          subjectId: person.prototype.heir
+          parentSubjectId: 
+          ownerPersonId: 
+          controllingEntityId: 
+          tags: []
+      conditions: []
+      consequences: []
+      repeatPolicy: 2
+      reentryPolicy: 1
+      visibility: 1
+      order: 50
+      automatic: 0
+      hidden: 0

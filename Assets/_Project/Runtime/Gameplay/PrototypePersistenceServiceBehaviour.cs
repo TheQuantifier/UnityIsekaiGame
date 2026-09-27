@@ -50,6 +50,7 @@ using UnityIsekaiGame.Knowledge.Sources;
 using UnityIsekaiGame.Magic;
 using UnityIsekaiGame.Narrative;
 using UnityIsekaiGame.Organizations;
+using UnityIsekaiGame.Parties;
 using UnityIsekaiGame.Persistence;
 using UnityIsekaiGame.People;
 using UnityIsekaiGame.Places;
@@ -104,8 +105,6 @@ namespace UnityIsekaiGame.Gameplay
         [SerializeField] private StatusEffectController statusEffectController;
         [SerializeField] private PlayerIdentityProgression playerIdentityProgression;
         [SerializeField] private OverallLevelConfiguration overallLevelConfiguration;
-        [SerializeField] private PlayerQuestLog playerQuestLog;
-        [SerializeField] private PlayerContractJournal playerContractJournal;
         [SerializeField] private Transform playerRoot;
         [SerializeField] private PlayerInputReader playerInput;
         [SerializeField] private MonoBehaviour inventoryScreenController;
@@ -181,7 +180,6 @@ namespace UnityIsekaiGame.Gameplay
         [SerializeField] private bool registerPlayerCombatExecution = true;
         [SerializeField] private bool registerPlayerActorLifecycle = true;
         [SerializeField] private bool registerPlayerOngoingEffects = true;
-        [SerializeField] private bool registerPlayerQuestContract = true;
         [SerializeField] private bool registerPlayerLocation = true;
         [Header("Save Slots")]
         [SerializeField, Min(1)] private int manualSlotCount = PrototypeSaveSlotCatalog.DefaultManualSlotCount;
@@ -263,7 +261,6 @@ namespace UnityIsekaiGame.Gameplay
         private PlayerCombatExecutionPersistenceParticipant playerCombatExecutionParticipant;
         private PlayerActorLifecyclePersistenceParticipant playerActorLifecycleParticipant;
         private PlayerOngoingEffectsPersistenceParticipant playerOngoingEffectsParticipant;
-        private PlayerQuestContractPersistenceParticipant questContractParticipant;
         private PlayerLocationPersistenceParticipant playerLocationParticipant;
         private DefinitionRegistry definitionRegistry;
         private bool sceneCharactersInitialized;
@@ -280,6 +277,8 @@ namespace UnityIsekaiGame.Gameplay
         private GameplayObservationCoordinator gameplayObservationCoordinator;
         private MemoryMaintenanceService memoryMaintenance;
         private KnowledgeHistoryEventBridge knowledgeHistoryEventBridge;
+        private const double BackgroundSimulationPollIntervalSeconds = 0.25d;
+        private double nextBackgroundSimulationPollRealtime;
         private bool characterCreationHistoryEnsured;
         private PersonProfessionRuntime playerProfessions;
         private ProfessionEntryRuntime playerProfessionEntries;
@@ -297,6 +296,7 @@ namespace UnityIsekaiGame.Gameplay
         private SocialInteractionRuntime worldSocialInteractions;
         private SocialNormRuntime worldSocialNorms;
         private SocialNetworkRuntime worldSocialNetworks;
+        private AdventuringPartyService adventuringParties;
         private SocialDecisionRuntime worldSocialDecisions;
         private SocialInfluenceRuntime worldSocialInfluence;
         private SocialEmotionRuntime worldSocialEmotions;
@@ -351,6 +351,9 @@ namespace UnityIsekaiGame.Gameplay
         public AutosaveCoordinator Autosave => autosaveCoordinator;
         public DefinitionCatalog DefinitionCatalog => definitionCatalog;
         public string PlayerPersonId => ResolvePlayerPersonId();
+        public PlayerInventory PlayerInventory => playerInventory;
+        public PersonKnowledgeRuntime PlayerKnowledge => playerKnowledge;
+        public DefinitionRegistry RuntimeDefinitionRegistry => GetDefinitionRegistry();
         public ProfessionCoordinator ProfessionCoordinator => professionCoordinator ??= new ProfessionCoordinator(
             GetDefinitionRegistry(),
             Professions,
@@ -498,6 +501,7 @@ namespace UnityIsekaiGame.Gameplay
                 return worldSocialNetworks;
             }
         }
+        public AdventuringPartyService AdventuringParties => adventuringParties ??= new AdventuringPartyService(SocialNetworks, GetDefinitionRegistry());
 
         public SocialDecisionRuntime SocialDecisions
         {
@@ -904,16 +908,28 @@ namespace UnityIsekaiGame.Gameplay
         {
             EnsureInitialized();
             if (GetComponent<PrototypeTravelPanel>() == null) gameObject.AddComponent<PrototypeTravelPanel>();
+            if (GetComponent<PrototypeQuestSourcePanel>() == null) gameObject.AddComponent<PrototypeQuestSourcePanel>();
+            if (GetComponent<PrototypeDialoguePanel>() == null) gameObject.AddComponent<PrototypeDialoguePanel>();
+            if (GetComponent<PrototypeGuildDeskPanel>() == null) gameObject.AddComponent<PrototypeGuildDeskPanel>();
+            if (GetComponent<PrototypeTextChatPanel>() == null) gameObject.AddComponent<PrototypeTextChatPanel>();
         }
-
         private void Update()
         {
+            worldNarrativeCoordinator?.Advance();
             AdvanceGroup6Crafting();
+            AdvanceWorldTravel();
+
+            double realtime = Time.unscaledTimeAsDouble;
+            if (realtime < nextBackgroundSimulationPollRealtime)
+            {
+                return;
+            }
+
+            nextBackgroundSimulationPollRealtime = realtime + BackgroundSimulationPollIntervalSeconds;
             SynchronizeProfessionLifecycle();
             AdvancePrototypeEconomy();
             AdvanceGroup9SocialSimulation();
             AdvanceGroup10InstitutionalSimulation();
-            AdvanceWorldTravel();
 
             if (memoryMaintenance == null || playTimeTracker == null)
             {
@@ -929,6 +945,7 @@ namespace UnityIsekaiGame.Gameplay
 
         private void OnDisable()
         {
+            ShutdownPartyOperations();
             if (playerService != null && inventoryEquipmentParticipant != null)
             {
                 UnregisterParticipant(inventoryEquipmentParticipant);
@@ -1331,12 +1348,6 @@ namespace UnityIsekaiGame.Gameplay
                 playerOngoingEffectsParticipant = null;
             }
 
-            if (playerService != null && questContractParticipant != null)
-            {
-                UnregisterParticipant(questContractParticipant);
-                questContractParticipant = null;
-            }
-
             if (playerService != null && playerLocationParticipant != null)
             {
                 UnregisterParticipant(playerLocationParticipant);
@@ -1363,9 +1374,7 @@ namespace UnityIsekaiGame.Gameplay
             PlayerMana mana,
             PlayerStamina stamina,
             StatusEffectController statusController,
-            PlayerIdentityProgression identityProgression,
-            PlayerQuestLog questLog,
-            PlayerContractJournal contractJournal)
+            PlayerIdentityProgression identityProgression)
         {
             if (catalog != null && definitionCatalog != catalog)
             {
@@ -1382,8 +1391,6 @@ namespace UnityIsekaiGame.Gameplay
             playerStamina = stamina;
             statusEffectController = statusController;
             playerIdentityProgression = identityProgression;
-            playerQuestLog = questLog;
-            playerContractJournal = contractJournal;
             playerRoot = inventory == null ? playerRoot : inventory.transform;
         }
 
@@ -1435,6 +1442,7 @@ namespace UnityIsekaiGame.Gameplay
             EnsureWorldSocialInteractionParticipant();
             EnsureWorldSocialNormParticipant();
             EnsureWorldSocialNetworkParticipant();
+            EnsureWorldPartyOperationalParticipant();
             EnsureWorldSocialInfluenceParticipant();
             EnsureWorldSocialEmotionParticipant();
             EnsureWorldFamilyRelationshipParticipant();
@@ -1480,7 +1488,6 @@ namespace UnityIsekaiGame.Gameplay
             EnsurePlayerActorLifecycleParticipant();
             EnsurePlayerCombatExecutionParticipant();
             EnsurePlayerOngoingEffectsParticipant();
-            EnsurePlayerQuestContractParticipant();
             EnsurePlayerLocationParticipant();
             EnsurePersistenceConsistencyValidators();
             InitializeSceneCharacters();
@@ -1496,8 +1503,7 @@ namespace UnityIsekaiGame.Gameplay
                 PersonMemoryPersistenceParticipant.Key,
                 PlayerInventoryEquipmentPersistenceParticipant.Key,
                 PlayerStatusEffectsPersistenceParticipant.Key,
-                PlayerResourcesPersistenceParticipant.Key,
-                PlayerQuestContractPersistenceParticipant.Key
+                PlayerResourcesPersistenceParticipant.Key
             });
             WorldReadiness = worldPersistenceContext.BuildReadiness(new[]
             {
@@ -4256,16 +4262,6 @@ namespace UnityIsekaiGame.Gameplay
                 statusEffectController = playerObject == null ? null : playerObject.GetComponent<StatusEffectController>();
             }
 
-            if (playerQuestLog == null)
-            {
-                playerQuestLog = playerObject == null ? null : playerObject.GetComponent<PlayerQuestLog>();
-            }
-
-            if (playerContractJournal == null)
-            {
-                playerContractJournal = playerObject == null ? null : playerObject.GetComponent<PlayerContractJournal>();
-            }
-
             if (playerIdentityProgression == null)
             {
                 playerIdentityProgression = playerObject == null ? null : playerObject.GetComponent<PlayerIdentityProgression>();
@@ -4483,41 +4479,6 @@ namespace UnityIsekaiGame.Gameplay
             }
         }
 
-        private void EnsurePlayerQuestContractParticipant()
-        {
-            if (!registerPlayerQuestContract || questContractParticipant != null)
-            {
-                return;
-            }
-
-            ResolvePlayerPersistenceReferences();
-            if (playerQuestLog == null || playerContractJournal == null || playerInventory == null)
-            {
-                Debug.LogWarning("Player quest/contract persistence participant was not registered because the prototype player quest log, contract journal, or inventory is missing.");
-                return;
-            }
-
-            if (definitionCatalog == null)
-            {
-                Debug.LogWarning("Player quest/contract persistence participant was not registered because no definition catalog is assigned.");
-                return;
-            }
-
-            questContractParticipant = new PlayerQuestContractPersistenceParticipant(
-                playerQuestLog,
-                playerContractJournal,
-                playerInventory,
-                GetDefinitionRegistry,
-                playerService.PlayerId);
-
-            RegisterParticipant(questContractParticipant, out string failureReason);
-            if (!string.IsNullOrWhiteSpace(failureReason))
-            {
-                Debug.LogWarning(failureReason);
-                questContractParticipant = null;
-            }
-        }
-
         private void EnsurePlayerLocationParticipant()
         {
             if (!registerPlayerLocation || playerLocationParticipant != null)
@@ -4645,16 +4606,6 @@ namespace UnityIsekaiGame.Gameplay
                 statusEffectController.StatusChanged += OnStatusChanged;
                 statusEffectController.StatusRemoved += OnStatusChanged;
                 statusEffectController.StatusExpired += OnStatusChanged;
-            }
-
-            if (playerQuestLog != null)
-            {
-                playerQuestLog.QuestLogChanged += OnQuestContractChanged;
-            }
-
-            if (playerContractJournal != null)
-            {
-                playerContractJournal.JournalChanged += OnQuestContractChanged;
             }
 
             if (currentPlaceTracker != null)
@@ -4816,16 +4767,6 @@ namespace UnityIsekaiGame.Gameplay
                 playerKnowledge.KnowledgeChanged -= OnKnowledgeChanged;
             }
 
-            if (playerQuestLog != null)
-            {
-                playerQuestLog.QuestLogChanged -= OnQuestContractChanged;
-            }
-
-            if (playerContractJournal != null)
-            {
-                playerContractJournal.JournalChanged -= OnQuestContractChanged;
-            }
-
             if (currentPlaceTracker != null)
             {
                 currentPlaceTracker.CurrentPlaceChanged -= OnPlaceChanged;
@@ -4837,13 +4778,6 @@ namespace UnityIsekaiGame.Gameplay
         private void OnMeaningfulRuntimeStateChanged()
         {
             dirtyTracker?.MarkDirty("Player state changed.");
-        }
-
-        private void OnQuestContractChanged()
-        {
-            dirtyTracker?.MarkDirty("Quest or contract state changed.");
-            autosaveCoordinator?.RequestAutosave("Progression");
-            knowledgeHistoryEventBridge?.RecordQuestState(playerQuestLog?.Quests.Select(quest => quest?.Definition?.QuestId));
         }
 
         private void OnVitalsChanged(int current, int maximum)
@@ -5214,13 +5148,6 @@ namespace UnityIsekaiGame.Gameplay
             definitionRegistry = PrototypeSocialInfluenceDefinitionFactory.AddMissingPrototypeSocialInfluenceDefinitions(definitionRegistry);
             definitionRegistry = PrototypeSocialEmotionDefinitionFactory.AddMissingPrototypeSocialEmotionDefinitions(definitionRegistry);
             definitionRegistry = PrototypeFamilyRelationshipDefinitionFactory.AddMissingPrototypeFamilyRelationshipDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeQuestDefinitionFactory.AddMissingPrototypeQuestDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeQuestSourceDefinitionFactory.AddMissingPrototypeQuestSourceDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeConversationDefinitionFactory.AddMissingPrototypeConversationDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeDialogueGraphDefinitionFactory.AddMissingPrototypeDialogueGraphDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeNarrativeEventDefinitionFactory.AddMissingPrototypeNarrativeEventDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeNarrativeStateDefinitionFactory.AddMissingPrototypeNarrativeStateDefinitions(definitionRegistry);
-            definitionRegistry = PrototypeNarrativeArcDefinitionFactory.AddMissingPrototypeNarrativeArcDefinitions(definitionRegistry);
             return definitionRegistry;
         }
 

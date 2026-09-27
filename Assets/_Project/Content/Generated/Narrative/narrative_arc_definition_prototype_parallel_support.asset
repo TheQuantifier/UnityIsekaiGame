@@ -1,0 +1,130 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5dfa1bc4cf9f7f41ac27153f2352465, type: 3}
+  m_Name: narrative_arc_definition_prototype_parallel_support
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Narrative.NarrativeArcDefinition
+  data:
+    arcDefinitionId: narrative-arc-definition.prototype.parallel-support
+    displayName: Prototype Parallel Support Arc
+    scope: 2
+    visibility: 2
+    repeatable: 0
+    cascadeDepthLimit: 16
+    tagIds:
+    - merge
+    - parallel
+    - prototype
+    stages:
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.parallel-support.a
+      displayName: Parallel support A
+      order: 10
+      initial: 1
+      terminalOnCompletion: 0
+      hidden: 0
+      entryDependencies: []
+      completionDependencies:
+      - dependencyDefinitionId: dependency.parallel-a
+        kind: 14
+        requiredId: signal.parallel.a
+        secondaryId: 
+        requiredValue: 
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions: []
+      completionActions: []
+      questBindings: []
+      tagIds: []
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.parallel-support.b
+      displayName: Parallel support B
+      order: 20
+      initial: 1
+      terminalOnCompletion: 0
+      hidden: 0
+      entryDependencies: []
+      completionDependencies:
+      - dependencyDefinitionId: dependency.parallel-b
+        kind: 14
+        requiredId: signal.parallel.b
+        secondaryId: 
+        requiredValue: 
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions: []
+      completionActions: []
+      questBindings: []
+      tagIds: []
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.parallel-support.c
+      displayName: Parallel support C
+      order: 30
+      initial: 1
+      terminalOnCompletion: 0
+      hidden: 0
+      entryDependencies: []
+      completionDependencies:
+      - dependencyDefinitionId: dependency.parallel-c
+        kind: 14
+        requiredId: signal.parallel.c
+        secondaryId: 
+        requiredValue: 
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions: []
+      completionActions: []
+      questBindings: []
+      tagIds: []
+    - stageDefinitionId: narrative-arc-stage-definition.prototype.parallel-support.join
+      displayName: Parallel join
+      order: 40
+      initial: 0
+      terminalOnCompletion: 1
+      hidden: 0
+      entryDependencies:
+      - dependencyDefinitionId: dependency.parallel-two-of-three
+        kind: 6
+        requiredId: 
+        secondaryId: 
+        requiredValue: 
+        stageDefinitionIds:
+        - narrative-arc-stage-definition.prototype.parallel-support.a
+        - narrative-arc-stage-definition.prototype.parallel-support.b
+        - narrative-arc-stage-definition.prototype.parallel-support.c
+        minimumCount: 2
+        hidden: 0
+        optional: 0
+      completionDependencies:
+      - dependencyDefinitionId: dependency.parallel-join
+        kind: 14
+        requiredId: signal.parallel.join
+        secondaryId: 
+        requiredValue: 
+        stageDefinitionIds: []
+        minimumCount: 1
+        hidden: 0
+        optional: 0
+      skipDependencies: []
+      failureDependencies: []
+      entryActions: []
+      completionActions: []
+      questBindings: []
+      tagIds: []

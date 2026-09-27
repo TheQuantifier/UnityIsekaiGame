@@ -7,6 +7,7 @@ using UnityIsekaiGame.ResourceSystem;
 using UnityIsekaiGame.Stats;
 using UnityIsekaiGame.Traits;
 using UnityIsekaiGame.WorldEntities;
+using UnityIsekaiGame.Parties;
 
 namespace UnityIsekaiGame.Combat
 {
@@ -38,6 +39,11 @@ namespace UnityIsekaiGame.Combat
 
         private DamageApplicationResult EvaluateDamage(DamageApplicationRequest request, bool execute)
         {
+            if (!PartyCombatContext.CanDamage(request.SourceObject, request.SourceActorId, request.TargetObject, request.TargetActorId))
+            {
+                return DamageApplicationResult.Failure(request, ImmediateCombatResultCode.Prevented, "Friendly fire is disabled for this party.");
+            }
+
             if (!request.DamagePacket.HasComponents || !IsFinite(request.RequestedAmount) || request.RequestedAmount < 0f)
             {
                 return DamageApplicationResult.Failure(request, ImmediateCombatResultCode.InvalidRequest, "Damage packet must contain finite, non-negative typed components.");

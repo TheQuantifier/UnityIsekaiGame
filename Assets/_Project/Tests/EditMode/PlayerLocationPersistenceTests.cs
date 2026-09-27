@@ -252,7 +252,7 @@ namespace UnityIsekaiGame.Tests
             SetField(reporter, "targetPlace", place);
 
             GameObject player = CreateGameObject("Player");
-            player.AddComponent(RequiredType("UnityIsekaiGame.Quests.PlayerQuestLog"));
+            player.AddComponent(RequiredType("UnityIsekaiGame.Input.PlayerInputReader"));
             Collider collider = player.AddComponent<BoxCollider>();
 
             int reached = 0;

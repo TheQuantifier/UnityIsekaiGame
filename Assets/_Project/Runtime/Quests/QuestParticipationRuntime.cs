@@ -68,7 +68,7 @@ namespace UnityIsekaiGame.Quests
                 state = QuestAvailabilityState.Historical;
                 reasons.Add("quest.historical");
             }
-            else if (quest.LifecycleState == QuestRuntimeLifecycleState.Invalid || quest.LifecycleState == QuestRuntimeLifecycleState.Unknown || quest.LifecycleState == QuestRuntimeLifecycleState.DraftPlaceholder)
+            else if (quest.LifecycleState == QuestRuntimeLifecycleState.Invalid || quest.LifecycleState == QuestRuntimeLifecycleState.Unknown || quest.LifecycleState == QuestRuntimeLifecycleState.Draft)
             {
                 state = QuestAvailabilityState.Invalid;
                 reasons.Add("quest.invalid-lifecycle");
@@ -122,6 +122,11 @@ namespace UnityIsekaiGame.Quests
             if (TryResolveQuest(questId, out QuestSnapshot quest, out QuestDefinition definition, out _))
             {
                 EvaluateRecipient(quest, context, visible, ref hidden);
+                int undertakingSize = definition.RequireReadyPartyAtAcceptance ? context.ReadyPartySize : context.PartySize;
+                if (undertakingSize < definition.RequiredPartySize)
+                {
+                    visible.Add($"Requires at least {definition.RequiredPartySize} ready party member{(definition.RequiredPartySize == 1 ? string.Empty : "s")} (current: {undertakingSize}).");
+                }
                 foreach (QuestEligibilityRequirementGroupData group in definition.EligibilityRequirementGroups)
                 {
                     EvaluateGroup(group, context, visible, ref hidden);
@@ -220,7 +225,7 @@ namespace UnityIsekaiGame.Quests
             QuestOfferRecordData changedOffer = offer.Clone();
             changedOffer.lifecycleState = QuestOfferLifecycleState.Accepted;
             changedOffer.revision++;
-            QuestAssignmentRecordData assignment = CreateAssignmentRecord(request.assignmentId, quest, changedOffer, personId, changedOffer.offeringProvider, QuestAssignmentCategory.AcceptedOffer, request.explicitConsent ? request.consentRecordId : string.Empty, request.authorityBasisId, request.worldTime, changedOffer.visibility);
+            QuestAssignmentRecordData assignment = CreateAssignmentRecord(request.assignmentId, quest, definition, changedOffer, personId, changedOffer.offeringProvider, QuestAssignmentCategory.AcceptedOffer, request.explicitConsent ? request.consentRecordId : string.Empty, request.authorityBasisId, request.worldTime, changedOffer.visibility, context);
             if (assignmentsById.ContainsKey(assignment.assignmentId)) return Fail(QuestParticipationOperationStatus.DuplicateAssignment, $"Quest assignment '{assignment.assignmentId}' already exists.", eligibility: eligibility, availability: eligibility.Availability);
             if (request.preview) return Success("Quest offer acceptance previewed.", offer: changedOffer, assignment: assignment, eligibility: eligibility, availability: eligibility.Availability, preview: true);
 
@@ -254,7 +259,7 @@ namespace UnityIsekaiGame.Quests
             if (HasActiveAssignmentForPerson(quest.QuestId, request.assigneePersonId)) return Fail(QuestParticipationOperationStatus.DuplicateAssignment, "Person already has an active assignment for this quest.", eligibility: eligibility, availability: eligibility.Availability);
             if (!HasCapacity(definition, quest.QuestId, out QuestParticipationOperationStatus capacityStatus, out string capacityFailure)) return Fail(capacityStatus, capacityFailure, eligibility: eligibility, availability: eligibility.Availability);
 
-            QuestAssignmentRecordData assignment = CreateAssignmentRecord(request.assignmentId, quest, null, request.assigneePersonId, request.assignedBy, QuestAssignmentCategory.DirectInstitutional, request.explicitConsent ? request.consentRecordId : string.Empty, request.authorityBasisId, request.worldTime, request.visibility ?? quest.Visibility);
+            QuestAssignmentRecordData assignment = CreateAssignmentRecord(request.assignmentId, quest, definition, null, request.assigneePersonId, request.assignedBy, QuestAssignmentCategory.DirectInstitutional, request.explicitConsent ? request.consentRecordId : string.Empty, request.authorityBasisId, request.worldTime, request.visibility ?? quest.Visibility, context);
             assignment.institutionalIssuer = request.institutionalIssuer?.Clone() ?? quest.Issuer;
             if (assignmentsById.ContainsKey(assignment.assignmentId)) return Fail(QuestParticipationOperationStatus.DuplicateAssignment, $"Quest assignment '{assignment.assignmentId}' already exists.", eligibility: eligibility, availability: eligibility.Availability);
             if (request.preview) return Success("Quest direct assignment previewed.", assignment: assignment, eligibility: eligibility, availability: eligibility.Availability, preview: true);
@@ -327,6 +332,7 @@ namespace UnityIsekaiGame.Quests
             if (!string.IsNullOrWhiteSpace(actual.assignmentId)) records = records.Where(record => string.Equals(record.assignmentId, actual.assignmentId, StringComparison.Ordinal));
             if (!string.IsNullOrWhiteSpace(actual.questId)) records = records.Where(record => string.Equals(record.questId, actual.questId, StringComparison.Ordinal));
             if (!string.IsNullOrWhiteSpace(actual.assigneePersonId)) records = records.Where(record => string.Equals(record.assigneePersonId, actual.assigneePersonId, StringComparison.Ordinal));
+            if (!string.IsNullOrWhiteSpace(actual.participantPersonId)) records = records.Where(record => QuestAssignmentRecordData.CleanParticipants(record.participantPersonIds, record.assigneePersonId).Contains(actual.participantPersonId, StringComparer.Ordinal));
             if (!string.IsNullOrWhiteSpace(actual.issuerId)) records = records.Where(record => string.Equals(record.institutionalIssuer?.issuerId, actual.issuerId, StringComparison.Ordinal));
             if (actual.lifecycleState.HasValue) records = records.Where(record => record.lifecycleState == actual.lifecycleState.Value);
             records = records.Where(record => CanSee(record.visibility, actual.access, actual.requesterPersonId, record.assigneePersonId));
@@ -525,6 +531,8 @@ namespace UnityIsekaiGame.Quests
                 QuestRecipientScope.Profession => context.facts.Contains(QuestEligibilityRequirementKind.Profession, id),
                 QuestRecipientScope.FactionMembers => context.facts.Contains(QuestEligibilityRequirementKind.FactionAffiliation, id),
                 QuestRecipientScope.Citizens => context.facts.Contains(QuestEligibilityRequirementKind.Citizenship, id),
+                QuestRecipientScope.Party => context.PartySize > 1 && (string.IsNullOrWhiteSpace(id) || string.Equals(id, N(context.partyId), StringComparison.Ordinal)),
+                QuestRecipientScope.MultiplePersons => context.PartySize > 1,
                 QuestRecipientScope.Custom => context.facts.Contains(QuestEligibilityRequirementKind.Custom, id),
                 _ => false
             };
@@ -690,7 +698,7 @@ namespace UnityIsekaiGame.Quests
             return offersById.Values.Any(offer => string.Equals(offer.questId, N(questId), StringComparison.Ordinal) && offer.lifecycleState == QuestOfferLifecycleState.Active && string.Equals(offer.recipient?.StableKey, stable, StringComparison.Ordinal));
         }
 
-        private QuestAssignmentRecordData CreateAssignmentRecord(string assignmentId, QuestSnapshot quest, QuestOfferRecordData offer, string personId, QuestIssuerReferenceData assignedBy, QuestAssignmentCategory category, string consentRecordId, string authorityBasisId, double worldTime, QuestVisibility visibility)
+        private QuestAssignmentRecordData CreateAssignmentRecord(string assignmentId, QuestSnapshot quest, QuestDefinition definition, QuestOfferRecordData offer, string personId, QuestIssuerReferenceData assignedBy, QuestAssignmentCategory category, string consentRecordId, string authorityBasisId, double worldTime, QuestVisibility visibility, QuestEligibilityContext context)
         {
             string id = string.IsNullOrWhiteSpace(assignmentId) ? BuildAssignmentId(quest.QuestId, personId, assignmentsById.Count + 1) : N(assignmentId);
             return new QuestAssignmentRecordData
@@ -700,6 +708,9 @@ namespace UnityIsekaiGame.Quests
                 offerId = offer?.offerId ?? string.Empty,
                 worldId = worldId,
                 assigneePersonId = N(personId),
+                undertakingPartyId = N(context?.partyId),
+                participantPersonIds = QuestAssignmentRecordData.CleanParticipants(definition.RequireReadyPartyAtAcceptance ? context?.readyPartyMemberPersonIds : context?.partyMemberPersonIds, personId),
+                requiredPartySizeAtAcceptance = definition?.RequiredPartySize ?? 1,
                 institutionalIssuer = offer?.institutionalIssuer?.Clone() ?? quest.Issuer,
                 assignedBy = assignedBy?.Clone() ?? quest.Issuer,
                 lifecycleState = QuestAssignmentLifecycleState.Active,
@@ -788,6 +799,9 @@ namespace UnityIsekaiGame.Quests
             else if (registry != null && !registry.TryGet(quest.QuestDefinitionId, out QuestDefinition _)) errors.Add($"Quest assignment '{assignment.assignmentId}' references quest with missing definition '{quest.QuestDefinitionId}'.");
             if (!string.IsNullOrWhiteSpace(assignment.offerId) && !offerIds.Contains(assignment.offerId)) errors.Add($"Quest assignment '{assignment.assignmentId}' references missing offer '{assignment.offerId}'.");
             if (string.IsNullOrWhiteSpace(assignment.assigneePersonId)) errors.Add($"Quest assignment '{assignment.assignmentId}' is missing assignee Person ID.");
+            string[] participants = QuestAssignmentRecordData.CleanParticipants(assignment.participantPersonIds, assignment.assigneePersonId);
+            if (!string.IsNullOrWhiteSpace(assignment.assigneePersonId) && !participants.Contains(assignment.assigneePersonId, StringComparer.Ordinal)) errors.Add($"Quest assignment '{assignment.assignmentId}' participant snapshot does not contain its assignee.");
+            if (assignment.requiredPartySizeAtAcceptance > 0 && participants.Length < assignment.requiredPartySizeAtAcceptance) errors.Add($"Quest assignment '{assignment.assignmentId}' has {participants.Length} participant(s), below its accepted requirement of {assignment.requiredPartySizeAtAcceptance}.");
             if (string.IsNullOrWhiteSpace(assignment.worldId)) errors.Add($"Quest assignment '{assignment.assignmentId}' is missing world ID.");
             if (assignment.lifecycleState == QuestAssignmentLifecycleState.Unknown) errors.Add($"Quest assignment '{assignment.assignmentId}' has unknown lifecycle state.");
         }
@@ -816,7 +830,7 @@ namespace UnityIsekaiGame.Quests
                 QuestSourceChannel.Government => QuestOfferChannel.GovernmentDesk,
                 QuestSourceChannel.Organization => QuestOfferChannel.GuildCounter,
                 QuestSourceChannel.Dialogue => QuestOfferChannel.DirectPerson,
-                QuestSourceChannel.WorldEvent => QuestOfferChannel.NarrativeEventPlaceholder,
+                QuestSourceChannel.WorldEvent => QuestOfferChannel.NarrativeEvent,
                 QuestSourceChannel.Discovery => QuestOfferChannel.TravelEncounter,
                 QuestSourceChannel.System => QuestOfferChannel.SystemGenerated,
                 _ => QuestOfferChannel.DirectInstitution

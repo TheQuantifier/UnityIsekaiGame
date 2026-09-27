@@ -2,7 +2,6 @@
 using UnityIsekaiGame.CharacterSystem;
 using UnityEngine;
 using UnityIsekaiGame.Equipment;
-using UnityIsekaiGame.Contracts;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Magic;
@@ -15,7 +14,6 @@ using UnityIsekaiGame.Skills;
 using UnityIsekaiGame.Stats;
 using UnityIsekaiGame.StatusEffects;
 using UnityIsekaiGame.Traits;
-using UnityIsekaiGame.UI.Contracts;
 using UnityIsekaiGame.UI.Quests;
 
 namespace UnityIsekaiGame.UI.Inventory
@@ -26,8 +24,6 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private PlayerEquipment equipment;
         [SerializeField] private PlayerSpellLoadout spellLoadout;
-        [SerializeField] private PlayerContractJournal contractJournal;
-        [SerializeField] private PlayerQuestLog questLog;
         [SerializeField] private PlayerStats playerStats;
         [SerializeField] private PlayerHealth playerHealth;
         [SerializeField] private PlayerStamina playerStamina;
@@ -39,7 +35,6 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private CharacterSystemCoordinator characterSystem;
         [SerializeField] private InventoryScreenView view;
         [SerializeField] private SpellManagementView spellManagementView;
-        [SerializeField] private ContractJournalView contractJournalView;
         [SerializeField] private QuestJournalView questJournalView;
         [SerializeField] private GameObject itemUser;
         [Header("Save/Load")]
@@ -47,14 +42,11 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private PrototypePersistenceServiceBehaviour saveLoadPersistence;
         [SerializeField, Min(1)] private int columns = 4;
 
-        private CursorLockMode previousLockState;
-        private bool previousCursorVisible;
         private bool isOpen;
         private int selectedSlotIndex;
         private int hoveredSlotIndex = -1;
         private EquipmentSlotType selectedEquipmentSlot;
         private int selectedKnownSpellIndex;
-        private int selectedContractIndex;
         private int selectedQuestIndex;
         private bool refreshing;
 
@@ -68,16 +60,6 @@ namespace UnityIsekaiGame.UI.Inventory
             if (spellLoadout == null && inventory != null)
             {
                 spellLoadout = inventory.GetComponent<PlayerSpellLoadout>();
-            }
-
-            if (contractJournal == null && inventory != null)
-            {
-                contractJournal = inventory.GetComponent<PlayerContractJournal>();
-            }
-
-            if (questLog == null && inventory != null)
-            {
-                questLog = inventory.GetComponent<PlayerQuestLog>();
             }
 
             if (itemUser == null && inventory != null)
@@ -95,11 +77,6 @@ namespace UnityIsekaiGame.UI.Inventory
             if (spellManagementView != null)
             {
                 spellManagementView.Initialize(SelectKnownSpell, AssignSelectedSpellToSlot, ClearSpellSlot);
-            }
-
-            if (contractJournalView != null)
-            {
-                contractJournalView.Initialize(SelectContract, AbandonSelectedContract, ClaimSelectedContractReward);
             }
 
             if (questJournalView != null)
@@ -131,15 +108,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 spellLoadout.ActiveSlotChanged += OnActiveSpellSlotChanged;
             }
 
-            if (contractJournal != null)
-            {
-                contractJournal.JournalChanged += RefreshIfOpen;
-            }
-
-            if (questLog != null)
-            {
-                questLog.QuestLogChanged += RefreshIfOpen;
-            }
+            if (ResolveNarrativeCoordinator() != null) ResolveNarrativeCoordinator().Changed += RefreshIfOpen;
 
             SubscribeCharacterSources();
         }
@@ -202,15 +171,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 spellLoadout.ActiveSlotChanged -= OnActiveSpellSlotChanged;
             }
 
-            if (contractJournal != null)
-            {
-                contractJournal.JournalChanged -= RefreshIfOpen;
-            }
-
-            if (questLog != null)
-            {
-                questLog.QuestLogChanged -= RefreshIfOpen;
-            }
+            if (ResolveNarrativeCoordinator() != null) ResolveNarrativeCoordinator().Changed -= RefreshIfOpen;
 
             UnsubscribeCharacterSources();
 
@@ -248,13 +209,11 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (input != null)
             {
-                input.SetGameplayInputBlocked(true);
+                input.SetMenuInputBlocked(this, true);
                 input.ClearGameplayActionQueues();
                 input.ClearInventoryUiActions();
             }
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            else PlayerCursorMode.SetMenuOpen(this, true);
             view?.Show();
         }
 
@@ -267,13 +226,11 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (input != null)
             {
-                input.SetGameplayInputBlocked(true);
+                input.SetMenuInputBlocked(this, true);
                 input.ClearGameplayActionQueues();
                 input.ClearInventoryUiActions();
             }
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            else PlayerCursorMode.SetMenuOpen(this, true);
             Refresh();
             view?.Show();
         }
@@ -285,20 +242,16 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
-            previousLockState = Cursor.lockState;
-            previousCursorVisible = Cursor.visible;
             isOpen = true;
             saveLoadPersistence?.PlayTime?.SetMenuOpen(true);
 
             if (input != null)
             {
-                input.SetGameplayInputBlocked(true);
+                input.SetMenuInputBlocked(this, true);
                 input.ClearCancel();
                 input.ClearInventoryUiActions();
             }
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            else PlayerCursorMode.SetMenuOpen(this, true);
             Refresh();
 
             if (view != null)
@@ -313,18 +266,13 @@ namespace UnityIsekaiGame.UI.Inventory
             {
                 input.ClearGameplayActionQueues();
                 input.ClearInventoryUiActions();
-                input.SetGameplayInputBlocked(false);
+                input.SetMenuInputBlocked(this, false);
             }
+            else PlayerCursorMode.SetMenuOpen(this, false);
 
             if (view != null)
             {
                 view.Hide();
-            }
-
-            if (restoreCursor)
-            {
-                Cursor.lockState = previousLockState;
-                Cursor.visible = previousCursorVisible;
             }
 
             isOpen = false;
@@ -360,16 +308,11 @@ namespace UnityIsekaiGame.UI.Inventory
                     spellManagementView.Render(spellLoadout, selectedKnownSpellIndex);
                 }
 
-                if (contractJournalView != null)
-                {
-                    ClampContractSelection();
-                    contractJournalView.Render(contractJournal == null ? null : contractJournal.Contracts, selectedContractIndex);
-                }
-
                 if (questJournalView != null)
                 {
+                    System.Collections.Generic.IReadOnlyList<PrototypeQuestJournalEntry> journal = ResolveNarrativeCoordinator()?.GetJournal();
                     ClampQuestSelection();
-                    questJournalView.Render(questLog == null ? null : questLog.Quests, selectedQuestIndex);
+                    questJournalView.Render(journal, selectedQuestIndex);
                 }
 
                 view?.RefreshSaveLoad();
@@ -400,8 +343,6 @@ namespace UnityIsekaiGame.UI.Inventory
         public StatusEffectController StatusEffects => statusEffects;
         public PlayerIdentityProgression IdentityProgression => identityProgression;
         public PlayerSpellLoadout SpellLoadout => spellLoadout;
-        public PlayerQuestLog QuestLog => questLog;
-        public PlayerContractJournal ContractJournal => contractJournal;
         public GameObject ItemUser => itemUser;
         public DefinitionCatalog RuntimeDefinitionCatalog => ResolveSaveLoadCatalog();
         public CharacterSkillCollection RuntimeSkills => ResolveCharacterSkills();
@@ -519,14 +460,14 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void RenderHoveredSlotDetails()
         {
-            if (view == null || inventory == null || hoveredSlotIndex < 0)
+            if (view == null || inventory == null)
             {
-                view?.RenderSelectedItemDetails(null);
                 return;
             }
 
-            InventorySlot hoveredSlot = inventory.GetSlot(hoveredSlotIndex);
-            view.RenderSelectedItemDetails(hoveredSlot, includeDescription: true);
+            int inspectedSlotIndex = hoveredSlotIndex >= 0 ? hoveredSlotIndex : selectedSlotIndex;
+            InventorySlot inspectedSlot = inventory.GetSlot(inspectedSlotIndex);
+            view.RenderSelectedItemDetails(inspectedSlot, includeDescription: true);
         }
 
         private void MoveSelection(Vector2 direction)
@@ -634,49 +575,6 @@ namespace UnityIsekaiGame.UI.Inventory
             RefreshIfOpen();
         }
 
-        private void SelectContract(int contractIndex)
-        {
-            selectedContractIndex = Mathf.Max(0, contractIndex);
-            contractJournalView?.SetFeedback(string.Empty);
-            Refresh();
-        }
-
-        private void AbandonSelectedContract()
-        {
-            ContractInstance contract = GetSelectedContract();
-            ContractOperationResult result = contractJournal == null
-                ? ContractOperationResult.Failure("No contract journal found.")
-                : contractJournal.AbandonContract(contract);
-            contractJournalView?.SetFeedback(result.Message);
-            Refresh();
-        }
-
-        private void ClaimSelectedContractReward()
-        {
-            ContractInstance contract = GetSelectedContract();
-            ContractOperationResult result = contractJournal == null
-                ? ContractOperationResult.Failure("No contract journal found.")
-                : contractJournal.ClaimReward(contract);
-            contractJournalView?.SetFeedback(result.Message);
-            Refresh();
-        }
-
-        private void ClampContractSelection()
-        {
-            int contractCount = contractJournal == null || contractJournal.Contracts == null ? 0 : contractJournal.Contracts.Count;
-            selectedContractIndex = contractCount <= 0 ? 0 : Mathf.Clamp(selectedContractIndex, 0, contractCount - 1);
-        }
-
-        private ContractInstance GetSelectedContract()
-        {
-            if (contractJournal == null || selectedContractIndex < 0 || selectedContractIndex >= contractJournal.Contracts.Count)
-            {
-                return null;
-            }
-
-            return contractJournal.Contracts[selectedContractIndex];
-        }
-
         private void SelectQuest(int questIndex)
         {
             selectedQuestIndex = Mathf.Max(0, questIndex);
@@ -686,38 +584,40 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void AbandonSelectedQuest()
         {
-            QuestInstance quest = GetSelectedQuest();
-            QuestOperationResult result = questLog == null
-                ? QuestOperationResult.Failure("No quest log found.")
-                : questLog.AbandonQuest(quest);
-            questJournalView?.SetFeedback(result.Message);
+            PrototypeQuestJournalEntry quest = GetSelectedQuest();
+            QuestParticipationOperationResult result = quest == null || ResolveNarrativeCoordinator() == null
+                ? QuestParticipationOperationResult.Failure(QuestParticipationOperationStatus.InvalidRequest, "No quest assignment is selected.", 0L)
+                : ResolveNarrativeCoordinator().AbandonAssignment(quest.AssignmentId);
+            questJournalView?.SetFeedback(result?.Message ?? "Quest could not be abandoned.");
             Refresh();
         }
 
         private void ClaimSelectedQuestReward()
         {
-            QuestInstance quest = GetSelectedQuest();
-            QuestOperationResult result = questLog == null
-                ? QuestOperationResult.Failure("No quest log found.")
-                : questLog.ClaimReward(quest);
-            questJournalView?.SetFeedback(result.Message);
+            PrototypeQuestJournalEntry quest = GetSelectedQuest();
+            QuestOutcomeOperationResult result = quest?.ClaimableReward == null || ResolveNarrativeCoordinator() == null
+                ? QuestOutcomeOperationResult.Failure(QuestOutcomeOperationStatus.InvalidRequest, "No claimable quest reward is selected.", 0L)
+                : ResolveNarrativeCoordinator().ClaimReward(quest.ClaimableReward.EntitlementId);
+            questJournalView?.SetFeedback(result?.Message ?? "Reward could not be claimed.");
             Refresh();
         }
 
         private void ClampQuestSelection()
         {
-            int questCount = questLog == null || questLog.Quests == null ? 0 : questLog.Quests.Count;
+            int questCount = ResolveNarrativeCoordinator()?.GetJournal()?.Count ?? 0;
             selectedQuestIndex = questCount <= 0 ? 0 : Mathf.Clamp(selectedQuestIndex, 0, questCount - 1);
         }
 
-        private QuestInstance GetSelectedQuest()
+        private PrototypeQuestJournalEntry GetSelectedQuest()
         {
-            if (questLog == null || selectedQuestIndex < 0 || selectedQuestIndex >= questLog.Quests.Count)
-            {
-                return null;
-            }
+            System.Collections.Generic.IReadOnlyList<PrototypeQuestJournalEntry> quests = ResolveNarrativeCoordinator()?.GetJournal();
+            return quests == null || selectedQuestIndex < 0 || selectedQuestIndex >= quests.Count ? null : quests[selectedQuestIndex];
+        }
 
-            return questLog.Quests[selectedQuestIndex];
+        private PrototypeNarrativeCoordinator ResolveNarrativeCoordinator()
+        {
+            if (saveLoadPersistence == null) saveLoadPersistence = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            return saveLoadPersistence?.NarrativeCoordinator;
         }
 
         private void ResolveCharacterSources()
@@ -1071,9 +971,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 playerMana,
                 playerStamina,
                 statusEffects,
-                identityProgression,
-                questLog,
-                contractJournal);
+                identityProgression);
 
             if (activateCreatedPersistence)
             {
