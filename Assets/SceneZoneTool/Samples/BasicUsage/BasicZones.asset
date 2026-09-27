@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-8432011726847330655
+--- !u!114 &-233908123306310268
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
-  m_Name: Prototype Town Boundary
+  m_Name: Plaza
   m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
-  zoneId: zone.prototype-town
-  displayName: Prototype Town Boundary
+  zoneId: zone.sample.plaza
+  displayName: Plaza
   notes: 
   layer: {fileID: 11400000}
   shape: 1
@@ -22,17 +22,12 @@ MonoBehaviour:
   circleCenter: {x: 0, y: 0}
   circleRadius: 25
   polygonPoints:
-  - {x: 22.41, y: 385.103}
-  - {x: 85.882, y: 221.363}
-  - {x: 174.19, y: 137.654}
-  - {x: 211.906, y: 32.787}
-  - {x: 130.036, y: -132.792}
-  - {x: -211.11, y: -3.927}
-  - {x: -123.852, y: 136.734}
-  - {x: -173.526, y: 324.39}
-  - {x: -109.134, y: 399.821}
+  - {x: -8, y: -6}
+  - {x: 8, y: -6}
+  - {x: 8, y: 6}
+  - {x: -8, y: 6}
   lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
-  fillColor: {r: 0.3922867, g: 0.95, b: 0.304, a: 0.16}
+  fillColor: {r: 0.95, g: 0.304, b: 0.4278167, a: 0.16}
   lineWidth: 0.2
   dataVersion: 1
 --- !u!114 &11400000
@@ -45,19 +40,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: adb7ae8f1af42f04d8b3c8c1c0e582fa, type: 3}
-  m_Name: SettlementBoundaries
+  m_Name: BasicZones
   m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneLayerAsset
-  layerId: zone-layer.settlements
-  displayName: Settlement Boundaries
-  sceneGuid: e05b77e4d2cc25845adb762e95d51873
-  scenePath: Assets/_Project/Scenes/Prototype/PrototypeScene.unity
-  sceneName: PrototypeScene
-  outlineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
+  layerId: zone-layer.basic-sample
+  displayName: Basic Sample Zones
+  sceneGuid: 3f87a01fe1c6ab94fa6a58330056e955
+  scenePath: Assets/SceneZoneTool/Samples/BasicUsage/BasicZoneDemo.unity
+  sceneName: BasicZoneDemo
+  outlineColor: {r: 1, g: 0.7, b: 0.15, a: 0.8}
   preventOverlap: 1
   zones:
-  - {fileID: -8432011726847330655}
-  - {fileID: 4982223283170669721}
---- !u!114 &4982223283170669721
+  - {fileID: -233908123306310268}
+  - {fileID: 8235933930787426868}
+--- !u!114 &8235933930787426868
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -67,19 +62,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
-  m_Name: Mount Vissy
+  m_Name: Grove
   m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
-  zoneId: zone.settlements.zone-1
-  displayName: Mount Vissy
+  zoneId: zone.sample.grove
+  displayName: Grove
   notes: 
   layer: {fileID: 11400000}
   shape: 0
-  hasCenterPoint: 1
-  centerPoint: {x: 192.068, y: 359.099}
-  circleCenter: {x: 192.068, y: 359.099}
-  circleRadius: 148.416
+  hasCenterPoint: 0
+  centerPoint: {x: 0, y: 0}
+  circleCenter: {x: 18, y: 0}
+  circleRadius: 6
   polygonPoints: []
   lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
-  fillColor: {r: 0.378, g: 0.9, b: 0.8829582, a: 0.16}
+  fillColor: {r: 0.95, g: 0.304, b: 0.6313067, a: 0.16}
   lineWidth: 0.2
   dataVersion: 1

@@ -11,7 +11,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void ProjectOwnedAssetsLiveUnderProjectRoot()
         {
-            string[] allowed = { "_Project", "ThirdParty", "StreamingAssets" };
+            string[] allowed = { "_Project", "SceneZoneTool", "ThirdParty", "StreamingAssets" };
             HashSet<string> allowedNames = new HashSet<string>(allowed, StringComparer.Ordinal);
 
             foreach (string directory in Directory.GetDirectories("Assets"))

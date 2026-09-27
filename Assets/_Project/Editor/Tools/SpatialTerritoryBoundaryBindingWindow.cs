@@ -42,17 +42,17 @@ namespace UnityIsekaiGame.Editor
             {
                 if (GUILayout.Button("Create Place Boundary Binding")) CreateBinding();
             }
-            if (GUILayout.Button("Open Scene Zone Tools")) EditorApplication.ExecuteMenuItem("Tools/Scene Zone Tools");
+            if (GUILayout.Button("Open Scene Zone Tools")) EditorApplication.ExecuteMenuItem("Tools/Scene Zone Tools/Open Authoring Overlay");
         }
 
         private void CreateBinding()
         {
-            string defaultName = $"{place.Id}.{zoneBoundary.BoundaryId}".Replace('.', '_');
+            string defaultName = $"{place.Id}.{zoneBoundary.ZoneId}".Replace('.', '_');
             string path = EditorUtility.SaveFilePanelInProject("Create Spatial Territory Binding", defaultName, "asset", "Choose where to save the game-specific binding.", "Assets/_Project/Content/World/SpatialBoundaries");
             if (string.IsNullOrWhiteSpace(path)) return;
             SpatialTerritoryBoundaryDefinition binding = CreateInstance<SpatialTerritoryBoundaryDefinition>();
             string suffix = Sanitize(place.Id.Replace("place.", string.Empty, StringComparison.Ordinal));
-            binding.DevelopmentConfigure($"spatial-boundary.{suffix}.{Sanitize(zoneBoundary.BoundaryId)}", $"{place.DisplayName} Boundary", zoneBoundary, place, locationId, sceneKey, operation, priority, showInGame);
+            binding.DevelopmentConfigure($"spatial-boundary.{suffix}.{Sanitize(zoneBoundary.ZoneId)}", $"{place.DisplayName} Boundary", zoneBoundary, place, locationId, sceneKey, operation, priority, showInGame);
             AssetDatabase.CreateAsset(binding, path);
             AssetDatabase.SaveAssets();
             DefinitionCatalogBuilder.RebuildPrototypeCatalog();
@@ -155,7 +155,7 @@ namespace UnityIsekaiGame.Editor
             if (asset == null)
             {
                 SceneZoneAsset[] embedded = AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(layer)).OfType<SceneZoneAsset>().ToArray();
-                asset = embedded.FirstOrDefault(value => string.Equals(value.BoundaryId, id, StringComparison.Ordinal))
+                asset = embedded.FirstOrDefault(value => string.Equals(value.ZoneId, id, StringComparison.Ordinal))
                     ?? embedded.FirstOrDefault(value => string.Equals(value.DisplayName, displayName, StringComparison.Ordinal));
             }
             if (asset == null)

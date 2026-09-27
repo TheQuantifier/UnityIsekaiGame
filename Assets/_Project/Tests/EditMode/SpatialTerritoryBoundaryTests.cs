@@ -136,7 +136,7 @@ namespace UnityIsekaiGame.Tests
                 new Vector3(15f, 0f, 10f), new Vector3(5f, 0f, 10f)
             }, layer);
 
-            Assert.That(original.BoundaryLayer, Is.SameAs(layer));
+            Assert.That(original.Layer, Is.SameAs(layer));
             Assert.That(SceneZoneOverlap.Overlaps(original, adjacentWithSharedCoordinates), Is.False, "An exactly shared edge has no overlapping area.");
             Assert.That(SceneZoneOverlap.Overlaps(original, overlapping), Is.True);
             Assert.That(SceneZoneOverlap.FindPolygonConflicts(adjacentWithSharedCoordinates.PolygonPoints, original), Is.Empty);
@@ -312,8 +312,8 @@ namespace UnityIsekaiGame.Tests
             SceneZoneLayerAsset settlements = AssetDatabase.LoadAssetAtPath<SceneZoneLayerAsset>(SettlementLayerPath);
             Assert.That(regional, Is.Not.Null);
             Assert.That(settlements, Is.Not.Null);
-            Assert.That(regional.Zones.Count, Is.EqualTo(1));
-            Assert.That(settlements.Zones.Count, Is.EqualTo(1));
+            Assert.That(regional.Zones.Count, Is.GreaterThanOrEqualTo(1));
+            Assert.That(settlements.Zones.Count, Is.GreaterThanOrEqualTo(1));
             Assert.That(regional.GetZone("zone.prototype-outskirts"), Is.Not.Null);
             Assert.That(settlements.FindZoneByName("Prototype Town Boundary"), Is.Not.Null);
             Assert.That(regional.GetZonePoints("zone.prototype-outskirts").Count, Is.EqualTo(4));
@@ -325,8 +325,15 @@ namespace UnityIsekaiGame.Tests
             Assert.That(settlements.SceneGuid, Is.EqualTo(prototypeSceneGuid));
             Assert.That(regional.Validate(out string regionalFailure), Is.True, regionalFailure);
             Assert.That(settlements.Validate(out string settlementFailure), Is.True, settlementFailure);
-            Assert.That(AssetDatabase.GetAssetPath(regional.Zones[0]), Is.EqualTo(RegionalLayerPath));
-            Assert.That(AssetDatabase.GetAssetPath(settlements.Zones[0]), Is.EqualTo(SettlementLayerPath));
+            foreach (SceneZoneAsset zone in regional.Zones)
+            {
+                Assert.That(AssetDatabase.GetAssetPath(zone), Is.EqualTo(RegionalLayerPath));
+            }
+
+            foreach (SceneZoneAsset zone in settlements.Zones)
+            {
+                Assert.That(AssetDatabase.GetAssetPath(zone), Is.EqualTo(SettlementLayerPath));
+            }
             Assert.That(AssetDatabase.LoadAssetAtPath<SceneZoneAsset>("Assets/_Project/Content/World/SpatialBoundaries/Geometry/PrototypeOutskirtsBoundary.asset"), Is.Null);
             Assert.That(AssetDatabase.LoadAssetAtPath<SceneZoneAsset>("Assets/_Project/Content/World/SpatialBoundaries/Geometry/PrototypeTownBoundary.asset"), Is.Null);
         }

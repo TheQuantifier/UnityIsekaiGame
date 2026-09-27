@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
   m_Name: Prototype Outskirts Boundary
   m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
-  boundaryId: zone.prototype-outskirts
+  zoneId: zone.prototype-outskirts
   displayName: Prototype Outskirts Boundary
   notes: 
-  boundaryLayer: {fileID: 11400000}
+  layer: {fileID: 11400000}
   shape: 1
   hasCenterPoint: 0
   centerPoint: {x: 0, y: 0}
@@ -28,7 +28,7 @@ MonoBehaviour:
   - {x: -500, y: 500}
   lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
   lineWidth: 0.2
-  version: 1
+  dataVersion: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

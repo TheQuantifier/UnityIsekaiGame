@@ -13,6 +13,7 @@ namespace UnityIsekaiGame.Editor
         private static readonly string[] AllowedAssetsRoots =
         {
             "Assets/_Project",
+            "Assets/SceneZoneTool",
             "Assets/ThirdParty",
             "Assets/StreamingAssets"
         };

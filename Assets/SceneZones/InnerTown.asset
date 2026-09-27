@@ -1,0 +1,253 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-9078651726383228508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
+  m_Name: Zone 4
+  m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
+  zoneId: zone.innertown.zone-4
+  displayName: Zone 4
+  notes: 
+  layer: {fileID: 11400000}
+  shape: 1
+  hasCenterPoint: 0
+  centerPoint: {x: 0, y: 0}
+  circleCenter: {x: 0, y: 0}
+  circleRadius: 25
+  polygonPoints:
+  - {x: -54.503, y: 260.366}
+  - {x: -51.959, y: 372.333}
+  - {x: -104.641, y: 376.447}
+  - {x: -147.614, y: 347.969}
+  - {x: -140.892, y: 301.168}
+  - {x: -121.253, y: 272.185}
+  lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
+  fillColor: {r: 0.9, g: 0.378, b: 0.5685668, a: 0.16}
+  lineWidth: 0.2
+  dataVersion: 1
+--- !u!114 &-3871594764857598058
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
+  m_Name: Zone 7
+  m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
+  zoneId: zone.innertown.zone-7
+  displayName: Zone 7
+  notes: 
+  layer: {fileID: 11400000}
+  shape: 0
+  hasCenterPoint: 1
+  centerPoint: {x: -57.097, y: -148.043}
+  circleCenter: {x: -57.097, y: -148.043}
+  circleRadius: 99.828
+  polygonPoints: []
+  lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
+  fillColor: {r: 0.9, g: 0.378, b: 0.535565, a: 0.16}
+  lineWidth: 0.2
+  dataVersion: 1
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: adb7ae8f1af42f04d8b3c8c1c0e582fa, type: 3}
+  m_Name: InnerTown
+  m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneLayerAsset
+  layerId: zone-layer.innertown
+  displayName: InnerTown
+  sceneGuid: e05b77e4d2cc25845adb762e95d51873
+  scenePath: Assets/_Project/Scenes/Prototype/PrototypeScene.unity
+  sceneName: PrototypeScene
+  outlineColor: {r: 1, g: 0.7, b: 0.15, a: 0.8}
+  preventOverlap: 1
+  zones:
+  - {fileID: 3228203455707728870}
+  - {fileID: 7131393569835819959}
+  - {fileID: 7431122117950099844}
+  - {fileID: -9078651726383228508}
+  - {fileID: 8929274375013594991}
+  - {fileID: 6337040386641038051}
+  - {fileID: -3871594764857598058}
+--- !u!114 &3228203455707728870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
+  m_Name: Zone 1
+  m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
+  zoneId: zone.innertown.zone-1
+  displayName: Zone 1
+  notes: 
+  layer: {fileID: 11400000}
+  shape: 1
+  hasCenterPoint: 0
+  centerPoint: {x: 0, y: 0}
+  circleCenter: {x: 0, y: 0}
+  circleRadius: 25
+  polygonPoints:
+  - {x: -26.364, y: 66.105}
+  - {x: -15.106, y: -19.379}
+  - {x: 32.756, y: -59.841}
+  - {x: 133.991, y: -82.27}
+  - {x: 88.009, y: -38.536}
+  - {x: 62.433, y: 80.022}
+  lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
+  fillColor: {r: 0.8294318, g: 0.9, b: 0.378, a: 0.16}
+  lineWidth: 0.2
+  dataVersion: 1
+--- !u!114 &6337040386641038051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
+  m_Name: Zone 6
+  m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
+  zoneId: zone.innertown.zone-6
+  displayName: Zone 6
+  notes: 
+  layer: {fileID: 11400000}
+  shape: 1
+  hasCenterPoint: 0
+  centerPoint: {x: 0, y: 0}
+  circleCenter: {x: 0, y: 0}
+  circleRadius: 25
+  polygonPoints:
+  - {x: -15.106, y: -19.379}
+  - {x: -64.017, y: -48.324}
+  - {x: -104.381, y: -48.657}
+  - {x: -116.716, y: 29.058}
+  - {x: -77.255, y: 56.421}
+  - {x: -26.364, y: 66.105}
+  lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
+  fillColor: {r: 0.378, g: 0.49896353, b: 0.9, a: 0.16}
+  lineWidth: 0.2
+  dataVersion: 1
+--- !u!114 &7131393569835819959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
+  m_Name: Zone 2
+  m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
+  zoneId: zone.innertown.zone-2
+  displayName: Zone 2
+  notes: 
+  layer: {fileID: 11400000}
+  shape: 1
+  hasCenterPoint: 0
+  centerPoint: {x: 0, y: 0}
+  circleCenter: {x: 0, y: 0}
+  circleRadius: 25
+  polygonPoints:
+  - {x: 133.991, y: -82.27}
+  - {x: 88.009, y: -38.536}
+  - {x: 62.433, y: 80.022}
+  - {x: 151.141, y: 91.077}
+  - {x: 150.284, y: 15.402}
+  lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
+  fillColor: {r: 0.41106683, g: 0.378, b: 0.9, a: 0.16}
+  lineWidth: 0.2
+  dataVersion: 1
+--- !u!114 &7431122117950099844
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
+  m_Name: Zone 3
+  m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
+  zoneId: zone.innertown.zone-3
+  displayName: Zone 3
+  notes: 
+  layer: {fileID: 11400000}
+  shape: 1
+  hasCenterPoint: 0
+  centerPoint: {x: 0, y: 0}
+  circleCenter: {x: 0, y: 0}
+  circleRadius: 25
+  polygonPoints:
+  - {x: 151.141, y: 91.077}
+  - {x: 132.56, y: 126.161}
+  - {x: 42.203, y: 176.243}
+  - {x: 12.943, y: 212.181}
+  - {x: -0.303, y: 245.046}
+  - {x: -31.319, y: 261.002}
+  - {x: -54.503, y: 260.366}
+  - {x: -43.724, y: 200.03}
+  - {x: -28.298, y: 125.868}
+  - {x: -26.364, y: 66.105}
+  - {x: 62.433, y: 80.022}
+  lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
+  fillColor: {r: 0.60115457, g: 0.378, b: 0.9, a: 0.16}
+  lineWidth: 0.2
+  dataVersion: 1
+--- !u!114 &8929274375013594991
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fdbeb0bd8366a24bbc4402cbf717173, type: 3}
+  m_Name: Zone 5
+  m_EditorClassIdentifier: SceneZoneTool.Runtime::SceneZoneTool.SceneZoneAsset
+  zoneId: zone.innertown.zone-5
+  displayName: Zone 5
+  notes: 
+  layer: {fileID: 11400000}
+  shape: 1
+  hasCenterPoint: 0
+  centerPoint: {x: 0, y: 0}
+  circleCenter: {x: 0, y: 0}
+  circleRadius: 25
+  polygonPoints:
+  - {x: -43.724, y: 200.03}
+  - {x: -80.553, y: 193.836}
+  - {x: -97.5, y: 115.731}
+  - {x: -134.347, y: 66.71}
+  - {x: -116.716, y: 29.058}
+  - {x: -77.255, y: 56.421}
+  - {x: -26.364, y: 66.105}
+  - {x: -28.298, y: 125.868}
+  lineColor: {r: 0.2, g: 0.75, b: 1, a: 0.85}
+  fillColor: {r: 0.378, g: 0.9, b: 0.38079175, a: 0.16}
+  lineWidth: 0.2
+  dataVersion: 1
