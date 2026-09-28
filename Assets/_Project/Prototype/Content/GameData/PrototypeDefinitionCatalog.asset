@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PrototypeDefinitionCatalog
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.GameData.DefinitionCatalog
   catalogId: catalog.prototype
-  contentVersion: phase-3.group-11.world-locations-travel
+  contentVersion: phase-3.group-12.quests-dialogue-narrative
   contentHash: a6e95110d15bd3dc3a8dc2b12dd79fbb534aca2a2a1e941c7eb317759c343bc0
   defaults: {fileID: 11400000, guid: 4853c1eba0d3bd44c949551fd9b873d7, type: 2}
   sections:

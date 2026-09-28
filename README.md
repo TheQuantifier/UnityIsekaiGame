@@ -40,7 +40,7 @@ Contracts may eventually be created by the simulated world, NPCs, governments, g
 
 Other guilds, such as a Merchant Guild, should be able to use the same shared contract foundation for profession-specific work.
 
-The current prototype now includes static faction and organization definitions for a prototype kingdom, Adventurer's Guild, Merchant Guild, town guard, and bandits. These are authored metadata only; ranks, memberships, reputation, diplomacy, laws, and economy are still future runtime systems.
+The current prototype includes faction and organization definitions for a prototype kingdom, Adventurer's Guild, Merchant Guild, town guard, and bandits. Runtime foundations now cover memberships, ranks, offices, permissions, institutional resources and policies, faction relationships, diplomacy, government, territory, law, citizenship, and persistence. The playable guild desks expose registration and quest workflows through the same shared systems.
 
 ## Economy And Player Businesses
 
@@ -103,7 +103,12 @@ Current foundations include:
 - Prototype player defeat and reset controls.
 - Ability/effect definitions, basic spellcasting, and projectiles.
 - Spell loadout and quick-action selection.
-- Dialogue system foundation with prototype NPC conversation.
+- Parties with membership, leadership, formation commands, readiness, persistence, and party-size quest requirements.
+- Quests, offers, assignments, objectives, rewards, sources, dialogue flow, narrative events, branching state, and narrative arcs.
+- World locations, containment, routes, travel planning, territory, scene bindings, and persistent movement history.
+- Organizations, governments, law, social relationships, knowledge, history, professions, crafting, and regional economy foundations.
+- Rebuilt player menus, guild interfaces, dialogue presentation, text chat, mouse-lock controls, and contextual HUD feedback.
+- A scene-independent automated Test Lab covering the integrated gameplay domains.
 
 Step 3 closeout documentation lives in `Documentation/Step3GameDataAndWorldTaxonomyArchitecture.md`, with regression coverage in `Documentation/Step3RegressionChecklist.md`.
 
@@ -121,6 +126,7 @@ Project folder ownership and M1 placement rules are documented in `Documentation
 Skill and Proficiency progression is documented in `Documentation/SkillsAndProgression.md`, `Documentation/SkillLearning.md`, `Documentation/SkillGradeEffects.md`, and `Documentation/Feature5_3Persistence.md`.
 Base Attributes, Calculated Stats, and Current Resources are documented in `Documentation/BaseAttributes.md`, `Documentation/CalculatedStatsRefinement.md`, `Documentation/CurrentResources.md`, `Documentation/ResourceDefinitions.md`, `Documentation/ResourceTransactions.md`, `Documentation/CharacterNumericalModel.md`, `Documentation/Feature5_4aPersistenceAndMigration.md`, and `Documentation/Feature5_4bPersistenceAndMigration.md`.
 Step 5 Character System closeout documentation lives in `Documentation/CharacterSystemOverview.md`, `Documentation/CharacterOwnershipAndIdentity.md`, `Documentation/CharacterInitializationAndRestore.md`, `Documentation/CharacterSnapshotsAndQueries.md`, `Documentation/CharacterMutationBoundaries.md`, `Documentation/CharacterSystemPersistence.md`, `Documentation/CharacterSystemIntegrationContract.md`, and `Documentation/Step5Completion.md`.
+Phase 3 systems through Group 12 are documented across the Step 7 through Step 15 integration and feature documents in `Documentation/`. The consolidated quest, dialogue, and narrative architecture is in `Documentation/Step15QuestDialogueNarrativeArchitecture.md`.
 
 ### Inventory Item Instance Save Foundation
 
@@ -134,16 +140,13 @@ These systems are still prototype-quality and may be revised substantially as la
 
 Near-term work should continue building the shared foundations required for the first playable region, including:
 
-- More complete dialogue support.
-- Modular contracts and objectives.
-- Adventurer's Guild systems.
-- Quest and contract tracking.
-- Saving and loading.
-- Scene and world-state management.
-- NPC foundations.
+- Expanding authored quests, dialogue, NPCs, and regional content on the completed foundations.
+- Replacing prototype presentation and geometry with production-ready art, audio, animation, and level design.
+- Profiling larger crowds and content sets, then budgeting simulation and rendering work for the target hardware.
+- Hardening player-facing onboarding, accessibility, settings, failure recovery, and save migration.
 - The first town.
 - Nearby wilderness and dungeons.
-- Initial persistence.
+- Focused playtesting and balance passes across combat, economy, professions, parties, and quests.
 
 The first major playable goal is not the entire envisioned world. It is one compact region that demonstrates the central fantasy: arrive in a fantasy settlement, interact with residents, join the Adventurer's Guild, accept varied contracts, travel through nearby areas, fight, explore, gather, escort, deliver, earn rewards, collect equipment and magic, and return to a town that begins to feel persistent and lived in.
 

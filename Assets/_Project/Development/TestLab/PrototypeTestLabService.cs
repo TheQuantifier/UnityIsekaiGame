@@ -7626,9 +7626,9 @@ namespace UnityIsekaiGame.Development
             };
         }
 
-        private IReadOnlyList<InformationSourceDefinition> CreatePrototypeSourceDefinitions()
+        private static IReadOnlyList<InformationSourceDefinition> CreatePrototypeSourceDefinitions()
         {
-            return new[]
+            List<InformationSourceDefinition> definitions = new List<InformationSourceDefinition>
             {
                 CreatePrototypeSourceDefinition("information-source.direct-observation", "Direct Observation", InformationSourceCategory.DirectObservation, 850),
                 CreatePrototypeSourceDefinition("information-source.expert-testimony", "Expert Testimony", InformationSourceCategory.ExpertTestimony, 760),
@@ -7636,6 +7636,19 @@ namespace UnityIsekaiGame.Development
                 CreatePrototypeSourceDefinition("information-source.anonymous-testimony", "Anonymous Testimony", InformationSourceCategory.AnonymousTestimony, 360, identityVerification: false),
                 CreatePrototypeSourceDefinition("information-source.historical-record", "Historical Record", InformationSourceCategory.HistoricalRecord, 700, KnowledgeStalenessPolicy.TimeLimited, 1000d)
             };
+            HashSet<InformationSourceCategory> authored = definitions.Select(definition => definition.Category).ToHashSet();
+            foreach (InformationSourceCategory category in Enum.GetValues(typeof(InformationSourceCategory)))
+            {
+                if (category == InformationSourceCategory.Unknown || !authored.Add(category))
+                {
+                    continue;
+                }
+
+                string slug = category.ToString().ToLowerInvariant();
+                definitions.Add(CreatePrototypeSourceDefinition($"information-source.test-lab.{slug}", category.ToString(), category, 700));
+            }
+
+            return definitions;
         }
 
         private static InformationSourceDefinition CreatePrototypeSourceDefinition(string id, string displayName, InformationSourceCategory category, int dependability, KnowledgeStalenessPolicy policy = KnowledgeStalenessPolicy.NeverStale, double halfLife = 0d, bool identityVerification = false)
@@ -7869,16 +7882,48 @@ namespace UnityIsekaiGame.Development
             return runtime;
         }
 
-        private IReadOnlyList<InformationTransferDefinition> CreatePrototypeTransferDefinitions()
+        private static IReadOnlyList<InformationTransferDefinition> CreatePrototypeTransferDefinitions()
         {
-            return new[]
+            KnowledgeDomain[] allDomains = ((KnowledgeDomain[])Enum.GetValues(typeof(KnowledgeDomain)))
+                .Where(domain => domain != KnowledgeDomain.Unknown)
+                .ToArray();
+            InformationSourceCategory[] allSourceCategories = ((InformationSourceCategory[])Enum.GetValues(typeof(InformationSourceCategory)))
+                .Where(category => category != InformationSourceCategory.Unknown)
+                .ToArray();
+            List<InformationTransferDefinition> definitions = new List<InformationTransferDefinition>
             {
-                CreatePrototypeTransferDefinition("information-transfer.direct-testimony", "Direct Testimony", InformationTransferMode.DirectTestimony, new[] { KnowledgeDomain.Species, KnowledgeDomain.Medical }, new[] { InformationSourceCategory.PersonalTestimony, InformationSourceCategory.DirectObservation }, false, false, false, false, 850, 850, TransferMemoryPolicy.FormCommunicationMemory, TransferEvidencePolicy.CreateRecipientEvidence),
-                CreatePrototypeTransferDefinition("information-transfer.formal-lesson", "Formal Lesson", InformationTransferMode.FormalLesson, new[] { KnowledgeDomain.Species, KnowledgeDomain.Medical }, new[] { InformationSourceCategory.ExpertTestimony, InformationSourceCategory.PersonalTestimony }, false, false, false, false, 860, 820, TransferMemoryPolicy.FormCommunicationMemory, TransferEvidencePolicy.CreateRecipientEvidence),
-                CreatePrototypeTransferDefinition("information-transfer.demonstration", "Demonstration", InformationTransferMode.Demonstration, new[] { KnowledgeDomain.Species, KnowledgeDomain.Medical }, new[] { InformationSourceCategory.DirectParticipation, InformationSourceCategory.ExpertTestimony }, false, false, false, true, 880, 780, TransferMemoryPolicy.FormCommunicationMemory, TransferEvidencePolicy.CreateRecipientEvidence),
-                CreatePrototypeTransferDefinition("information-transfer.summary", "Summary", InformationTransferMode.Summary, new[] { KnowledgeDomain.Historical, KnowledgeDomain.Social }, new[] { InformationSourceCategory.OfficialRecord, InformationSourceCategory.Hearsay }, true, true, false, false, 740, 580, TransferMemoryPolicy.FormCommunicationMemory, TransferEvidencePolicy.CreateRecipientEvidence),
-                CreatePrototypeTransferDefinition("information-transfer.private-message", "Private Message", InformationTransferMode.PrivateMessage, new[] { KnowledgeDomain.Social, KnowledgeDomain.Historical }, new[] { InformationSourceCategory.PersonalTestimony, InformationSourceCategory.Letter }, false, false, false, false, 820, 820, TransferMemoryPolicy.FormCommunicationMemory, TransferEvidencePolicy.CreateRecipientEvidence)
+                CreatePrototypeTransferDefinition("information-transfer.direct-testimony", "Direct Testimony", InformationTransferMode.DirectTestimony, allDomains, allSourceCategories, false, true, true, true, 850, 850, TransferMemoryPolicy.FormCommunicationMemory, TransferEvidencePolicy.CreateRecipientEvidence),
+                CreatePrototypeTransferDefinition("information-transfer.formal-lesson", "Formal Lesson", InformationTransferMode.FormalLesson, allDomains, allSourceCategories, false, true, true, true, 860, 820, TransferMemoryPolicy.FormCommunicationMemory, TransferEvidencePolicy.CreateRecipientEvidence),
+                CreatePrototypeTransferDefinition("information-transfer.demonstration", "Demonstration", InformationTransferMode.Demonstration, allDomains, allSourceCategories, false, true, true, true, 880, 780, TransferMemoryPolicy.FormCommunicationMemory, TransferEvidencePolicy.CreateRecipientEvidence),
+                CreatePrototypeTransferDefinition("information-transfer.summary", "Summary", InformationTransferMode.Summary, allDomains, allSourceCategories, true, true, true, true, 740, 580, TransferMemoryPolicy.FormCommunicationMemory, TransferEvidencePolicy.CreateRecipientEvidence),
+                CreatePrototypeTransferDefinition("information-transfer.private-message", "Private Message", InformationTransferMode.PrivateMessage, allDomains, allSourceCategories, false, true, true, true, 820, 820, TransferMemoryPolicy.FormCommunicationMemory, TransferEvidencePolicy.CreateRecipientEvidence)
             };
+            HashSet<InformationTransferMode> authored = definitions.Select(definition => definition.Mode).ToHashSet();
+            foreach (InformationTransferMode mode in Enum.GetValues(typeof(InformationTransferMode)))
+            {
+                if (mode == InformationTransferMode.Unknown || !authored.Add(mode))
+                {
+                    continue;
+                }
+
+                string slug = mode.ToString().ToLowerInvariant();
+                definitions.Add(CreatePrototypeTransferDefinition(
+                    $"information-transfer.test-lab.{slug}",
+                    mode.ToString(),
+                    mode,
+                    allDomains,
+                    allSourceCategories,
+                    false,
+                    true,
+                    true,
+                    true,
+                    800,
+                    800,
+                    TransferMemoryPolicy.FormCommunicationMemory,
+                    TransferEvidencePolicy.CreateRecipientEvidence));
+            }
+
+            return definitions;
         }
 
         private static InformationTransferDefinition CreatePrototypeTransferDefinition(string id, string displayName, InformationTransferMode mode, KnowledgeDomain[] domains, InformationSourceCategory[] sourceCategories, bool recallRequired, bool allowsSummary, bool allowsTranslation, bool allowsDemonstration, int fidelity, int completeness, TransferMemoryPolicy memoryPolicy, TransferEvidencePolicy evidencePolicy)
@@ -10759,6 +10804,30 @@ namespace UnityIsekaiGame.Development
             return Record(result.Succeeded, targetEnemy ? "Recover Enemy" : "Recover Player", result.Code, FormatLifecycleResult(result));
         }
 
+        public PrototypeTestLabOperation PrepareRecoveryLifecycle(bool targetEnemy)
+        {
+            if (!TryResolveLifecycleTarget(targetEnemy, out ActorLifecycleController lifecycle, out _, out string actorId, out PrototypeTestLabOperation failure))
+            {
+                return failure;
+            }
+
+            DefeatPolicyDefinition recoveryPolicy = GetDefinitions<DefeatPolicyDefinition>()
+                .FirstOrDefault(policy => policy.AllowRecovery && policy.AllowUnconsciousness);
+            if (recoveryPolicy != null)
+            {
+                lifecycle.Configure(recoveryPolicy);
+            }
+
+            string playerId = targetEnemy ? string.Empty : PersistenceService.LocalPlayerId;
+            string personId = context?.IdentityProgression == null ? string.Empty : context.IdentityProgression.PersonId;
+            ActorLifecycleSaveData saveData = lifecycle.CreateSaveData(playerId, personId);
+            saveData.lifecycleState = ActorLifecycleState.Unconscious.ToString();
+            saveData.diedAtUtc = string.Empty;
+            saveData.revivalAvailableAtUtc = string.Empty;
+            bool restored = lifecycle.RestoreFromSaveData(saveData, playerId, actorId, out string restoreFailure, restoring: true);
+            return Record(restored, targetEnemy ? "Prepare Enemy Recovery" : "Prepare Player Recovery", restored ? "Prepared" : ActorLifecycleResultCode.RestoreInvalid, restored ? "Lifecycle set to Unconscious for recovery validation." : restoreFailure);
+        }
+
         public PrototypeTestLabOperation PreviewDeathLifecycle(bool targetEnemy)
         {
             if (!TryResolveLifecycleTarget(targetEnemy, out ActorLifecycleController lifecycle, out GameObject target, out string actorId, out PrototypeTestLabOperation failure))
@@ -10800,6 +10869,20 @@ namespace UnityIsekaiGame.Development
             }
 
             ActorLifecycleResult result = lifecycle.ExecuteRevival(new LifecycleRevivalRequest(ResolveLifecycleTransactionId(reuseTransaction), "development.test-lab", null, actorId, target, Mathf.Max(0f, amount), "Prototype Test Lab"));
+            if (!result.Succeeded && string.Equals(result.Code, ActorLifecycleResultCode.RevivalWaitActive, StringComparison.Ordinal))
+            {
+                string playerId = targetEnemy ? string.Empty : PersistenceService.LocalPlayerId;
+                string personId = context?.IdentityProgression == null ? string.Empty : context.IdentityProgression.PersonId;
+                ActorLifecycleSaveData saveData = lifecycle.CreateSaveData(playerId, personId);
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                saveData.diedAtUtc = now.AddSeconds(-2d).ToString("O");
+                saveData.revivalAvailableAtUtc = now.AddSeconds(-1d).ToString("O");
+                if (lifecycle.RestoreFromSaveData(saveData, playerId, actorId, out _, restoring: true))
+                {
+                    result = lifecycle.ExecuteRevival(new LifecycleRevivalRequest(ResolveLifecycleTransactionId(reuse: false), "development.test-lab", null, actorId, target, Mathf.Max(0f, amount), "Prototype Test Lab (revival wait bypassed for development validation)"));
+                }
+            }
+
             return Record(result.Succeeded, targetEnemy ? "Revive Enemy" : "Revive Player", result.Code, FormatLifecycleResult(result));
         }
 
@@ -12747,11 +12830,16 @@ namespace UnityIsekaiGame.Development
             int slotIndex = FindInventorySlot(item);
             if (slotIndex < 0)
             {
-                InventoryAddResult add = context.Inventory.AddItem(item, 1);
+                InventoryAddResult add = context.Inventory.AddItemOrInstances(item, 1);
                 if (add.AddedQuantity <= 0)
                 {
-                    failureReason = $"Could not grant required item '{item.DisplayName}' for defensive action '{definition.Id}'.";
-                    return false;
+                    context.Inventory.DevelopmentClearInventory();
+                    add = context.Inventory.AddItemOrInstances(item, 1);
+                    if (add.AddedQuantity <= 0)
+                    {
+                        failureReason = $"Could not grant required item '{item.DisplayName}' for defensive action '{definition.Id}'.";
+                        return false;
+                    }
                 }
 
                 slotIndex = FindInventorySlot(item);
@@ -13296,6 +13384,13 @@ namespace UnityIsekaiGame.Development
             }
 
             ProgressionOperationResult result = progression.AdvanceBirthGiftProgressForTesting(Mathf.Max(0f, seconds), registry);
+            if (!result.Succeeded
+                && string.Equals(result.Code, "GiftNotDormant", StringComparison.Ordinal)
+                && progression.BirthGift?.state == BirthGiftRuntimeState.Awakened)
+            {
+                return Record(true, "Advance Birth Gift", "AlreadyAwakened", "The selected birth gift was already awakened; no progress was required.");
+            }
+
             return Record(result.Succeeded, "Advance Birth Gift", result.Code, result.Message);
         }
 
@@ -13307,6 +13402,13 @@ namespace UnityIsekaiGame.Development
             }
 
             ProgressionOperationResult result = progression.ForceBirthGiftAwakening(registry);
+            if (!result.Succeeded
+                && string.Equals(result.Code, "GiftAlreadyAwakened", StringComparison.Ordinal)
+                && progression.BirthGift is { state: BirthGiftRuntimeState.Awakened, rewardApplied: true })
+            {
+                return Record(true, "Awaken Birth Gift", "AlreadyAwakened", "The selected birth gift and its reward were already active.");
+            }
+
             return Record(result.Succeeded, "Awaken Birth Gift", result.Code, result.Message);
         }
 
@@ -14463,6 +14565,30 @@ namespace UnityIsekaiGame.Development
             foreach (InformationAccessPolicyDefinition definition in CreatePrototypeAccessPolicyDefinitions())
             {
                 if (!definitions.Any(existing => string.Equals(existing.Id, definition.Id, StringComparison.Ordinal)))
+                {
+                    definitions.Add(definition);
+                }
+            }
+
+            HashSet<InformationSourceCategory> sourceCategories = definitions
+                .OfType<InformationSourceDefinition>()
+                .Select(definition => definition.Category)
+                .ToHashSet();
+            foreach (InformationSourceDefinition definition in CreatePrototypeSourceDefinitions())
+            {
+                if (sourceCategories.Add(definition.Category))
+                {
+                    definitions.Add(definition);
+                }
+            }
+
+            HashSet<InformationTransferMode> transferModes = definitions
+                .OfType<InformationTransferDefinition>()
+                .Select(definition => definition.Mode)
+                .ToHashSet();
+            foreach (InformationTransferDefinition definition in CreatePrototypeTransferDefinitions())
+            {
+                if (transferModes.Add(definition.Mode))
                 {
                     definitions.Add(definition);
                 }

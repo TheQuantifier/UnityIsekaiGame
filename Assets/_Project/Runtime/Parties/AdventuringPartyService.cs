@@ -35,6 +35,8 @@ namespace UnityIsekaiGame.Parties
 
     public sealed class PartySnapshot
     {
+        private readonly string[] memberPersonIds;
+
         public PartySnapshot(string partyId, string displayName, IEnumerable<PartyMemberSnapshot> members, int minimumOperationalMembers, int maximumMembers)
         {
             PartyId = partyId ?? string.Empty;
@@ -44,6 +46,8 @@ namespace UnityIsekaiGame.Parties
                 .OrderByDescending(member => member.IsLeader)
                 .ThenBy(member => member.PersonId, StringComparer.Ordinal)
                 .ToArray();
+            memberPersonIds = Members.Select(member => member.PersonId).ToArray();
+            LeaderPersonId = Members.FirstOrDefault(member => member.IsLeader)?.PersonId ?? string.Empty;
             MinimumOperationalMembers = Math.Max(1, minimumOperationalMembers);
             MaximumMembers = Math.Max(MinimumOperationalMembers, maximumMembers);
         }
@@ -54,8 +58,8 @@ namespace UnityIsekaiGame.Parties
         public int MinimumOperationalMembers { get; }
         public int MaximumMembers { get; }
         public int MemberCount => Members.Count;
-        public string LeaderPersonId => Members.FirstOrDefault(member => member.IsLeader)?.PersonId ?? string.Empty;
-        public IReadOnlyList<string> MemberPersonIds => Members.Select(member => member.PersonId).ToArray();
+        public string LeaderPersonId { get; }
+        public IReadOnlyList<string> MemberPersonIds => memberPersonIds;
         public bool IsOperational => MemberCount >= MinimumOperationalMembers;
         public bool MeetsRequirement(int requiredPartySize) => MemberCount >= Math.Max(1, requiredPartySize);
     }

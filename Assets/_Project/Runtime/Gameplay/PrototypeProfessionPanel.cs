@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,6 +12,8 @@ namespace UnityIsekaiGame.Gameplay
 {
     public sealed class PrototypeProfessionPanel : MonoBehaviour
     {
+        private const float DataRefreshIntervalSeconds = 0.5f;
+
         private static readonly (string name, string professionId, string entryPathId)[] Declarations =
         {
             ("Crafter", ProfessionContentIds.CrafterProfessionId, ProfessionContentIds.CrafterSelfDeclaredEntryPathId),
@@ -24,6 +27,17 @@ namespace UnityIsekaiGame.Gameplay
         private bool visible;
         private Vector2 scroll;
         private string status = "Choose a self-declared profession to begin recording work experience.";
+        private readonly HashSet<string> activeProfessionIds = new HashSet<string>(StringComparer.Ordinal);
+        private string[] activeProfessionRows = Array.Empty<string>();
+        private string[] activityRows = Array.Empty<string>();
+        private string[] trainingRows = Array.Empty<string>();
+        private string[] credentialRows = Array.Empty<string>();
+        private string[] rankRows = Array.Empty<string>();
+        private string[] employmentRows = Array.Empty<string>();
+        private string[] careerRows = Array.Empty<string>();
+        private string[] aspirationRows = Array.Empty<string>();
+        private string[] goalRows = Array.Empty<string>();
+        private float nextDataRefreshAt;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -66,6 +80,11 @@ namespace UnityIsekaiGame.Gameplay
             {
                 SetVisible(false);
             }
+
+            if (visible && Time.unscaledTime >= nextDataRefreshAt)
+            {
+                RefreshCachedData();
+            }
         }
 
         private void OnDisable() => SetVisible(false);
@@ -100,7 +119,7 @@ namespace UnityIsekaiGame.Gameplay
             GUILayout.BeginHorizontal();
             foreach ((string name, string professionId, string entryPathId) in Declarations)
             {
-                bool active = services.Professions.QueryByPerson(personId, true).Any(item => item.ProfessionId == professionId);
+                bool active = activeProfessionIds.Contains(professionId);
                 GUI.enabled = !active;
                 if (GUILayout.Button(active ? $"{name}  [Active]" : name, active ? PrototypeUiTheme.ButtonStyle : PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(34f)))
                 {
@@ -115,6 +134,7 @@ namespace UnityIsekaiGame.Gameplay
                     if (result.Succeeded)
                     {
                         services.DirtyTracker?.MarkDirty($"Profession declared: {professionId}.");
+                        RefreshCachedData();
                     }
                 }
                 GUI.enabled = true;
@@ -123,25 +143,15 @@ namespace UnityIsekaiGame.Gameplay
             GUILayout.Space(8f);
 
             scroll = GUILayout.BeginScrollView(scroll);
-            DrawSection("Active professions", services.Professions.QueryByPerson(personId, true).Select(item =>
-                $"{Display(item.ProfessionId)} — {(item.Recognized ? "formally recognized" : "self-declared")}{(item.Primary ? ", primary" : string.Empty)}"));
-            DrawSection("Validated work", services.ProfessionalActivities.Activities
-                .Where(item => item.personId == personId)
-                .Select(item => $"{Display(item.professionId)}: {Display(item.activityDefinitionId)} — quality {item.quality}/1000, {item.difficulty}"));
-            DrawSection("Training", services.Training.QueryByPerson(personId)
-                .Select(item => $"{Display(item.Data.programId)} — {item.Data.state}"));
-            DrawSection("Credentials", services.Credentials.QueryByRecipient(personId)
-                .Select(item => $"{Display(item.credentialDefinitionId)} — {item.state}"));
-            DrawSection("Ranks & mastery", services.ProfessionalRanks.QueryByPerson(personId)
-                .Select(item => $"{Display(item.rankDefinitionId)} — {item.state}"));
-            DrawSection("Employment", services.PositionEmployment.QueryEmploymentByPerson(personId)
-                .Select(item => $"{Display(item.positionInstanceId)} — {item.state}"));
-            DrawSection("Career timeline", services.CareerHistory.QueryEpisodesByPerson(personId)
-                .Select(item => $"{Display(item.professionId)} — {item.category}, {item.state}"));
-            DrawSection("Aspirations", services.LifePaths.QueryAspirationsByPerson(personId)
-                .Select(item => $"{Display(item.aspirationDefinitionId)} — {item.state}"));
-            DrawSection("Goals", services.LifePaths.QueryGoalsByPerson(personId)
-                .Select(item => $"{Display(item.goalDefinitionId)} — {item.state}"));
+            DrawSection("Active professions", activeProfessionRows);
+            DrawSection("Validated work", activityRows);
+            DrawSection("Training", trainingRows);
+            DrawSection("Credentials", credentialRows);
+            DrawSection("Ranks & mastery", rankRows);
+            DrawSection("Employment", employmentRows);
+            DrawSection("Career timeline", careerRows);
+            DrawSection("Aspirations", aspirationRows);
+            DrawSection("Goals", goalRows);
             GUILayout.EndScrollView();
 
             GUILayout.Space(6f);
@@ -153,21 +163,56 @@ namespace UnityIsekaiGame.Gameplay
         private void SetVisible(bool value)
         {
             visible = value;
+            if (visible)
+            {
+                RefreshCachedData();
+            }
             if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
             if (input != null) input.SetMenuInputBlocked(this, visible);
             else PlayerCursorMode.SetMenuOpen(this, visible);
         }
 
-        private static void DrawSection(string title, System.Collections.Generic.IEnumerable<string> rows)
+        private void RefreshCachedData()
         {
-            string[] values = rows.Where(value => !string.IsNullOrWhiteSpace(value)).ToArray();
+            nextDataRefreshAt = Time.unscaledTime + DataRefreshIntervalSeconds;
+            if (services == null)
+            {
+                services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+            }
+            if (services == null) return;
+
+            string personId = services.PlayerPersonId;
+            var professions = services.Professions.QueryByPerson(personId, true);
+            activeProfessionIds.Clear();
+            foreach (var profession in professions) activeProfessionIds.Add(profession.ProfessionId);
+            activeProfessionRows = Rows(professions.Select(item =>
+                $"{Display(item.ProfessionId)} — {(item.Recognized ? "formally recognized" : "self-declared")}{(item.Primary ? ", primary" : string.Empty)}"));
+            activityRows = Rows(services.ProfessionalActivities.Activities
+                .Where(item => item.personId == personId)
+                .Select(item => $"{Display(item.professionId)}: {Display(item.activityDefinitionId)} — quality {item.quality}/1000, {item.difficulty}"));
+            trainingRows = Rows(services.Training.QueryByPerson(personId).Select(item => $"{Display(item.Data.programId)} — {item.Data.state}"));
+            credentialRows = Rows(services.Credentials.QueryByRecipient(personId).Select(item => $"{Display(item.credentialDefinitionId)} — {item.state}"));
+            rankRows = Rows(services.ProfessionalRanks.QueryByPerson(personId).Select(item => $"{Display(item.rankDefinitionId)} — {item.state}"));
+            employmentRows = Rows(services.PositionEmployment.QueryEmploymentByPerson(personId).Select(item => $"{Display(item.positionInstanceId)} — {item.state}"));
+            careerRows = Rows(services.CareerHistory.QueryEpisodesByPerson(personId).Select(item => $"{Display(item.professionId)} — {item.category}, {item.state}"));
+            aspirationRows = Rows(services.LifePaths.QueryAspirationsByPerson(personId).Select(item => $"{Display(item.aspirationDefinitionId)} — {item.state}"));
+            goalRows = Rows(services.LifePaths.QueryGoalsByPerson(personId).Select(item => $"{Display(item.goalDefinitionId)} — {item.state}"));
+        }
+
+        private static string[] Rows(IEnumerable<string> rows)
+        {
+            return rows.Where(value => !string.IsNullOrWhiteSpace(value)).ToArray();
+        }
+
+        private static void DrawSection(string title, IReadOnlyList<string> values)
+        {
             GUILayout.Label(title.ToUpperInvariant(), PrototypeUiTheme.HeadingStyle);
-            if (values.Length == 0)
+            if (values == null || values.Count == 0)
             {
                 GUILayout.Label("None recorded yet.", PrototypeUiTheme.MutedStyle);
                 return;
             }
-            foreach (string value in values) GUILayout.Label($"• {value}", PrototypeUiTheme.BodyStyle);
+            for (int i = 0; i < values.Count; i++) GUILayout.Label($"• {values[i]}", PrototypeUiTheme.BodyStyle);
         }
 
         private static string Display(string id)

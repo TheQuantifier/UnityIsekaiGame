@@ -570,7 +570,7 @@ namespace UnityIsekaiGame.Development.Automation
             bool guild = registry.TryGet(PrototypeQuestDefinitionFactory.GuildPostingDefinitionId, out QuestDefinition guildDefinition)
                 && guildDefinition.AssignmentPolicy == QuestAssignmentPolicy.Exclusive
                 && guildDefinition.ConsentPolicy == QuestConsentPolicy.ExplicitRecipientConsentRequired
-                && guildDefinition.EligibilityRequirementGroups.Count == 1;
+                && guildDefinition.EligibilityRequirementGroups.Count == 2;
             bool bounty = registry.TryGet(PrototypeQuestDefinitionFactory.DynamicBountyDefinitionId, out QuestDefinition bountyDefinition)
                 && bountyDefinition.AssignmentPolicy == QuestAssignmentPolicy.CapacityLimited
                 && bountyDefinition.AssignmentCapacity == 4;

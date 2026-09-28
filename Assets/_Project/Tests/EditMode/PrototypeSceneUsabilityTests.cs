@@ -6,6 +6,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityIsekaiGame.Abilities;
 using UnityIsekaiGame.ActorLifecycle;
 using UnityIsekaiGame.Beings.Biology;
@@ -16,6 +17,7 @@ using UnityIsekaiGame.ResourceSystem;
 using UnityIsekaiGame.Skills;
 using UnityIsekaiGame.Stats;
 using UnityIsekaiGame.Traits;
+using UnityIsekaiGame.UI.Inventory;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -104,6 +106,47 @@ namespace UnityIsekaiGame.Tests
             MatchCollection matches = Regex.Matches(scene, @"m_Name:\s*EventSystem\b");
 
             Assert.That(matches.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void PrototypeInventoryUiIsFullyAuthoredAndShowsOneSectionInEditMode()
+        {
+            UnityEngine.SceneManagement.Scene scene = EditorSceneManager.OpenScene(ScenePath);
+            InventoryScreenView view = scene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<InventoryScreenView>(true))
+                .Single();
+            SerializedObject serializedView = new SerializedObject(view);
+
+            GameObject inventoryRoot = RequiredObjectReference<GameObject>(serializedView, "inventoryContentRoot");
+            GameObject characterRoot = RequiredObjectReference<GameObject>(serializedView, "characterContentRoot");
+            GameObject spellsRoot = RequiredObjectReference<GameObject>(serializedView, "spellsContentRoot");
+            GameObject journalRoot = RequiredObjectReference<GameObject>(serializedView, "contractsContentRoot");
+            GameObject saveLoadRoot = RequiredObjectReference<GameObject>(serializedView, "saveLoadContentRoot");
+            Button inventoryButton = RequiredObjectReference<Button>(serializedView, "inventoryMenuButton");
+
+            Assert.That(RequiredObjectReference<GameObject>(serializedView, "selectedItemDetailsRoot"), Is.Not.Null);
+            Assert.That(RequiredObjectReference<GameObject>(serializedView, "characterStatsRoot"), Is.Not.Null);
+            Assert.That(RequiredObjectReference<Button>(serializedView, "saveLoadMenuButton"), Is.Not.Null);
+            Assert.That(RequiredObjectReference<SaveLoadMenuView>(serializedView, "saveLoadView"), Is.Not.Null);
+            Assert.That(inventoryRoot.activeSelf, Is.True);
+            Assert.That(characterRoot.activeSelf, Is.False);
+            Assert.That(spellsRoot.activeSelf, Is.False);
+            Assert.That(journalRoot.activeSelf, Is.False);
+            Assert.That(saveLoadRoot.activeSelf, Is.False);
+
+            RectTransform navigation = inventoryButton.transform.parent as RectTransform;
+            Assert.That(navigation, Is.Not.Null);
+            Assert.That(navigation.anchorMin, Is.EqualTo(new Vector2(0f, 1f)));
+            Assert.That(navigation.anchorMax, Is.EqualTo(Vector2.one));
+            VerticalLayoutGroup legacyVerticalLayout = navigation.GetComponent<VerticalLayoutGroup>();
+            Assert.That(legacyVerticalLayout == null || !legacyVerticalLayout.enabled, Is.True,
+                "The legacy vertical navigation layout must not remain active in the authored scene.");
+
+            Transform characterStats = RequiredObjectReference<GameObject>(serializedView, "characterStatsRoot").transform;
+            Assert.That(characterStats.Cast<Transform>().Count(child => child.name == "Character Stats Scroll"), Is.EqualTo(1));
+            Transform statsScroll = characterStats.Find("Character Stats Scroll");
+            Assert.That(statsScroll.Cast<Transform>().Count(child => child.name == "Viewport"), Is.EqualTo(1),
+                "Rebaking the authoring layout must not duplicate generated viewport objects.");
         }
 
         [Test]
@@ -347,6 +390,15 @@ namespace UnityIsekaiGame.Tests
         private static void AssertSceneDoesNotContain(string scene, string removedName)
         {
             Assert.That(scene, Does.Not.Contain($"m_Name: {removedName}"), removedName);
+        }
+
+        private static T RequiredObjectReference<T>(SerializedObject serializedObject, string propertyName) where T : UnityEngine.Object
+        {
+            SerializedProperty property = serializedObject.FindProperty(propertyName);
+            Assert.That(property, Is.Not.Null, propertyName);
+            Assert.That(property.objectReferenceValue, Is.Not.Null, propertyName);
+            Assert.That(property.objectReferenceValue, Is.InstanceOf<T>(), propertyName);
+            return (T)property.objectReferenceValue;
         }
 
         private static void AssertCharacterComposition(CharacterSystemCoordinator character)

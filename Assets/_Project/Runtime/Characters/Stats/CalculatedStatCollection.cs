@@ -15,8 +15,11 @@ namespace UnityIsekaiGame.Stats
         private readonly Dictionary<string, CalculatedStatEvaluationBreakdown> cachedBreakdowns = new Dictionary<string, CalculatedStatEvaluationBreakdown>(StringComparer.Ordinal);
         private readonly Dictionary<string, List<RuntimeCalculatedStatContribution>> contributionsBySourceKey = new Dictionary<string, List<RuntimeCalculatedStatContribution>>(StringComparer.Ordinal);
         private readonly Dictionary<string, HashSet<string>> dependencyStatIdsByAttributeId = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        private readonly HashSet<string> deferredRecalculationStatIds = new HashSet<string>(StringComparer.Ordinal);
 
         private bool recalculating;
+        private int recalculationDeferralDepth;
+        private bool deferredRecalculationIsRestoring;
 
         public event Action<CalculatedStatCollection, IReadOnlyList<string>, bool> CalculatedStatsChanged;
 
@@ -181,6 +184,13 @@ namespace UnityIsekaiGame.Stats
 
         public void ForceRecalculateAll(bool restoring = false)
         {
+            if (recalculationDeferralDepth > 0)
+            {
+                deferredRecalculationStatIds.UnionWith(definitionsById.Keys);
+                deferredRecalculationIsRestoring |= restoring;
+                return;
+            }
+
             if (recalculating)
             {
                 return;
@@ -213,6 +223,17 @@ namespace UnityIsekaiGame.Stats
             }
         }
 
+        /// <summary>
+        /// Defers calculated-stat notifications until a related group of contribution changes is complete.
+        /// This prevents observers from reacting to temporary intermediate values while a modifier source is rebuilt.
+        /// </summary>
+        public IDisposable DeferRecalculation(bool restoring = false)
+        {
+            recalculationDeferralDepth++;
+            deferredRecalculationIsRestoring |= restoring;
+            return new RecalculationDeferral(this);
+        }
+
         public string BuildDiagnosticSummary()
         {
             List<string> lines = new List<string> { "Feature 5.4a Calculated Stats" };
@@ -229,6 +250,20 @@ namespace UnityIsekaiGame.Stats
 
         private void RecalculateChanged(IReadOnlyList<string> statIds, bool restoring)
         {
+            if (recalculationDeferralDepth > 0)
+            {
+                foreach (string statId in statIds ?? Array.Empty<string>())
+                {
+                    if (!string.IsNullOrWhiteSpace(statId))
+                    {
+                        deferredRecalculationStatIds.Add(statId);
+                    }
+                }
+
+                deferredRecalculationIsRestoring |= restoring;
+                return;
+            }
+
             if (recalculating)
             {
                 return;
@@ -263,6 +298,43 @@ namespace UnityIsekaiGame.Stats
             finally
             {
                 recalculating = false;
+            }
+        }
+
+        private void EndRecalculationDeferral()
+        {
+            if (recalculationDeferralDepth <= 0)
+            {
+                return;
+            }
+
+            recalculationDeferralDepth--;
+            if (recalculationDeferralDepth > 0)
+            {
+                return;
+            }
+
+            List<string> statIds = deferredRecalculationStatIds.ToList();
+            bool restoring = deferredRecalculationIsRestoring;
+            deferredRecalculationStatIds.Clear();
+            deferredRecalculationIsRestoring = false;
+            RecalculateChanged(statIds, restoring);
+        }
+
+        private sealed class RecalculationDeferral : IDisposable
+        {
+            private CalculatedStatCollection owner;
+
+            public RecalculationDeferral(CalculatedStatCollection owner)
+            {
+                this.owner = owner;
+            }
+
+            public void Dispose()
+            {
+                CalculatedStatCollection currentOwner = owner;
+                owner = null;
+                currentOwner?.EndRecalculationDeferral();
             }
         }
 

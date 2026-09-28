@@ -211,9 +211,9 @@ namespace UnityIsekaiGame.Development.Automation
             PrototypeSceneProductionIntegrationProbe restored = probe.Restore();
 
             int assignments = restored.Participation.QueryAssignments(new QuestAssignmentQuery { questId = result.MerchantQuestId, access = QuestVisibilityAccess.PrivilegedDiagnostic }).Count;
-            int merchantConversations = restored.Conversations.Query(new ConversationQuery { questSourceId = PrototypeSceneIntegrationIds.MerchantGuildCounterSourceId, access = ConversationAccessLevel.PrivilegedDiagnostic }).Count;
-            int mayorConversations = restored.Conversations.Query(new ConversationQuery { questSourceId = PrototypeSceneIntegrationIds.MayorOfficeDeskSourceId, access = ConversationAccessLevel.PrivilegedDiagnostic }).Count;
-            int recordsConversations = restored.Conversations.Query(new ConversationQuery { definitionId = PrototypeConversationDefinitionFactory.RecordsDeskDefinitionId, access = ConversationAccessLevel.PrivilegedDiagnostic }).Count;
+            int merchantConversations = restored.Conversations.Query(new ConversationQuery { questSourceId = PrototypeSceneIntegrationIds.MerchantGuildCounterSourceId, access = ConversationAccessLevel.PrivilegedDiagnostic, includeInactive = true }).Count;
+            int mayorConversations = restored.Conversations.Query(new ConversationQuery { questSourceId = PrototypeSceneIntegrationIds.MayorOfficeDeskSourceId, access = ConversationAccessLevel.PrivilegedDiagnostic, includeInactive = true }).Count;
+            int recordsConversations = restored.Conversations.Query(new ConversationQuery { definitionId = PrototypeConversationDefinitionFactory.RecordsDeskDefinitionId, access = ConversationAccessLevel.PrivilegedDiagnostic, includeInactive = true }).Count;
             int states = restored.States.Query(new NarrativeStateQuery { stateDefinitionId = PrototypeNarrativeStateDefinitionFactory.MayorInvestigationDefinitionId, scope = NarrativeStateScope.World, scopeKey = PersistenceService.LocalWorldId }).Count;
             int arcs = restored.Arcs.Query(new NarrativeArcQuery { arcDefinitionId = PrototypeNarrativeArcDefinitionFactory.MayorInvestigationArcDefinitionId, scopeKey = PersistenceService.LocalWorldId }).Count;
             bool valid = result.Succeeded && assignments == 1 && merchantConversations == 1 && mayorConversations == 1 && recordsConversations == 1 && states >= 1 && arcs == 1;

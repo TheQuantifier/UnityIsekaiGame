@@ -13,11 +13,17 @@ namespace UnityIsekaiGame.UI
     [DisallowMultipleComponent]
     public sealed class PrototypeUiThemeApplicator : MonoBehaviour
     {
+        private const float SafetyRefreshIntervalSeconds = 30f;
+
         private readonly HashSet<Button> styledButtons = new HashSet<Button>();
         private readonly HashSet<Text> styledTexts = new HashSet<Text>();
         private readonly HashSet<Image> styledPanels = new HashSet<Image>();
+        private readonly List<Button> buttonBuffer = new List<Button>();
+        private readonly List<Text> textBuffer = new List<Text>();
+        private readonly List<Image> imageBuffer = new List<Image>();
         private Canvas targetCanvas;
         private float nextRefreshAt;
+        private bool refreshRequested;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetHooks()
@@ -69,15 +75,24 @@ namespace UnityIsekaiGame.UI
             Refresh();
         }
 
+        private void OnTransformChildrenChanged()
+        {
+            refreshRequested = true;
+        }
+
         private void LateUpdate()
         {
-            if (Time.unscaledTime < nextRefreshAt)
+            if (!refreshRequested && Time.unscaledTime < nextRefreshAt)
             {
                 return;
             }
 
-            nextRefreshAt = Time.unscaledTime + 0.5f;
             Refresh();
+        }
+
+        public void RequestRefresh()
+        {
+            refreshRequested = true;
         }
 
         public void Refresh()
@@ -95,15 +110,18 @@ namespace UnityIsekaiGame.UI
             StyleNewButtons();
             StyleNewTexts();
             StyleNewPanels();
+            refreshRequested = false;
+            nextRefreshAt = Time.unscaledTime + SafetyRefreshIntervalSeconds;
         }
 
         private void StyleNewButtons()
         {
             styledButtons.RemoveWhere(value => value == null);
-            Button[] buttons = GetComponentsInChildren<Button>(true);
-            for (int i = 0; i < buttons.Length; i++)
+            buttonBuffer.Clear();
+            GetComponentsInChildren(true, buttonBuffer);
+            for (int i = 0; i < buttonBuffer.Count; i++)
             {
-                Button button = buttons[i];
+                Button button = buttonBuffer[i];
                 if (button != null && styledButtons.Add(button))
                 {
                     PrototypeUiTheme.StyleButton(button, PrototypeUiTheme.InferButtonTone(button.name));
@@ -114,10 +132,11 @@ namespace UnityIsekaiGame.UI
         private void StyleNewTexts()
         {
             styledTexts.RemoveWhere(value => value == null);
-            Text[] texts = GetComponentsInChildren<Text>(true);
-            for (int i = 0; i < texts.Length; i++)
+            textBuffer.Clear();
+            GetComponentsInChildren(true, textBuffer);
+            for (int i = 0; i < textBuffer.Count; i++)
             {
-                Text text = texts[i];
+                Text text = textBuffer[i];
                 if (text != null && styledTexts.Add(text))
                 {
                     PrototypeUiTheme.StyleText(text, PrototypeUiTheme.InferTextRole(text.name));
@@ -128,10 +147,11 @@ namespace UnityIsekaiGame.UI
         private void StyleNewPanels()
         {
             styledPanels.RemoveWhere(value => value == null);
-            Image[] images = GetComponentsInChildren<Image>(true);
-            for (int i = 0; i < images.Length; i++)
+            imageBuffer.Clear();
+            GetComponentsInChildren(true, imageBuffer);
+            for (int i = 0; i < imageBuffer.Count; i++)
             {
-                Image image = images[i];
+                Image image = imageBuffer[i];
                 if (image == null || image.GetComponent<Button>() != null || image.sprite != null || !IsPanelName(image.name)
                     || !styledPanels.Add(image))
                 {

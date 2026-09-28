@@ -949,7 +949,9 @@ namespace UnityIsekaiGame.Development.Automation
             ItemCompositionOperationResult ensured = compositions.EnsureCompositionForItem(itemRuntime, registry, itemId);
             bool valid = ensured.Succeeded
                 && ensured.Snapshot.ItemInstanceId == itemId
-                && ensured.Snapshot.Completeness == ItemCompositionCompleteness.Unknown;
+                && (sword.DefaultCompositionTemplate == null || sword.DefaultCompositionTemplate.IsEmpty
+                    ? ensured.Snapshot.Completeness == ItemCompositionCompleteness.Unknown
+                    : ensured.Snapshot.Completeness == sword.DefaultCompositionTemplate.completeness);
             return valid
                 ? Pass(context, "step9-composition-default", $"Composition={ensured.Snapshot.CompositionId} Completeness={ensured.Snapshot.Completeness}")
                 : Fail(context, "step9-composition-default", $"Ensure={ensured.Status}:{ensured.Message}");
@@ -1398,7 +1400,10 @@ namespace UnityIsekaiGame.Development.Automation
             string item = CreateComposedItem(context, itemRuntime, compositions, registry, sword, "durability-equipped");
             ItemDurabilityOperationResult healthy = durability.EnsureDefaultDurability(itemRuntime, compositions, quality, registry, item);
             float healthyFactor = durability.GetEquipmentContributionFactor(item);
-            durability.ApplyDamage(itemRuntime, compositions, quality, registry, item, 999f, ItemDamageChannel.Impact, "component.blade", "break");
+            for (int attempt = 0; attempt < 100 && durability.GetEquipmentContributionFactor(item) > 0f; attempt++)
+            {
+                durability.ApplyDamage(itemRuntime, compositions, quality, registry, item, 999f, ItemDamageChannel.Impact, "component.blade", $"break-{attempt}");
+            }
             float brokenFactor = durability.GetEquipmentContributionFactor(item);
             bool valid = healthy.Succeeded && Math.Abs(healthyFactor - 1f) < 0.001f && Math.Abs(brokenFactor) < 0.001f;
             return valid

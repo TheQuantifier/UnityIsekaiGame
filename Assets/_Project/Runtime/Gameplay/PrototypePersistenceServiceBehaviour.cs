@@ -272,6 +272,7 @@ namespace UnityIsekaiGame.Gameplay
         private KnowledgeRecordRuntime playerKnowledgeRecords;
         private AuthoritativeHistoryRuntime worldAuthoritativeHistory;
         private PersonMemoryRuntime playerMemory;
+        private readonly HashSet<string> historicalPlayerPersonIds = new HashSet<string>(StringComparer.Ordinal);
         private KnowledgeHistoryFacade knowledgeHistoryFacade;
         private ObservationService observationService;
         private GameplayObservationCoordinator gameplayObservationCoordinator;
@@ -917,7 +918,6 @@ namespace UnityIsekaiGame.Gameplay
         {
             worldNarrativeCoordinator?.Advance();
             AdvanceGroup6Crafting();
-            AdvanceWorldTravel();
 
             double realtime = Time.unscaledTimeAsDouble;
             if (realtime < nextBackgroundSimulationPollRealtime)
@@ -926,6 +926,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             nextBackgroundSimulationPollRealtime = realtime + BackgroundSimulationPollIntervalSeconds;
+            AdvanceWorldTravel();
             SynchronizeProfessionLifecycle();
             AdvancePrototypeEconomy();
             AdvanceGroup9SocialSimulation();
@@ -4235,7 +4236,6 @@ namespace UnityIsekaiGame.Gameplay
                     character.InitializeFromRegistry(registry, restoring: false);
                 }
                 playerOngoingEffects?.Configure(playerObject == null ? null : playerObject.GetComponent<CharacterSystemCoordinator>());
-                playerStats?.RefreshEquipmentModifiers();
                 if (playerKnowledge != null && playerIdentityProgression != null)
                 {
                     playerKnowledge.Configure(registry, playerIdentityProgression.PersonId, ResolvePlayerActorId(), playerBody == null ? string.Empty : playerBody.ActorBodyId);
@@ -4917,6 +4917,17 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
+            string currentPersonId = ResolvePlayerPersonId();
+            if (!string.Equals(PlayerMemory.PersonId, currentPersonId, StringComparison.Ordinal))
+            {
+                if (!string.IsNullOrWhiteSpace(PlayerMemory.PersonId))
+                {
+                    historicalPlayerPersonIds.Add(PlayerMemory.PersonId);
+                }
+
+                EnsureKnowledgeHistoryRuntimesConfigured();
+            }
+
             dirtyTracker?.MarkDirty("Player identity/progression changed.");
         }
 
@@ -5300,6 +5311,7 @@ namespace UnityIsekaiGame.Gameplay
                 .Concat(persistentPeople)
                 .Concat(itemOwners)
                 .Concat(institutionalObservedPersonIds)
+                .Concat(historicalPlayerPersonIds)
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .Select(value => value.Trim())
                 .Distinct(StringComparer.Ordinal)

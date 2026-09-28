@@ -36,19 +36,20 @@ namespace UnityIsekaiGame.UI.Inventory
         private int selectedSlotIndex;
         private int selectedActionIndex;
         private string pendingConfirmationKey;
+        private bool refreshPending = true;
 
         public void Initialize(PrototypePersistenceServiceBehaviour persistenceService)
         {
             if (persistence != null && persistence.PlayerService != null)
             {
-                persistence.PlayerService.SaveSlotsChanged -= Refresh;
+                persistence.PlayerService.SaveSlotsChanged -= HandleSaveSlotsChanged;
             }
 
             persistence = persistenceService;
             BuildUi();
             if (persistence != null && persistence.PlayerService != null)
             {
-                persistence.PlayerService.SaveSlotsChanged += Refresh;
+                persistence.PlayerService.SaveSlotsChanged += HandleSaveSlotsChanged;
             }
 
             Refresh();
@@ -58,7 +59,7 @@ namespace UnityIsekaiGame.UI.Inventory
         {
             if (persistence != null && persistence.PlayerService != null)
             {
-                persistence.PlayerService.SaveSlotsChanged -= Refresh;
+                persistence.PlayerService.SaveSlotsChanged -= HandleSaveSlotsChanged;
             }
         }
 
@@ -72,7 +73,25 @@ namespace UnityIsekaiGame.UI.Inventory
 
             selectedSlotIndex = descriptors.Count == 0 ? 0 : Mathf.Clamp(selectedSlotIndex, 0, descriptors.Count - 1);
             selectedActionIndex = Mathf.Clamp(selectedActionIndex, 0, Actions.Length - 1);
+            refreshPending = false;
             Render();
+        }
+
+        public void RefreshIfNeeded()
+        {
+            if (refreshPending)
+            {
+                Refresh();
+            }
+        }
+
+        private void HandleSaveSlotsChanged()
+        {
+            refreshPending = true;
+            if (isActiveAndEnabled)
+            {
+                Refresh();
+            }
         }
 
         private void BuildUi()
