@@ -206,6 +206,12 @@ namespace UnityIsekaiGame.Input
 
             if (keyboard.escapeKey.wasPressedThisFrame)
             {
+                if (PlayerCursorMode.TryCloseTopMenu())
+                {
+                    ClearCancel();
+                    return;
+                }
+
                 bool wasLockedForLook = PlayerCursorMode.MouseLookEnabled;
                 PlayerCursorMode.UnlockMouse();
                 if (wasLockedForLook) PrototypeHudMessageBus.Show("Mouse unlocked. Press L to enable mouse look.");
@@ -489,7 +495,7 @@ namespace UnityIsekaiGame.Input
             ClearGameplayActionQueues();
         }
 
-        public void SetMenuInputBlocked(UnityEngine.Object owner, bool blocked)
+        public void SetMenuInputBlocked(UnityEngine.Object owner, bool blocked, Action closeRequested = null)
         {
             if (owner != null)
             {
@@ -497,7 +503,7 @@ namespace UnityIsekaiGame.Input
                 else menuInputBlockOwners.Remove(owner);
             }
 
-            PlayerCursorMode.SetMenuOpen(owner, blocked);
+            PlayerCursorMode.SetMenuOpen(owner, blocked, closeRequested);
             ClearGameplayActionQueues();
             ClearInventoryUiActions();
         }

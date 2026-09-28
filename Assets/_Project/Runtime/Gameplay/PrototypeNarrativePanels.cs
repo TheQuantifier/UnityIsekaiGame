@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityIsekaiGame.Dialogue;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Input;
@@ -18,27 +17,22 @@ namespace UnityIsekaiGame.Gameplay
 
         protected virtual void Awake() => Services = GetComponent<PrototypePersistenceServiceBehaviour>();
 
-        protected virtual void Update()
-        {
-            if (IsOpen && Keyboard.current?.escapeKey.wasPressedThisFrame == true) Close();
-        }
-
         protected void OpenModal(GameObject interactor)
         {
             if (IsOpen) return;
             Input = interactor == null ? null : interactor.GetComponentInParent<PlayerInputReader>();
             if (Input == null) Input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
             IsOpen = true;
-            PrototypeGameplayModalState.SetNarrativeActive(true);
-            if (Input != null) Input.SetMenuInputBlocked(this, true);
-            else PlayerCursorMode.SetMenuOpen(this, true);
+            GameUiModalState.SetNarrativeActive(true);
+            if (Input != null) Input.SetMenuInputBlocked(this, true, Close);
+            else PlayerCursorMode.SetMenuOpen(this, true, Close);
         }
 
         public virtual void Close()
         {
             if (!IsOpen) return;
             IsOpen = false;
-            PrototypeGameplayModalState.SetNarrativeActive(false);
+            GameUiModalState.SetNarrativeActive(false);
             if (Input != null) Input.SetMenuInputBlocked(this, false);
             else PlayerCursorMode.SetMenuOpen(this, false);
         }

@@ -90,7 +90,7 @@ namespace UnityIsekaiGame.Combat
         {
             failure = string.Empty;
             if (target == null) failure = "Enemy attack has no target.";
-            else if (PrototypeGameplayModalState.IsModalActive) failure = "Enemy attack is paused by a modal screen.";
+            else if (GameUiModalState.IsModalActive) failure = "Enemy attack is paused by a modal screen.";
             else if (health != null && health.IsDefeated) failure = $"{name} is defeated and cannot attack.";
             else if (!ActorLifecycleUtility.CanAct(gameObject)) failure = $"{name} cannot act.";
             else if (execution == null) failure = "Enemy attack has no combat execution definition.";

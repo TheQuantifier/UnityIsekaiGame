@@ -49,7 +49,7 @@ namespace UnityIsekaiGame.Combat
 
         private void Update()
         {
-            if (PrototypeGameplayModalState.IsModalActive)
+            if (GameUiModalState.IsModalActive)
             {
                 return;
             }

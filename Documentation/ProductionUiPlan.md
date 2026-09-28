@@ -40,3 +40,5 @@ Prototype-only world assets are not promoted merely by moving them. They move in
 - Buttons and common controls share the brown-and-gold rounded visual language.
 - Existing inventory, character, spell, journal, party, save/load, dialogue, guild, market, crafting, travel, and prompt interfaces compile against the production theme.
 - Theme behavior has focused EditMode coverage and the complete EditMode and PlayMode suites remain green.
+
+The concrete surface inventory, ownership decisions, and migration targets are maintained in `ProductionUiAudit.md`.

@@ -39,7 +39,7 @@ namespace UnityIsekaiGame.Combat
 
         private void Update()
         {
-            if (PrototypeGameplayModalState.IsModalActive
+            if (GameUiModalState.IsModalActive
                 || health != null && health.IsDefeated
                 || enemyController != null && enemyController.IsTargetWithinDetectionRadius())
             {

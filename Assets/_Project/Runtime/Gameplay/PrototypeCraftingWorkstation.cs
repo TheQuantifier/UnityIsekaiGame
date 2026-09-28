@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Interaction;
 using UnityIsekaiGame.Presentation;
@@ -50,8 +49,8 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             open = true;
-            if (input != null) input.SetMenuInputBlocked(this, true);
-            else PlayerCursorMode.SetMenuOpen(this, true);
+            if (input != null) input.SetMenuInputBlocked(this, true, Close);
+            else PlayerCursorMode.SetMenuOpen(this, true, Close);
             status = "Choose an item type, then place resources into its component slots.";
             showItemRecovery = false;
             selectedRecipeId = string.Empty;
@@ -63,11 +62,6 @@ namespace UnityIsekaiGame.Gameplay
         {
             SubscribeToServices(null);
             Close();
-        }
-
-        private void Update()
-        {
-            if (open && Keyboard.current?.escapeKey.wasPressedThisFrame == true) Close();
         }
 
         private void OnGUI()

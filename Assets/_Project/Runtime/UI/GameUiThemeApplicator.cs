@@ -28,6 +28,7 @@ namespace UnityIsekaiGame.UI
         private readonly List<Toggle> toggleBuffer = new List<Toggle>();
         private readonly List<Scrollbar> scrollbarBuffer = new List<Scrollbar>();
         private Canvas targetCanvas;
+        private GameUiSafeArea safeArea;
         private float nextRefreshAt;
         private bool refreshRequested;
 
@@ -57,6 +58,11 @@ namespace UnityIsekaiGame.UI
             {
                 Canvas canvas = canvases[i];
                 if (canvas == null || canvas.renderMode == RenderMode.WorldSpace)
+                {
+                    continue;
+                }
+
+                if (FindRootScreenSpaceCanvas(canvas) != canvas)
                 {
                     continue;
                 }
@@ -113,6 +119,15 @@ namespace UnityIsekaiGame.UI
             }
 
             GameUiTheme.ConfigureCanvas(targetCanvas);
+            if (safeArea == null)
+            {
+                safeArea = GetComponent<GameUiSafeArea>();
+                if (safeArea == null)
+                {
+                    safeArea = gameObject.AddComponent<GameUiSafeArea>();
+                }
+            }
+            safeArea.ConfigureForCanvas(targetCanvas);
             StyleNewButtons();
             StyleNewTexts();
             StyleNewPanels();
@@ -121,6 +136,28 @@ namespace UnityIsekaiGame.UI
             StyleNewScrollbars();
             refreshRequested = false;
             nextRefreshAt = Time.unscaledTime + SafetyRefreshIntervalSeconds;
+        }
+
+        public static Canvas FindRootScreenSpaceCanvas(Canvas canvas)
+        {
+            if (canvas == null)
+            {
+                return null;
+            }
+
+            Canvas root = canvas;
+            Transform current = canvas.transform.parent;
+            while (current != null)
+            {
+                Canvas parentCanvas = current.GetComponent<Canvas>();
+                if (parentCanvas != null && parentCanvas.renderMode != RenderMode.WorldSpace)
+                {
+                    root = parentCanvas;
+                }
+                current = current.parent;
+            }
+
+            return root;
         }
 
         private void StyleNewButtons()

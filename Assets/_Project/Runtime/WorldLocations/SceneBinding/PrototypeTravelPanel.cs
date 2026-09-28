@@ -31,7 +31,6 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
         private void Update()
         {
             if (Keyboard.current?.tKey.wasPressedThisFrame == true) SetVisible(!visible);
-            else if (visible && Keyboard.current?.escapeKey.wasPressedThisFrame == true) SetVisible(false);
 
             if (visible && Time.unscaledTime >= nextDestinationRefreshAt)
             {
@@ -102,8 +101,13 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 RefreshDestinations();
             }
             if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
-            if (input != null) input.SetMenuInputBlocked(this, visible);
-            else PlayerCursorMode.SetMenuOpen(this, visible);
+            if (input != null) input.SetMenuInputBlocked(this, visible, visible ? CloseFromCancel : null);
+            else PlayerCursorMode.SetMenuOpen(this, visible, visible ? CloseFromCancel : null);
+        }
+
+        private void CloseFromCancel()
+        {
+            SetVisible(false);
         }
 
         private void RefreshDestinations()

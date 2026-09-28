@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityIsekaiGame.Economy;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Interaction;
@@ -41,17 +40,12 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             open = true;
-            if (input != null) input.SetMenuInputBlocked(this, true);
-            else PlayerCursorMode.SetMenuOpen(this, true);
+            if (input != null) input.SetMenuInputBlocked(this, true, Close);
+            else PlayerCursorMode.SetMenuOpen(this, true, Close);
             RefreshCatalog(force: true);
         }
 
         private void OnDisable() => Close();
-
-        private void Update()
-        {
-            if (open && Keyboard.current?.escapeKey.wasPressedThisFrame == true) Close();
-        }
 
         private void OnGUI()
         {

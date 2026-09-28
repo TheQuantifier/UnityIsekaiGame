@@ -30,7 +30,7 @@ namespace UnityIsekaiGame.Dialogue
         public bool CanInteract(in InteractionContext context)
         {
             ResolveReferences();
-            if (!enabled || !isActiveAndEnabled || services?.NarrativeCoordinator == null || PrototypeGameplayModalState.IsModalActive) return false;
+            if (!enabled || !isActiveAndEnabled || services?.NarrativeCoordinator == null || GameUiModalState.IsModalActive) return false;
             PlayerInputReader input = context.Interactor == null ? null : context.Interactor.GetComponentInParent<PlayerInputReader>();
             if (input != null && input.GameplayInputBlocked) return false;
             PlayerHealth health = context.Interactor == null ? null : context.Interactor.GetComponentInParent<PlayerHealth>();

@@ -51,7 +51,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
         public bool CanHandleInteraction(in InteractionContext context, InteractionPointSnapshot point)
         {
             PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
-            return services?.NarrativeCoordinator != null && !PrototypeGameplayModalState.IsModalActive;
+            return services?.NarrativeCoordinator != null && !GameUiModalState.IsModalActive;
         }
 
         public void HandleInteraction(in InteractionContext context, InteractionPointSnapshot point)

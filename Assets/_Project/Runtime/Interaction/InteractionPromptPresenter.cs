@@ -23,7 +23,7 @@ namespace UnityIsekaiGame.Interaction
                 return;
             }
 
-            if (PrototypeGameplayModalState.IsModalActive)
+            if (GameUiModalState.IsModalActive)
             {
                 promptView.Hide();
                 return;

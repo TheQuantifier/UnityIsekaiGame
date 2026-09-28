@@ -87,7 +87,8 @@ namespace UnityIsekaiGame.UI.Inventory
             inactiveMenuColor = GameUiTheme.PanelRaised;
             activeMenuColor = GameUiTheme.AccentSoft;
             EnsureItemDetailsPanel();
-            ApplyPrototypeMenuLayout();
+            ApplyProductionMenuLayout();
+            EnsureResponsiveCanvas();
             ApplyTheme();
         }
 
@@ -120,7 +121,8 @@ namespace UnityIsekaiGame.UI.Inventory
             EnsureSaveLoadMenuObjects();
             EnsureItemDetailsPanel();
             EnsureCharacterStatsPanel();
-            ApplyPrototypeMenuLayout();
+            ApplyProductionMenuLayout();
+            EnsureResponsiveCanvas();
             ApplyTheme();
 
             activeSection = InventoryMenuSection.Inventory;
@@ -210,7 +212,7 @@ namespace UnityIsekaiGame.UI.Inventory
             equipSelected = onEquipSelected;
             unequipSelected = onUnequipSelected;
             EnsureItemDetailsPanel();
-            ApplyPrototypeMenuLayout();
+            ApplyProductionMenuLayout();
             ApplyTheme();
             ApplyActiveSection(force: true);
             Canvas.ForceUpdateCanvases();
@@ -258,7 +260,7 @@ namespace UnityIsekaiGame.UI.Inventory
             });
 
             extension.Initialize(new InventoryMenuExtensionContext(this, binding.ContentRoot, ResolveFont()));
-            ApplyPrototypeMenuLayout();
+            ApplyProductionMenuLayout();
             ApplyActiveSection(force: true);
             return true;
         }
@@ -297,7 +299,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 }
 
                 menuExtensions.RemoveAt(i);
-                ApplyPrototypeMenuLayout();
+                ApplyProductionMenuLayout();
                 ApplyActiveSection(force: true);
                 return true;
             }
@@ -828,7 +830,7 @@ namespace UnityIsekaiGame.UI.Inventory
             hasAppliedSection = true;
         }
 
-        private void ApplyPrototypeMenuLayout()
+        private void ApplyProductionMenuLayout()
         {
             Transform navigationParent = characterMenuButton == null ? inventoryMenuButton == null ? null : inventoryMenuButton.transform.parent : characterMenuButton.transform.parent;
             if (navigationParent != null)
@@ -871,6 +873,32 @@ namespace UnityIsekaiGame.UI.Inventory
             ConfigureInventorySectionLayout();
             ConfigureCharacterSectionLayout();
             UpdateResponsiveInventoryGrid(force: true);
+        }
+
+        private void EnsureResponsiveCanvas()
+        {
+            Canvas canvas = GetComponentInParent<Canvas>(true);
+            if (canvas == null || canvas.renderMode == RenderMode.WorldSpace)
+            {
+                return;
+            }
+
+            canvas = GameUiThemeApplicator.FindRootScreenSpaceCanvas(canvas);
+
+            GameUiThemeApplicator applicator = canvas.GetComponent<GameUiThemeApplicator>();
+            if (applicator == null)
+            {
+                applicator = canvas.gameObject.AddComponent<GameUiThemeApplicator>();
+            }
+
+            GameUiSafeArea safeArea = canvas.GetComponent<GameUiSafeArea>();
+            if (safeArea == null)
+            {
+                safeArea = canvas.gameObject.AddComponent<GameUiSafeArea>();
+            }
+
+            safeArea.ConfigureForCanvas(canvas);
+            applicator.RequestRefresh();
         }
 
         private static void ConfigureNavigationStrip(Transform navigationParent)

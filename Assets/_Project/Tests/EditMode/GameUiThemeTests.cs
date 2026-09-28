@@ -2,6 +2,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityIsekaiGame.Presentation;
+using UnityIsekaiGame.UI;
 
 namespace UnityIsekaiGame.Tests.EditMode
 {
@@ -69,6 +70,43 @@ namespace UnityIsekaiGame.Tests.EditMode
             finally
             {
                 Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [TestCase(1024, 768, 0f)]
+        [TestCase(2560, 1080, 1f)]
+        public void CanvasMatchAdaptsAcrossSupportedAspectRatios(int width, int height, float expected)
+        {
+            Assert.That(GameUiTheme.CalculateCanvasMatch(width, height), Is.EqualTo(expected).Within(0.001f));
+        }
+
+        [Test]
+        public void StandardWidescreenUsesBalancedResponsiveScaling()
+        {
+            float match = GameUiTheme.CalculateCanvasMatch(1920, 1080);
+            Assert.That(match, Is.GreaterThan(0f));
+            Assert.That(match, Is.LessThan(1f));
+        }
+
+        [Test]
+        public void NestedCanvasUsesItsRootCanvasForScalingAndSafeArea()
+        {
+            GameObject rootObject = new GameObject("Root Canvas", typeof(RectTransform), typeof(Canvas));
+            GameObject nestedObject = new GameObject("Nested Canvas", typeof(RectTransform), typeof(Canvas));
+            nestedObject.transform.SetParent(rootObject.transform, false);
+            try
+            {
+                Canvas root = rootObject.GetComponent<Canvas>();
+                Canvas nested = nestedObject.GetComponent<Canvas>();
+                root.renderMode = RenderMode.ScreenSpaceOverlay;
+                nested.renderMode = RenderMode.ScreenSpaceOverlay;
+
+                Assert.That(GameUiThemeApplicator.FindRootScreenSpaceCanvas(nested), Is.SameAs(root));
+                Assert.That(GameUiThemeApplicator.FindRootScreenSpaceCanvas(root), Is.SameAs(root));
+            }
+            finally
+            {
+                Object.DestroyImmediate(rootObject);
             }
         }
 

@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityIsekaiGame.Dialogue;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Presentation;
@@ -34,11 +33,6 @@ namespace UnityIsekaiGame.Gameplay
         {
             services = GetComponent<PrototypePersistenceServiceBehaviour>();
             input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
-        }
-
-        private void Update()
-        {
-            if (IsOpen && Keyboard.current?.escapeKey.wasPressedThisFrame == true) Close();
         }
 
         public void OpenAdventurersGuildDesk(string pointId, GameObject interactionOwner)
@@ -112,8 +106,8 @@ namespace UnityIsekaiGame.Gameplay
             interactor = interactionOwner;
             status = string.Empty;
             IsOpen = true;
-            if (input != null) input.SetMenuInputBlocked(this, true);
-            else PlayerCursorMode.SetMenuOpen(this, true);
+            if (input != null) input.SetMenuInputBlocked(this, true, Close);
+            else PlayerCursorMode.SetMenuOpen(this, true, Close);
         }
 
         private void OnGUI()

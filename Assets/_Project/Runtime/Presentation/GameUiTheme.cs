@@ -129,7 +129,20 @@ namespace UnityIsekaiGame.Presentation
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = ReferenceResolution;
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.matchWidthOrHeight = CalculateCanvasMatch(Screen.width, Screen.height);
+        }
+
+        public static float CalculateCanvasMatch(int width, int height)
+        {
+            if (width <= 0 || height <= 0)
+            {
+                return 0.5f;
+            }
+
+            const float narrowAspect = 4f / 3f;
+            const float wideAspect = 21f / 9f;
+            float aspect = width / (float)height;
+            return Mathf.InverseLerp(narrowAspect, wideAspect, aspect);
         }
 
         public static void StyleText(Text text, GameUiTextRole role = GameUiTextRole.Body)

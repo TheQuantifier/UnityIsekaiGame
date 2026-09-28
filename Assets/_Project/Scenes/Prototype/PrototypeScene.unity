@@ -3820,6 +3820,8 @@ GameObject:
   - component: {fileID: 328735283}
   - component: {fileID: 328735282}
   - component: {fileID: 328735281}
+  - component: {fileID: 328735289}
+  - component: {fileID: 328735288}
   m_Layer: 5
   m_Name: Inventory Canvas
   m_TagString: Untagged
@@ -4023,6 +4025,35 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &328735288
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 328735280}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d7b6fbf2c42428687557cde7d24de59, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.UI::UnityIsekaiGame.UI.GameUiSafeArea
+  contentRoot: {fileID: 328735287}
+  targetLayouts:
+  - target: {fileID: 2017624102}
+    anchorMin: {x: 0.18, y: 0.14}
+    anchorMax: {x: 0.82, y: 0.86}
+--- !u!114 &328735289
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 328735280}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a099ffc09eb49028b094f8b3fd5cfbb, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.UI::UnityIsekaiGame.UI.GameUiThemeApplicator
 --- !u!1 &337683219
 GameObject:
   m_ObjectHideFlags: 0

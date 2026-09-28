@@ -43,8 +43,6 @@ namespace UnityIsekaiGame.Gameplay
                 SetOpen(!IsChatOpen);
                 return;
             }
-
-            if (IsChatOpen && keyboard.escapeKey.wasPressedThisFrame) SetOpen(false);
         }
 
         public void SetOpen(bool open)
@@ -53,8 +51,13 @@ namespace UnityIsekaiGame.Gameplay
             IsChatOpen = open;
             focusInput = open;
             if (open) draft = string.Empty;
-            if (input != null) input.SetMenuInputBlocked(this, open);
-            else PlayerCursorMode.SetMenuOpen(this, open);
+            if (input != null) input.SetMenuInputBlocked(this, open, open ? CloseFromCancel : null);
+            else PlayerCursorMode.SetMenuOpen(this, open, open ? CloseFromCancel : null);
+        }
+
+        private void CloseFromCancel()
+        {
+            SetOpen(false);
         }
 
         public void AddSystemMessage(string message)

@@ -1168,7 +1168,7 @@ namespace UnityIsekaiGame.Development
                 $"Location: {FormatLocationOneLine()}",
                 $"Definitions: {(registry == null ? 0 : registry.Count)}",
                 $"Persistence Slot: {CurrentSlotId}",
-                $"Modal Active: {PrototypeGameplayModalState.IsModalActive}"
+                $"Modal Active: {GameUiModalState.IsModalActive}"
             });
         }
 

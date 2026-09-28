@@ -140,7 +140,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
-            if (isOpen && input.ConsumeCancel())
+            if (isOpen && PlayerCursorMode.TopMenuOwner == this && input.ConsumeCancel())
             {
                 SetOpen(false);
                 return;
@@ -218,11 +218,11 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (input != null)
             {
-                input.SetMenuInputBlocked(this, true);
+                input.SetMenuInputBlocked(this, true, CloseFromCancel);
                 input.ClearGameplayActionQueues();
                 input.ClearInventoryUiActions();
             }
-            else PlayerCursorMode.SetMenuOpen(this, true);
+            else PlayerCursorMode.SetMenuOpen(this, true, CloseFromCancel);
             view?.Show();
         }
 
@@ -235,11 +235,11 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (input != null)
             {
-                input.SetMenuInputBlocked(this, true);
+                input.SetMenuInputBlocked(this, true, CloseFromCancel);
                 input.ClearGameplayActionQueues();
                 input.ClearInventoryUiActions();
             }
-            else PlayerCursorMode.SetMenuOpen(this, true);
+            else PlayerCursorMode.SetMenuOpen(this, true, CloseFromCancel);
             Refresh();
             view?.Show();
         }
@@ -256,11 +256,11 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (input != null)
             {
-                input.SetMenuInputBlocked(this, true);
+                input.SetMenuInputBlocked(this, true, CloseFromCancel);
                 input.ClearCancel();
                 input.ClearInventoryUiActions();
             }
-            else PlayerCursorMode.SetMenuOpen(this, true);
+            else PlayerCursorMode.SetMenuOpen(this, true, CloseFromCancel);
             Refresh();
 
             if (view != null)
@@ -287,6 +287,11 @@ namespace UnityIsekaiGame.UI.Inventory
             isOpen = false;
             refreshPending = false;
             saveLoadPersistence?.PlayTime?.SetMenuOpen(false);
+        }
+
+        private void CloseFromCancel()
+        {
+            SetOpen(false);
         }
 
         private void Refresh()

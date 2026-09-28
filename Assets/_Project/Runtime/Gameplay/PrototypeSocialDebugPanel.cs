@@ -35,10 +35,6 @@ namespace UnityIsekaiGame.Gameplay
             {
                 SetVisible(!visible);
             }
-            else if (visible && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
-                SetVisible(false);
-            }
 #endif
         }
 
@@ -73,8 +69,13 @@ namespace UnityIsekaiGame.Gameplay
         {
             visible = value;
             if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
-            if (input != null) input.SetMenuInputBlocked(this, visible);
-            else PlayerCursorMode.SetMenuOpen(this, visible);
+            if (input != null) input.SetMenuInputBlocked(this, visible, visible ? CloseFromCancel : null);
+            else PlayerCursorMode.SetMenuOpen(this, visible, visible ? CloseFromCancel : null);
+        }
+
+        private void CloseFromCancel()
+        {
+            SetVisible(false);
         }
     }
 }

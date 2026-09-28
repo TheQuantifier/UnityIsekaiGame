@@ -24,7 +24,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
         {
             PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
             return services?.NarrativeCoordinator != null
-                && !PrototypeGameplayModalState.IsModalActive
+                && !GameUiModalState.IsModalActive
                 && !string.IsNullOrWhiteSpace(conversationDefinitionId)
                 && !string.IsNullOrWhiteSpace(providerPersonId);
         }
