@@ -29,7 +29,6 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private EquipmentSlotView[] equipmentSlotViews;
         [SerializeField] private Text feedbackText;
         [SerializeField] private Button useButton;
-        [SerializeField] private Button equipButton;
         [SerializeField] private Button dropButton;
         [SerializeField] private Button unequipButton;
         [SerializeField] private GameObject selectedItemDetailsRoot;
@@ -64,6 +63,7 @@ namespace UnityIsekaiGame.UI.Inventory
         private Action equipSelected;
         private Action dropSelected;
         private Action unequipSelected;
+        private bool primaryActionUsesItem;
         private InventoryMenuSection activeSection = InventoryMenuSection.Inventory;
         private InventoryMenuExtensionBinding activeExtension;
         private InventoryMenuSection appliedSection;
@@ -118,7 +118,7 @@ namespace UnityIsekaiGame.UI.Inventory
 
         public static int CalculateActionColumnCount(float availableWidth)
         {
-            return availableWidth >= 330f ? 3 : availableWidth >= 210f ? 2 : 1;
+            return availableWidth >= 220f ? 2 : 1;
         }
 
         /// <summary>
@@ -166,8 +166,8 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (useButton != null)
             {
-                useButton.onClick.RemoveListener(InvokeUseSelected);
-                useButton.onClick.AddListener(InvokeUseSelected);
+                useButton.onClick.RemoveListener(InvokePrimarySelected);
+                useButton.onClick.AddListener(InvokePrimarySelected);
             }
 
             useSelected = onUseSelected;
@@ -189,12 +189,6 @@ namespace UnityIsekaiGame.UI.Inventory
                         equipmentSlotViews[i].Initialize((EquipmentSlotType)i, onEquipmentSlotSelected);
                     }
                 }
-            }
-
-            if (equipButton != null)
-            {
-                equipButton.onClick.RemoveListener(InvokeEquipSelected);
-                equipButton.onClick.AddListener(InvokeEquipSelected);
             }
 
             if (unequipButton != null)
@@ -650,12 +644,6 @@ namespace UnityIsekaiGame.UI.Inventory
 
         public void SetEquipmentActions(bool canEquip, bool canUnequip)
         {
-            if (equipButton != null)
-            {
-                equipButton.gameObject.SetActive(true);
-                equipButton.interactable = canEquip;
-            }
-
             if (unequipButton != null)
             {
                 unequipButton.gameObject.SetActive(canUnequip);
@@ -664,16 +652,12 @@ namespace UnityIsekaiGame.UI.Inventory
 
         public void SetInventoryActions(bool canUse, bool canEquip, bool canDrop)
         {
+            primaryActionUsesItem = canUse;
             if (useButton != null)
             {
                 useButton.gameObject.SetActive(true);
-                useButton.interactable = canUse;
-            }
-
-            if (equipButton != null)
-            {
-                equipButton.gameObject.SetActive(true);
-                equipButton.interactable = canEquip;
+                useButton.interactable = canUse || canEquip;
+                useButton.name = canUse ? "Use Item Action Button" : "Equip Item Action Button";
             }
 
             if (dropButton != null)
@@ -715,14 +699,16 @@ namespace UnityIsekaiGame.UI.Inventory
             canvasGroup.blocksRaycasts = visible;
         }
 
-        private void InvokeUseSelected()
+        private void InvokePrimarySelected()
         {
-            useSelected?.Invoke();
-        }
-
-        private void InvokeEquipSelected()
-        {
-            equipSelected?.Invoke();
+            if (primaryActionUsesItem)
+            {
+                useSelected?.Invoke();
+            }
+            else
+            {
+                equipSelected?.Invoke();
+            }
         }
 
         private void InvokeDropSelected()
@@ -1159,7 +1145,7 @@ namespace UnityIsekaiGame.UI.Inventory
             if (width <= 1f || height <= 1f) return;
 
             int columns = CalculateActionColumnCount(width);
-            int rows = Mathf.CeilToInt(3f / columns);
+            int rows = Mathf.CeilToInt(2f / columns);
             Vector2 spacing = inventoryActionGridLayout.spacing;
             inventoryActionGridLayout.constraintCount = columns;
             inventoryActionGridLayout.cellSize = new Vector2(
@@ -1347,6 +1333,8 @@ namespace UnityIsekaiGame.UI.Inventory
             {
                 GameUiTheme.StyleText(selectedItemDetailsText, GameUiTextRole.Muted);
             }
+            StyleInventoryActionIcon(useButton, GameUiTheme.AccentBright);
+            StyleInventoryActionIcon(dropButton, GameUiTheme.Danger);
 
             if (slotViews != null)
             {
@@ -1732,12 +1720,18 @@ namespace UnityIsekaiGame.UI.Inventory
             inventoryActionGridLayout.childAlignment = TextAnchor.MiddleCenter;
             inventoryActionGridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
 
-            useButton = EnsureInventoryActionButton(useButton, actionsObject.transform, "Use Button", "Use", font, GameUiButtonTone.Primary);
-            equipButton = EnsureInventoryActionButton(equipButton, actionsObject.transform, "Equip Button", "Equip", font, GameUiButtonTone.Primary);
-            dropButton = EnsureInventoryActionButton(dropButton, actionsObject.transform, "Drop Button", "Drop", font, GameUiButtonTone.Danger);
+            Transform obsoleteEquipButton = actionsObject.transform.Find("Equip Button");
+            if (obsoleteEquipButton != null && (useButton == null || obsoleteEquipButton.gameObject != useButton.gameObject))
+            {
+                DestroyMenuObject(obsoleteEquipButton.gameObject);
+            }
+
+            useButton = EnsureInventoryActionButton(useButton, actionsObject.transform, "Use Item Action Button", "\u270A", font, GameUiButtonTone.Primary);
+            dropButton = EnsureInventoryActionButton(dropButton, actionsObject.transform, "Drop Button", "\u21B6", font, GameUiButtonTone.Danger);
             useButton.transform.SetSiblingIndex(0);
-            equipButton.transform.SetSiblingIndex(1);
-            dropButton.transform.SetSiblingIndex(2);
+            dropButton.transform.SetSiblingIndex(1);
+            StyleInventoryActionIcon(useButton, GameUiTheme.AccentBright);
+            StyleInventoryActionIcon(dropButton, GameUiTheme.Danger);
             UpdateResponsiveItemActions();
         }
 
@@ -1769,6 +1763,17 @@ namespace UnityIsekaiGame.UI.Inventory
             labelRect.offsetMax = new Vector2(-6f, -2f);
             GameUiTheme.StyleButton(button, tone);
             return button;
+        }
+
+        private static void StyleInventoryActionIcon(Button button, Color iconColor)
+        {
+            if (button == null) return;
+            Text icon = button.GetComponentInChildren<Text>(true);
+            if (icon == null) return;
+            icon.fontSize = Mathf.Max(26, icon.fontSize);
+            icon.fontStyle = FontStyle.Bold;
+            icon.alignment = TextAnchor.MiddleCenter;
+            icon.color = iconColor;
         }
 
         private void EnsureCharacterStatsPanel()

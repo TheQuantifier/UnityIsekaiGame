@@ -21,7 +21,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(InventoryScreenView.CalculateInventoryColumnCount(width), Is.EqualTo(expectedColumns));
         }
 
-        [TestCase(400f, 3)]
+        [TestCase(400f, 2)]
         [TestCase(280f, 2)]
         [TestCase(180f, 1)]
         public void ItemActionsWrapToAvailableWidth(float width, int expectedColumns)
@@ -95,13 +95,29 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(detailsScroll.GetComponent<RectTransform>().anchorMax.y, Is.LessThanOrEqualTo(0.6f));
 
                 Button[] actionButtons = details.GetComponentsInChildren<Button>(true);
-                CollectionAssert.IsSubsetOf(new[] { "Use Button", "Equip Button", "Drop Button" }, actionButtons.Select(button => button.name).ToArray());
                 Transform actionsRoot = FindDescendant(details, "Item Actions");
                 Assert.That(actionsRoot, Is.Not.Null);
                 GridLayoutGroup actionGrid = actionsRoot.GetComponent<GridLayoutGroup>();
                 Assert.That(actionGrid, Is.Not.Null);
-                Assert.That(actionGrid.constraintCount, Is.InRange(1, 3));
+                Button[] itemActions = actionsRoot.GetComponentsInChildren<Button>(true);
+                Assert.That(itemActions, Has.Length.EqualTo(2));
+                Button primaryAction = itemActions.Single(button => button.name.Contains("Item Action Button"));
+                Button dropAction = itemActions.Single(button => button.name == "Drop Button");
+                Assert.That(primaryAction.GetComponentInChildren<Text>(true).text, Is.EqualTo("\u270A"));
+                Assert.That(dropAction.GetComponentInChildren<Text>(true).text, Is.EqualTo("\u21B6"));
+                Assert.That(dropAction.GetComponentInChildren<Text>(true).color, Is.EqualTo(UnityIsekaiGame.Presentation.GameUiTheme.Danger));
+                Assert.That(actionGrid.constraintCount, Is.InRange(1, 2));
                 Assert.That(actionsRoot.GetComponent<RectTransform>().anchorMax.y, Is.LessThanOrEqualTo(0.2f));
+
+                int useInvocations = 0;
+                int equipInvocations = 0;
+                view.Initialize(null, () => useInvocations++, null, () => equipInvocations++);
+                view.SetInventoryActions(canUse: true, canEquip: false, canDrop: true);
+                primaryAction.onClick.Invoke();
+                view.SetInventoryActions(canUse: false, canEquip: true, canDrop: true);
+                primaryAction.onClick.Invoke();
+                Assert.That(useInvocations, Is.EqualTo(1));
+                Assert.That(equipInvocations, Is.EqualTo(1));
 
                 Transform characterStats = FindDescendant(view.transform, "Character Stats And Status");
                 Assert.That(characterStats, Is.Not.Null);

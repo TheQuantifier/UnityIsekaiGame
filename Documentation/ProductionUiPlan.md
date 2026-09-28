@@ -61,6 +61,6 @@ The HUD uses no independent gameplay state. Hidden or unchanged elements do not 
 
 - Shared panels, controls, item slots, and HUD frames use warm inset leather surfaces, rounded corners, restrained outlines, and gold focus accents instead of cool gray placeholders.
 - The Tab menu uses a vertical right-edge navigation stack. Its Inventory page reserves two thirds for an independently scrolling, auto-wrapping slot grid and one third for a fixed item inspector.
-- The inspector keeps artwork, a description-and-stat scroll region, and the `Use`, `Equip`, and `Drop` action tray in separate vertical bands. Only the description band scrolls; the action tray auto-wraps when narrow.
+- The inspector keeps artwork, a description-and-stat scroll region, and a two-icon action tray in separate vertical bands. A closed-fist button performs the context-appropriate Use or Equip action, while a red curved-arrow button drops the item. Only the description band scrolls; the action tray auto-wraps when narrow.
 - Empty slots remain readable as dim brown boxes, while occupied, hovered, selected, and rarity-accented states are visually distinct.
 - Responsive tests cover one through four inventory columns and one through three action columns, and keyboard row navigation follows the live inventory column count.
