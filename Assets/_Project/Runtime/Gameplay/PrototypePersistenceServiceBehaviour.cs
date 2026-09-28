@@ -4236,7 +4236,6 @@ namespace UnityIsekaiGame.Gameplay
                     character.InitializeFromRegistry(registry, restoring: false);
                 }
                 playerOngoingEffects?.Configure(playerObject == null ? null : playerObject.GetComponent<CharacterSystemCoordinator>());
-                playerStats?.RefreshEquipmentModifiers();
                 if (playerKnowledge != null && playerIdentityProgression != null)
                 {
                     playerKnowledge.Configure(registry, playerIdentityProgression.PersonId, ResolvePlayerActorId(), playerBody == null ? string.Empty : playerBody.ActorBodyId);

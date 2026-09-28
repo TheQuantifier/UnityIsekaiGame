@@ -64,6 +64,9 @@ namespace UnityIsekaiGame.UI.Inventory
         private Action unequipSelected;
         private InventoryMenuSection activeSection = InventoryMenuSection.Inventory;
         private InventoryMenuExtensionBinding activeExtension;
+        private InventoryMenuSection appliedSection;
+        private InventoryMenuExtensionBinding appliedExtension;
+        private bool hasAppliedSection;
         private readonly List<InventoryMenuExtensionBinding> menuExtensions = new List<InventoryMenuExtensionBinding>();
         private PrototypePersistenceServiceBehaviour economyServices;
         private ScrollRect selectedItemDetailsScroll;
@@ -99,6 +102,35 @@ namespace UnityIsekaiGame.UI.Inventory
         }
 
         public int SlotCount => slotViews == null ? 0 : slotViews.Length;
+
+        /// <summary>
+        /// Creates and serializes the complete base menu hierarchy used at runtime, then applies the
+        /// same layout and theme so the Scene and Game views are accurate outside Play Mode.
+        /// Runtime-only menu extensions are still registered when play begins.
+        /// </summary>
+        public void BakeAuthoringLayout()
+        {
+            if (Application.isPlaying)
+            {
+                return;
+            }
+
+            inactiveMenuColor = PrototypeUiTheme.PanelRaised;
+            activeMenuColor = PrototypeUiTheme.AccentSoft;
+            EnsureSaveLoadMenuObjects();
+            EnsureItemDetailsPanel();
+            EnsureCharacterStatsPanel();
+            ApplyPrototypeMenuLayout();
+            ApplyTheme();
+
+            activeSection = InventoryMenuSection.Inventory;
+            activeExtension = null;
+            hasAppliedSection = false;
+            ApplyActiveSection(force: true);
+            RenderSelectedItemDetails(null);
+            Canvas.ForceUpdateCanvases();
+            UpdateResponsiveInventoryGrid(force: true);
+        }
 
         public void Initialize(Action<int> onSlotSelected, Action onUseSelected, Action<EquipmentSlotType> onEquipmentSlotSelected = null, Action onEquipSelected = null, Action onUnequipSelected = null, Action<int, bool> onSlotHovered = null)
         {
@@ -180,7 +212,7 @@ namespace UnityIsekaiGame.UI.Inventory
             EnsureItemDetailsPanel();
             ApplyPrototypeMenuLayout();
             ApplyTheme();
-            ApplyActiveSection();
+            ApplyActiveSection(force: true);
             Canvas.ForceUpdateCanvases();
             UpdateResponsiveInventoryGrid(force: true);
         }
@@ -189,12 +221,12 @@ namespace UnityIsekaiGame.UI.Inventory
         {
             EnsureSaveLoadMenuObjects();
             saveLoadView?.Initialize(persistence);
-            ApplyActiveSection();
+            ApplyActiveSection(force: true);
         }
 
         public void RefreshSaveLoad()
         {
-            saveLoadView?.Refresh();
+            saveLoadView?.RefreshIfNeeded();
         }
 
         public bool RegisterMenuExtension(IInventoryMenuExtension extension)
@@ -227,7 +259,7 @@ namespace UnityIsekaiGame.UI.Inventory
 
             extension.Initialize(new InventoryMenuExtensionContext(this, binding.ContentRoot, ResolveFont()));
             ApplyPrototypeMenuLayout();
-            ApplyActiveSection();
+            ApplyActiveSection(force: true);
             return true;
         }
 
@@ -266,7 +298,7 @@ namespace UnityIsekaiGame.UI.Inventory
 
                 menuExtensions.RemoveAt(i);
                 ApplyPrototypeMenuLayout();
-                ApplyActiveSection();
+                ApplyActiveSection(force: true);
                 return true;
             }
 
@@ -298,6 +330,16 @@ namespace UnityIsekaiGame.UI.Inventory
                 {
                     menuExtensions[i].Extension.Refresh();
                 }
+            }
+        }
+
+        public void RefreshActiveMenuExtension()
+        {
+            if (activeSection == InventoryMenuSection.Extension
+                && activeExtension != null
+                && activeExtension.Extension.IsAvailable)
+            {
+                activeExtension.Extension.Refresh();
             }
         }
 
@@ -641,37 +683,54 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void ShowInventorySection()
         {
-            activeSection = InventoryMenuSection.Inventory;
-            ApplyActiveSection();
+            SelectSection(InventoryMenuSection.Inventory);
         }
 
         private void ShowSpellsSection()
         {
-            activeSection = InventoryMenuSection.Spells;
-            ApplyActiveSection();
+            SelectSection(InventoryMenuSection.Spells);
         }
 
         private void ShowCharacterSection()
         {
-            activeSection = InventoryMenuSection.Character;
-            ApplyActiveSection();
+            SelectSection(InventoryMenuSection.Character);
         }
 
         private void ShowContractsSection()
         {
-            activeSection = InventoryMenuSection.Contracts;
-            ApplyActiveSection();
+            SelectSection(InventoryMenuSection.Contracts);
         }
 
         private void ShowSaveLoadSection()
         {
-            activeSection = InventoryMenuSection.SaveLoad;
-            saveLoadView?.Refresh();
-            ApplyActiveSection();
+            if (SelectSection(InventoryMenuSection.SaveLoad))
+            {
+                saveLoadView?.RefreshIfNeeded();
+            }
         }
 
-        private void ApplyActiveSection()
+        private bool SelectSection(InventoryMenuSection section)
         {
+            if (activeSection == section && hasAppliedSection)
+            {
+                return false;
+            }
+
+            activeSection = section;
+            ApplyActiveSection();
+            return true;
+        }
+
+        private void ApplyActiveSection(bool force = false)
+        {
+            if (!force
+                && hasAppliedSection
+                && appliedSection == activeSection
+                && appliedExtension == activeExtension)
+            {
+                return;
+            }
+
             bool inventoryActive = activeSection == InventoryMenuSection.Inventory;
             bool characterActive = activeSection == InventoryMenuSection.Character;
             bool spellsActive = activeSection == InventoryMenuSection.Spells;
@@ -763,6 +822,10 @@ namespace UnityIsekaiGame.UI.Inventory
                     binding.ButtonImage.color = extensionActive && binding == activeExtension ? activeMenuColor : inactiveMenuColor;
                 }
             }
+
+            appliedSection = activeSection;
+            appliedExtension = activeExtension;
+            hasAppliedSection = true;
         }
 
         private void ApplyPrototypeMenuLayout()
@@ -1474,8 +1537,18 @@ namespace UnityIsekaiGame.UI.Inventory
                 scrollRect.offsetMax = new Vector2(-14f, -14f);
                 scrollObject.GetComponent<Image>().color = new Color(0.02f, 0.03f, 0.04f, 0.42f);
 
-                GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
-                viewport.transform.SetParent(scrollObject.transform, false);
+                Transform viewportTransform = scrollObject.transform.Find("Viewport");
+                GameObject viewport;
+                if (viewportTransform == null)
+                {
+                    viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
+                    viewport.transform.SetParent(scrollObject.transform, false);
+                }
+                else
+                {
+                    viewport = viewportTransform.gameObject;
+                }
+
                 RectTransform viewportRect = viewport.GetComponent<RectTransform>();
                 viewportRect.anchorMin = Vector2.zero;
                 viewportRect.anchorMax = Vector2.one;

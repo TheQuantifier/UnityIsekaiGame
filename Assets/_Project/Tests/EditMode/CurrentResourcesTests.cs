@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.ResourceSystem;
+using UnityIsekaiGame.Stats;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -223,6 +224,51 @@ namespace UnityIsekaiGame.Tests
 
                 Assert.That(GetCurrent(resources, ResourceStamina), Is.GreaterThan(maximum - 20f), "The canonical resource collection owns stamina regeneration.");
                 Assert.That(stamina.CurrentStamina, Is.EqualTo(GetCurrent(resources, ResourceStamina)).Within(0.001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void DeferredModifierRebuild_DoesNotClampStaminaToTemporaryMaximum()
+        {
+            DefinitionRegistry registry = LoadCatalog().CreateRegistry();
+            GameObject owner = CreateConfiguredOwner(registry, out _, out Component statsComponent, out Component resourcesComponent);
+            try
+            {
+                CalculatedStatCollection stats = (CalculatedStatCollection)statsComponent;
+                CharacterResourceCollection resources = (CharacterResourceCollection)resourcesComponent;
+                RuntimeCalculatedStatContribution contribution = new RuntimeCalculatedStatContribution
+                {
+                    contributionId = "test.equipment.maximum-stamina",
+                    statId = MaximumStamina,
+                    sourceId = "test.equipment",
+                    sourceCategory = (int)CalculatedStatContributionSourceCategory.Equipment,
+                    kind = (int)CalculatedStatContributionKind.Flat,
+                    direction = (int)CalculatedStatContributionDirection.Improve,
+                    magnitude = 100f
+                };
+
+                Assert.That(stats.AddContribution(contribution, out string addFailure), Is.True, addFailure);
+                float enhancedMaximum = resources.GetMaximum(ResourceStamina);
+                float expectedCurrent = enhancedMaximum - 25f;
+                resources.SetCurrent(ResourceStamina, expectedCurrent, "test", "Prepare stamina for modifier rebuild.");
+                int maximumChangedEvents = 0;
+                resources.ResourceMaximumChanged += (_, _, _, _) => maximumChangedEvents++;
+
+                using (stats.DeferRecalculation())
+                {
+                    Assert.That(stats.RemoveContributionsFromSource(CalculatedStatContributionSourceCategory.Equipment, "test.equipment"), Is.True);
+                    Assert.That(stats.AddContribution(contribution, out addFailure), Is.True, addFailure);
+                }
+
+                Assert.That(resources.GetMaximum(ResourceStamina), Is.EqualTo(enhancedMaximum).Within(0.001f));
+                Assert.That(resources.GetCurrent(ResourceStamina), Is.EqualTo(expectedCurrent).Within(0.001f),
+                    "Rebuilding unchanged equipment modifiers must not clamp stamina to the temporary unmodified maximum.");
+                Assert.That(maximumChangedEvents, Is.Zero,
+                    "Observers should only see the final modifier state, not the temporary remove/re-add state.");
             }
             finally
             {

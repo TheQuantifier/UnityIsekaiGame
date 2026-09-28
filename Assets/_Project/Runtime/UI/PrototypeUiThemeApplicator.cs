@@ -13,7 +13,7 @@ namespace UnityIsekaiGame.UI
     [DisallowMultipleComponent]
     public sealed class PrototypeUiThemeApplicator : MonoBehaviour
     {
-        private const float SafetyRefreshIntervalSeconds = 5f;
+        private const float SafetyRefreshIntervalSeconds = 30f;
 
         private readonly HashSet<Button> styledButtons = new HashSet<Button>();
         private readonly HashSet<Text> styledTexts = new HashSet<Text>();

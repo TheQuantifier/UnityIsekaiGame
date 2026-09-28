@@ -117,21 +117,31 @@ namespace UnityIsekaiGame.Equipment
 
         private void RecalculateEquipmentModifiers()
         {
-            RemoveEquipmentModifiers();
-
-            if (equipment == null)
+            CalculatedStatCollection stats = CalculatedStats;
+            if (stats == null)
             {
+                RemoveEquipmentModifiers();
                 return;
             }
 
-            foreach (EquipmentSlotState slot in equipment.Slots)
+            using (stats.DeferRecalculation())
             {
-                if (slot == null || slot.IsEmpty || slot.Item == null || !slot.Item.IsEquippable)
+                RemoveEquipmentModifiers();
+
+                if (equipment == null)
                 {
-                    continue;
+                    return;
                 }
 
-                RegisterEquipmentModifiers(slot);
+                foreach (EquipmentSlotState slot in equipment.Slots)
+                {
+                    if (slot == null || slot.IsEmpty || slot.Item == null || !slot.Item.IsEquippable)
+                    {
+                        continue;
+                    }
+
+                    RegisterEquipmentModifiers(slot);
+                }
             }
         }
 

@@ -39,11 +39,11 @@ namespace UnityIsekaiGame.UI.Parties
             menu ??= GetComponent<InventoryScreenView>();
             persistence ??= FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
             if (menu != null && !registered) registered = menu.RegisterMenuExtension(this);
-            if (persistence != null) persistence.PartyOperations.Changed += Refresh;
+            if (persistence != null) persistence.PartyOperations.Changed += OnPartyChanged;
         }
         private void OnDisable()
         {
-            if (persistence != null) persistence.PartyOperations.Changed -= Refresh;
+            if (persistence != null) persistence.PartyOperations.Changed -= OnPartyChanged;
             if (menu != null && registered) menu.UnregisterMenuExtension(this);
             registered = false;
         }
@@ -54,9 +54,14 @@ namespace UnityIsekaiGame.UI.Parties
             panel.Initialize(persistence, context.Font);
         }
         public void Refresh() => panel?.Refresh();
-        public void Show() { panel?.gameObject.SetActive(true); panel?.Refresh(); }
+        public void Show() => panel?.gameObject.SetActive(true);
         public void Hide() { }
-        public void Dispose() { if (persistence != null) persistence.PartyOperations.Changed -= Refresh; }
+        public void Dispose() { if (persistence != null) persistence.PartyOperations.Changed -= OnPartyChanged; }
+        private void OnPartyChanged()
+        {
+            panel?.MarkDirty();
+            panel?.Refresh();
+        }
     }
 
     public sealed class PartyMenuView : MonoBehaviour
@@ -65,6 +70,7 @@ namespace UnityIsekaiGame.UI.Parties
         private Font font;
         private RectTransform content;
         private ScrollRect scrollRect;
+        private bool dirty = true;
         public void Initialize(PrototypePersistenceServiceBehaviour value, Font valueFont)
         {
             persistence = value; font = valueFont;
@@ -73,7 +79,8 @@ namespace UnityIsekaiGame.UI.Parties
             EnsureStructure();
             Rebuild();
         }
-        public void Refresh() { if (isActiveAndEnabled) Rebuild(); }
+        public void MarkDirty() => dirty = true;
+        public void Refresh() { if (dirty && isActiveAndEnabled) Rebuild(); }
         private void Rebuild()
         {
             if (persistence == null) persistence = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
@@ -88,6 +95,7 @@ namespace UnityIsekaiGame.UI.Parties
                 Label("Party services are unavailable. Return to the game world and reopen this screen.", 17, FontStyle.Bold, PrototypeUiTextRole.Warning);
                 return;
             }
+            dirty = false;
             string playerId = persistence.PlayerPersonId;
             PartySnapshot party = persistence.AdventuringParties.GetPartyForPerson(playerId);
             Label("ADVENTURING PARTY", 22, FontStyle.Bold, PrototypeUiTextRole.Title);

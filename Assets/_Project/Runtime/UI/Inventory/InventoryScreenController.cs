@@ -20,6 +20,8 @@ namespace UnityIsekaiGame.UI.Inventory
 {
     public sealed class InventoryScreenController : MonoBehaviour, IPlayerMenuController
     {
+        private const float QueuedRefreshIntervalSeconds = 0.1f;
+
         [SerializeField] private PlayerInputReader input;
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private PlayerEquipment equipment;
@@ -49,6 +51,8 @@ namespace UnityIsekaiGame.UI.Inventory
         private int selectedKnownSpellIndex;
         private int selectedQuestIndex;
         private bool refreshing;
+        private bool refreshPending;
+        private float nextQueuedRefreshAt;
 
         private void Awake()
         {
@@ -115,6 +119,11 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void Update()
         {
+            if (isOpen && refreshPending && Time.unscaledTime >= nextQueuedRefreshAt)
+            {
+                Refresh();
+            }
+
             if (input == null)
             {
                 return;
@@ -276,6 +285,7 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             isOpen = false;
+            refreshPending = false;
             saveLoadPersistence?.PlayTime?.SetMenuOpen(false);
         }
 
@@ -287,6 +297,8 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             refreshing = true;
+            refreshPending = false;
+            nextQueuedRefreshAt = Time.unscaledTime + QueuedRefreshIntervalSeconds;
             try
             {
                 if (view != null && inventory != null)
@@ -317,7 +329,7 @@ namespace UnityIsekaiGame.UI.Inventory
 
                 view?.RefreshSaveLoad();
 
-                view?.RefreshMenuExtensions();
+                view?.RefreshActiveMenuExtension();
             }
             finally
             {
@@ -329,7 +341,7 @@ namespace UnityIsekaiGame.UI.Inventory
         {
             if (isOpen)
             {
-                Refresh();
+                refreshPending = true;
             }
         }
 
@@ -721,7 +733,7 @@ namespace UnityIsekaiGame.UI.Inventory
         {
             if (playerStats != null)
             {
-                playerStats.StatsChanged += Refresh;
+                playerStats.StatsChanged += RefreshIfOpen;
             }
 
             if (playerHealth != null)
@@ -776,7 +788,7 @@ namespace UnityIsekaiGame.UI.Inventory
         {
             if (playerStats != null)
             {
-                playerStats.StatsChanged -= Refresh;
+                playerStats.StatsChanged -= RefreshIfOpen;
             }
 
             if (playerHealth != null)
