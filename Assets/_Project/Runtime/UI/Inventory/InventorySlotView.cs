@@ -23,8 +23,8 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void Awake()
         {
-            normalColor = PrototypeUiTheme.PanelRaised;
-            selectedColor = PrototypeUiTheme.AccentSoft;
+            normalColor = GameUiTheme.PanelRaised;
+            selectedColor = GameUiTheme.AccentSoft;
             ApplyTextLayout();
         }
 
@@ -144,7 +144,7 @@ namespace UnityIsekaiGame.UI.Inventory
             itemNameText.horizontalOverflow = HorizontalWrapMode.Wrap;
             itemNameText.verticalOverflow = VerticalWrapMode.Truncate;
             itemNameText.alignment = TextAnchor.MiddleLeft;
-            itemNameText.color = PrototypeUiTheme.TextPrimary;
+            itemNameText.color = GameUiTheme.TextPrimary;
             itemNameText.fontSize = Mathf.Max(12, itemNameText.fontSize);
             itemNameText.fontStyle = FontStyle.Bold;
 
@@ -181,7 +181,7 @@ namespace UnityIsekaiGame.UI.Inventory
             quantityText.horizontalOverflow = HorizontalWrapMode.Overflow;
             quantityText.verticalOverflow = VerticalWrapMode.Truncate;
             quantityText.alignment = TextAnchor.LowerRight;
-            quantityText.color = PrototypeUiTheme.Accent;
+            quantityText.color = GameUiTheme.Accent;
             quantityText.fontStyle = FontStyle.Bold;
 
             RectTransform rectTransform = quantityText.rectTransform;
@@ -201,7 +201,7 @@ namespace UnityIsekaiGame.UI.Inventory
             backgroundImage.color = isSelected
                 ? selectedColor
                 : isHovered
-                    ? Color.Lerp(normalColor, PrototypeUiTheme.Secondary, 0.28f)
+                    ? Color.Lerp(normalColor, GameUiTheme.Secondary, 0.28f)
                     : normalColor;
         }
     }

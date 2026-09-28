@@ -72,24 +72,24 @@ namespace UnityIsekaiGame.Gameplay
             float width = Mathf.Min(560f, Screen.width - 24f);
             float height = Mathf.Min(300f, Screen.height - 24f);
             Rect panel = new Rect(12f, Screen.height - height - 12f, width, height);
-            PrototypeUiTheme.DrawPanelFrame(panel);
+            GameUiTheme.DrawPanelFrame(panel);
             GUILayout.BeginArea(new Rect(panel.x + 14f, panel.y + 12f, panel.width - 28f, panel.height - 24f));
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Text Chat", PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label("Text Chat", GameUiTheme.HeadingStyle);
             GUILayout.FlexibleSpace();
-            GUILayout.Label("/ to close", PrototypeUiTheme.MutedStyle);
+            GUILayout.Label("/ to close", GameUiTheme.MutedStyle);
             GUILayout.EndHorizontal();
 
-            scroll = GUILayout.BeginScrollView(scroll, PrototypeUiTheme.CardStyle, GUILayout.ExpandHeight(true));
-            if (history.Count == 0) GUILayout.Label("No messages yet.", PrototypeUiTheme.MutedStyle);
-            else foreach (string message in history) GUILayout.Label(message, PrototypeUiTheme.BodyStyle);
+            scroll = GUILayout.BeginScrollView(scroll, GameUiTheme.CardStyle, GUILayout.ExpandHeight(true));
+            if (history.Count == 0) GUILayout.Label("No messages yet.", GameUiTheme.MutedStyle);
+            else foreach (string message in history) GUILayout.Label(message, GameUiTheme.BodyStyle);
             GUILayout.EndScrollView();
 
             GUILayout.BeginHorizontal();
             GUI.SetNextControlName(InputControlName);
             draft = GUILayout.TextField(draft ?? string.Empty, 240, GUILayout.ExpandWidth(true), GUILayout.Height(32f));
-            bool submit = GUILayout.Button("Send", PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Width(80f), GUILayout.Height(32f));
+            bool submit = GUILayout.Button("Send", GameUiTheme.PrimaryButtonStyle, GUILayout.Width(80f), GUILayout.Height(32f));
             GUILayout.EndHorizontal();
 
             if (focusInput)

@@ -313,13 +313,13 @@ namespace UnityIsekaiGame.Parties
             if (cachedParty == null) return;
             float width = Mathf.Min(310f, Screen.width - 30f);
             Rect panel = new Rect(Screen.width - width - 18f, 18f, width, 54f + 27f * cachedRows.Count);
-            PrototypeUiTheme.DrawPanelFrame(panel);
+            GameUiTheme.DrawPanelFrame(panel);
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 10f, panel.width - 24f, panel.height - 20f));
-            GUILayout.Label(cachedHeader, PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label(cachedHeader, GameUiTheme.HeadingStyle);
             for (int i = 0; i < cachedRows.Count; i++)
             {
                 PartyHudMemberRow row = cachedRows[i];
-                GUILayout.Label(row.Label, row.Ready ? PrototypeUiTheme.BodyStyle : PrototypeUiTheme.MutedStyle, GUILayout.Height(23f));
+                GUILayout.Label(row.Label, row.Ready ? GameUiTheme.BodyStyle : GameUiTheme.MutedStyle, GUILayout.Height(23f));
             }
             GUILayout.EndArea();
         }

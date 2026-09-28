@@ -20,8 +20,8 @@ namespace UnityIsekaiGame.UI
             }
 
 
-            PrototypeUiTheme.StyleText(label, PrototypeUiTextRole.Feedback);
-            PrototypeUiTheme.EnsureTextShadow(label, 2f);
+            GameUiTheme.StyleText(label, GameUiTextRole.Feedback);
+            GameUiTheme.EnsureTextShadow(label, 2f);
 
             Hide();
         }

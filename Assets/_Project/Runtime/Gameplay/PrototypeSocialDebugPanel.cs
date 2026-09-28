@@ -53,19 +53,19 @@ namespace UnityIsekaiGame.Gameplay
 
             window.width = Mathf.Min(window.width, Screen.width - 20f);
             window.height = Mathf.Min(window.height, Screen.height - 20f);
-            window = GUI.Window(917214, window, DrawWindow, "SOCIAL STATE  [F8]", PrototypeUiTheme.WindowStyle);
+            window = GUI.Window(917214, window, DrawWindow, "SOCIAL STATE  [F8]", GameUiTheme.WindowStyle);
         }
 
         private void DrawWindow(int id)
         {
-            GUILayout.Label("TARGET PERSON ID", PrototypeUiTheme.HeadingStyle);
-            GUILayout.Label("Leave blank to inspect the first available NPC.", PrototypeUiTheme.MutedStyle);
+            GUILayout.Label("TARGET PERSON ID", GameUiTheme.HeadingStyle);
+            GUILayout.Label("Leave blank to inspect the first available NPC.", GameUiTheme.MutedStyle);
             targetPersonId = GUILayout.TextField(targetPersonId ?? string.Empty);
             GUILayout.Space(8f);
             scroll = GUILayout.BeginScrollView(scroll);
-            GUILayout.Label(services.BuildSocialDebugReport(targetPersonId), PrototypeUiTheme.BodyStyle);
+            GUILayout.Label(services.BuildSocialDebugReport(targetPersonId), GameUiTheme.BodyStyle);
             GUILayout.EndScrollView();
-            if (GUILayout.Button("Close", PrototypeUiTheme.DangerButtonStyle, GUILayout.Height(32f))) SetVisible(false);
+            if (GUILayout.Button("Close", GameUiTheme.DangerButtonStyle, GUILayout.Height(32f))) SetVisible(false);
             GUI.DragWindow(new Rect(0f, 0f, window.width, 30f));
         }
 

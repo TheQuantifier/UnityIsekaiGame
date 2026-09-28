@@ -91,37 +91,37 @@ namespace UnityIsekaiGame.Gameplay
 
         private void OnGUI()
         {
-            GUI.Label(new Rect(12f, Screen.height - 30f, 420f, 24f), "[F7] Professions & Career", PrototypeUiTheme.MutedStyle);
+            GUI.Label(new Rect(12f, Screen.height - 30f, 420f, 24f), "[F7] Professions & Career", GameUiTheme.MutedStyle);
             if (!visible)
             {
                 return;
             }
 
             Rect window = new Rect(24f, 24f, Mathf.Min(620f, Screen.width - 48f), Mathf.Min(700f, Screen.height - 48f));
-            PrototypeUiTheme.DrawPanelFrame(window);
+            GameUiTheme.DrawPanelFrame(window);
             GUILayout.BeginArea(new Rect(window.x + 16f, window.y + 16f, window.width - 32f, window.height - 32f));
-            GUILayout.Label("PROFESSIONS & CAREER", PrototypeUiTheme.TitleStyle);
+            GUILayout.Label("PROFESSIONS & CAREER", GameUiTheme.TitleStyle);
             if (services == null)
             {
                 services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
             }
             if (services == null)
             {
-                GUILayout.Label("Career services are unavailable.", PrototypeUiTheme.StatusStyle);
+                GUILayout.Label("Career services are unavailable.", GameUiTheme.StatusStyle);
                 GUILayout.EndArea();
                 return;
             }
 
             string personId = services.PlayerPersonId;
-            GUILayout.Label($"CHARACTER  |  {personId}", PrototypeUiTheme.MutedStyle);
+            GUILayout.Label($"CHARACTER  |  {personId}", GameUiTheme.MutedStyle);
             GUILayout.Space(6f);
-            GUILayout.Label("DECLARE PRACTICE", PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label("DECLARE PRACTICE", GameUiTheme.HeadingStyle);
             GUILayout.BeginHorizontal();
             foreach ((string name, string professionId, string entryPathId) in Declarations)
             {
                 bool active = activeProfessionIds.Contains(professionId);
                 GUI.enabled = !active;
-                if (GUILayout.Button(active ? $"{name}  [Active]" : name, active ? PrototypeUiTheme.ButtonStyle : PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(34f)))
+                if (GUILayout.Button(active ? $"{name}  [Active]" : name, active ? GameUiTheme.ButtonStyle : GameUiTheme.PrimaryButtonStyle, GUILayout.Height(34f)))
                 {
                     string worldTime = Time.realtimeSinceStartupAsDouble.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
                     ProfessionEntryOperationResult result = services.ProfessionCoordinator.DeclareInformalProfession(
@@ -155,8 +155,8 @@ namespace UnityIsekaiGame.Gameplay
             GUILayout.EndScrollView();
 
             GUILayout.Space(6f);
-            GUILayout.Label(status, PrototypeUiTheme.StatusStyle);
-            if (GUILayout.Button("Close", PrototypeUiTheme.DangerButtonStyle, GUILayout.Height(34f))) SetVisible(false);
+            GUILayout.Label(status, GameUiTheme.StatusStyle);
+            if (GUILayout.Button("Close", GameUiTheme.DangerButtonStyle, GUILayout.Height(34f))) SetVisible(false);
             GUILayout.EndArea();
         }
 
@@ -206,13 +206,13 @@ namespace UnityIsekaiGame.Gameplay
 
         private static void DrawSection(string title, IReadOnlyList<string> values)
         {
-            GUILayout.Label(title.ToUpperInvariant(), PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label(title.ToUpperInvariant(), GameUiTheme.HeadingStyle);
             if (values == null || values.Count == 0)
             {
-                GUILayout.Label("None recorded yet.", PrototypeUiTheme.MutedStyle);
+                GUILayout.Label("None recorded yet.", GameUiTheme.MutedStyle);
                 return;
             }
-            for (int i = 0; i < values.Count; i++) GUILayout.Label($"• {values[i]}", PrototypeUiTheme.BodyStyle);
+            for (int i = 0; i < values.Count; i++) GUILayout.Label($"• {values[i]}", GameUiTheme.BodyStyle);
         }
 
         private static string Display(string id)

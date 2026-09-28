@@ -84,8 +84,8 @@ namespace UnityIsekaiGame.UI.Inventory
                 canvasGroup = GetComponent<CanvasGroup>();
             }
 
-            inactiveMenuColor = PrototypeUiTheme.PanelRaised;
-            activeMenuColor = PrototypeUiTheme.AccentSoft;
+            inactiveMenuColor = GameUiTheme.PanelRaised;
+            activeMenuColor = GameUiTheme.AccentSoft;
             EnsureItemDetailsPanel();
             ApplyPrototypeMenuLayout();
             ApplyTheme();
@@ -115,8 +115,8 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
-            inactiveMenuColor = PrototypeUiTheme.PanelRaised;
-            activeMenuColor = PrototypeUiTheme.AccentSoft;
+            inactiveMenuColor = GameUiTheme.PanelRaised;
+            activeMenuColor = GameUiTheme.AccentSoft;
             EnsureSaveLoadMenuObjects();
             EnsureItemDetailsPanel();
             EnsureCharacterStatsPanel();
@@ -850,7 +850,7 @@ namespace UnityIsekaiGame.UI.Inventory
 
                 if (navigationParent.TryGetComponent(out Image navigationImage))
                 {
-                    navigationImage.color = new Color(PrototypeUiTheme.PanelRaised.r, PrototypeUiTheme.PanelRaised.g, PrototypeUiTheme.PanelRaised.b, 0.82f);
+                    navigationImage.color = new Color(GameUiTheme.PanelRaised.r, GameUiTheme.PanelRaised.g, GameUiTheme.PanelRaised.b, 0.82f);
                 }
             }
 
@@ -924,8 +924,8 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (TryGetComponent(out Image panelImage))
             {
-                panelImage.color = PrototypeUiTheme.Backdrop;
-                EnsureOutline(gameObject, PrototypeUiTheme.Border);
+                panelImage.color = GameUiTheme.Backdrop;
+                EnsureOutline(gameObject, GameUiTheme.Border);
             }
 
             Transform contentParent = inventoryContentRoot == null ? null : inventoryContentRoot.transform.parent;
@@ -937,7 +937,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 contentRect.offsetMax = new Vector2(-18f, -82f);
                 if (contentParent.TryGetComponent(out Image contentImage))
                 {
-                    contentImage.color = new Color(PrototypeUiTheme.Panel.r, PrototypeUiTheme.Panel.g, PrototypeUiTheme.Panel.b, 0.78f);
+                    contentImage.color = new Color(GameUiTheme.Panel.r, GameUiTheme.Panel.g, GameUiTheme.Panel.b, 0.78f);
                 }
             }
 
@@ -1124,7 +1124,7 @@ namespace UnityIsekaiGame.UI.Inventory
             handleRect.offsetMin = Vector2.zero;
             handleRect.offsetMax = Vector2.zero;
             Image handleImage = handleObject.GetComponent<Image>();
-            handleImage.color = new Color(PrototypeUiTheme.Secondary.r, PrototypeUiTheme.Secondary.g, PrototypeUiTheme.Secondary.b, 0.9f);
+            handleImage.color = new Color(GameUiTheme.Secondary.r, GameUiTheme.Secondary.g, GameUiTheme.Secondary.b, 0.9f);
 
             Scrollbar scrollbar = trackObject.GetComponent<Scrollbar>();
             scrollbar.handleRect = handleRect;
@@ -1142,26 +1142,26 @@ namespace UnityIsekaiGame.UI.Inventory
             Button[] buttons = GetComponentsInChildren<Button>(true);
             for (int i = 0; i < buttons.Length; i++)
             {
-                PrototypeUiTheme.StyleButton(buttons[i], PrototypeUiTheme.InferButtonTone(buttons[i].name));
+                GameUiTheme.StyleButton(buttons[i], GameUiTheme.InferButtonTone(buttons[i].name));
             }
 
             Text[] texts = GetComponentsInChildren<Text>(true);
             for (int i = 0; i < texts.Length; i++)
             {
-                PrototypeUiTheme.StyleText(texts[i], PrototypeUiTheme.InferTextRole(texts[i].name));
+                GameUiTheme.StyleText(texts[i], GameUiTheme.InferTextRole(texts[i].name));
             }
 
             if (feedbackText != null)
             {
-                PrototypeUiTheme.StyleText(feedbackText, PrototypeUiTextRole.Feedback);
+                GameUiTheme.StyleText(feedbackText, GameUiTextRole.Feedback);
             }
             if (selectedItemHeaderText != null)
             {
-                PrototypeUiTheme.StyleText(selectedItemHeaderText, PrototypeUiTextRole.Heading);
+                GameUiTheme.StyleText(selectedItemHeaderText, GameUiTextRole.Heading);
             }
             if (selectedItemDetailsText != null)
             {
-                PrototypeUiTheme.StyleText(selectedItemDetailsText, PrototypeUiTextRole.Muted);
+                GameUiTheme.StyleText(selectedItemDetailsText, GameUiTextRole.Muted);
             }
         }
 
@@ -1209,7 +1209,7 @@ namespace UnityIsekaiGame.UI.Inventory
             Image buttonImage = buttonObject.GetComponent<Image>();
             buttonImage.color = inactiveMenuColor;
             Button button = buttonObject.GetComponent<Button>();
-            PrototypeUiTheme.StyleButton(button);
+            GameUiTheme.StyleButton(button);
 
             Text label = CreateDetailsText("Label", buttonObject.transform, font, 12, FontStyle.Bold, TextAnchor.MiddleCenter);
             RectTransform labelRect = label.rectTransform;
@@ -1348,8 +1348,8 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             Image rootImage = selectedItemDetailsRoot.GetComponent<Image>();
-            PrototypeUiTheme.StylePanel(rootImage, raised: true);
-            EnsureOutline(selectedItemDetailsRoot, PrototypeUiTheme.Border);
+            GameUiTheme.StylePanel(rootImage, raised: true);
+            EnsureOutline(selectedItemDetailsRoot, GameUiTheme.Border);
 
             Transform artworkFrameTransform = selectedItemDetailsRoot.transform.Find("Item Artwork Frame");
             GameObject artworkFrame;
@@ -1370,7 +1370,7 @@ namespace UnityIsekaiGame.UI.Inventory
             artworkFrameRect.offsetMax = Vector2.zero;
             artworkFrame.GetComponent<Image>().color = new Color(0.025f, 0.035f, 0.04f, 0.98f);
             Outline artworkOutline = artworkFrame.GetComponent<Outline>();
-            artworkOutline.effectColor = new Color(PrototypeUiTheme.Accent.r, PrototypeUiTheme.Accent.g, PrototypeUiTheme.Accent.b, 0.65f);
+            artworkOutline.effectColor = new Color(GameUiTheme.Accent.r, GameUiTheme.Accent.g, GameUiTheme.Accent.b, 0.65f);
             artworkOutline.effectDistance = new Vector2(1f, -1f);
 
             if (selectedItemIconImage == null)
@@ -1409,7 +1409,7 @@ namespace UnityIsekaiGame.UI.Inventory
             fallbackRect.anchorMax = Vector2.one;
             fallbackRect.offsetMin = new Vector2(8f, 8f);
             fallbackRect.offsetMax = new Vector2(-8f, -8f);
-            selectedItemIconFallbackText.color = PrototypeUiTheme.TextMuted;
+            selectedItemIconFallbackText.color = GameUiTheme.TextMuted;
             selectedItemIconFallbackText.raycastTarget = false;
 
             if (selectedItemHeaderText == null)

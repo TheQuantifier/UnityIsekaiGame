@@ -19,8 +19,8 @@ namespace UnityIsekaiGame.Interaction
                 canvasGroup = GetComponent<CanvasGroup>();
             }
 
-            PrototypeUiTheme.StyleText(promptText, PrototypeUiTextRole.Heading);
-            PrototypeUiTheme.EnsureTextShadow(promptText, 2f);
+            GameUiTheme.StyleText(promptText, GameUiTextRole.Heading);
+            GameUiTheme.EnsureTextShadow(promptText, 2f);
         }
 
         public void Show(string prompt)

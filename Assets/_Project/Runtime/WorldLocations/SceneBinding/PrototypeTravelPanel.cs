@@ -47,12 +47,12 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             float width = Mathf.Min(420f, Screen.width - 30f);
             float height = Mathf.Min(580f, Screen.height - 100f);
             Rect window = new Rect(20f, 72f, width, height);
-            PrototypeUiTheme.DrawPanelFrame(window);
+            GameUiTheme.DrawPanelFrame(window);
             GUILayout.BeginArea(new Rect(window.x + 14f, window.y + 14f, window.width - 28f, window.height - 28f));
             GUILayout.BeginHorizontal();
-            GUILayout.Label("TRAVEL", PrototypeUiTheme.TitleStyle);
+            GUILayout.Label("TRAVEL", GameUiTheme.TitleStyle);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Close  [T]", PrototypeUiTheme.DangerButtonStyle, GUILayout.Width(100f), GUILayout.Height(34f)))
+            if (GUILayout.Button("Close  [T]", GameUiTheme.DangerButtonStyle, GUILayout.Width(100f), GUILayout.Height(34f)))
             {
                 SetVisible(false);
                 GUILayout.EndHorizontal();
@@ -61,15 +61,15 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             }
             GUILayout.EndHorizontal();
             EntityLocationReferenceData player = PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId, persistence.WorldLocations.WorldId);
-            GUILayout.Label($"CURRENT LOCATION\n{(string.IsNullOrWhiteSpace(currentLocationId) ? "Unknown" : currentLocationId)}", PrototypeUiTheme.HeadingStyle);
-            GUILayout.Label(status, PrototypeUiTheme.StatusStyle);
+            GUILayout.Label($"CURRENT LOCATION\n{(string.IsNullOrWhiteSpace(currentLocationId) ? "Unknown" : currentLocationId)}", GameUiTheme.HeadingStyle);
+            GUILayout.Label(status, GameUiTheme.StatusStyle);
             GUILayout.Space(6f);
-            GUILayout.Label("AVAILABLE DESTINATIONS", PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label("AVAILABLE DESTINATIONS", GameUiTheme.HeadingStyle);
             scroll = GUILayout.BeginScrollView(scroll);
             for (int i = 0; i < visibleDestinations.Count; i++)
             {
                 LocationSnapshot destination = visibleDestinations[i];
-                if (!GUILayout.Button(destination.OfficialName, PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(38f))) continue;
+                if (!GUILayout.Button(destination.OfficialName, GameUiTheme.PrimaryButtonStyle, GUILayout.Height(38f))) continue;
                 if (!persistence.PartyTravel.CanTravel(persistence.PlayerPersonId, requireAllReady: true, out string partyTravelMessage))
                 {
                     status = partyTravelMessage;

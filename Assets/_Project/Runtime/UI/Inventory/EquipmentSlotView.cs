@@ -21,9 +21,9 @@ namespace UnityIsekaiGame.UI.Inventory
             slotType = type;
             selected = onSelected;
             ResolveReferences();
-            normalColor = PrototypeUiTheme.PanelRaised;
-            selectedColor = PrototypeUiTheme.AccentSoft;
-            PrototypeUiTheme.StyleText(label);
+            normalColor = GameUiTheme.PanelRaised;
+            selectedColor = GameUiTheme.AccentSoft;
+            GameUiTheme.StyleText(label);
         }
 
         public void Render(EquipmentSlotState slot)
