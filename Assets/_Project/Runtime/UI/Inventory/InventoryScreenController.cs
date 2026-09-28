@@ -75,7 +75,7 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (view != null)
             {
-                view.Initialize(SelectSlot, UseSelectedItem, SelectEquipmentSlot, EquipSelectedItem, UnequipSelectedEquipment, HoverSlot);
+                view.Initialize(SelectSlot, UseSelectedItem, SelectEquipmentSlot, EquipSelectedItem, UnequipSelectedEquipment, HoverSlot, DropSelectedItem);
             }
 
             if (spellManagementView != null)
@@ -428,6 +428,58 @@ namespace UnityIsekaiGame.UI.Inventory
             Refresh();
         }
 
+        public void DropSelectedItem()
+        {
+            if (!isOpen || inventory == null)
+            {
+                return;
+            }
+
+            InventorySlot slot = inventory.GetSlot(selectedSlotIndex);
+            if (slot == null || slot.IsEmpty || slot.Item == null)
+            {
+                view?.SetFeedback("Select an item to drop.");
+                return;
+            }
+
+            Transform source = itemUser == null ? inventory.transform : itemUser.transform;
+            ItemDefinition droppedItem = slot.Item;
+            string droppedName = droppedItem.DisplayName;
+            Vector3 forward = Vector3.ProjectOnPlane(source.forward, Vector3.up).normalized;
+            if (forward.sqrMagnitude < 0.01f) forward = Vector3.forward;
+            Vector3 dropPosition = source.position + forward * 1.25f + Vector3.up * 0.35f;
+            string message;
+
+            PrototypePersistenceServiceBehaviour persistence = ResolveRuntimePersistence();
+            if (persistence != null && !string.IsNullOrWhiteSpace(slot.ItemInstanceId))
+            {
+                PrototypeItemDropResult result = persistence.DropPrototypeItemToWorld(slot.ItemInstanceId, dropPosition, Quaternion.identity);
+                message = result.Message;
+            }
+            else
+            {
+                int quantity = slot.Quantity;
+                WorldItemPickup pickup = WorldItemPickupFactory.Create(droppedItem, quantity, dropPosition, Quaternion.identity);
+                if (pickup == null)
+                {
+                    message = "The selected item could not be dropped.";
+                }
+                else if (!inventory.RemoveItemAt(selectedSlotIndex, quantity))
+                {
+                    Destroy(pickup.gameObject);
+                    message = "The selected item could not be removed from inventory.";
+                }
+                else
+                {
+                    message = $"Dropped {droppedName}.";
+                }
+            }
+
+            Debug.Log(message);
+            view?.SetFeedback(message);
+            Refresh();
+        }
+
         private void SelectSlot(int slotIndex)
         {
             selectedSlotIndex = Mathf.Max(0, slotIndex);
@@ -501,7 +553,8 @@ namespace UnityIsekaiGame.UI.Inventory
             }
             else
             {
-                delta = direction.y > 0f ? -columns : columns;
+                int activeColumns = view == null ? columns : view.InventoryColumnCount;
+                delta = direction.y > 0f ? -activeColumns : activeColumns;
             }
 
             selectedSlotIndex = Mathf.Clamp(selectedSlotIndex + delta, 0, view.SlotCount - 1);
@@ -529,11 +582,19 @@ namespace UnityIsekaiGame.UI.Inventory
                 && !selectedInventorySlot.IsEmpty
                 && selectedInventorySlot.Item != null
                 && selectedInventorySlot.Item.IsEquippable;
+            bool canUse = selectedInventorySlot != null
+                && !selectedInventorySlot.IsEmpty
+                && selectedInventorySlot.Item != null
+                && selectedInventorySlot.Item.IsUsable;
+            bool canDrop = selectedInventorySlot != null
+                && !selectedInventorySlot.IsEmpty
+                && selectedInventorySlot.Item != null;
 
             EquipmentSlotState selectedEquipment = equipment == null ? null : equipment.GetSlot(selectedEquipmentSlot);
             bool canUnequip = selectedEquipment != null && !selectedEquipment.IsEmpty;
 
             view.SetEquipmentActions(canEquip, canUnequip);
+            view.SetInventoryActions(canUse, canEquip, canDrop);
         }
 
         private void SelectKnownSpell(int knownSpellIndex)

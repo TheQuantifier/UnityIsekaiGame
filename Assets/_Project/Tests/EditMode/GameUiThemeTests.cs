@@ -115,9 +115,36 @@ namespace UnityIsekaiGame.Tests.EditMode
         {
             Assert.That(GameUiTheme.Panel.r, Is.GreaterThan(GameUiTheme.Panel.b));
             Assert.That(GameUiTheme.PanelRaised.r, Is.GreaterThan(GameUiTheme.PanelRaised.b));
+            Assert.That(GameUiTheme.SlotEmpty.r, Is.GreaterThan(GameUiTheme.SlotEmpty.b));
+            Assert.That(GameUiTheme.SlotOccupied.r, Is.GreaterThan(GameUiTheme.SlotOccupied.b));
             Assert.That(GameUiTheme.Accent.r, Is.GreaterThan(GameUiTheme.Accent.b));
             Assert.That(GameUiTheme.Accent.g, Is.GreaterThan(GameUiTheme.Accent.b));
             Assert.That(GameUiTheme.TextPrimary.r, Is.GreaterThan(GameUiTheme.TextPrimary.b));
+        }
+
+        [Test]
+        public void ItemSlotThemeUsesWarmStateColorsAndSelectionBorder()
+        {
+            GameObject gameObject = new GameObject("Inventory Slot", typeof(RectTransform), typeof(Image));
+            try
+            {
+                Image image = gameObject.GetComponent<Image>();
+                GameUiTheme.StyleSlot(image, occupied: false, hovered: false, selected: false, accent: GameUiTheme.Border);
+
+                Assert.That(image.color, Is.EqualTo(GameUiTheme.SlotEmpty));
+                Assert.That(image.type, Is.EqualTo(Image.Type.Sliced));
+                Assert.That(gameObject.GetComponent<Outline>(), Is.Not.Null);
+
+                GameUiTheme.StyleSlot(image, occupied: true, hovered: false, selected: true, accent: Color.cyan);
+
+                Assert.That(image.color, Is.EqualTo(GameUiTheme.SlotSelected));
+                Assert.That(gameObject.GetComponent<Outline>().effectColor, Is.EqualTo(GameUiTheme.AccentBright));
+                Assert.That(gameObject.GetComponents<Outline>(), Has.Length.EqualTo(1));
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+            }
         }
 
         [Test]

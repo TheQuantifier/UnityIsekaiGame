@@ -42,6 +42,11 @@ namespace UnityIsekaiGame.Presentation
         public static readonly Color Panel = Hex("2A1A10", 0.97f);
         public static readonly Color PanelRaised = Hex("432C19", 0.98f);
         public static readonly Color PanelLight = Hex("624326", 1f);
+        public static readonly Color SurfaceInset = Hex("21130B", 0.98f);
+        public static readonly Color SlotEmpty = Hex("342115", 0.96f);
+        public static readonly Color SlotOccupied = Hex("50351F", 0.98f);
+        public static readonly Color SlotHover = Hex("674625", 1f);
+        public static readonly Color SlotSelected = Hex("795225", 1f);
         public static readonly Color Border = Hex("9B7134", 0.95f);
         public static readonly Color Accent = Hex("D9AA4E", 1f);
         public static readonly Color AccentBright = Hex("F0CD78", 1f);
@@ -191,6 +196,7 @@ namespace UnityIsekaiGame.Presentation
             {
                 ApplyRoundedSurface(image);
                 image.color = baseColor;
+                EnsureGraphicOutline(image, new Color(Border.r, Border.g, Border.b, 0.68f), 1f);
             }
 
             ColorBlock colors = button.colors;
@@ -217,7 +223,23 @@ namespace UnityIsekaiGame.Presentation
             {
                 ApplyRoundedSurface(image);
                 image.color = raised ? PanelRaised : Panel;
+                EnsureGraphicOutline(image, new Color(Border.r, Border.g, Border.b, raised ? 0.52f : 0.3f), 1f);
             }
+        }
+
+        public static void StyleSlot(Image image, bool occupied, bool hovered, bool selected, Color accent)
+        {
+            if (image == null) return;
+            ApplyRoundedSurface(image);
+            image.color = selected ? SlotSelected : hovered ? SlotHover : occupied ? SlotOccupied : SlotEmpty;
+            Color border = selected
+                ? AccentBright
+                : hovered
+                    ? Accent
+                    : occupied
+                        ? WithAlpha(accent, 0.82f)
+                        : new Color(Border.r, Border.g, Border.b, 0.42f);
+            EnsureGraphicOutline(image, border, selected ? 2f : 1f);
         }
 
         public static void StyleInputField(InputField inputField)
@@ -231,7 +253,8 @@ namespace UnityIsekaiGame.Presentation
             if (background != null)
             {
                 ApplyRoundedSurface(background);
-                background.color = Backdrop;
+                background.color = SurfaceInset;
+                EnsureGraphicOutline(background, new Color(Border.r, Border.g, Border.b, 0.55f), 1f);
             }
 
             ColorBlock colors = inputField.colors;
@@ -286,7 +309,7 @@ namespace UnityIsekaiGame.Presentation
             if (scrollbar.GetComponent<Image>() is Image track)
             {
                 ApplyRoundedSurface(track);
-                track.color = Backdrop;
+                track.color = SurfaceInset;
             }
 
             if (scrollbar.targetGraphic is Image handle)
@@ -373,6 +396,18 @@ namespace UnityIsekaiGame.Presentation
                 Mathf.Lerp(color.g, 0f, amount),
                 Mathf.Lerp(color.b, 0f, amount),
                 color.a);
+        }
+
+        private static Color WithAlpha(Color color, float alpha) => new Color(color.r, color.g, color.b, alpha);
+
+        private static void EnsureGraphicOutline(Graphic graphic, Color color, float distance)
+        {
+            if (graphic == null) return;
+            Outline outline = graphic.GetComponent<Outline>();
+            if (outline == null) outline = graphic.gameObject.AddComponent<Outline>();
+            outline.effectColor = color;
+            outline.effectDistance = new Vector2(distance, -distance);
+            outline.useGraphicAlpha = true;
         }
 
         private static Color Hex(string rgb, float alpha)

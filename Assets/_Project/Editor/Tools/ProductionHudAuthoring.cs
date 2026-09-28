@@ -73,7 +73,7 @@ namespace UnityIsekaiGame.Editor
             Text legacy = root.GetComponent<Text>();
             if (legacy != null) UnityEngine.Object.DestroyImmediate(legacy);
             Image panel = GetOrAdd<Image>(root);
-            GameUiTheme.StylePanel(panel, raised: true);
+            StyleHudPanel(root.transform, panel, GameUiTheme.Danger);
 
             Text heading = EnsureText(root.transform, "Vitals Heading", "ADVENTURER", 16, TextAnchor.MiddleLeft);
             SetRect(heading.gameObject, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(14f, -8f), new Vector2(-28f, 28f));
@@ -97,7 +97,8 @@ namespace UnityIsekaiGame.Editor
             GameObject root = EnsureChild(parent, name);
             SetRect(root, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(14f, y), new Vector2(-28f, 35f));
             Image track = GetOrAdd<Image>(root);
-            track.color = GameUiTheme.Backdrop;
+            GameUiTheme.StylePanel(track);
+            track.color = GameUiTheme.SurfaceInset;
             track.raycastTarget = false;
 
             Image fill = EnsureImage(root.transform, "Fill");
@@ -129,6 +130,7 @@ namespace UnityIsekaiGame.Editor
             CanvasGroup group = GetOrAdd<CanvasGroup>(root);
             Text label = MigrateRootText(root, "Message");
             Image panel = GetOrAdd<Image>(root);
+            StyleHudPanel(root.transform, panel, GameUiTheme.Secondary);
             SetRect(label.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(14f, 0f), new Vector2(-28f, 0f));
             label.text = string.Empty;
             label.alignment = TextAnchor.MiddleCenter;
@@ -146,7 +148,7 @@ namespace UnityIsekaiGame.Editor
             root.transform.SetParent(canvas, false);
             SetRect(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 24f), new Vector2(520f, 90f));
             Image panel = GetOrAdd<Image>(root);
-            GameUiTheme.StylePanel(panel);
+            StyleHudPanel(root.transform, panel, GameUiTheme.Accent);
 
             SpellQuickSlotView[] slots = root.GetComponentsInChildren<SpellQuickSlotView>(true).OrderBy(value => value.name).ToArray();
             for (int i = 0; i < slots.Length; i++)
@@ -173,6 +175,7 @@ namespace UnityIsekaiGame.Editor
             SetRect(root, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -24f), new Vector2(360f, 132f));
             CanvasGroup group = GetOrAdd<CanvasGroup>(root);
             Image panel = GetOrAdd<Image>(root);
+            StyleHudPanel(root.transform, panel, GameUiTheme.Accent);
             Text title = EnsureText(root.transform, "Quest Title", "QUEST", 18, TextAnchor.UpperLeft);
             SetRect(title.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(14f, -10f), new Vector2(-28f, -20f));
             Text objective = EnsureText(root.transform, "Quest Objective", string.Empty, 14, TextAnchor.UpperLeft);
@@ -186,11 +189,13 @@ namespace UnityIsekaiGame.Editor
             SetRect(root, new Vector2(0.5f, 0.82f), new Vector2(0.5f, 0.82f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(380f, 76f));
             CanvasGroup group = GetOrAdd<CanvasGroup>(root);
             Image panel = GetOrAdd<Image>(root);
+            StyleHudPanel(root.transform, panel, GameUiTheme.Danger);
             Text targetName = EnsureText(root.transform, "Target Name", "TARGET", 16, TextAnchor.UpperCenter);
             SetRect(targetName.gameObject, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -7f), new Vector2(-24f, -2f));
             Image track = EnsureImage(root.transform, "Health Track");
             SetRect(track.gameObject, new Vector2(0f, 0f), new Vector2(1f, 0.5f), new Vector2(0.5f, 0f), new Vector2(14f, 10f), new Vector2(-28f, -2f));
-            track.color = GameUiTheme.Backdrop;
+            GameUiTheme.StylePanel(track);
+            track.color = GameUiTheme.SurfaceInset;
             Image fill = EnsureImage(track.transform, "Fill");
             SetRect(fill.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(2f, 2f), new Vector2(-4f, -4f));
             Text value = EnsureText(track.transform, "Health Value", string.Empty, 12, TextAnchor.MiddleCenter);
@@ -220,12 +225,30 @@ namespace UnityIsekaiGame.Editor
             CanvasGroup group = GetOrAdd<CanvasGroup>(root);
             Text prompt = MigrateRootText(root, "Prompt Text");
             Image panel = GetOrAdd<Image>(root);
-            SetRect(prompt.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(38f, 0f), new Vector2(-76f, 0f));
+            StyleHudPanel(root.transform, panel, GameUiTheme.Accent);
+            SetRect(prompt.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(50f, 0f), new Vector2(-100f, 0f));
             prompt.alignment = TextAnchor.MiddleCenter;
             prompt.fontSize = 17;
-            Text key = EnsureText(root.transform, "Input Hint", "[E]", 18, TextAnchor.MiddleCenter);
-            SetRect(key.gameObject, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(12f, 0f), new Vector2(62f, -16f));
+            GameObject badge = EnsureChild(root.transform, "Input Badge");
+            SetRect(badge, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(12f, 0f), new Vector2(64f, -16f));
+            Image badgeImage = GetOrAdd<Image>(badge);
+            GameUiTheme.StylePanel(badgeImage, raised: true);
+            badgeImage.color = GameUiTheme.AccentSoft;
+            Transform existingKey = FindDirectChild(root.transform, "Input Hint");
+            if (existingKey != null) existingKey.SetParent(badge.transform, false);
+            Text key = EnsureText(badge.transform, "Input Hint", "[E]", 18, TextAnchor.MiddleCenter);
+            SetRect(key.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             view.Configure(group, panel, key, prompt);
+        }
+
+        private static void StyleHudPanel(Transform root, Image panel, Color accent)
+        {
+            GameUiTheme.StylePanel(panel, raised: true);
+            Image band = EnsureImage(root, "Top Accent");
+            SetRect(band.gameObject, new Vector2(0f, 1f), Vector2.one, new Vector2(0.5f, 1f), Vector2.zero, new Vector2(0f, 3f));
+            band.color = accent;
+            band.raycastTarget = false;
+            band.transform.SetAsLastSibling();
         }
 
         private static T[] FindAll<T>(Scene scene) where T : Component => scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<T>(true)).ToArray();

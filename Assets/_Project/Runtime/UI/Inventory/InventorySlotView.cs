@@ -12,20 +12,24 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private Text itemNameText;
         [SerializeField] private Text quantityText;
         [SerializeField] private string emptyLabel = "Empty";
-        [SerializeField] private Color normalColor = new Color(0.18f, 0.2f, 0.22f, 0.95f);
-        [SerializeField] private Color selectedColor = new Color(0.35f, 0.52f, 0.68f, 0.95f);
+        [SerializeField] private Color normalColor = new Color(0.31f, 0.21f, 0.12f, 0.98f);
+        [SerializeField] private Color selectedColor = new Color(0.47f, 0.32f, 0.15f, 1f);
 
         private int slotIndex = -1;
         private System.Action<int> selected;
         private System.Action<int, bool> hovered;
         private bool isSelected;
         private bool isHovered;
+        private bool hasItem;
+        private Color itemAccent;
 
         private void Awake()
         {
-            normalColor = GameUiTheme.PanelRaised;
-            selectedColor = GameUiTheme.AccentSoft;
+            normalColor = GameUiTheme.SlotOccupied;
+            selectedColor = GameUiTheme.SlotSelected;
+            itemAccent = GameUiTheme.Border;
             ApplyTextLayout();
+            RefreshBackground();
         }
 
         private void OnValidate()
@@ -36,13 +40,15 @@ namespace UnityIsekaiGame.UI.Inventory
 
         public void Render(UnityIsekaiGame.Inventory.InventorySlot slot)
         {
-            ApplyTextLayout();
-
             if (slot == null || slot.IsEmpty)
             {
                 RenderEmpty();
                 return;
             }
+
+            hasItem = true;
+            itemAccent = ResolveItemAccent(slot.Item);
+            ApplyTextLayout();
 
             if (itemNameText != null)
             {
@@ -61,10 +67,13 @@ namespace UnityIsekaiGame.UI.Inventory
                 iconImage.enabled = icon != null;
                 iconImage.preserveAspect = true;
             }
+            RefreshBackground();
         }
 
         public void RenderEmpty()
         {
+            hasItem = false;
+            itemAccent = GameUiTheme.Border;
             ApplyTextLayout();
 
             if (itemNameText != null)
@@ -82,6 +91,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 iconImage.sprite = null;
                 iconImage.enabled = false;
             }
+            RefreshBackground();
         }
 
         public void Initialize(int index, System.Action<int> onSelected, System.Action<int, bool> onHovered = null)
@@ -90,6 +100,16 @@ namespace UnityIsekaiGame.UI.Inventory
             selected = onSelected;
             hovered = onHovered;
             ResolveBackgroundImage();
+            RefreshPresentation();
+        }
+
+        public void RefreshPresentation()
+        {
+            ResolveBackgroundImage();
+            normalColor = GameUiTheme.SlotOccupied;
+            selectedColor = GameUiTheme.SlotSelected;
+            ApplyTextLayout();
+            RefreshBackground();
         }
 
         public void SetSelected(bool isSelected)
@@ -144,15 +164,16 @@ namespace UnityIsekaiGame.UI.Inventory
             itemNameText.horizontalOverflow = HorizontalWrapMode.Wrap;
             itemNameText.verticalOverflow = VerticalWrapMode.Truncate;
             itemNameText.alignment = TextAnchor.MiddleLeft;
-            itemNameText.color = GameUiTheme.TextPrimary;
+            itemNameText.color = hasItem ? GameUiTheme.TextPrimary : GameUiTheme.TextMuted;
             itemNameText.fontSize = Mathf.Max(12, itemNameText.fontSize);
-            itemNameText.fontStyle = FontStyle.Bold;
+            itemNameText.fontStyle = hasItem ? FontStyle.Bold : FontStyle.Italic;
 
             RectTransform rectTransform = itemNameText.rectTransform;
-            rectTransform.anchorMin = new Vector2(0.38f, 0.31f);
-            rectTransform.anchorMax = new Vector2(0.96f, 0.92f);
+            rectTransform.anchorMin = hasItem ? new Vector2(0.38f, 0.31f) : new Vector2(0.08f, 0.16f);
+            rectTransform.anchorMax = hasItem ? new Vector2(0.96f, 0.92f) : new Vector2(0.92f, 0.84f);
             rectTransform.offsetMin = Vector2.zero;
             rectTransform.offsetMax = Vector2.zero;
+            if (!hasItem) itemNameText.alignment = TextAnchor.MiddleCenter;
         }
 
         private void ConfigureIconImage()
@@ -198,11 +219,15 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
-            backgroundImage.color = isSelected
-                ? selectedColor
-                : isHovered
-                    ? Color.Lerp(normalColor, GameUiTheme.Secondary, 0.28f)
-                    : normalColor;
+            GameUiTheme.StyleSlot(backgroundImage, hasItem, isHovered, isSelected, itemAccent);
+        }
+
+        private static Color ResolveItemAccent(UnityIsekaiGame.Inventory.ItemDefinition item)
+        {
+            if (item?.Rarity == null || item.Rarity.IsDefault) return GameUiTheme.Border;
+            Color color = item.Rarity.DisplayColor;
+            if (color.maxColorComponent < 0.2f) return GameUiTheme.Border;
+            return color;
         }
     }
 }

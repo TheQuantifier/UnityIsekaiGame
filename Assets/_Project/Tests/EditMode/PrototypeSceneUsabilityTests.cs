@@ -136,8 +136,9 @@ namespace UnityIsekaiGame.Tests
 
             RectTransform navigation = inventoryButton.transform.parent as RectTransform;
             Assert.That(navigation, Is.Not.Null);
-            Assert.That(navigation.anchorMin, Is.EqualTo(new Vector2(0f, 1f)));
-            Assert.That(navigation.anchorMax, Is.EqualTo(Vector2.one));
+            Assert.That(navigation.anchorMin.x, Is.EqualTo(1f));
+            Assert.That(navigation.anchorMax.x, Is.EqualTo(1f));
+            Assert.That(navigation.anchorMin.y, Is.LessThan(navigation.anchorMax.y));
             VerticalLayoutGroup legacyVerticalLayout = navigation.GetComponent<VerticalLayoutGroup>();
             Assert.That(legacyVerticalLayout == null || !legacyVerticalLayout.enabled, Is.True,
                 "The legacy vertical navigation layout must not remain active in the authored scene.");

@@ -30,6 +30,7 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private Text feedbackText;
         [SerializeField] private Button useButton;
         [SerializeField] private Button equipButton;
+        [SerializeField] private Button dropButton;
         [SerializeField] private Button unequipButton;
         [SerializeField] private GameObject selectedItemDetailsRoot;
         [SerializeField] private Image selectedItemIconImage;
@@ -56,11 +57,12 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private Image spellsMenuButtonImage;
         [SerializeField] private Image contractsMenuButtonImage;
         [SerializeField] private Image saveLoadMenuButtonImage;
-        [SerializeField] private Color inactiveMenuColor = new Color(0.12f, 0.14f, 0.16f, 0.95f);
-        [SerializeField] private Color activeMenuColor = new Color(0.2f, 0.42f, 0.55f, 1f);
+        [SerializeField] private Color inactiveMenuColor = new Color(0.26f, 0.17f, 0.1f, 0.98f);
+        [SerializeField] private Color activeMenuColor = new Color(0.47f, 0.32f, 0.15f, 1f);
 
         private Action useSelected;
         private Action equipSelected;
+        private Action dropSelected;
         private Action unequipSelected;
         private InventoryMenuSection activeSection = InventoryMenuSection.Inventory;
         private InventoryMenuExtensionBinding activeExtension;
@@ -71,8 +73,11 @@ namespace UnityIsekaiGame.UI.Inventory
         private PrototypePersistenceServiceBehaviour economyServices;
         private ScrollRect selectedItemDetailsScroll;
         private ScrollRect characterStatsScroll;
+        private ScrollRect inventorySlotsScroll;
         private GridLayoutGroup inventorySlotGridLayout;
         private RectTransform inventorySlotGridRect;
+        private GridLayoutGroup inventoryActionGridLayout;
+        private RectTransform inventoryActionGridRect;
         private float lastInventoryGridWidth = -1f;
         private float lastInventoryGridHeight = -1f;
         private string inspectedItemKey = string.Empty;
@@ -85,7 +90,7 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             inactiveMenuColor = GameUiTheme.PanelRaised;
-            activeMenuColor = GameUiTheme.AccentSoft;
+            activeMenuColor = GameUiTheme.SlotSelected;
             EnsureItemDetailsPanel();
             ApplyProductionMenuLayout();
             EnsureResponsiveCanvas();
@@ -103,6 +108,18 @@ namespace UnityIsekaiGame.UI.Inventory
         }
 
         public int SlotCount => slotViews == null ? 0 : slotViews.Length;
+        public int InventoryColumnCount => inventorySlotGridLayout == null ? 1 : Mathf.Max(1, inventorySlotGridLayout.constraintCount);
+
+        public static int CalculateInventoryColumnCount(float availableWidth, float spacing = 9f)
+        {
+            const float comfortableSlotWidth = 145f;
+            return Mathf.Clamp(Mathf.FloorToInt((Mathf.Max(0f, availableWidth) + spacing) / (comfortableSlotWidth + spacing)), 1, 4);
+        }
+
+        public static int CalculateActionColumnCount(float availableWidth)
+        {
+            return availableWidth >= 330f ? 3 : availableWidth >= 210f ? 2 : 1;
+        }
 
         /// <summary>
         /// Creates and serializes the complete base menu hierarchy used at runtime, then applies the
@@ -117,7 +134,7 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             inactiveMenuColor = GameUiTheme.PanelRaised;
-            activeMenuColor = GameUiTheme.AccentSoft;
+            activeMenuColor = GameUiTheme.SlotSelected;
             EnsureSaveLoadMenuObjects();
             EnsureItemDetailsPanel();
             EnsureCharacterStatsPanel();
@@ -134,7 +151,7 @@ namespace UnityIsekaiGame.UI.Inventory
             UpdateResponsiveInventoryGrid(force: true);
         }
 
-        public void Initialize(Action<int> onSlotSelected, Action onUseSelected, Action<EquipmentSlotType> onEquipmentSlotSelected = null, Action onEquipSelected = null, Action onUnequipSelected = null, Action<int, bool> onSlotHovered = null)
+        public void Initialize(Action<int> onSlotSelected, Action onUseSelected, Action<EquipmentSlotType> onEquipmentSlotSelected = null, Action onEquipSelected = null, Action onUnequipSelected = null, Action<int, bool> onSlotHovered = null, Action onDropSelected = null)
         {
             if (slotViews != null)
             {
@@ -154,6 +171,14 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             useSelected = onUseSelected;
+
+            if (dropButton != null)
+            {
+                dropButton.onClick.RemoveListener(InvokeDropSelected);
+                dropButton.onClick.AddListener(InvokeDropSelected);
+            }
+
+            dropSelected = onDropSelected;
 
             if (equipmentSlotViews != null)
             {
@@ -627,12 +652,34 @@ namespace UnityIsekaiGame.UI.Inventory
         {
             if (equipButton != null)
             {
-                equipButton.gameObject.SetActive(canEquip);
+                equipButton.gameObject.SetActive(true);
+                equipButton.interactable = canEquip;
             }
 
             if (unequipButton != null)
             {
                 unequipButton.gameObject.SetActive(canUnequip);
+            }
+        }
+
+        public void SetInventoryActions(bool canUse, bool canEquip, bool canDrop)
+        {
+            if (useButton != null)
+            {
+                useButton.gameObject.SetActive(true);
+                useButton.interactable = canUse;
+            }
+
+            if (equipButton != null)
+            {
+                equipButton.gameObject.SetActive(true);
+                equipButton.interactable = canEquip;
+            }
+
+            if (dropButton != null)
+            {
+                dropButton.gameObject.SetActive(true);
+                dropButton.interactable = canDrop;
             }
         }
 
@@ -676,6 +723,11 @@ namespace UnityIsekaiGame.UI.Inventory
         private void InvokeEquipSelected()
         {
             equipSelected?.Invoke();
+        }
+
+        private void InvokeDropSelected()
+        {
+            dropSelected?.Invoke();
         }
 
         private void InvokeUnequipSelected()
@@ -843,16 +895,17 @@ namespace UnityIsekaiGame.UI.Inventory
 
                 if (navigationParent is RectTransform navigationRect)
                 {
-                    navigationRect.anchorMin = new Vector2(0f, 1f);
-                    navigationRect.anchorMax = Vector2.one;
-                    navigationRect.pivot = new Vector2(0.5f, 1f);
-                    navigationRect.offsetMin = new Vector2(18f, -70f);
-                    navigationRect.offsetMax = new Vector2(-18f, -16f);
+                    navigationRect.anchorMin = new Vector2(1f, 0.12f);
+                    navigationRect.anchorMax = new Vector2(1f, 0.88f);
+                    navigationRect.pivot = new Vector2(0f, 0.5f);
+                    navigationRect.anchoredPosition = new Vector2(10f, 0f);
+                    navigationRect.sizeDelta = new Vector2(184f, 0f);
                 }
 
                 if (navigationParent.TryGetComponent(out Image navigationImage))
                 {
-                    navigationImage.color = new Color(GameUiTheme.PanelRaised.r, GameUiTheme.PanelRaised.g, GameUiTheme.PanelRaised.b, 0.82f);
+                    navigationImage.color = Color.clear;
+                    navigationImage.raycastTarget = false;
                 }
             }
 
@@ -923,7 +976,6 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
-            float step = 1f / buttons.Count;
             for (int i = 0; i < buttons.Count; i++)
             {
                 RectTransform rect = buttons[i].GetComponent<RectTransform>();
@@ -932,11 +984,11 @@ namespace UnityIsekaiGame.UI.Inventory
                     continue;
                 }
 
-                rect.anchorMin = new Vector2(i * step, 0f);
-                rect.anchorMax = new Vector2((i + 1) * step, 1f);
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.offsetMin = new Vector2(i == 0 ? 6f : 3f, 5f);
-                rect.offsetMax = new Vector2(i == buttons.Count - 1 ? -6f : -3f, -5f);
+                rect.anchorMin = new Vector2(0f, 1f);
+                rect.anchorMax = Vector2.one;
+                rect.pivot = new Vector2(0.5f, 1f);
+                rect.anchoredPosition = new Vector2(0f, -i * (NavigationButtonHeight + 8f));
+                rect.sizeDelta = new Vector2(0f, NavigationButtonHeight);
             }
         }
 
@@ -945,15 +997,17 @@ namespace UnityIsekaiGame.UI.Inventory
             if (transform is RectTransform panelRect)
             {
                 panelRect.anchorMin = new Vector2(0.075f, 0.075f);
-                panelRect.anchorMax = new Vector2(0.925f, 0.925f);
+                panelRect.anchorMax = new Vector2(0.88f, 0.925f);
                 panelRect.offsetMin = Vector2.zero;
                 panelRect.offsetMax = Vector2.zero;
             }
 
             if (TryGetComponent(out Image panelImage))
             {
+                GameUiTheme.StylePanel(panelImage);
                 panelImage.color = GameUiTheme.Backdrop;
-                EnsureOutline(gameObject, GameUiTheme.Border);
+                EnsureOutline(gameObject, new Color(GameUiTheme.Border.r, GameUiTheme.Border.g, GameUiTheme.Border.b, 0.9f));
+                EnsureAccentBand(transform, "Top Gold Accent", GameUiTheme.Accent, 4f);
             }
 
             Transform contentParent = inventoryContentRoot == null ? null : inventoryContentRoot.transform.parent;
@@ -965,6 +1019,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 contentRect.offsetMax = new Vector2(-18f, -82f);
                 if (contentParent.TryGetComponent(out Image contentImage))
                 {
+                    GameUiTheme.StylePanel(contentImage);
                     contentImage.color = new Color(GameUiTheme.Panel.r, GameUiTheme.Panel.g, GameUiTheme.Panel.b, 0.78f);
                 }
             }
@@ -1005,23 +1060,21 @@ namespace UnityIsekaiGame.UI.Inventory
                 titleRect.offsetMax = Vector2.zero;
             }
 
-            inventorySlotGridLayout = inventoryContentRoot.GetComponentInChildren<GridLayoutGroup>(true);
+            inventorySlotGridLayout = FindInventorySlotGrid();
             inventorySlotGridRect = inventorySlotGridLayout == null ? null : inventorySlotGridLayout.GetComponent<RectTransform>();
             if (inventorySlotGridLayout != null && inventorySlotGridRect != null)
             {
-                inventorySlotGridRect.anchorMin = new Vector2(0.02f, 0.14f);
-                inventorySlotGridRect.anchorMax = new Vector2(0.63f, 0.885f);
-                inventorySlotGridRect.offsetMin = Vector2.zero;
-                inventorySlotGridRect.offsetMax = Vector2.zero;
+                EnsureInventorySlotsScroll();
+                inventorySlotGridRect.anchorMin = new Vector2(0f, 1f);
+                inventorySlotGridRect.anchorMax = Vector2.one;
+                inventorySlotGridRect.pivot = new Vector2(0.5f, 1f);
+                inventorySlotGridRect.anchoredPosition = Vector2.zero;
                 inventorySlotGridLayout.padding = new RectOffset(0, 0, 0, 0);
                 inventorySlotGridLayout.spacing = new Vector2(9f, 9f);
                 inventorySlotGridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
                 inventorySlotGridLayout.constraintCount = 4;
                 inventorySlotGridLayout.childAlignment = TextAnchor.UpperLeft;
             }
-
-            ConfigureInventoryActionButton(useButton, new Vector2(0.02f, 0.03f), new Vector2(0.31f, 0.115f));
-            ConfigureInventoryActionButton(equipButton, new Vector2(0.33f, 0.03f), new Vector2(0.62f, 0.115f));
 
             EnsureItemDetailsPanel();
         }
@@ -1044,24 +1097,6 @@ namespace UnityIsekaiGame.UI.Inventory
             }
         }
 
-        private void ConfigureInventoryActionButton(Button button, Vector2 anchorMin, Vector2 anchorMax)
-        {
-            if (button == null || inventoryContentRoot == null || !button.transform.IsChildOf(inventoryContentRoot.transform))
-            {
-                return;
-            }
-
-            RectTransform rect = button.GetComponent<RectTransform>();
-            if (rect != null)
-            {
-                rect.anchorMin = anchorMin;
-                rect.anchorMax = anchorMax;
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
-            }
-        }
-
         private void UpdateResponsiveInventoryGrid(bool force = false)
         {
             if (inventorySlotGridLayout == null || inventorySlotGridRect == null)
@@ -1071,7 +1106,7 @@ namespace UnityIsekaiGame.UI.Inventory
                     return;
                 }
 
-                inventorySlotGridLayout = inventoryContentRoot.GetComponentInChildren<GridLayoutGroup>(true);
+                inventorySlotGridLayout = FindInventorySlotGrid();
                 inventorySlotGridRect = inventorySlotGridLayout == null ? null : inventorySlotGridLayout.GetComponent<RectTransform>();
             }
 
@@ -1080,12 +1115,15 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
-            float width = inventorySlotGridRect.rect.width;
-            float height = inventorySlotGridRect.rect.height;
+            RectTransform viewport = inventorySlotsScroll == null ? null : inventorySlotsScroll.viewport;
+            float width = viewport == null ? inventorySlotGridRect.rect.width : viewport.rect.width;
+            float height = viewport == null ? inventorySlotGridRect.rect.height : viewport.rect.height;
             if (width <= 1f || height <= 1f)
             {
                 return;
             }
+
+            UpdateResponsiveItemActions();
 
             if (!force && Mathf.Abs(width - lastInventoryGridWidth) < 0.5f && Mathf.Abs(height - lastInventoryGridHeight) < 0.5f)
             {
@@ -1095,9 +1133,99 @@ namespace UnityIsekaiGame.UI.Inventory
             lastInventoryGridWidth = width;
             lastInventoryGridHeight = height;
             Vector2 spacing = inventorySlotGridLayout.spacing;
-            float cellWidth = Mathf.Max(72f, Mathf.Floor((width - spacing.x * 3f) / 4f));
-            float cellHeight = Mathf.Max(58f, Mathf.Floor((height - spacing.y * 3f) / 4f));
+            int columnCount = CalculateInventoryColumnCount(width, spacing.x);
+            inventorySlotGridLayout.constraintCount = columnCount;
+            float cellWidth = Mathf.Max(72f, Mathf.Floor((width - spacing.x * (columnCount - 1)) / columnCount));
+            float cellHeight = Mathf.Max(64f, Mathf.Min(cellWidth * 0.72f, Mathf.Floor((height - spacing.y * 3f) / 4f)));
             inventorySlotGridLayout.cellSize = new Vector2(cellWidth, cellHeight);
+            int childCount = Mathf.Max(slotViews?.Length ?? 0, inventorySlotGridRect.childCount);
+            int rowCount = Mathf.Max(1, Mathf.CeilToInt(childCount / (float)columnCount));
+            float contentHeight = Mathf.Max(height, rowCount * cellHeight + Mathf.Max(0, rowCount - 1) * spacing.y);
+            inventorySlotGridRect.sizeDelta = new Vector2(0f, contentHeight);
+        }
+
+        private GridLayoutGroup FindInventorySlotGrid()
+        {
+            if (inventoryContentRoot == null) return null;
+            return inventoryContentRoot.GetComponentsInChildren<GridLayoutGroup>(true)
+                .FirstOrDefault(candidate => candidate != null && candidate.GetComponentInChildren<InventorySlotView>(true) != null);
+        }
+
+        private void UpdateResponsiveItemActions()
+        {
+            if (inventoryActionGridLayout == null || inventoryActionGridRect == null) return;
+            float width = inventoryActionGridRect.rect.width;
+            float height = inventoryActionGridRect.rect.height;
+            if (width <= 1f || height <= 1f) return;
+
+            int columns = CalculateActionColumnCount(width);
+            int rows = Mathf.CeilToInt(3f / columns);
+            Vector2 spacing = inventoryActionGridLayout.spacing;
+            inventoryActionGridLayout.constraintCount = columns;
+            inventoryActionGridLayout.cellSize = new Vector2(
+                Mathf.Max(72f, (width - spacing.x * (columns - 1)) / columns),
+                Mathf.Max(30f, (height - spacing.y * (rows - 1)) / rows));
+        }
+
+        private void EnsureInventorySlotsScroll()
+        {
+            if (inventoryContentRoot == null || inventorySlotGridRect == null) return;
+
+            Transform existing = inventoryContentRoot.transform.Find("Inventory Slots Scroll");
+            GameObject scrollObject;
+            if (existing == null)
+            {
+                scrollObject = new GameObject("Inventory Slots Scroll", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
+                scrollObject.transform.SetParent(inventoryContentRoot.transform, false);
+            }
+            else
+            {
+                scrollObject = existing.gameObject;
+            }
+
+            RectTransform scrollRect = scrollObject.GetComponent<RectTransform>();
+            scrollRect.anchorMin = new Vector2(0.02f, 0.14f);
+            scrollRect.anchorMax = new Vector2(0.63f, 0.885f);
+            scrollRect.offsetMin = Vector2.zero;
+            scrollRect.offsetMax = Vector2.zero;
+            Image background = scrollObject.GetComponent<Image>();
+            GameUiTheme.StylePanel(background);
+            background.color = new Color(GameUiTheme.SurfaceInset.r, GameUiTheme.SurfaceInset.g, GameUiTheme.SurfaceInset.b, 0.48f);
+
+            Transform viewportTransform = scrollObject.transform.Find("Viewport");
+            GameObject viewportObject;
+            if (viewportTransform == null)
+            {
+                viewportObject = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
+                viewportObject.transform.SetParent(scrollObject.transform, false);
+            }
+            else
+            {
+                viewportObject = viewportTransform.gameObject;
+            }
+
+            RectTransform viewport = viewportObject.GetComponent<RectTransform>();
+            viewport.anchorMin = Vector2.zero;
+            viewport.anchorMax = Vector2.one;
+            viewport.offsetMin = new Vector2(8f, 8f);
+            viewport.offsetMax = new Vector2(-22f, -8f);
+            Image viewportImage = viewportObject.GetComponent<Image>();
+            viewportImage.color = new Color(1f, 1f, 1f, 0.001f);
+            viewportImage.raycastTarget = true;
+
+            if (inventorySlotGridRect.parent != viewport)
+            {
+                inventorySlotGridRect.SetParent(viewport, false);
+            }
+
+            inventorySlotsScroll = scrollObject.GetComponent<ScrollRect>();
+            inventorySlotsScroll.viewport = viewport;
+            inventorySlotsScroll.content = inventorySlotGridRect;
+            inventorySlotsScroll.horizontal = false;
+            inventorySlotsScroll.vertical = true;
+            inventorySlotsScroll.movementType = ScrollRect.MovementType.Clamped;
+            inventorySlotsScroll.scrollSensitivity = 34f;
+            EnsureVerticalScrollbar(inventorySlotsScroll, viewport);
         }
 
         private static void EnsureOutline(GameObject target, Color color)
@@ -1118,6 +1246,33 @@ namespace UnityIsekaiGame.UI.Inventory
             outline.useGraphicAlpha = true;
         }
 
+        private static void EnsureAccentBand(Transform parent, string objectName, Color color, float height, float normalizedY = 1f)
+        {
+            if (parent == null) return;
+            Transform existing = parent.Find(objectName);
+            GameObject bandObject;
+            if (existing == null)
+            {
+                bandObject = new GameObject(objectName, typeof(RectTransform), typeof(Image));
+                bandObject.transform.SetParent(parent, false);
+            }
+            else
+            {
+                bandObject = existing.gameObject;
+            }
+
+            RectTransform rect = bandObject.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, normalizedY);
+            rect.anchorMax = new Vector2(1f, normalizedY);
+            rect.pivot = new Vector2(0.5f, normalizedY >= 0.999f ? 1f : 0.5f);
+            rect.offsetMin = new Vector2(0f, normalizedY >= 0.999f ? -height : -height * 0.5f);
+            rect.offsetMax = new Vector2(0f, normalizedY >= 0.999f ? 0f : height * 0.5f);
+            Image image = bandObject.GetComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+            bandObject.transform.SetAsLastSibling();
+        }
+
         private static void EnsureVerticalScrollbar(ScrollRect scroll, RectTransform viewport)
         {
             if (scroll == null || viewport == null || scroll.verticalScrollbar != null)
@@ -1134,7 +1289,8 @@ namespace UnityIsekaiGame.UI.Inventory
             trackRect.offsetMin = new Vector2(-9f, 3f);
             trackRect.offsetMax = new Vector2(-2f, -3f);
             Image trackImage = trackObject.GetComponent<Image>();
-            trackImage.color = new Color(0.02f, 0.025f, 0.03f, 0.92f);
+            GameUiTheme.StylePanel(trackImage);
+            trackImage.color = GameUiTheme.SurfaceInset;
 
             GameObject slidingAreaObject = new GameObject("Sliding Area", typeof(RectTransform));
             slidingAreaObject.transform.SetParent(trackObject.transform, false);
@@ -1190,6 +1346,15 @@ namespace UnityIsekaiGame.UI.Inventory
             if (selectedItemDetailsText != null)
             {
                 GameUiTheme.StyleText(selectedItemDetailsText, GameUiTextRole.Muted);
+            }
+
+            if (slotViews != null)
+            {
+                for (int i = 0; i < slotViews.Length; i++) slotViews[i]?.RefreshPresentation();
+            }
+            if (equipmentSlotViews != null)
+            {
+                for (int i = 0; i < equipmentSlotViews.Length; i++) equipmentSlotViews[i]?.RefreshPresentation();
             }
         }
 
@@ -1366,6 +1531,8 @@ namespace UnityIsekaiGame.UI.Inventory
                 ? CreateDetailsRoot(parent)
                 : selectedItemDetailsRoot;
 
+            EnsureInventoryActionButtons(font);
+
             RectTransform rootRect = selectedItemDetailsRoot.GetComponent<RectTransform>();
             if (rootRect != null)
             {
@@ -1392,11 +1559,13 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             RectTransform artworkFrameRect = artworkFrame.GetComponent<RectTransform>();
-            artworkFrameRect.anchorMin = new Vector2(0.19f, 0.67f);
+            artworkFrameRect.anchorMin = new Vector2(0.19f, 0.685f);
             artworkFrameRect.anchorMax = new Vector2(0.81f, 0.965f);
             artworkFrameRect.offsetMin = Vector2.zero;
             artworkFrameRect.offsetMax = Vector2.zero;
-            artworkFrame.GetComponent<Image>().color = new Color(0.025f, 0.035f, 0.04f, 0.98f);
+            Image artworkImage = artworkFrame.GetComponent<Image>();
+            GameUiTheme.StylePanel(artworkImage);
+            artworkImage.color = GameUiTheme.SurfaceInset;
             Outline artworkOutline = artworkFrame.GetComponent<Outline>();
             artworkOutline.effectColor = new Color(GameUiTheme.Accent.r, GameUiTheme.Accent.g, GameUiTheme.Accent.b, 0.65f);
             artworkOutline.effectDistance = new Vector2(1f, -1f);
@@ -1446,8 +1615,8 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             RectTransform headerRect = selectedItemHeaderText.rectTransform;
-            headerRect.anchorMin = new Vector2(0.05f, 0.56f);
-            headerRect.anchorMax = new Vector2(0.95f, 0.65f);
+            headerRect.anchorMin = new Vector2(0.05f, 0.605f);
+            headerRect.anchorMax = new Vector2(0.95f, 0.675f);
             headerRect.offsetMin = Vector2.zero;
             headerRect.offsetMax = Vector2.zero;
             selectedItemHeaderText.alignment = TextAnchor.MiddleCenter;
@@ -1470,11 +1639,13 @@ namespace UnityIsekaiGame.UI.Inventory
 
                 selectedItemDetailsScroll = scrollObject.GetComponent<ScrollRect>();
                 RectTransform scrollRect = scrollObject.GetComponent<RectTransform>();
-                scrollRect.anchorMin = new Vector2(0.045f, 0.035f);
-                scrollRect.anchorMax = new Vector2(0.955f, 0.545f);
+                scrollRect.anchorMin = new Vector2(0.045f, 0.21f);
+                scrollRect.anchorMax = new Vector2(0.955f, 0.585f);
                 scrollRect.offsetMin = Vector2.zero;
                 scrollRect.offsetMax = Vector2.zero;
-                scrollObject.GetComponent<Image>().color = new Color(0.025f, 0.035f, 0.04f, 0.58f);
+                Image detailsBackground = scrollObject.GetComponent<Image>();
+                GameUiTheme.StylePanel(detailsBackground);
+                detailsBackground.color = new Color(GameUiTheme.SurfaceInset.r, GameUiTheme.SurfaceInset.g, GameUiTheme.SurfaceInset.b, 0.76f);
 
                 Transform viewportTransform = scrollObject.transform.Find("Viewport");
                 GameObject viewport;
@@ -1528,6 +1699,76 @@ namespace UnityIsekaiGame.UI.Inventory
                 selectedItemDetailsScroll.scrollSensitivity = 24f;
                 EnsureVerticalScrollbar(selectedItemDetailsScroll, viewportRect);
             }
+
+            EnsureAccentBand(selectedItemDetailsRoot.transform, "Item Section Separator", GameUiTheme.Border, 2f, 0.595f);
+        }
+
+        private void EnsureInventoryActionButtons(Font font)
+        {
+            if (selectedItemDetailsRoot == null) return;
+
+            Transform existingActions = selectedItemDetailsRoot.transform.Find("Item Actions");
+            GameObject actionsObject;
+            if (existingActions == null)
+            {
+                actionsObject = new GameObject("Item Actions", typeof(RectTransform), typeof(GridLayoutGroup));
+                actionsObject.transform.SetParent(selectedItemDetailsRoot.transform, false);
+            }
+            else
+            {
+                actionsObject = existingActions.gameObject;
+            }
+
+            inventoryActionGridRect = actionsObject.GetComponent<RectTransform>();
+            inventoryActionGridRect.anchorMin = new Vector2(0.045f, 0.025f);
+            inventoryActionGridRect.anchorMax = new Vector2(0.955f, 0.18f);
+            inventoryActionGridRect.offsetMin = Vector2.zero;
+            inventoryActionGridRect.offsetMax = Vector2.zero;
+            inventoryActionGridLayout = actionsObject.GetComponent<GridLayoutGroup>();
+            inventoryActionGridLayout.padding = new RectOffset(0, 0, 0, 0);
+            inventoryActionGridLayout.spacing = new Vector2(8f, 7f);
+            inventoryActionGridLayout.startCorner = GridLayoutGroup.Corner.UpperLeft;
+            inventoryActionGridLayout.startAxis = GridLayoutGroup.Axis.Horizontal;
+            inventoryActionGridLayout.childAlignment = TextAnchor.MiddleCenter;
+            inventoryActionGridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+
+            useButton = EnsureInventoryActionButton(useButton, actionsObject.transform, "Use Button", "Use", font, GameUiButtonTone.Primary);
+            equipButton = EnsureInventoryActionButton(equipButton, actionsObject.transform, "Equip Button", "Equip", font, GameUiButtonTone.Primary);
+            dropButton = EnsureInventoryActionButton(dropButton, actionsObject.transform, "Drop Button", "Drop", font, GameUiButtonTone.Danger);
+            useButton.transform.SetSiblingIndex(0);
+            equipButton.transform.SetSiblingIndex(1);
+            dropButton.transform.SetSiblingIndex(2);
+            UpdateResponsiveItemActions();
+        }
+
+        private Button EnsureInventoryActionButton(Button button, Transform actionParent, string objectName, string labelText, Font font, GameUiButtonTone tone)
+        {
+            if (button == null)
+            {
+                GameObject buttonObject = new GameObject(objectName, typeof(RectTransform), typeof(Image), typeof(Button));
+                buttonObject.transform.SetParent(actionParent, false);
+                button = buttonObject.GetComponent<Button>();
+            }
+            else if (button.transform.parent != actionParent)
+            {
+                button.transform.SetParent(actionParent, false);
+            }
+
+            button.name = objectName;
+            Text label = button.GetComponentInChildren<Text>(true);
+            if (label == null)
+            {
+                label = CreateDetailsText("Label", button.transform, font, 14, FontStyle.Bold, TextAnchor.MiddleCenter);
+            }
+
+            label.text = labelText;
+            RectTransform labelRect = label.rectTransform;
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = new Vector2(6f, 2f);
+            labelRect.offsetMax = new Vector2(-6f, -2f);
+            GameUiTheme.StyleButton(button, tone);
+            return button;
         }
 
         private void EnsureCharacterStatsPanel()
@@ -1563,7 +1804,9 @@ namespace UnityIsekaiGame.UI.Inventory
                 scrollRect.anchorMax = Vector2.one;
                 scrollRect.offsetMin = new Vector2(14f, 8f);
                 scrollRect.offsetMax = new Vector2(-14f, -14f);
-                scrollObject.GetComponent<Image>().color = new Color(0.02f, 0.03f, 0.04f, 0.42f);
+                Image statsBackground = scrollObject.GetComponent<Image>();
+                GameUiTheme.StylePanel(statsBackground);
+                statsBackground.color = new Color(GameUiTheme.SurfaceInset.r, GameUiTheme.SurfaceInset.g, GameUiTheme.SurfaceInset.b, 0.68f);
 
                 Transform viewportTransform = scrollObject.transform.Find("Viewport");
                 GameObject viewport;
@@ -1653,10 +1896,10 @@ namespace UnityIsekaiGame.UI.Inventory
             rectTransform.offsetMax = Vector2.zero;
 
             Image image = root.GetComponent<Image>();
-            image.color = new Color(0.08f, 0.1f, 0.12f, 0.95f);
+            GameUiTheme.StylePanel(image, raised: true);
 
             Outline outline = root.GetComponent<Outline>();
-            outline.effectColor = new Color(0.28f, 0.35f, 0.39f, 0.9f);
+            outline.effectColor = new Color(GameUiTheme.Border.r, GameUiTheme.Border.g, GameUiTheme.Border.b, 0.72f);
             outline.effectDistance = new Vector2(1f, -1f);
 
             return root;
@@ -1741,7 +1984,12 @@ namespace UnityIsekaiGame.UI.Inventory
             rectTransform.offsetMax = Vector2.zero;
 
             Image image = root.GetComponent<Image>();
-            image.color = new Color(0.06f, 0.08f, 0.09f, 0.92f);
+            GameUiTheme.StylePanel(image, raised: true);
+            image.color = new Color(
+                GameUiTheme.PanelRaised.r,
+                GameUiTheme.PanelRaised.g,
+                GameUiTheme.PanelRaised.b,
+                0.94f);
 
             return root;
         }

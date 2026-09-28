@@ -56,3 +56,11 @@ Group 2 replaces the prototype HUD presentation while retaining the existing gam
 - `ProductionHudAuthoring` builds the production layout deterministically into the integration scene and can be rerun safely.
 
 The HUD uses no independent gameplay state. Hidden or unchanged elements do not rebuild each frame, all canvases retain the shared safe-area and scale behavior, and the authored scene is covered by EditMode structure tests.
+
+## Group 1-2 polish closeout
+
+- Shared panels, controls, item slots, and HUD frames use warm inset leather surfaces, rounded corners, restrained outlines, and gold focus accents instead of cool gray placeholders.
+- The Tab menu uses a vertical right-edge navigation stack. Its Inventory page reserves two thirds for an independently scrolling, auto-wrapping slot grid and one third for a fixed item inspector.
+- The inspector keeps artwork, a description-and-stat scroll region, and the `Use`, `Equip`, and `Drop` action tray in separate vertical bands. Only the description band scrolls; the action tray auto-wraps when narrow.
+- Empty slots remain readable as dim brown boxes, while occupied, hovered, selected, and rarity-accented states are visually distinct.
+- Responsive tests cover one through four inventory columns and one through three action columns, and keyboard row navigation follows the live inventory column count.

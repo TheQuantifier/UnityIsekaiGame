@@ -54,7 +54,7 @@ namespace UnityIsekaiGame.UI.Inventory
         {
             Color32[] pixels = new Color32[Size * Size];
             Color accent = AccentFor(key);
-            DrawSoftDisc(pixels, Size / 2, Size / 2, 43, new Color(0.055f, 0.07f, 0.075f, 0.98f));
+            DrawSoftDisc(pixels, Size / 2, Size / 2, 43, new Color(0.16f, 0.095f, 0.045f, 0.98f));
             DrawRing(pixels, Size / 2, Size / 2, 42, 2, Color.Lerp(accent, Color.white, 0.2f));
 
             if (key.Contains("potion")) DrawPotion(pixels, accent);

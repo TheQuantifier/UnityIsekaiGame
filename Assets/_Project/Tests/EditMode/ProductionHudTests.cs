@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Interaction;
+using UnityIsekaiGame.Presentation;
 using UnityIsekaiGame.UI;
 
 namespace UnityIsekaiGame.Tests.EditMode
@@ -97,6 +98,14 @@ namespace UnityIsekaiGame.Tests.EditMode
                 Assert.That(canvases, Has.Length.EqualTo(2));
                 Assert.That(canvases.All(value => value.GetComponent<GameUiSafeArea>() != null), Is.True);
                 Assert.That(canvases.All(value => value.GetComponent<GameUiThemeApplicator>() != null), Is.True);
+
+                Image[] accentBands = scene.GetRootGameObjects()
+                    .SelectMany(root => root.GetComponentsInChildren<Image>(true))
+                    .Where(image => image.name == "Top Accent")
+                    .ToArray();
+                Assert.That(accentBands.Length, Is.GreaterThanOrEqualTo(6));
+                Assert.That(accentBands.All(image => !image.raycastTarget), Is.True);
+                Assert.That(accentBands.Any(image => image.color == GameUiTheme.Accent), Is.True);
             }
             finally
             {
