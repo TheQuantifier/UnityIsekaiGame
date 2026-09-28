@@ -214,14 +214,14 @@ namespace UnityIsekaiGame.Input
 
                 bool wasLockedForLook = PlayerCursorMode.MouseLookEnabled;
                 PlayerCursorMode.UnlockMouse();
-                if (wasLockedForLook) PrototypeHudMessageBus.Show("Mouse unlocked. Press L to enable mouse look.");
+                if (wasLockedForLook) GameHudMessageBus.Show("Mouse unlocked. Press L to enable mouse look.");
                 return;
             }
 
             if (keyboard.lKey.wasPressedThisFrame && !IsTypingInUiField())
             {
                 PlayerCursorMode.ToggleMouseLook();
-                PrototypeHudMessageBus.Show(PlayerCursorMode.MouseLookEnabled
+                GameHudMessageBus.Show(PlayerCursorMode.MouseLookEnabled
                     ? "Mouse look enabled."
                     : "Mouse unlocked. Press L to enable mouse look.");
             }

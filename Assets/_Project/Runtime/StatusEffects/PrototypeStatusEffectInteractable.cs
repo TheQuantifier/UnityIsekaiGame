@@ -22,7 +22,7 @@ namespace UnityIsekaiGame.StatusEffects
             IStatusEffectReceiver receiver = FindReceiver(context);
             if (receiver == null)
             {
-                PrototypeHudMessageBus.Show("No status receiver");
+                GameHudMessageBus.Show("No status receiver");
                 return;
             }
 
@@ -34,7 +34,7 @@ namespace UnityIsekaiGame.StatusEffects
                 string.Empty,
                 Time.time);
             StatusApplicationResult result = receiver.ApplyStatus(request);
-            PrototypeHudMessageBus.Show(result.Message);
+            GameHudMessageBus.Show(result.Message);
             Debug.Log(result.Message);
         }
 

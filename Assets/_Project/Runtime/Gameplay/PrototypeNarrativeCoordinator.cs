@@ -157,7 +157,7 @@ namespace UnityIsekaiGame.Gameplay
                 InventoryAddResult parcelGrant = services.PlayerInventory.AddItemOrInstances(parcel, 1);
                 if (!parcelGrant.AddedAll)
                 {
-                    PrototypeHudMessageBus.Show("Make inventory space before accepting the merchant parcel.");
+                    GameHudMessageBus.Show("Make inventory space before accepting the merchant parcel.");
                 }
             }
             services.DirtyTracker?.MarkDirty("Quest accepted from an authoritative source.");
@@ -398,7 +398,7 @@ namespace UnityIsekaiGame.Gameplay
             string itemId = deliveryDefinition.secondaryTarget?.subjectId ?? string.Empty;
             if (!registry.TryGet(itemId, out ItemDefinition item) || services.PlayerInventory == null || services.PlayerInventory.CountItem(item) < 1)
             {
-                PrototypeHudMessageBus.Show("The required delivery item is not in your inventory.");
+                GameHudMessageBus.Show("The required delivery item is not in your inventory.");
                 return;
             }
 
@@ -420,7 +420,7 @@ namespace UnityIsekaiGame.Gameplay
             if (delivered.Succeeded && delivered.Objectives.Any(objective => objective.Satisfied))
             {
                 services.PlayerInventory.RemoveItem(item, 1);
-                PrototypeHudMessageBus.Show($"Delivered {item.DisplayName}.");
+                GameHudMessageBus.Show($"Delivered {item.DisplayName}.");
             }
         }
 

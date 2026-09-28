@@ -43,7 +43,7 @@ namespace UnityIsekaiGame.Dialogue
             PrototypeDialoguePanel panel = FindAnyObjectByType<PrototypeDialoguePanel>();
             if (panel == null)
             {
-                PrototypeHudMessageBus.Show("Dialogue presentation is unavailable.");
+                GameHudMessageBus.Show("Dialogue presentation is unavailable.");
                 return;
             }
 
@@ -58,7 +58,7 @@ namespace UnityIsekaiGame.Dialogue
                 context.Interactor);
             if (!result.Succeeded)
             {
-                PrototypeHudMessageBus.Show(result.Message);
+                GameHudMessageBus.Show(result.Message);
                 return;
             }
 

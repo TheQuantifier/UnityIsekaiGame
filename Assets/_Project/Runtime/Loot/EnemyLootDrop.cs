@@ -97,7 +97,7 @@ namespace UnityIsekaiGame.Loot
             if (rolls.Count == 0)
             {
                 Debug.Log($"{name} dropped no loot.");
-                PrototypeHudMessageBus.Show($"{name} dropped no loot");
+                GameHudMessageBus.Show($"{name} dropped no loot");
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace UnityIsekaiGame.Loot
 
             if (dropMessages.Count > 0)
             {
-                PrototypeHudMessageBus.Show($"{name} dropped {string.Join(", ", dropMessages)}");
+                GameHudMessageBus.Show($"{name} dropped {string.Join(", ", dropMessages)}");
             }
         }
 

@@ -151,7 +151,7 @@ namespace UnityIsekaiGame.Gameplay
             {
                 PrototypeAdventurerRegistrationResult result = services.RegisterPlayerAsAdventurerAtGuildDesk(interactionPointId);
                 status = result.Message;
-                PrototypeHudMessageBus.Show(status);
+                GameHudMessageBus.Show(status);
                 if (!result.Succeeded) Debug.LogWarning(result.Message);
             }
             GUI.enabled = true;
@@ -171,7 +171,7 @@ namespace UnityIsekaiGame.Gameplay
             {
                 PrototypeMerchantRegistrationResult result = services.RegisterPlayerWithMerchantGuildAtDesk(interactionPointId);
                 status = result.Message;
-                PrototypeHudMessageBus.Show(status);
+                GameHudMessageBus.Show(status);
                 if (!result.Succeeded) Debug.LogWarning(result.Message);
             }
             GUI.enabled = true;
@@ -207,7 +207,7 @@ namespace UnityIsekaiGame.Gameplay
 
             Close();
             DialogueFlowOperationResult result = panel.Open(conversationDefinitionId, providerPersonId, locationId, interactionPointId, questSourceId, title, interactor);
-            if (!result.Succeeded) PrototypeHudMessageBus.Show(result.Message);
+            if (!result.Succeeded) GameHudMessageBus.Show(result.Message);
         }
 
         private void OnDisable() => Close();

@@ -1879,7 +1879,7 @@ namespace UnityIsekaiGame.Gameplay
                 Debug.LogWarning(message);
             }
 
-            PrototypeHudMessageBus.Show(message);
+            GameHudMessageBus.Show(message);
         }
 
         private bool RegisterParticipant(IPersistenceParticipant participant, out string failureReason)
@@ -4531,7 +4531,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             string message = args == null ? "Player location fallback was used." : args.Message;
             Debug.LogWarning(message);
-            PrototypeHudMessageBus.Show(message);
+            GameHudMessageBus.Show(message);
         }
 
         private void SubscribeDirtyEvents()

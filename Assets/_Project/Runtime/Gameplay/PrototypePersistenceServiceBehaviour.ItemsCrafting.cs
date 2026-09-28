@@ -266,7 +266,7 @@ namespace UnityIsekaiGame.Gameplay
                 {
                     string itemName = ItemDisplayName(item);
                     string rate = schedule.rate == NaturalDecompositionRate.Fast ? "quickly" : "slowly";
-                    PrototypeHudMessageBus.Show($"{itemName} was dropped and will decay {rate} while left on the ground");
+                    GameHudMessageBus.Show($"{itemName} was dropped and will decay {rate} while left on the ground");
                 }
             }
             return PrototypeItemDropResult.Success(pickup);
@@ -382,7 +382,7 @@ namespace UnityIsekaiGame.Gameplay
             int recoveredKinds = SpawnSalvageableRecoveryOutputs(result.Operation, source.transform.position, source.transform.parent);
             ItemRecovery.CompleteNaturalDecomposition(source.ItemInstanceId, now);
             dirtyTracker?.MarkDirty($"Item naturally decomposed: {source.ItemInstanceId}.");
-            PrototypeHudMessageBus.Show(recoveredKinds > 0 ? "The dropped item broke down into salvageable parts" : "The dropped item decomposed");
+            GameHudMessageBus.Show(recoveredKinds > 0 ? "The dropped item broke down into salvageable parts" : "The dropped item decomposed");
             return true;
         }
 
@@ -1339,7 +1339,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             dirtyTracker?.MarkDirty($"Item forcibly decomposed at five percent durability: {itemInstanceId}.");
-            PrototypeHudMessageBus.Show(equipped ? "Your item collapsed into salvageable parts" : "A stored item decomposed into recovered materials");
+            GameHudMessageBus.Show(equipped ? "Your item collapsed into salvageable parts" : "A stored item decomposed into recovered materials");
             return true;
         }
 
@@ -1358,16 +1358,16 @@ namespace UnityIsekaiGame.Gameplay
             int percent = Mathf.RoundToInt(current.NormalizedDurability * 100f);
             if (current.PendingForcedDecomposition && (previous == null || !previous.PendingForcedDecomposition))
             {
-                PrototypeHudMessageBus.Show($"{itemName} reached {percent}% durability without breaking and is decomposing");
+                GameHudMessageBus.Show($"{itemName} reached {percent}% durability without breaking and is decomposing");
             }
             else if (current.HasBroken && (previous == null || !previous.HasBroken))
             {
-                PrototypeHudMessageBus.Show($"{itemName} broke at {percent}% durability and no longer functions");
+                GameHudMessageBus.Show($"{itemName} broke at {percent}% durability and no longer functions");
             }
             else if (current.NormalizedDurability <= ItemDurability.BreakCheckStartNormalized
                 && (previous == null || previous.NormalizedDurability > ItemDurability.BreakCheckStartNormalized))
             {
-                PrototypeHudMessageBus.Show($"{itemName} is critically damaged ({percent}% durability); each further percent can break it");
+                GameHudMessageBus.Show($"{itemName} is critically damaged ({percent}% durability); each further percent can break it");
             }
         }
 

@@ -35,7 +35,7 @@ namespace UnityIsekaiGame.Gameplay
             ResolveReferences(context.Interactor);
             if (services == null)
             {
-                PrototypeHudMessageBus.Show("Economy services are unavailable.");
+                GameHudMessageBus.Show("Economy services are unavailable.");
                 return;
             }
 
@@ -105,7 +105,7 @@ namespace UnityIsekaiGame.Gameplay
                 {
                     PrototypeEconomyOperation result = services.BuyPrototypeMarketGood(listing.ItemDefinitionId, purchaseQuantity);
                     status = result.Message;
-                    PrototypeHudMessageBus.Show(result.Message);
+                    GameHudMessageBus.Show(result.Message);
                     RefreshCatalog(force: true);
                 }
                 GUILayout.EndVertical();
@@ -127,7 +127,7 @@ namespace UnityIsekaiGame.Gameplay
                 {
                     PrototypeEconomyOperation result = services.SellPrototypeExport(choice.ItemInstanceId);
                     status = result.Message;
-                    PrototypeHudMessageBus.Show(result.Message);
+                    GameHudMessageBus.Show(result.Message);
                     RefreshCatalog(force: true);
                 }
                 GUILayout.EndVertical();

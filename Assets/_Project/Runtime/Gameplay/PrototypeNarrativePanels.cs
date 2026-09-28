@@ -131,7 +131,7 @@ namespace UnityIsekaiGame.Gameplay
             {
                 QuestSourceOperationResult result = Services.NarrativeCoordinator.AcceptListing(visible.Listing.QuestListingId, interactionPointId);
                 status = result.Message;
-                PrototypeHudMessageBus.Show(status);
+                GameHudMessageBus.Show(status);
                 Refresh();
             }
             GUI.enabled = true;
@@ -207,7 +207,7 @@ namespace UnityIsekaiGame.Gameplay
                 status = result.Message;
                 if (!result.Succeeded)
                 {
-                    PrototypeHudMessageBus.Show(status);
+                    GameHudMessageBus.Show(status);
                     continue;
                 }
                 flow = result.Snapshot;

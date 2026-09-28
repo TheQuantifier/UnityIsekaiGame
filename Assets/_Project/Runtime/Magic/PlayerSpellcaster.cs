@@ -228,7 +228,7 @@ namespace UnityIsekaiGame.Magic
             if (!result.Succeeded)
             {
                 Debug.Log(result.Message);
-                PrototypeHudMessageBus.Show(result.Message);
+                GameHudMessageBus.Show(result.Message);
             }
 
             SpellCastResolved?.Invoke(spell, result);

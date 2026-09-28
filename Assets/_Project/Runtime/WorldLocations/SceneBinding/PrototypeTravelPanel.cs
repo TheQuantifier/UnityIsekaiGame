@@ -72,7 +72,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 if (!persistence.PartyTravel.CanTravel(persistence.PlayerPersonId, requireAllReady: true, out string partyTravelMessage))
                 {
                     status = partyTravelMessage;
-                    PrototypeHudMessageBus.Show(status);
+                    GameHudMessageBus.Show(status);
                     continue;
                 }
                 double worldTime = persistence.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble;
@@ -87,7 +87,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                     WorldTime = worldTime
                 });
                 status = result.Message;
-                PrototypeHudMessageBus.Show(status);
+                GameHudMessageBus.Show(status);
             }
             GUILayout.EndScrollView();
             GUILayout.EndArea();

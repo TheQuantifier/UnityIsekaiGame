@@ -44,7 +44,7 @@ namespace UnityIsekaiGame.Gameplay
             ResolveServices();
             if (services == null)
             {
-                PrototypeHudMessageBus.Show("Crafting services are unavailable.");
+                GameHudMessageBus.Show("Crafting services are unavailable.");
                 return;
             }
 
@@ -155,7 +155,7 @@ namespace UnityIsekaiGame.Gameplay
                 {
                     DisassemblyResult result = services.RecoverPrototypeItem(choice.ItemInstanceId);
                     status = result.Message;
-                    PrototypeHudMessageBus.Show(result.Message);
+                    GameHudMessageBus.Show(result.Message);
                 }
                 GUILayout.EndVertical();
                 GUILayout.Space(6f);
@@ -316,7 +316,7 @@ namespace UnityIsekaiGame.Gameplay
 
                 PrototypeCraftingStartResult result = services.BeginSlotCraftAtPrototypeWorkstation(request);
                 status = result.Message;
-                PrototypeHudMessageBus.Show(result.Message);
+                GameHudMessageBus.Show(result.Message);
             }
             GUI.enabled = true;
         }
@@ -421,7 +421,7 @@ namespace UnityIsekaiGame.Gameplay
         private void OnCraftCompleted(PrototypeCraftingResult result)
         {
             status = result?.Message ?? "Crafting finished without a result.";
-            PrototypeHudMessageBus.Show(status);
+            GameHudMessageBus.Show(status);
             if (!string.IsNullOrWhiteSpace(selectedRecipeId)) configuredRequest = services.BuildAutoFilledSlotCraftingRequest(selectedRecipeId);
             RefreshCatalystChoices();
         }

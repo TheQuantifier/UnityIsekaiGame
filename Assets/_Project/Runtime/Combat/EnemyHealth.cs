@@ -100,7 +100,7 @@ namespace UnityIsekaiGame.Combat
                 QuestObjectiveSignalBus.Report(QuestObjectiveCategory.DefeatTarget, questObjectiveTargetId.Trim(), actorId, worldTime, sourceEventId: $"enemy-defeat.{name}.{Time.frameCount}");
                 QuestObjectiveSignalBus.Report(QuestObjectiveCategory.DefeatCount, "enemy-family.prototype.monster", actorId, worldTime, sourceEventId: $"enemy-defeat-count.{name}.{Time.frameCount}");
             }
-            PrototypeHudMessageBus.Show($"{name} defeated");
+            GameHudMessageBus.Show($"{name} defeated", GameHudMessageTone.Success);
         }
     }
 }

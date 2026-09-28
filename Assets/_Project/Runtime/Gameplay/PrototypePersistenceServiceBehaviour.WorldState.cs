@@ -359,13 +359,13 @@ namespace UnityIsekaiGame.Gameplay
         private void OnTravelHazardTriggered(TravelHazardExposureSnapshot hazard)
         {
             dirtyTracker?.MarkDirty("Travel hazard triggered.");
-            PrototypeHudMessageBus.Show($"Travel hazard: {hazard?.HazardDefinitionId ?? "unknown"}");
+            GameHudMessageBus.Show($"Travel hazard: {hazard?.HazardDefinitionId ?? "unknown"}");
         }
 
         private void OnTravelEncounterTriggered(TravelEncounterSnapshot encounter)
         {
             dirtyTracker?.MarkDirty("Travel encounter triggered.");
-            PrototypeHudMessageBus.Show($"Travel encounter: {encounter?.EncounterDefinitionId ?? "unknown"}");
+            GameHudMessageBus.Show($"Travel encounter: {encounter?.EncounterDefinitionId ?? "unknown"}");
         }
 
         private void CreateWorldNarrativeRuntimes(DefinitionRegistry registry, string worldId)

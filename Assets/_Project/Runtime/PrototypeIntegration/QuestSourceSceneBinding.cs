@@ -62,7 +62,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
                 PrototypeGuildDeskPanel desk = FindAnyObjectByType<PrototypeGuildDeskPanel>(FindObjectsInactive.Include);
                 if (desk == null)
                 {
-                    PrototypeHudMessageBus.Show("Guild desk services are unavailable.");
+                    GameHudMessageBus.Show("Guild desk services are unavailable.");
                     return;
                 }
 
@@ -82,7 +82,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
                 PrototypeDialoguePanel dialogue = FindAnyObjectByType<PrototypeDialoguePanel>();
                 if (dialogue == null)
                 {
-                    PrototypeHudMessageBus.Show("Dialogue presentation is unavailable.");
+                    GameHudMessageBus.Show("Dialogue presentation is unavailable.");
                     return;
                 }
                 DialogueFlowOperationResult result = dialogue.Open(
@@ -93,14 +93,14 @@ namespace UnityIsekaiGame.PrototypeIntegration
                     questSourceId,
                     DisplayName,
                     context.Interactor);
-                if (!result.Succeeded) PrototypeHudMessageBus.Show(result.Message);
+                if (!result.Succeeded) GameHudMessageBus.Show(result.Message);
                 return;
             }
 
             PrototypeQuestSourcePanel panel = FindAnyObjectByType<PrototypeQuestSourcePanel>();
             if (panel == null)
             {
-                PrototypeHudMessageBus.Show("Quest-source presentation is unavailable.");
+                GameHudMessageBus.Show("Quest-source presentation is unavailable.");
                 return;
             }
 

@@ -77,14 +77,14 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             if (connection.OpenState == LocationConnectionOpenState.Open)
             {
                 SceneBindingTransitionResult traversal = RequestTraversal(actor, access, worldTime);
-                PrototypeHudMessageBus.Show(traversal.Message);
+                GameHudMessageBus.Show(traversal.Message);
                 return;
             }
 
             LocationConnectionOperationResult result = Runtime.RequestConnectionOpenState($"scene-binding.open.{LogicalId}.{Guid.NewGuid():N}", LogicalId, LocationConnectionOpenState.Open, actor, access, worldTime, false);
             LastInteractionResult = result;
             if (result.Succeeded) SyncFromAuthoritative(Runtime, false);
-            PrototypeHudMessageBus.Show(result.Message);
+            GameHudMessageBus.Show(result.Message);
         }
 
         private bool IsWithinPhysicalRange(in InteractionContext context)

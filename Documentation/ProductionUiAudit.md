@@ -17,9 +17,12 @@ This audit is the Phase 4 baseline for the player interface. The prototype scene
 
 | Surface | Current implementation | Data owner | Phase 4 disposition |
 | --- | --- | --- | --- |
-| Resource HUD | Authored uGUI readouts | Health, stamina, and mana runtime components | Rebuild and polish in Group 2. |
-| Hotbar and spell quick slots | Authored uGUI with `SpellQuickSlotView` | Spell loadout and input services | Rebuild and polish in Group 2. |
-| Interaction prompt | `InteractionPromptPresenter` and `InteractionPromptView` | Interaction focus service | Rebuild and polish in Group 2. |
+| Resource HUD | `PlayerVitalsHudView` with three `HudResourceBarView` bars | Health, stamina, and mana runtime components | Completed in Group 2; event-driven production presentation. |
+| Hotbar and spell quick slots | `SpellLoadoutHudView` and structured `SpellQuickSlotView` cards | Spell loadout and input services | Completed in Group 2; event-driven with selected-slot feedback. |
+| Interaction prompt | `InteractionPromptPresenter` and `InteractionPromptView` | Interaction focus service | Completed in Group 2; target-change refresh and menu suppression. |
+| Quest tracker | `QuestTrackerHudView` | Narrative coordinator and quest journal | Completed in Group 2; active objective summary refreshed by narrative events. |
+| Combat target | `CombatTargetHudView` | Enemy health components | Completed in Group 2; non-allocating target query and event-driven health changes. |
+| Notifications | `GameHudMessageBus` and `GameHudNotificationView` | Gameplay event publishers | Completed in Group 2; bounded queue with semantic tone. |
 | Inventory and equipment | `InventoryScreenController` and `InventoryScreenView` | Inventory and equipment components | Production uGUI foundation; finish in Group 3. |
 | Character details | Inventory menu section | Stats, attributes, skills, traits, and status effects | Finish in Groups 3 and 4. |
 | Spells | Inventory menu section | Spell loadout and known spells | Finish in Group 4. |

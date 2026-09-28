@@ -78,7 +78,7 @@ namespace UnityIsekaiGame.Gameplay
 
             ResetEnemy();
             Debug.Log("Prototype reset complete.");
-            PrototypeHudMessageBus.Show("Prototype reset complete");
+            GameHudMessageBus.Show("Prototype reset complete");
         }
 
         private void GroundPlayerAtSceneEntry()

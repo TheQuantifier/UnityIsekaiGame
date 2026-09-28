@@ -34,7 +34,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
             PrototypeDialoguePanel panel = FindAnyObjectByType<PrototypeDialoguePanel>();
             if (panel == null)
             {
-                PrototypeHudMessageBus.Show("Dialogue presentation is unavailable.");
+                GameHudMessageBus.Show("Dialogue presentation is unavailable.");
                 return;
             }
 
@@ -46,7 +46,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
                 string.Empty,
                 string.IsNullOrWhiteSpace(displayName) ? gameObject.name : displayName,
                 context.Interactor);
-            if (!result.Succeeded) PrototypeHudMessageBus.Show(result.Message);
+            if (!result.Succeeded) GameHudMessageBus.Show(result.Message);
         }
 
         public void Configure(string definitionId, string providerId, string locationId, string speakerName)

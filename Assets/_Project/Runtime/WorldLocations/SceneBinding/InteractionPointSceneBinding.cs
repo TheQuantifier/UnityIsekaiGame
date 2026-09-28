@@ -82,7 +82,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             InteractionInvocationResult invocation = Runtime.InvokeInteraction(LogicalId, serviceId, PlayerConsumer(), worldTime);
             if (invocation == null || !invocation.Success)
             {
-                PrototypeHudMessageBus.Show(invocation?.Message ?? "That service is currently unavailable.");
+                GameHudMessageBus.Show(invocation?.Message ?? "That service is currently unavailable.");
                 return;
             }
             Runtime.SynchronizePhysicalPresence(PlayerBody(), point.ActiveHostLocationId, worldTime);
@@ -99,7 +99,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                 return;
             }
 
-            PrototypeHudMessageBus.Show($"Interacted with {DisplayName}.");
+            GameHudMessageBus.Show($"Interacted with {DisplayName}.");
             Debug.Log($"Scene interaction routed to logical interaction point '{point.InteractionPointId}'.");
         }
 

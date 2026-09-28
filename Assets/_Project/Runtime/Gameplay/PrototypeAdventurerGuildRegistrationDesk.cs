@@ -75,14 +75,14 @@ namespace UnityIsekaiGame.Gameplay
             ResolveServices();
             if (services == null)
             {
-                PrototypeHudMessageBus.Show("Adventurer registration services are unavailable.");
+                GameHudMessageBus.Show("Adventurer registration services are unavailable.");
                 return;
             }
 
             PrototypeGuildDeskPanel panel = FindAnyObjectByType<PrototypeGuildDeskPanel>(FindObjectsInactive.Include);
             if (panel == null)
             {
-                PrototypeHudMessageBus.Show("Guild desk services are unavailable.");
+                GameHudMessageBus.Show("Guild desk services are unavailable.");
                 return;
             }
 

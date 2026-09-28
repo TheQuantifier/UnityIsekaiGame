@@ -42,3 +42,17 @@ Prototype-only world assets are not promoted merely by moving them. They move in
 - Theme behavior has focused EditMode coverage and the complete EditMode and PlayMode suites remain green.
 
 The concrete surface inventory, ownership decisions, and migration targets are maintained in `ProductionUiAudit.md`.
+
+## Group 2 implementation status
+
+Group 2 replaces the prototype HUD presentation while retaining the existing gameplay authorities:
+
+- `PlayerVitalsHudView` renders event-driven health, stamina, and mana bars.
+- `SpellLoadoutHudView` renders four readable quick slots with a persistent gold selection state.
+- `InteractionPromptPresenter` only changes the prompt when focus, text, or menu suppression changes.
+- `QuestTrackerHudView` follows the active journal entry and refreshes from narrative change events.
+- `CombatTargetHudView` performs the single necessary non-allocating crosshair query and subscribes to the selected target's health event.
+- `GameHudNotificationView` provides a bounded, reusable notification queue with information, success, warning, and danger tones.
+- `ProductionHudAuthoring` builds the production layout deterministically into the integration scene and can be rerun safely.
+
+The HUD uses no independent gameplay state. Hidden or unchanged elements do not rebuild each frame, all canvases retain the shared safe-area and scale behavior, and the authored scene is covered by EditMode structure tests.

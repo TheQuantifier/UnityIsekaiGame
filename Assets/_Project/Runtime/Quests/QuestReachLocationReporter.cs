@@ -62,7 +62,7 @@ namespace UnityIsekaiGame.Quests
                 string message = string.IsNullOrWhiteSpace(prototypeHudMessage)
                     ? $"Entered {DisplayName}"
                     : prototypeHudMessage;
-                PrototypeHudMessageBus.Show(message);
+                GameHudMessageBus.Show(message);
                 nextPrototypeHudMessageTime = Time.time + prototypeHudMessageCooldown;
             }
 

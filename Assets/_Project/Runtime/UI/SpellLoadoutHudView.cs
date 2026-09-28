@@ -33,6 +33,13 @@ namespace UnityIsekaiGame.UI
             }
         }
 
+        public void Configure(PlayerSpellLoadout playerLoadout, SpellQuickSlotView[] views)
+        {
+            loadout = playerLoadout;
+            slotViews = views;
+            Refresh();
+        }
+
         public void Refresh()
         {
             if (slotViews == null)
