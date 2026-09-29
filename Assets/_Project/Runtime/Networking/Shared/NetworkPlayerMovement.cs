@@ -7,6 +7,7 @@ namespace UnityIsekaiGame.Networking
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject), typeof(NetworkTransform), typeof(CharacterController))]
+    [RequireComponent(typeof(NetworkPlayerVitals))]
     public sealed class NetworkPlayerMovement : NetworkBehaviour
     {
         private const float InputTimeoutSeconds = 0.35f;
@@ -25,6 +26,7 @@ namespace UnityIsekaiGame.Networking
             NetworkVariableWritePermission.Server);
 
         private CharacterController controller;
+        private NetworkPlayerVitals vitals;
         private NetworkMovementInput latestInput;
         private uint localSequence;
         private float horizontalSpeed;
@@ -65,6 +67,7 @@ namespace UnityIsekaiGame.Networking
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
+            vitals = GetComponent<NetworkPlayerVitals>();
         }
 
         public override void OnNetworkSpawn()
@@ -170,7 +173,17 @@ namespace UnityIsekaiGame.Networking
         {
             Vector2 planarInput = Vector2.ClampMagnitude(input.Move, 1f);
             bool moving = planarInput.sqrMagnitude > 0.0001f;
-            float targetSpeed = moving ? (input.Sprint ? SprintSpeed : walkSpeed) : 0f;
+            if (vitals != null && vitals.IsDefeated)
+            {
+                planarInput = Vector2.zero;
+                moving = false;
+                jumpRequested = false;
+            }
+
+            bool sprintAllowed = vitals != null
+                ? vitals.EvaluateSprintServer(input.Sprint, moving, deltaTime)
+                : input.Sprint;
+            float targetSpeed = moving ? (sprintAllowed ? SprintSpeed : walkSpeed) : 0f;
             float changeRate = targetSpeed > horizontalSpeed ? acceleration : deceleration;
             horizontalSpeed = Mathf.MoveTowards(horizontalSpeed, targetSpeed, changeRate * deltaTime);
 

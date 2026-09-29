@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 8036150254913847055}
   - component: {fileID: 365379562890931950}
   - component: {fileID: 1167863554736825657}
+  - component: {fileID: 3654913487725053500}
   m_Layer: 0
   m_Name: NetworkPlayerActor
   m_TagString: Untagged
@@ -167,3 +168,26 @@ MonoBehaviour:
   jumpHeight: 1.25
   gravity: 24
   groundedStickForce: 2
+--- !u!114 &3654913487725053500
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6860670019684611436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f34aaf4991c49d5b2c9e809128f5d25, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Networking.Shared::UnityIsekaiGame.Networking.NetworkPlayerVitals
+  ShowTopMostFoldoutHeaderGroup: 1
+  maximumHealth: 100
+  maximumStamina: 100
+  maximumMana: 100
+  healthRegenerationPerSecond: 0
+  staminaRegenerationPerSecond: 15
+  manaRegenerationPerSecond: 8
+  sprintDrainPerSecond: 5
+  sprintRestartThreshold: 20
+  staminaRegenerationDelayAfterSpend: 1
+  manaRegenerationDelayAfterSpend: 1.5

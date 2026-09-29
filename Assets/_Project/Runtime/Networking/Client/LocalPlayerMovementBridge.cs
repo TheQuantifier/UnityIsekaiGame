@@ -21,6 +21,8 @@ namespace UnityIsekaiGame.Networking.Client
         private bool controlsOverridden;
         private double nextInputSendAt;
         private bool smokeInputEnabled;
+        private bool vitalsSmokeEnabled;
+        private bool vitalsSmokeStarted;
         private double smokeInputEndsAt;
         private Vector3 smokeStartPosition;
         private bool smokeResultLogged;
@@ -33,6 +35,8 @@ namespace UnityIsekaiGame.Networking.Client
             ResolveReferences();
             smokeInputEnabled = Array.Exists(Environment.GetCommandLineArgs(), value =>
                 string.Equals(value, MovementSmokeFlag, StringComparison.OrdinalIgnoreCase));
+            vitalsSmokeEnabled = Array.Exists(Environment.GetCommandLineArgs(), value =>
+                string.Equals(value, LocalPlayerVitalsBridge.VitalsSmokeFlag, StringComparison.OrdinalIgnoreCase));
         }
 
         private void OnEnable()
@@ -65,15 +69,28 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             double now = Time.realtimeSinceStartupAsDouble;
+            if (vitalsSmokeEnabled && !vitalsSmokeStarted)
+            {
+                NetworkPlayerVitals networkVitals = networkMovement.GetComponent<NetworkPlayerVitals>();
+                if (networkVitals == null || !networkVitals.HasState)
+                {
+                    return;
+                }
+
+                vitalsSmokeStarted = true;
+                smokeStartPosition = networkMovement.transform.position;
+                smokeInputEndsAt = now + 1.5d;
+            }
+
             if (now < nextInputSendAt)
             {
                 return;
             }
 
             nextInputSendAt = now + 1d / Mathf.Max(10f, inputSendRate);
-            bool smokeMoving = smokeInputEnabled && now < smokeInputEndsAt;
+            bool smokeMoving = (smokeInputEnabled || vitalsSmokeStarted) && now < smokeInputEndsAt;
             Vector2 move = smokeMoving ? Vector2.up : input == null ? Vector2.zero : input.Move;
-            bool sprint = !smokeMoving && input != null && input.SprintHeld;
+            bool sprint = smokeMoving ? vitalsSmokeEnabled : input != null && input.SprintHeld;
             bool jump = !smokeMoving && input != null && input.ConsumeJump();
             float yaw = presentationRoot == null ? networkMovement.transform.eulerAngles.y : presentationRoot.eulerAngles.y;
             networkMovement.SubmitLocalInput(move, sprint, jump, yaw);
@@ -87,7 +104,7 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             presentationRoot.position = networkMovement.transform.position;
-            if (smokeInputEnabled && !smokeResultLogged && Time.realtimeSinceStartupAsDouble >= smokeInputEndsAt)
+            if ((smokeInputEnabled || vitalsSmokeStarted) && !smokeResultLogged && Time.realtimeSinceStartupAsDouble >= smokeInputEndsAt)
             {
                 smokeResultLogged = true;
                 float distance = Vector3.Distance(smokeStartPosition, presentationRoot.position);
@@ -143,6 +160,7 @@ namespace UnityIsekaiGame.Networking.Client
             smokeStartPosition = networkMovement.transform.position;
             smokeInputEndsAt = Time.realtimeSinceStartupAsDouble + 1.5d;
             smokeResultLogged = false;
+            vitalsSmokeStarted = false;
             if (presentationRoot != null)
             {
                 presentationRoot.position = networkMovement.transform.position;

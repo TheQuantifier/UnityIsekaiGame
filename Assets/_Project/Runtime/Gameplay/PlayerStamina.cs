@@ -17,6 +17,8 @@ namespace UnityIsekaiGame.Gameplay
 
         public float CurrentStamina => HasStamina ? resources.GetCurrent(ResourceIds.Stamina) : 0f;
         public float MaximumStamina => HasStamina ? resources.GetMaximum(ResourceIds.Stamina) : 0f;
+        public float SprintDrainPerSecond => sprintDrainPerSecond;
+        public float SprintRestartThreshold => restartThreshold;
         public bool CanSprint => HasStamina && !exhausted;
         public event Action<float, float> StaminaChanged;
         public event Action<float, float> CommittedStaminaChanged;

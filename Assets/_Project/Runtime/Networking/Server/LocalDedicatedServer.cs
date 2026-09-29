@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
+using UnityIsekaiGame.ResourceSystem;
 
 namespace UnityIsekaiGame.Networking.Server
 {
@@ -20,6 +21,7 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField] private float playerSpawnYaw;
         [SerializeField] private CharacterController prototypePlayerController;
         [SerializeField] private MonoBehaviour prototypePlayerMotor;
+        [SerializeField] private CharacterResourceCollection prototypePlayerResources;
 
         private readonly Dictionary<ulong, string> connectedPlayerIds = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, ConnectionRequestPayload> pendingConnections = new Dictionary<ulong, ConnectionRequestPayload>();
@@ -88,6 +90,11 @@ namespace UnityIsekaiGame.Networking.Server
         {
             prototypePlayerController = controller;
             prototypePlayerMotor = motor;
+        }
+
+        public void ConfigurePrototypePlayerVitals(CharacterResourceCollection resources)
+        {
+            prototypePlayerResources = resources;
         }
 
         public bool StartServer()
@@ -254,9 +261,10 @@ namespace UnityIsekaiGame.Networking.Server
             NetworkObject prefabNetworkObject = playerActorPrefab.GetComponent<NetworkObject>();
             NetworkPlayerActor prefabActor = playerActorPrefab.GetComponent<NetworkPlayerActor>();
             NetworkPlayerMovement prefabMovement = playerActorPrefab.GetComponent<NetworkPlayerMovement>();
-            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null)
+            NetworkPlayerVitals prefabVitals = playerActorPrefab.GetComponent<NetworkPlayerVitals>();
+            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null || prefabVitals == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, and NetworkPlayerMovement components.";
+                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, NetworkPlayerMovement, and NetworkPlayerVitals components.";
                 return false;
             }
 
@@ -265,10 +273,16 @@ namespace UnityIsekaiGame.Networking.Server
             NetworkObject networkObject = instance.GetComponent<NetworkObject>();
             actor = instance.GetComponent<NetworkPlayerActor>();
             NetworkPlayerMovement movement = instance.GetComponent<NetworkPlayerMovement>();
+            NetworkPlayerVitals vitals = instance.GetComponent<NetworkPlayerVitals>();
             try
             {
                 actor.ConfigureServer(session);
                 movement.ConfigureSpawnServer(playerSpawnPosition, playerSpawnYaw);
+                if (TryCreateInitialVitalsState(out NetworkVitalsState initialVitals))
+                {
+                    vitals.ConfigureInitialStateServer(initialVitals);
+                }
+
                 networkObject.SpawnAsPlayerObject(session.ClientId, true);
                 failure = string.Empty;
                 return true;
@@ -292,9 +306,10 @@ namespace UnityIsekaiGame.Networking.Server
 
             if (playerActorPrefab.GetComponent<NetworkObject>() == null
                 || playerActorPrefab.GetComponent<NetworkPlayerActor>() == null
-                || playerActorPrefab.GetComponent<NetworkPlayerMovement>() == null)
+                || playerActorPrefab.GetComponent<NetworkPlayerMovement>() == null
+                || playerActorPrefab.GetComponent<NetworkPlayerVitals>() == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, and NetworkPlayerMovement components.";
+                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, NetworkPlayerMovement, and NetworkPlayerVitals components.";
                 return false;
             }
 
@@ -322,6 +337,31 @@ namespace UnityIsekaiGame.Networking.Server
         private void ResolveReferences()
         {
             networkManager = networkManager == null ? GetComponent<NetworkManager>() : networkManager;
+        }
+
+        private bool TryCreateInitialVitalsState(out NetworkVitalsState state)
+        {
+            if (prototypePlayerResources == null
+                || !prototypePlayerResources.IsConfigured
+                || !prototypePlayerResources.HasResource(ResourceIds.Health)
+                || !prototypePlayerResources.HasResource(ResourceIds.Stamina)
+                || !prototypePlayerResources.HasResource(ResourceIds.Mana))
+            {
+                state = default;
+                return false;
+            }
+
+            float health = prototypePlayerResources.GetCurrent(ResourceIds.Health);
+            state = new NetworkVitalsState(
+                health,
+                prototypePlayerResources.GetMaximum(ResourceIds.Health),
+                prototypePlayerResources.GetCurrent(ResourceIds.Stamina),
+                prototypePlayerResources.GetMaximum(ResourceIds.Stamina),
+                prototypePlayerResources.GetCurrent(ResourceIds.Mana),
+                prototypePlayerResources.GetMaximum(ResourceIds.Mana),
+                health <= CharacterResourceCollection.Epsilon ? NetworkActorLifeState.Defeated : NetworkActorLifeState.Active,
+                1u);
+            return true;
         }
 
         private void SuppressPrototypeMovement()

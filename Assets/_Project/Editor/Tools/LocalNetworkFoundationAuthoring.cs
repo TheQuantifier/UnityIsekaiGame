@@ -12,6 +12,8 @@ using UnityIsekaiGame.Networking.Client;
 using UnityIsekaiGame.Networking.Server;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Player;
+using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.ResourceSystem;
 
 namespace UnityIsekaiGame.Editor
 {
@@ -40,6 +42,7 @@ namespace UnityIsekaiGame.Editor
             LocalGameClient client = GetOrAdd<LocalGameClient>(root);
             LocalDedicatedServer server = GetOrAdd<LocalDedicatedServer>(root);
             LocalPlayerMovementBridge movementBridge = GetOrAdd<LocalPlayerMovementBridge>(root);
+            LocalPlayerVitalsBridge vitalsBridge = GetOrAdd<LocalPlayerVitalsBridge>(root);
             NetworkPrefabsList prefabList = AssetDatabase.LoadAssetAtPath<NetworkPrefabsList>(DefaultNetworkPrefabsPath);
             if (prefabList == null)
             {
@@ -48,12 +51,14 @@ namespace UnityIsekaiGame.Editor
 
             PlayerInputReader playerInput = UnityEngine.Object.FindAnyObjectByType<PlayerInputReader>();
             FirstPersonCharacterMotor playerMotor = UnityEngine.Object.FindAnyObjectByType<FirstPersonCharacterMotor>();
-            if (playerInput == null || playerMotor == null || playerMotor.MovementSettings == null)
+            CharacterResourceCollection playerResources = playerMotor == null ? null : playerMotor.GetComponent<CharacterResourceCollection>();
+            PlayerStamina playerStamina = playerMotor == null ? null : playerMotor.GetComponent<PlayerStamina>();
+            if (playerInput == null || playerMotor == null || playerMotor.MovementSettings == null || playerResources == null || playerStamina == null)
             {
-                throw new InvalidOperationException("The Prototype Scene requires a player input reader, character motor, and movement settings for the network movement bridge.");
+                throw new InvalidOperationException("The Prototype Scene requires player input, movement, stamina, and resource components for the network bridges.");
             }
 
-            GameObject playerActorPrefab = EnsurePlayerActorPrefab(playerMotor.MovementSettings);
+            GameObject playerActorPrefab = EnsurePlayerActorPrefab(playerMotor.MovementSettings, playerStamina);
             foreach (NetworkPrefab entry in prefabList.PrefabList
                          .Where(entry => entry == null || entry.Prefab == null || entry.Prefab == playerActorPrefab)
                          .ToArray())
@@ -78,13 +83,16 @@ namespace UnityIsekaiGame.Editor
             server.ConfigurePlayerActorPrefab(playerActorPrefab);
             server.ConfigurePlayerSpawn(playerMotor.transform.position, playerMotor.transform.eulerAngles.y);
             server.ConfigurePrototypePlayerMovement(playerMotor.GetComponent<CharacterController>(), playerMotor);
+            server.ConfigurePrototypePlayerVitals(playerResources);
             movementBridge.Configure(client, playerInput, playerMotor, playerMotor.transform);
+            vitalsBridge.Configure(client, playerResources, playerInput);
 
             EditorUtility.SetDirty(manager);
             EditorUtility.SetDirty(transport);
             EditorUtility.SetDirty(client);
             EditorUtility.SetDirty(server);
             EditorUtility.SetDirty(movementBridge);
+            EditorUtility.SetDirty(vitalsBridge);
             EditorUtility.SetDirty(prefabList);
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene))
@@ -96,7 +104,7 @@ namespace UnityIsekaiGame.Editor
             Debug.Log($"Baked the local network foundation into '{PrototypeScenePath}'.");
         }
 
-        private static GameObject EnsurePlayerActorPrefab(UnityIsekaiGame.Configuration.PlayerMovementSettings settings)
+        private static GameObject EnsurePlayerActorPrefab(UnityIsekaiGame.Configuration.PlayerMovementSettings settings, PlayerStamina playerStamina)
         {
             EnsureFolder("Assets/_Project/Content/Networking");
             EnsureFolder("Assets/_Project/Content/Networking/Prefabs");
@@ -121,6 +129,7 @@ namespace UnityIsekaiGame.Editor
                 NetworkObject networkObject = GetOrAdd<NetworkObject>(contents);
                 GetOrAdd<NetworkPlayerActor>(contents);
                 NetworkPlayerMovement movement = GetOrAdd<NetworkPlayerMovement>(contents);
+                NetworkPlayerVitals vitals = GetOrAdd<NetworkPlayerVitals>(contents);
                 NetworkTransform networkTransform = GetOrAdd<NetworkTransform>(contents);
                 CharacterController controller = GetOrAdd<CharacterController>(contents);
                 controller.height = 2f;
@@ -142,6 +151,22 @@ namespace UnityIsekaiGame.Editor
                     settings.JumpHeight,
                     settings.Gravity,
                     settings.GroundedStickForce);
+                ResourceDefinition healthDefinition = AssetDatabase.LoadAssetAtPath<ResourceDefinition>("Assets/_Project/Content/Characters/Resources/HealthResource.asset");
+                ResourceDefinition staminaDefinition = AssetDatabase.LoadAssetAtPath<ResourceDefinition>("Assets/_Project/Content/Characters/Resources/StaminaResource.asset");
+                ResourceDefinition manaDefinition = AssetDatabase.LoadAssetAtPath<ResourceDefinition>("Assets/_Project/Content/Characters/Resources/ManaResource.asset");
+                if (healthDefinition == null || staminaDefinition == null || manaDefinition == null)
+                {
+                    throw new InvalidOperationException("Health, Stamina, and Mana resource definitions are required to bake authoritative network vitals.");
+                }
+
+                vitals.ConfigureFallbackTuning(
+                    healthDefinition.RegenerationPerSecond,
+                    playerStamina.SprintDrainPerSecond,
+                    playerStamina.SprintRestartThreshold,
+                    staminaDefinition.RegenerationPerSecond,
+                    manaDefinition.RegenerationPerSecond,
+                    staminaDefinition.RegenerationDelayAfterSpend,
+                    manaDefinition.RegenerationDelayAfterSpend);
                 NormalizeNetworkPrefab(networkObject);
                 PrefabUtility.SaveAsPrefabAsset(contents, PlayerActorPrefabPath);
             }

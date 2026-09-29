@@ -17,10 +17,12 @@ namespace UnityIsekaiGame.ResourceSystem
         private readonly Dictionary<string, RuntimeResourceRecord> recordsById = new Dictionary<string, RuntimeResourceRecord>(StringComparer.Ordinal);
         private readonly HashSet<string> processedEventIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> suppressedAutomaticTickResourceIds = new HashSet<string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, float> externalMaximumsById = new Dictionary<string, float>(StringComparer.Ordinal);
         private readonly Dictionary<string, float> nextRegenerationTick = new Dictionary<string, float>(StringComparer.Ordinal);
         private readonly Dictionary<string, float> nextDegenerationTick = new Dictionary<string, float>(StringComparer.Ordinal);
         private string ownerId = string.Empty;
         private bool suppressNotifications;
+        private bool externalReplicaAuthorityActive;
 
         public event Action<CharacterResourceCollection, ResourceChangeResult> ResourceChanged;
         public event Action<CharacterResourceCollection, ResourceSnapshot, float, bool> ResourceMaximumChanged;
@@ -31,6 +33,7 @@ namespace UnityIsekaiGame.ResourceSystem
         public event Action<CharacterResourceCollection, bool> ResourcesRestored;
 
         public bool IsConfigured { get; private set; }
+        public bool ExternalReplicaAuthorityActive => externalReplicaAuthorityActive;
         public IReadOnlyCollection<RuntimeResourceRecord> ResourceRecords => recordsById.Values.Select(CloneRecord).ToList();
         public IReadOnlyCollection<ResourceDefinition> Definitions => definitionsById.Values.ToList();
 
@@ -126,6 +129,98 @@ namespace UnityIsekaiGame.ResourceSystem
             return !string.IsNullOrWhiteSpace(resourceId) && suppressedAutomaticTickResourceIds.Contains(resourceId);
         }
 
+        public void SetExternalReplicaAuthority(bool active)
+        {
+            if (externalReplicaAuthorityActive == active)
+            {
+                return;
+            }
+
+            externalReplicaAuthorityActive = active;
+            if (!active)
+            {
+                externalMaximumsById.Clear();
+                foreach (string resourceId in definitionsById.Keys.ToList())
+                {
+                    ReconcileResource(resourceId, true);
+                }
+
+                ResourcesRestored?.Invoke(this, true);
+            }
+        }
+
+        public bool ApplyExternalReplicaSnapshot(string resourceId, float current, float maximum)
+        {
+            if (!externalReplicaAuthorityActive
+                || !definitionsById.TryGetValue(resourceId, out ResourceDefinition definition)
+                || !recordsById.TryGetValue(resourceId, out RuntimeResourceRecord record)
+                || !IsFinite(current)
+                || !IsFinite(maximum))
+            {
+                return false;
+            }
+
+            float oldMaximum = ResolveMaximum(definition);
+            float oldCurrent = record.currentValue;
+            float constrainedMaximum = Mathf.Max(definition.MinimumValue, maximum);
+            externalMaximumsById[resourceId] = constrainedMaximum;
+            float constrainedCurrent = Mathf.Clamp(current, definition.MinimumValue, constrainedMaximum);
+            record.currentValue = constrainedCurrent;
+            record.lastKnownMaximum = constrainedMaximum;
+            record.lastChangedAtUtc = DateTime.UtcNow.ToString("O");
+            record.lastChangedAtPlaytimeSeconds = CurrentPlaytimeSeconds;
+            record.lastChangeSource = "network.authority";
+            record.lastChangeReason = "Replicated server snapshot";
+
+            if (!Mathf.Approximately(oldMaximum, constrainedMaximum))
+            {
+                ResourceMaximumChanged?.Invoke(this, CreateSnapshot(definition, record), oldMaximum, true);
+            }
+
+            if (!Mathf.Approximately(oldCurrent, constrainedCurrent))
+            {
+                bool wasEmpty = oldCurrent <= definition.MinimumValue + Epsilon;
+                bool isEmpty = constrainedCurrent <= definition.MinimumValue + Epsilon;
+                bool wasFull = oldCurrent >= oldMaximum - Epsilon;
+                bool isFull = constrainedCurrent >= constrainedMaximum - Epsilon;
+                ResourceChangeRequest request = new ResourceChangeRequest(
+                    resourceId,
+                    ResourceChangeOperation.Administrative,
+                    constrainedCurrent,
+                    ResourceChangeSourceCategory.Persistence,
+                    "network.authority",
+                    "Replicated server snapshot",
+                    restoration: true,
+                    authorityValidated: true);
+                RaiseChangeEvents(ResourceChangeResult.Success(
+                    request,
+                    constrainedCurrent,
+                    Mathf.Abs(constrainedCurrent - oldCurrent),
+                    oldCurrent,
+                    constrainedCurrent,
+                    definition.MinimumValue,
+                    constrainedMaximum,
+                    false,
+                    false,
+                    !wasEmpty && isEmpty,
+                    wasEmpty && !isEmpty,
+                    !wasFull && isFull,
+                    wasFull && !isFull,
+                    $"{definition.DisplayName} synchronized from server authority."),
+                    true);
+            }
+
+            return true;
+        }
+
+        public void CompleteExternalReplicaSnapshot()
+        {
+            if (externalReplicaAuthorityActive)
+            {
+                ResourcesRestored?.Invoke(this, true);
+            }
+        }
+
         public bool TryGetResource(string resourceId, out ResourceSnapshot snapshot)
         {
             if (!definitionsById.TryGetValue(resourceId, out ResourceDefinition definition) || !recordsById.TryGetValue(resourceId, out RuntimeResourceRecord record))
@@ -207,6 +302,17 @@ namespace UnityIsekaiGame.ResourceSystem
             if (!definitionsById.TryGetValue(request.ResourceId, out ResourceDefinition definition) || !recordsById.TryGetValue(request.ResourceId, out RuntimeResourceRecord record))
             {
                 return ResourceChangeResult.Failure(request, "UnknownResource", $"Resource '{request.ResourceId}' is not configured.");
+            }
+
+            if (externalReplicaAuthorityActive)
+            {
+                return ResourceChangeResult.Failure(
+                    request,
+                    "ExternalAuthority",
+                    $"Resource '{request.ResourceId}' is controlled by the connected server.",
+                    record.currentValue,
+                    definition.MinimumValue,
+                    ResolveMaximum(definition));
             }
 
             float minimum = definition.MinimumValue;
@@ -321,6 +427,11 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public void ResetToDefinitionDefaults(string sourceId = "resource.reset", string reason = "Reset resources.", bool restoration = true)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return;
+            }
+
             processedEventIds.Clear();
             nextRegenerationTick.Clear();
             nextDegenerationTick.Clear();
@@ -380,6 +491,11 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public bool ReconcileResource(string resourceId, bool restoring = false)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return false;
+            }
+
             if (!definitionsById.TryGetValue(resourceId, out ResourceDefinition definition) || !recordsById.TryGetValue(resourceId, out RuntimeResourceRecord record))
             {
                 return false;
@@ -450,6 +566,12 @@ namespace UnityIsekaiGame.ResourceSystem
         public bool RestoreFromSaveData(PlayerResourcesSaveData saveData, DefinitionRegistry registry, CalculatedStatCollection statCollection, string expectedPlayerId, out string failureReason, bool restoring)
         {
             failureReason = string.Empty;
+            if (externalReplicaAuthorityActive)
+            {
+                failureReason = "Resources cannot be restored locally while connected to server authority.";
+                return false;
+            }
+
             if (!IsConfigured)
             {
                 failureReason = "Character Resources must be initialized by CharacterSystemCoordinator before restore.";
@@ -572,7 +694,7 @@ namespace UnityIsekaiGame.ResourceSystem
 
         public void TickResources(float deltaSeconds, float now)
         {
-            if (deltaSeconds <= 0f)
+            if (externalReplicaAuthorityActive || deltaSeconds <= 0f)
             {
                 return;
             }
@@ -607,6 +729,11 @@ namespace UnityIsekaiGame.ResourceSystem
 
         private void OnCalculatedStatsChanged(CalculatedStatCollection stats, IReadOnlyList<string> statIds, bool restoring)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return;
+            }
+
             foreach (ResourceDefinition definition in definitionsById.Values.ToList())
             {
                 if (statIds == null || statIds.Contains(definition.LinkedMaximumStatId))
@@ -626,6 +753,11 @@ namespace UnityIsekaiGame.ResourceSystem
             if (definition == null)
             {
                 return 0f;
+            }
+
+            if (externalReplicaAuthorityActive && externalMaximumsById.TryGetValue(definition.Id, out float externalMaximum))
+            {
+                return Mathf.Max(definition.MinimumValue, externalMaximum);
             }
 
             float maximum = calculatedStats != null && calculatedStats.IsConfigured && calculatedStats.HasStat(definition.LinkedMaximumStatId)
