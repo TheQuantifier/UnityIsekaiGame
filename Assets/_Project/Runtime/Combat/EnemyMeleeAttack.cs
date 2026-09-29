@@ -5,6 +5,7 @@ using UnityIsekaiGame.ActorLifecycle;
 using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.Combat.Execution;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.WorldEntities;
 
 namespace UnityIsekaiGame.Combat
@@ -19,6 +20,8 @@ namespace UnityIsekaiGame.Combat
         [SerializeField] private DamageTypeDefinition damageType;
         [SerializeField, Min(0.1f)] private float attackRange = 1.6f;
         [SerializeField] private LayerMask lineOfSightMask = ~0;
+
+        private double nextExternalAuthorityAttackAt;
 
         public float AttackRange => attackRange;
         public event Action<DamageResult> AttackResolved;
@@ -51,6 +54,12 @@ namespace UnityIsekaiGame.Combat
 
         public DamageResult TryAttack(Transform target)
         {
+            IAuthoritativeHealthReceiver authoritativeReceiver = target == null ? null : target.GetComponentInParent<IAuthoritativeHealthReceiver>();
+            if (authoritativeReceiver?.IsAuthoritativeHealthAvailable == true)
+            {
+                return TryAttackAuthoritativeReceiver(target, authoritativeReceiver);
+            }
+
             if (!CanAttempt(target, out string failure))
             {
                 return Resolve(DamageResult.Failure(damage, failure));
@@ -95,10 +104,34 @@ namespace UnityIsekaiGame.Combat
             else if (!ActorLifecycleUtility.CanAct(gameObject)) failure = $"{name} cannot act.";
             else if (execution == null) failure = "Enemy attack has no combat execution definition.";
             else if (damageType == null) failure = "Enemy attack has no canonical damage type.";
-            else if (Execution == null) failure = "Combat execution services are unavailable.";
+            else if (Execution == null && target.GetComponentInParent<IAuthoritativeHealthReceiver>()?.IsAuthoritativeHealthAvailable != true) failure = "Combat execution services are unavailable.";
             else if (GetPlanarDistanceTo(target) > attackRange) failure = "Enemy target is outside attack range.";
             else if (!HasLineOfSight(target)) failure = "Enemy target is blocked by line of sight.";
             return string.IsNullOrWhiteSpace(failure);
+        }
+
+        private DamageResult TryAttackAuthoritativeReceiver(Transform target, IAuthoritativeHealthReceiver receiver)
+        {
+            if (!CanAttempt(target, out string failure)) return Resolve(DamageResult.Failure(damage, failure));
+            double now = Time.realtimeSinceStartupAsDouble;
+            if (now < nextExternalAuthorityAttackAt)
+            {
+                return Resolve(DamageResult.Failure(damage, "Enemy attack is on cooldown."));
+            }
+
+            float amount = CombatStatUtility.CalculatePreMitigationDamage(damage, gameObject, attackPowerScaling);
+            nextExternalAuthorityAttackAt = now + Mathf.Max(0.01f, execution.CooldownDuration + execution.RecoveryDuration);
+            bool applied = receiver.TryApplyAuthoritativeDamage(
+                amount,
+                damageType.GeneralDefenseApplies,
+                damageType.EnforceMinimumDamage ? damageType.MinimumDamage : 0f,
+                out float appliedAmount);
+            DamageResult result = applied
+                ? new DamageResult(true, amount, amount, Mathf.Max(0f, amount - appliedAmount), Mathf.Max(0f, amount - appliedAmount), appliedAmount,
+                    receiver.AuthoritativeCurrentHealth, receiver.AuthoritativeDefeated,
+                    $"{name} dealt {appliedAmount:0.#} server-authoritative damage.")
+                : DamageResult.Failure(amount, "The authoritative target rejected enemy damage.");
+            return Resolve(result);
         }
 
         private AttackResolutionRequest CreateAttackRequest(Transform target, string transactionId)

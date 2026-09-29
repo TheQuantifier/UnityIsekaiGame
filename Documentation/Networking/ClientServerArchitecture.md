@@ -66,10 +66,11 @@ The extraction order is:
 
 1. Network protocol, replication, client, server, and UI physical roots — complete.
 2. Server-authoritative inventory commands and snapshots — complete in Phase 5 Group 6.
-3. Combat, ability, quest, party, and interaction command boundaries.
-4. Server-only persistence ownership and player-session restore.
-5. Split reusable gameplay domains into embedded versioned packages.
-6. Create thin `Projects/Client` and `Projects/Server` Unity projects consuming the same packages and content bundles.
+3. Combat and ability command boundaries — complete in Phase 5 Group 7 for the Prototype Scene vertical slice.
+4. Quest, party, and interaction command boundaries.
+5. Server-only persistence ownership and player-session restore.
+6. Split reusable gameplay domains into embedded versioned packages.
+7. Create thin `Projects/Client` and `Projects/Server` Unity projects consuming the same packages and content bundles.
 
 ## Target physical-project layout
 

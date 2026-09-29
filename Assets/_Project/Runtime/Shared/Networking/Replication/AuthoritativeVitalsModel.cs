@@ -126,6 +126,23 @@ namespace UnityIsekaiGame.Networking
             return true;
         }
 
+        public bool TrySpendStamina(float amount, double now)
+        {
+            if (!IsPositiveFinite(amount) || state.IsDefeated || state.Stamina + Epsilon < amount)
+            {
+                return false;
+            }
+
+            SetStamina(state.Stamina - amount);
+            staminaRegenerationBlockedUntil = Math.Max(staminaRegenerationBlockedUntil, now + tuning.StaminaRegenerationDelayAfterSpend);
+            if (state.Stamina <= Epsilon)
+            {
+                sprintExhausted = true;
+            }
+
+            return true;
+        }
+
         public bool TryRestoreMana(float amount)
         {
             if (!IsPositiveFinite(amount) || state.IsDefeated || state.Mana >= state.MaximumMana - Epsilon)

@@ -30,13 +30,20 @@ namespace UnityIsekaiGame.Networking
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server);
 
+        private FixedString128Bytes configuredSessionId;
+        private FixedString128Bytes configuredClientInstanceId;
+        private FixedString128Bytes configuredPlayerId;
+        private FixedString128Bytes configuredActorId;
+        private long configuredSessionRevision;
+        private bool hasConfiguredIdentity;
+
         public event Action<NetworkPlayerActor> IdentityChanged;
 
-        public string SessionId => sessionId.Value.ToString();
-        public string ClientInstanceId => clientInstanceId.Value.ToString();
-        public string PlayerId => playerId.Value.ToString();
-        public string ActorId => actorId.Value.ToString();
-        public long SessionRevision => sessionRevision.Value;
+        public string SessionId => (IsSpawned ? sessionId.Value : configuredSessionId).ToString();
+        public string ClientInstanceId => (IsSpawned ? clientInstanceId.Value : configuredClientInstanceId).ToString();
+        public string PlayerId => (IsSpawned ? playerId.Value : configuredPlayerId).ToString();
+        public string ActorId => (IsSpawned ? actorId.Value : configuredActorId).ToString();
+        public long SessionRevision => IsSpawned ? sessionRevision.Value : configuredSessionRevision;
         public bool HasIdentity => !string.IsNullOrWhiteSpace(SessionId)
             && !string.IsNullOrWhiteSpace(PlayerId)
             && !string.IsNullOrWhiteSpace(ActorId);
@@ -53,11 +60,12 @@ namespace UnityIsekaiGame.Networking
                 throw new InvalidOperationException("Player actor identity must be configured before the NetworkObject is spawned.");
             }
 
-            sessionId.Value = session.SessionId;
-            clientInstanceId.Value = session.ClientInstanceId;
-            playerId.Value = session.PlayerId;
-            actorId.Value = session.ActorId;
-            sessionRevision.Value = session.Revision;
+            configuredSessionId = session.SessionId;
+            configuredClientInstanceId = session.ClientInstanceId;
+            configuredPlayerId = session.PlayerId;
+            configuredActorId = session.ActorId;
+            configuredSessionRevision = session.Revision;
+            hasConfiguredIdentity = true;
         }
 
         public override void OnNetworkSpawn()
@@ -67,6 +75,21 @@ namespace UnityIsekaiGame.Networking
             playerId.OnValueChanged += OnIdentityValueChanged;
             actorId.OnValueChanged += OnIdentityValueChanged;
             sessionRevision.OnValueChanged += OnRevisionChanged;
+
+            if (IsServer)
+            {
+                if (!hasConfiguredIdentity)
+                {
+                    throw new InvalidOperationException("Server player identity was not configured before network spawn.");
+                }
+
+                sessionId.Value = configuredSessionId;
+                clientInstanceId.Value = configuredClientInstanceId;
+                playerId.Value = configuredPlayerId;
+                actorId.Value = configuredActorId;
+                sessionRevision.Value = configuredSessionRevision;
+            }
+
             IdentityChanged?.Invoke(this);
         }
 

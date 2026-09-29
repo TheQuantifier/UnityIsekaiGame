@@ -33,6 +33,7 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(root.GetComponent<LocalPlayerMovementBridge>(), Is.Not.Null);
                 Assert.That(root.GetComponent<LocalPlayerVitalsBridge>(), Is.Not.Null);
                 Assert.That(root.GetComponent<LocalPlayerInventoryBridge>(), Is.Not.Null);
+                Assert.That(root.GetComponent<LocalCombatAuthorityBridge>(), Is.Not.Null);
                 LocalDedicatedServer server = root.GetComponent<LocalDedicatedServer>();
                 Assert.That(server, Is.Not.Null);
                 Assert.That(manager.NetworkConfig.NetworkTransport, Is.SameAs(transport));
@@ -49,7 +50,12 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(server.PlayerActorPrefab.GetComponent<NetworkPlayerMovement>(), Is.Not.Null);
                 Assert.That(server.PlayerActorPrefab.GetComponent<NetworkPlayerVitals>(), Is.Not.Null);
                 Assert.That(server.PlayerActorPrefab.GetComponent<NetworkPlayerInventory>(), Is.Not.Null);
+                Assert.That(server.PlayerActorPrefab.GetComponent<NetworkPlayerCombat>(), Is.Not.Null);
+                Assert.That(server.CombatWorldStatePrefab, Is.Not.Null);
+                Assert.That(server.CombatWorldStatePrefab.GetComponent<NetworkObject>(), Is.Not.Null);
+                Assert.That(server.CombatWorldStatePrefab.GetComponent<NetworkCombatWorldState>(), Is.Not.Null);
                 Assert.That(prefabList.Contains(server.PlayerActorPrefab), Is.True);
+                Assert.That(prefabList.Contains(server.CombatWorldStatePrefab), Is.True);
             }
             finally
             {

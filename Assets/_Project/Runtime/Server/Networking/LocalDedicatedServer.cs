@@ -7,6 +7,8 @@ using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.ResourceSystem;
+using UnityIsekaiGame.Combat;
+using UnityIsekaiGame.Magic;
 
 namespace UnityIsekaiGame.Networking.Server
 {
@@ -15,12 +17,14 @@ namespace UnityIsekaiGame.Networking.Server
     public sealed class LocalDedicatedServer : MonoBehaviour
     {
         public const string InventorySmokeSeedFlag = "--inventory-smoke-seed";
+        public const string CombatSmokeSeedFlag = "--combat-smoke-seed";
         [SerializeField] private NetworkManager networkManager;
         [SerializeField] private string listenAddress = LocalServerEndpoint.DefaultListenAddress;
         [SerializeField] private int serverPort = LocalServerEndpoint.DefaultPort;
         [SerializeField, Min(1)] private int maximumPlayers = 8;
         [SerializeField] private bool startAutomaticallyInServerBuild = true;
         [SerializeField] private GameObject playerActorPrefab;
+        [SerializeField] private GameObject combatWorldStatePrefab;
         [SerializeField] private Vector3 playerSpawnPosition = new Vector3(-29.2f, 1.1f, 69f);
         [SerializeField] private float playerSpawnYaw;
         [SerializeField] private CharacterController prototypePlayerController;
@@ -29,6 +33,8 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField] private PlayerInventory prototypePlayerInventory;
         [SerializeField] private PlayerEquipment prototypePlayerEquipment;
         [SerializeField] private DefinitionCatalog definitionCatalog;
+        [SerializeField] private PlayerMeleeCombat prototypePlayerMeleeCombat;
+        [SerializeField] private PlayerSpellLoadout prototypePlayerSpellLoadout;
 
         private readonly Dictionary<ulong, string> connectedPlayerIds = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, ConnectionRequestPayload> pendingConnections = new Dictionary<ulong, ConnectionRequestPayload>();
@@ -40,6 +46,8 @@ namespace UnityIsekaiGame.Networking.Server
         private bool inventorySmokeSeeded;
         private bool prototypeControllerWasEnabled;
         private bool prototypeMotorWasEnabled;
+        private NetworkCombatWorldState combatWorldState;
+        private ServerCombatWorldAuthority combatWorldAuthority;
         private LocalConnectionStatus status = new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline.");
 
         public event Action<LocalConnectionStatus> StatusChanged;
@@ -50,6 +58,7 @@ namespace UnityIsekaiGame.Networking.Server
         public IReadOnlyDictionary<ulong, string> ConnectedPlayerIds => connectedPlayerIds;
         public IReadOnlyList<PlayerSessionSnapshot> PlayerSessions => playerSessions.ActiveSessions;
         public GameObject PlayerActorPrefab => playerActorPrefab;
+        public GameObject CombatWorldStatePrefab => combatWorldStatePrefab;
         public Vector3 PlayerSpawnPosition => playerSpawnPosition;
         public float PlayerSpawnYaw => playerSpawnYaw;
         public bool StartAutomaticallyInServerBuild => startAutomaticallyInServerBuild;
@@ -89,6 +98,11 @@ namespace UnityIsekaiGame.Networking.Server
             playerActorPrefab = prefab;
         }
 
+        public void ConfigureCombatWorldStatePrefab(GameObject prefab)
+        {
+            combatWorldStatePrefab = prefab;
+        }
+
         public void ConfigurePlayerSpawn(Vector3 position, float yawDegrees)
         {
             playerSpawnPosition = position;
@@ -111,6 +125,12 @@ namespace UnityIsekaiGame.Networking.Server
             prototypePlayerInventory = inventory;
             prototypePlayerEquipment = equipment;
             definitionCatalog = catalog;
+        }
+
+        public void ConfigurePrototypeCombat(PlayerMeleeCombat meleeCombat, PlayerSpellLoadout spellLoadout)
+        {
+            prototypePlayerMeleeCombat = meleeCombat;
+            prototypePlayerSpellLoadout = spellLoadout;
         }
 
         public bool StartServer()
@@ -148,6 +168,8 @@ namespace UnityIsekaiGame.Networking.Server
             playerActors.Clear();
             playerSessions.Clear();
             inventorySessions.Clear();
+            combatWorldState = null;
+            combatWorldAuthority = null;
             inventorySmokeSeeded = false;
             networkManager.NetworkConfig.ConnectionApproval = true;
             networkManager.ConnectionApprovalCallback = ApproveConnection;
@@ -165,6 +187,15 @@ namespace UnityIsekaiGame.Networking.Server
                 return Fail($"Could not start the local server on {endpoint}.", endpoint);
             }
 
+            if (!TrySpawnCombatWorldState(out string combatWorldFailure))
+            {
+                Unsubscribe();
+                networkManager.Shutdown();
+                ownsServerSession = false;
+                RestorePrototypeMovement();
+                return Fail(combatWorldFailure, endpoint);
+            }
+
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Listening, $"Local server is listening on {endpoint}.", endpoint));
             return true;
         }
@@ -179,6 +210,8 @@ namespace UnityIsekaiGame.Networking.Server
                 playerSessions.Clear();
                 inventorySessions.Clear();
                 inventorySmokeSeeded = false;
+                combatWorldState = null;
+                combatWorldAuthority = null;
                 RestorePrototypeMovement();
                 SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline."));
                 return;
@@ -194,6 +227,8 @@ namespace UnityIsekaiGame.Networking.Server
             playerSessions.Clear();
             inventorySessions.Clear();
             inventorySmokeSeeded = false;
+            combatWorldState = null;
+            combatWorldAuthority = null;
             RestorePrototypeMovement();
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server stopped.", status.Endpoint));
         }
@@ -257,6 +292,7 @@ namespace UnityIsekaiGame.Networking.Server
 
         private void OnClientDisconnected(ulong clientId)
         {
+            combatWorldAuthority?.UnregisterPlayerTarget(clientId);
             pendingConnections.Remove(clientId);
             playerActors.Remove(clientId);
             if (connectedPlayerIds.Remove(clientId))
@@ -285,15 +321,17 @@ namespace UnityIsekaiGame.Networking.Server
             NetworkPlayerMovement prefabMovement = playerActorPrefab.GetComponent<NetworkPlayerMovement>();
             NetworkPlayerVitals prefabVitals = playerActorPrefab.GetComponent<NetworkPlayerVitals>();
             NetworkPlayerInventory prefabInventory = playerActorPrefab.GetComponent<NetworkPlayerInventory>();
-            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null || prefabVitals == null || prefabInventory == null)
+            NetworkPlayerCombat prefabCombat = playerActorPrefab.GetComponent<NetworkPlayerCombat>();
+            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null || prefabVitals == null || prefabInventory == null || prefabCombat == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, NetworkPlayerMovement, NetworkPlayerVitals, and NetworkPlayerInventory components.";
+                failure = "The server player actor prefab must contain NetworkObject and all player identity, movement, vitals, inventory, and combat replication components.";
                 return false;
             }
 
-            if (prototypePlayerInventory == null || prototypePlayerEquipment == null || definitionCatalog == null)
+            if (prototypePlayerInventory == null || prototypePlayerEquipment == null || definitionCatalog == null
+                || prototypePlayerMeleeCombat == null || prototypePlayerSpellLoadout == null)
             {
-                failure = "The server requires a prototype inventory, equipment container, and definition catalog for session initialization.";
+                failure = "The server requires prototype inventory, equipment, combat, spell-loadout, and definition-catalog state for session initialization.";
                 return false;
             }
 
@@ -304,6 +342,7 @@ namespace UnityIsekaiGame.Networking.Server
             NetworkPlayerMovement movement = instance.GetComponent<NetworkPlayerMovement>();
             NetworkPlayerVitals vitals = instance.GetComponent<NetworkPlayerVitals>();
             NetworkPlayerInventory replicatedInventory = instance.GetComponent<NetworkPlayerInventory>();
+            NetworkPlayerCombat replicatedCombat = instance.GetComponent<NetworkPlayerCombat>();
             try
             {
                 actor.ConfigureServer(session);
@@ -312,6 +351,7 @@ namespace UnityIsekaiGame.Networking.Server
                 {
                     vitals.ConfigureInitialStateServer(initialVitals);
                 }
+                vitals.ConfigureCombatDefenseServer(CombatStatUtility.GetDefense(prototypePlayerMeleeCombat.gameObject));
 
                 InventorySessionState inventoryState = GetOrCreateInventorySession(session.PlayerId);
                 ServerPlayerInventoryAuthority inventoryAuthority = instance.AddComponent<ServerPlayerInventoryAuthority>();
@@ -323,7 +363,24 @@ namespace UnityIsekaiGame.Networking.Server
                     inventoryState.Equipment,
                     (inventorySave, equipmentSave) => inventorySessions[session.PlayerId] = new InventorySessionState(inventorySave, equipmentSave));
 
+                if (combatWorldAuthority == null)
+                {
+                    throw new InvalidOperationException("The server combat world and prototype combat profile must be configured before spawning players.");
+                }
+
+                ServerPlayerCombatAuthority combatAuthority = instance.AddComponent<ServerPlayerCombatAuthority>();
+                combatAuthority.Configure(
+                    replicatedCombat,
+                    vitals,
+                    inventoryAuthority,
+                    combatWorldAuthority,
+                    definitionCatalog.CreateRegistry(),
+                    prototypePlayerMeleeCombat.UnarmedAttack,
+                    prototypePlayerSpellLoadout.KnownSpells,
+                    CombatStatUtility.GetAttackPower(prototypePlayerMeleeCombat.gameObject));
+
                 networkObject.SpawnAsPlayerObject(session.ClientId, true);
+                combatWorldAuthority.RegisterPlayerTarget(session.ClientId, instance.transform);
                 failure = string.Empty;
                 return true;
             }
@@ -348,23 +405,65 @@ namespace UnityIsekaiGame.Networking.Server
                 || playerActorPrefab.GetComponent<NetworkPlayerActor>() == null
                 || playerActorPrefab.GetComponent<NetworkPlayerMovement>() == null
                 || playerActorPrefab.GetComponent<NetworkPlayerVitals>() == null
-                || playerActorPrefab.GetComponent<NetworkPlayerInventory>() == null)
+                || playerActorPrefab.GetComponent<NetworkPlayerInventory>() == null
+                || playerActorPrefab.GetComponent<NetworkPlayerCombat>() == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, NetworkPlayerMovement, NetworkPlayerVitals, and NetworkPlayerInventory components.";
+                failure = "The server player actor prefab must contain NetworkObject and all player identity, movement, vitals, inventory, and combat replication components.";
+                return false;
+            }
+
+            if (combatWorldStatePrefab == null
+                || combatWorldStatePrefab.GetComponent<NetworkObject>() == null
+                || combatWorldStatePrefab.GetComponent<NetworkCombatWorldState>() == null)
+            {
+                failure = "The combat world state prefab must contain NetworkObject and NetworkCombatWorldState components.";
                 return false;
             }
 
             foreach (NetworkPrefabsList list in networkManager.NetworkConfig.Prefabs.NetworkPrefabsLists)
             {
-                if (list != null && list.Contains(playerActorPrefab))
+                if (list != null && list.Contains(playerActorPrefab) && list.Contains(combatWorldStatePrefab))
                 {
                     failure = string.Empty;
                     return true;
                 }
             }
 
-            failure = "The server player actor prefab is not registered in the NetworkManager prefab lists.";
+            failure = "The player actor and combat world state prefabs must both be registered in the NetworkManager prefab lists.";
             return false;
+        }
+
+        private bool TrySpawnCombatWorldState(out string failure)
+        {
+            if (combatWorldStatePrefab == null)
+            {
+                failure = "The combat world state prefab is not configured.";
+                return false;
+            }
+
+            GameObject instance = Instantiate(combatWorldStatePrefab);
+            instance.name = "Network Combat World State";
+            try
+            {
+                NetworkObject networkObject = instance.GetComponent<NetworkObject>();
+                combatWorldState = instance.GetComponent<NetworkCombatWorldState>();
+                if (networkObject == null || combatWorldState == null)
+                    throw new InvalidOperationException("Combat world state prefab is missing required network components.");
+                combatWorldAuthority = instance.AddComponent<ServerCombatWorldAuthority>();
+                combatWorldAuthority.Configure(combatWorldState, HasCommandLineFlag(CombatSmokeSeedFlag));
+                networkObject.Spawn(true);
+                combatWorldAuthority.PublishSnapshotNow();
+                failure = string.Empty;
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Destroy(instance);
+                combatWorldState = null;
+                combatWorldAuthority = null;
+                failure = $"The server could not spawn the combat world authority: {exception.Message}";
+                return false;
+            }
         }
 
         private void DisconnectClient(ulong clientId, string reason)

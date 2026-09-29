@@ -24,7 +24,11 @@ namespace UnityIsekaiGame.Combat
         [SerializeField] private QueryTriggerInteraction triggerInteraction = QueryTriggerInteraction.Ignore;
         [SerializeField] private MeleeWeaponData unarmedAttack = new MeleeWeaponData();
 
+        private bool externalAuthorityActive;
+
         public event Action<MeleeAttackResult> AttackResolved;
+        public MeleeWeaponData UnarmedAttack => unarmedAttack;
+        public bool ExternalAuthorityActive => externalAuthorityActive;
 
         private CombatExecutionService Execution => runtimeServices == null ? null : runtimeServices.CombatExecution;
 
@@ -42,11 +46,14 @@ namespace UnityIsekaiGame.Combat
 
         private void Update()
         {
-            if (input != null && input.ConsumeAttack()) TryAttack();
+            if (!externalAuthorityActive && input != null && input.ConsumeAttack()) TryAttack();
         }
+
+        public void SetExternalAuthority(bool active) => externalAuthorityActive = active;
 
         public MeleeAttackResult TryAttack()
         {
+            if (externalAuthorityActive) return Resolve(MeleeAttackResult.Failure("Combat is controlled by the connected server."));
             if (!ActorLifecycleUtility.CanAct(gameObject)) return Resolve(MeleeAttackResult.Failure("Cannot attack while defeated, unconscious, or dead."));
             if (attackOrigin == null) return Resolve(MeleeAttackResult.Failure("No attack origin is assigned."));
             if (Execution == null) return Resolve(MeleeAttackResult.Failure("Combat execution services are unavailable."));

@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 1167863554736825657}
   - component: {fileID: 3654913487725053500}
   - component: {fileID: 5673974722996689539}
+  - component: {fileID: 7504603409603154294}
   m_Layer: 0
   m_Name: NetworkPlayerActor
   m_TagString: Untagged
@@ -204,4 +205,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66df41dc6e844fd0a59e31676d4f0c13, type: 3}
   m_Name:
   m_EditorClassIdentifier: UnityIsekaiGame.Networking.Shared::UnityIsekaiGame.Networking.NetworkPlayerInventory
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &7504603409603154294
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6860670019684611436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c43257d627593924295f4b71cdf2e679, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Networking.Shared::UnityIsekaiGame.Networking.NetworkPlayerCombat
   ShowTopMostFoldoutHeaderGroup: 1

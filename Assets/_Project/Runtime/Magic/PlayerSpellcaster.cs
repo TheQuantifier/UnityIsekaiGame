@@ -24,8 +24,10 @@ namespace UnityIsekaiGame.Magic
         private string pendingActorId;
         private SpellDefinition pendingSpell;
         private CharacterAbilityCollection abilities;
+        private bool externalAuthorityActive;
 
         public event Action<SpellDefinition, SpellCastResult> SpellCastResolved;
+        public bool ExternalAuthorityActive => externalAuthorityActive;
 
         private CombatExecutionService Execution => runtimeServices == null ? null : runtimeServices.CombatExecution;
 
@@ -44,16 +46,24 @@ namespace UnityIsekaiGame.Magic
 
         private void Update()
         {
-            Execution?.ProcessExecutionTime(Time.time);
-            CommitPendingExecutionWhenReady();
-            if (input != null && input.ConsumeCastPrimarySpell())
+            if (!externalAuthorityActive)
             {
-                TryCastPrimarySpell();
+                Execution?.ProcessExecutionTime(Time.time);
+                CommitPendingExecutionWhenReady();
+                if (input != null && input.ConsumeCastPrimarySpell()) TryCastPrimarySpell();
             }
+        }
+
+        public void SetExternalAuthority(bool active)
+        {
+            if (externalAuthorityActive == active) return;
+            if (active) ResetSpellcasting();
+            externalAuthorityActive = active;
         }
 
         public SpellCastResult TryCastPrimarySpell()
         {
+            if (externalAuthorityActive) return Resolve(GetCurrentSpell(), SpellCastResult.Failure("Spellcasting is controlled by the connected server."));
             SpellDefinition spell = GetCurrentSpell();
             if (spell == null || spell.Ability == null)
             {

@@ -221,7 +221,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 84965edb733e42f7b1861c674782dd9d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: 
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   playerActionMap: Player
@@ -255,7 +255,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ecf701be4dd74672b375fbe7e127e0ce, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: 
   input: {fileID: 100003}
   movementSettings: {fileID: 11400000, guid: 1f044d40739746a58a2f50387891deac, type: 2}
@@ -292,7 +292,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d1557c9814764e4691dbb481f51daac7, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Inventory.PlayerInventory
   slotCapacity: 16
   slots:
@@ -370,7 +370,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39143b74073e54c4398d9c545727e393, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Gameplay.PlayerHealth
   input: {fileID: 100003}
   resources: {fileID: 343134210}
@@ -13504,6 +13504,7 @@ GameObject:
   - component: {fileID: 850340039}
   - component: {fileID: 850340040}
   - component: {fileID: 850340041}
+  - component: {fileID: 850340042}
   m_Layer: 0
   m_Name: Local Network Runtime
   m_TagString: Untagged
@@ -13529,6 +13530,7 @@ MonoBehaviour:
   maximumPlayers: 8
   startAutomaticallyInServerBuild: 1
   playerActorPrefab: {fileID: 6860670019684611436, guid: ffacee9f9a9cbb3409b0980ceb89fe69, type: 3}
+  combatWorldStatePrefab: {fileID: 7590734035742550039, guid: d433e9cb8b04d544ba2d9e1bad797394, type: 3}
   playerSpawnPosition: {x: -29.2, y: 1.1, z: 69}
   playerSpawnYaw: 0
   prototypePlayerController: {fileID: 100002}
@@ -13537,6 +13539,8 @@ MonoBehaviour:
   prototypePlayerInventory: {fileID: 100006}
   prototypePlayerEquipment: {fileID: 343134188}
   definitionCatalog: {fileID: 11400000, guid: 357d3d18865946889262f9bf55802d62, type: 2}
+  prototypePlayerMeleeCombat: {fileID: 343134189}
+  prototypePlayerSpellLoadout: {fileID: 343134192}
 --- !u!114 &850340035
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13690,6 +13694,24 @@ MonoBehaviour:
   localInventory: {fileID: 100006}
   localEquipment: {fileID: 343134188}
   definitionCatalog: {fileID: 11400000, guid: 357d3d18865946889262f9bf55802d62, type: 2}
+--- !u!114 &850340042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 850340033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f57f397fc20414246804695c3bc2f6ff, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Networking.Client::UnityIsekaiGame.Networking.Client.LocalCombatAuthorityBridge
+  client: {fileID: 850340035}
+  input: {fileID: 100003}
+  localMeleeCombat: {fileID: 343134189}
+  localSpellcaster: {fileID: 343134191}
+  spellLoadout: {fileID: 343134192}
+  aimOrigin: {fileID: 100011}
 --- !u!1 &851981566
 GameObject:
   m_ObjectHideFlags: 0

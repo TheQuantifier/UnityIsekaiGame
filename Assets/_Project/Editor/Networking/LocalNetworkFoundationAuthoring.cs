@@ -16,6 +16,8 @@ using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.ResourceSystem;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Equipment;
+using UnityIsekaiGame.Combat;
+using UnityIsekaiGame.Magic;
 
 namespace UnityIsekaiGame.Editor
 {
@@ -25,6 +27,7 @@ namespace UnityIsekaiGame.Editor
         public const string NetworkRootName = "Local Network Runtime";
         public const string DefaultNetworkPrefabsPath = "Assets/DefaultNetworkPrefabs.asset";
         public const string PlayerActorPrefabPath = "Assets/_Project/Content/Networking/Prefabs/NetworkPlayerActor.prefab";
+        public const string CombatWorldStatePrefabPath = "Assets/_Project/Content/Networking/Prefabs/NetworkCombatWorldState.prefab";
 
         [MenuItem("Tools/Unity Isekai Game/Networking/Bake Local Network Foundation")]
         public static void BakePrototypeSceneMenu() => BakePrototypeScene();
@@ -46,6 +49,7 @@ namespace UnityIsekaiGame.Editor
             LocalPlayerMovementBridge movementBridge = GetOrAdd<LocalPlayerMovementBridge>(root);
             LocalPlayerVitalsBridge vitalsBridge = GetOrAdd<LocalPlayerVitalsBridge>(root);
             LocalPlayerInventoryBridge inventoryBridge = GetOrAdd<LocalPlayerInventoryBridge>(root);
+            LocalCombatAuthorityBridge combatBridge = GetOrAdd<LocalCombatAuthorityBridge>(root);
             NetworkPrefabsList prefabList = AssetDatabase.LoadAssetAtPath<NetworkPrefabsList>(DefaultNetworkPrefabsPath);
             if (prefabList == null)
             {
@@ -58,16 +62,21 @@ namespace UnityIsekaiGame.Editor
             PlayerStamina playerStamina = playerMotor == null ? null : playerMotor.GetComponent<PlayerStamina>();
             PlayerInventory playerInventory = playerMotor == null ? null : playerMotor.GetComponent<PlayerInventory>();
             PlayerEquipment playerEquipment = playerMotor == null ? null : playerMotor.GetComponent<PlayerEquipment>();
+            PlayerMeleeCombat playerMeleeCombat = playerMotor == null ? null : playerMotor.GetComponent<PlayerMeleeCombat>();
+            PlayerSpellcaster playerSpellcaster = playerMotor == null ? null : playerMotor.GetComponent<PlayerSpellcaster>();
+            PlayerSpellLoadout playerSpellLoadout = playerMotor == null ? null : playerMotor.GetComponent<PlayerSpellLoadout>();
             PrototypePersistenceServiceBehaviour persistence = UnityEngine.Object.FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
             if (playerInput == null || playerMotor == null || playerMotor.MovementSettings == null || playerResources == null || playerStamina == null
-                || playerInventory == null || playerEquipment == null || persistence == null || persistence.DefinitionCatalog == null)
+                || playerInventory == null || playerEquipment == null || playerMeleeCombat == null || playerSpellcaster == null || playerSpellLoadout == null
+                || persistence == null || persistence.DefinitionCatalog == null)
             {
                 throw new InvalidOperationException("The Prototype Scene requires player input, movement, vitals, inventory, equipment, persistence, and a definition catalog for the network bridges.");
             }
 
             GameObject playerActorPrefab = EnsurePlayerActorPrefab(playerMotor.MovementSettings, playerStamina);
+            GameObject combatWorldStatePrefab = EnsureCombatWorldStatePrefab();
             foreach (NetworkPrefab entry in prefabList.PrefabList
-                         .Where(entry => entry == null || entry.Prefab == null || entry.Prefab == playerActorPrefab)
+                         .Where(entry => entry == null || entry.Prefab == null || entry.Prefab == playerActorPrefab || entry.Prefab == combatWorldStatePrefab)
                          .ToArray())
             {
                 prefabList.Remove(entry);
@@ -77,6 +86,11 @@ namespace UnityIsekaiGame.Editor
             {
                 Override = NetworkPrefabOverride.None,
                 Prefab = playerActorPrefab
+            });
+            prefabList.Add(new NetworkPrefab
+            {
+                Override = NetworkPrefabOverride.None,
+                Prefab = combatWorldStatePrefab
             });
 
             manager.NetworkConfig.NetworkTransport = transport;
@@ -88,13 +102,16 @@ namespace UnityIsekaiGame.Editor
             client.Configure(manager);
             server.Configure(manager);
             server.ConfigurePlayerActorPrefab(playerActorPrefab);
+            server.ConfigureCombatWorldStatePrefab(combatWorldStatePrefab);
             server.ConfigurePlayerSpawn(playerMotor.transform.position, playerMotor.transform.eulerAngles.y);
             server.ConfigurePrototypePlayerMovement(playerMotor.GetComponent<CharacterController>(), playerMotor);
             server.ConfigurePrototypePlayerVitals(playerResources);
             server.ConfigurePrototypePlayerInventory(playerInventory, playerEquipment, persistence.DefinitionCatalog);
+            server.ConfigurePrototypeCombat(playerMeleeCombat, playerSpellLoadout);
             movementBridge.Configure(client, playerInput, playerMotor, playerMotor.transform);
             vitalsBridge.Configure(client, playerResources, playerInput);
             inventoryBridge.Configure(client, playerInventory, playerEquipment, persistence.DefinitionCatalog);
+            combatBridge.Configure(client, playerInput, playerMeleeCombat, playerSpellcaster, playerSpellLoadout, Camera.main == null ? null : Camera.main.transform);
 
             EditorUtility.SetDirty(manager);
             EditorUtility.SetDirty(transport);
@@ -103,6 +120,7 @@ namespace UnityIsekaiGame.Editor
             EditorUtility.SetDirty(movementBridge);
             EditorUtility.SetDirty(vitalsBridge);
             EditorUtility.SetDirty(inventoryBridge);
+            EditorUtility.SetDirty(combatBridge);
             EditorUtility.SetDirty(prefabList);
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene))
@@ -141,6 +159,7 @@ namespace UnityIsekaiGame.Editor
                 NetworkPlayerMovement movement = GetOrAdd<NetworkPlayerMovement>(contents);
                 NetworkPlayerVitals vitals = GetOrAdd<NetworkPlayerVitals>(contents);
                 GetOrAdd<NetworkPlayerInventory>(contents);
+                GetOrAdd<NetworkPlayerCombat>(contents);
                 NetworkTransform networkTransform = GetOrAdd<NetworkTransform>(contents);
                 CharacterController controller = GetOrAdd<CharacterController>(contents);
                 controller.height = 2f;
@@ -188,6 +207,43 @@ namespace UnityIsekaiGame.Editor
 
             prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerActorPrefabPath);
             return prefab == null ? throw new InvalidOperationException($"Failed to create the player actor prefab at '{PlayerActorPrefabPath}'.") : prefab;
+        }
+
+        private static GameObject EnsureCombatWorldStatePrefab()
+        {
+            EnsureFolder("Assets/_Project/Content/Networking");
+            EnsureFolder("Assets/_Project/Content/Networking/Prefabs");
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CombatWorldStatePrefabPath);
+            if (prefab == null)
+            {
+                GameObject source = new GameObject("Network Combat World State");
+                try
+                {
+                    source.AddComponent<NetworkObject>();
+                    source.AddComponent<NetworkCombatWorldState>();
+                    PrefabUtility.SaveAsPrefabAsset(source, CombatWorldStatePrefabPath);
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(source);
+                }
+            }
+
+            GameObject contents = PrefabUtility.LoadPrefabContents(CombatWorldStatePrefabPath);
+            try
+            {
+                NetworkObject networkObject = GetOrAdd<NetworkObject>(contents);
+                GetOrAdd<NetworkCombatWorldState>(contents);
+                NormalizeNetworkPrefab(networkObject);
+                PrefabUtility.SaveAsPrefabAsset(contents, CombatWorldStatePrefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(contents);
+            }
+
+            prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CombatWorldStatePrefabPath);
+            return prefab == null ? throw new InvalidOperationException($"Failed to create the combat world state prefab at '{CombatWorldStatePrefabPath}'.") : prefab;
         }
 
         private static void NormalizeNetworkPrefab(NetworkObject networkObject)

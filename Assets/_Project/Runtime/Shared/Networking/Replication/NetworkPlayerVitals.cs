@@ -1,12 +1,13 @@
 using System;
 using Unity.Netcode;
 using UnityEngine;
+using UnityIsekaiGame.GameData;
 
 namespace UnityIsekaiGame.Networking
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
-    public sealed class NetworkPlayerVitals : NetworkBehaviour
+    public sealed class NetworkPlayerVitals : NetworkBehaviour, IAuthoritativeHealthReceiver
     {
         [Header("Fallback initial state")]
         [SerializeField, Min(1f)] private float maximumHealth = 100f;
@@ -29,11 +30,15 @@ namespace UnityIsekaiGame.Networking
         private AuthoritativeVitalsModel model;
         private NetworkVitalsState configuredInitialState;
         private bool hasConfiguredInitialState;
+        private float authoritativeDefense;
 
         public event Action<NetworkVitalsState, NetworkVitalsState> StateChanged;
         public NetworkVitalsState CurrentState => replicatedState.Value;
         public bool HasState => CurrentState.Revision != 0u;
         public bool IsDefeated => CurrentState.IsDefeated;
+        public bool IsAuthoritativeHealthAvailable => IsSpawned && IsServer && model != null;
+        public float AuthoritativeCurrentHealth => CurrentState.Health;
+        public bool AuthoritativeDefeated => CurrentState.IsDefeated;
 
         public void ConfigureFallbackTuning(
             float configuredHealthRegenerationPerSecond,
@@ -67,6 +72,12 @@ namespace UnityIsekaiGame.Networking
 
             configuredInitialState = initialState;
             hasConfiguredInitialState = true;
+        }
+
+        public void ConfigureCombatDefenseServer(float defense)
+        {
+            if (IsSpawned) throw new InvalidOperationException("Combat defense must be configured before the network actor is spawned.");
+            authoritativeDefense = Mathf.Max(0f, defense);
         }
 
         public override void OnNetworkSpawn()
@@ -116,7 +127,15 @@ namespace UnityIsekaiGame.Networking
         }
 
         public bool TryDamageServer(float amount) => MutateServer(value => value.TryDamage(amount));
+        public bool TryApplyAuthoritativeDamage(float amount, bool defenseApplies, float minimumDamage, out float appliedAmount)
+        {
+            appliedAmount = defenseApplies
+                ? Mathf.Max(Mathf.Max(0f, minimumDamage), amount - authoritativeDefense)
+                : amount;
+            return TryDamageServer(appliedAmount);
+        }
         public bool TryHealServer(float amount) => MutateServer(value => value.TryHeal(amount));
+        public bool TrySpendStaminaServer(float amount) => MutateServer(value => value.TrySpendStamina(amount, Time.realtimeSinceStartupAsDouble));
         public bool TrySpendManaServer(float amount) => MutateServer(value => value.TrySpendMana(amount, Time.realtimeSinceStartupAsDouble));
         public bool TryRestoreManaServer(float amount) => MutateServer(value => value.TryRestoreMana(amount));
         public bool TryRestoreStaminaServer(float amount) => MutateServer(value => value.TryRestoreStamina(amount));

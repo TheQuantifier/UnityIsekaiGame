@@ -87,6 +87,11 @@ namespace UnityIsekaiGame.Combat
             SnapToGround();
         }
 
+        public void SetTarget(Transform authoritativeTarget)
+        {
+            target = authoritativeTarget;
+        }
+
         public bool SnapToGround()
         {
             if (!snapToGround)
