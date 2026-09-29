@@ -16,12 +16,19 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField, Min(1)] private int maximumPlayers = 8;
         [SerializeField] private bool startAutomaticallyInServerBuild = true;
         [SerializeField] private GameObject playerActorPrefab;
+        [SerializeField] private Vector3 playerSpawnPosition = new Vector3(-29.2f, 1.1f, 69f);
+        [SerializeField] private float playerSpawnYaw;
+        [SerializeField] private CharacterController prototypePlayerController;
+        [SerializeField] private MonoBehaviour prototypePlayerMotor;
 
         private readonly Dictionary<ulong, string> connectedPlayerIds = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, ConnectionRequestPayload> pendingConnections = new Dictionary<ulong, ConnectionRequestPayload>();
         private readonly Dictionary<ulong, NetworkPlayerActor> playerActors = new Dictionary<ulong, NetworkPlayerActor>();
         private readonly PlayerSessionRegistry playerSessions = new PlayerSessionRegistry();
         private bool ownsServerSession;
+        private bool prototypeMovementSuppressed;
+        private bool prototypeControllerWasEnabled;
+        private bool prototypeMotorWasEnabled;
         private LocalConnectionStatus status = new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline.");
 
         public event Action<LocalConnectionStatus> StatusChanged;
@@ -32,6 +39,8 @@ namespace UnityIsekaiGame.Networking.Server
         public IReadOnlyDictionary<ulong, string> ConnectedPlayerIds => connectedPlayerIds;
         public IReadOnlyList<PlayerSessionSnapshot> PlayerSessions => playerSessions.ActiveSessions;
         public GameObject PlayerActorPrefab => playerActorPrefab;
+        public Vector3 PlayerSpawnPosition => playerSpawnPosition;
+        public float PlayerSpawnYaw => playerSpawnYaw;
         public bool StartAutomaticallyInServerBuild => startAutomaticallyInServerBuild;
 
         private void Awake()
@@ -67,6 +76,18 @@ namespace UnityIsekaiGame.Networking.Server
         public void ConfigurePlayerActorPrefab(GameObject prefab)
         {
             playerActorPrefab = prefab;
+        }
+
+        public void ConfigurePlayerSpawn(Vector3 position, float yawDegrees)
+        {
+            playerSpawnPosition = position;
+            playerSpawnYaw = Mathf.Repeat(yawDegrees, 360f);
+        }
+
+        public void ConfigurePrototypePlayerMovement(CharacterController controller, MonoBehaviour motor)
+        {
+            prototypePlayerController = controller;
+            prototypePlayerMotor = motor;
         }
 
         public bool StartServer()
@@ -109,11 +130,13 @@ namespace UnityIsekaiGame.Networking.Server
             networkManager.OnClientDisconnectCallback += OnClientDisconnected;
             transport.SetConnectionData(LocalServerEndpoint.DefaultClientAddress, endpoint.Port, endpoint.Address);
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.StartingServer, $"Starting local server on {endpoint}.", endpoint));
+            SuppressPrototypeMovement();
 
             ownsServerSession = networkManager.StartServer();
             if (!ownsServerSession)
             {
                 Unsubscribe();
+                RestorePrototypeMovement();
                 return Fail($"Could not start the local server on {endpoint}.", endpoint);
             }
 
@@ -129,6 +152,7 @@ namespace UnityIsekaiGame.Networking.Server
                 pendingConnections.Clear();
                 playerActors.Clear();
                 playerSessions.Clear();
+                RestorePrototypeMovement();
                 SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline."));
                 return;
             }
@@ -141,6 +165,7 @@ namespace UnityIsekaiGame.Networking.Server
             pendingConnections.Clear();
             playerActors.Clear();
             playerSessions.Clear();
+            RestorePrototypeMovement();
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server stopped.", status.Endpoint));
         }
 
@@ -228,19 +253,22 @@ namespace UnityIsekaiGame.Networking.Server
 
             NetworkObject prefabNetworkObject = playerActorPrefab.GetComponent<NetworkObject>();
             NetworkPlayerActor prefabActor = playerActorPrefab.GetComponent<NetworkPlayerActor>();
-            if (prefabNetworkObject == null || prefabActor == null)
+            NetworkPlayerMovement prefabMovement = playerActorPrefab.GetComponent<NetworkPlayerMovement>();
+            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject and NetworkPlayerActor components.";
+                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, and NetworkPlayerMovement components.";
                 return false;
             }
 
-            GameObject instance = Instantiate(playerActorPrefab);
+            GameObject instance = Instantiate(playerActorPrefab, playerSpawnPosition, Quaternion.Euler(0f, playerSpawnYaw, 0f));
             instance.name = $"Network Player Actor ({session.PlayerId})";
             NetworkObject networkObject = instance.GetComponent<NetworkObject>();
             actor = instance.GetComponent<NetworkPlayerActor>();
+            NetworkPlayerMovement movement = instance.GetComponent<NetworkPlayerMovement>();
             try
             {
                 actor.ConfigureServer(session);
+                movement.ConfigureSpawnServer(playerSpawnPosition, playerSpawnYaw);
                 networkObject.SpawnAsPlayerObject(session.ClientId, true);
                 failure = string.Empty;
                 return true;
@@ -262,9 +290,11 @@ namespace UnityIsekaiGame.Networking.Server
                 return false;
             }
 
-            if (playerActorPrefab.GetComponent<NetworkObject>() == null || playerActorPrefab.GetComponent<NetworkPlayerActor>() == null)
+            if (playerActorPrefab.GetComponent<NetworkObject>() == null
+                || playerActorPrefab.GetComponent<NetworkPlayerActor>() == null
+                || playerActorPrefab.GetComponent<NetworkPlayerMovement>() == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject and NetworkPlayerActor components.";
+                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, and NetworkPlayerMovement components.";
                 return false;
             }
 
@@ -292,6 +322,48 @@ namespace UnityIsekaiGame.Networking.Server
         private void ResolveReferences()
         {
             networkManager = networkManager == null ? GetComponent<NetworkManager>() : networkManager;
+        }
+
+        private void SuppressPrototypeMovement()
+        {
+            if (prototypeMovementSuppressed)
+            {
+                return;
+            }
+
+            prototypeControllerWasEnabled = prototypePlayerController != null && prototypePlayerController.enabled;
+            prototypeMotorWasEnabled = prototypePlayerMotor != null && prototypePlayerMotor.enabled;
+            if (prototypePlayerMotor != null)
+            {
+                prototypePlayerMotor.enabled = false;
+            }
+
+            if (prototypePlayerController != null)
+            {
+                prototypePlayerController.enabled = false;
+            }
+
+            prototypeMovementSuppressed = true;
+        }
+
+        private void RestorePrototypeMovement()
+        {
+            if (!prototypeMovementSuppressed)
+            {
+                return;
+            }
+
+            if (prototypePlayerController != null)
+            {
+                prototypePlayerController.enabled = prototypeControllerWasEnabled;
+            }
+
+            if (prototypePlayerMotor != null)
+            {
+                prototypePlayerMotor.enabled = prototypeMotorWasEnabled;
+            }
+
+            prototypeMovementSuppressed = false;
         }
 
         private void Unsubscribe()

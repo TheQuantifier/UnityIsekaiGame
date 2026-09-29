@@ -8,7 +8,14 @@ namespace UnityIsekaiGame.Persistence
         [SerializeField, HideInInspector] private bool countWhileMenuOpen = true;
 
         public double CumulativeSeconds => cumulativeSeconds;
-        public bool CountWhileMenuOpen => true;
+        public bool CountWhileMenuOpen => countWhileMenuOpen;
+
+        private void Awake()
+        {
+            // Older scenes may have serialized this as false. Menus are client presentation and
+            // must never pause player or server time, so normalize the compatibility value.
+            countWhileMenuOpen = true;
+        }
 
         private void Update()
         {

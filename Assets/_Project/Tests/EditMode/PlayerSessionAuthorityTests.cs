@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEditor;
 using UnityEngine;
 using UnityIsekaiGame.Networking;
@@ -96,6 +97,9 @@ namespace UnityIsekaiGame.Tests
             Assert.That(networkObject, Is.Not.Null);
             Assert.That(networkObject.InScenePlaced, Is.False);
             Assert.That(prefab.GetComponent<NetworkPlayerActor>(), Is.Not.Null);
+            Assert.That(prefab.GetComponent<NetworkPlayerMovement>(), Is.Not.Null);
+            Assert.That(prefab.GetComponent<NetworkTransform>(), Is.Not.Null);
+            Assert.That(prefab.GetComponent<CharacterController>(), Is.Not.Null);
             Assert.That(prefabs, Is.Not.Null);
             Assert.That(prefabs.Contains(prefab), Is.True);
         }

@@ -30,6 +30,7 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(manager, Is.Not.Null);
                 Assert.That(transport, Is.Not.Null);
                 Assert.That(root.GetComponent<LocalGameClient>(), Is.Not.Null);
+                Assert.That(root.GetComponent<LocalPlayerMovementBridge>(), Is.Not.Null);
                 LocalDedicatedServer server = root.GetComponent<LocalDedicatedServer>();
                 Assert.That(server, Is.Not.Null);
                 Assert.That(manager.NetworkConfig.NetworkTransport, Is.SameAs(transport));
@@ -43,6 +44,7 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(server.PlayerActorPrefab, Is.Not.Null);
                 Assert.That(server.PlayerActorPrefab.GetComponent<NetworkObject>(), Is.Not.Null);
                 Assert.That(server.PlayerActorPrefab.GetComponent<NetworkPlayerActor>(), Is.Not.Null);
+                Assert.That(server.PlayerActorPrefab.GetComponent<NetworkPlayerMovement>(), Is.Not.Null);
                 Assert.That(prefabList.Contains(server.PlayerActorPrefab), Is.True);
             }
             finally

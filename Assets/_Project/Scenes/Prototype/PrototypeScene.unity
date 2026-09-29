@@ -13500,6 +13500,7 @@ GameObject:
   - component: {fileID: 850340036}
   - component: {fileID: 850340035}
   - component: {fileID: 850340034}
+  - component: {fileID: 850340039}
   m_Layer: 0
   m_Name: Local Network Runtime
   m_TagString: Untagged
@@ -13525,6 +13526,10 @@ MonoBehaviour:
   maximumPlayers: 8
   startAutomaticallyInServerBuild: 1
   playerActorPrefab: {fileID: 6860670019684611436, guid: ffacee9f9a9cbb3409b0980ceb89fe69, type: 3}
+  playerSpawnPosition: {x: -29.2, y: 1.1, z: 69}
+  playerSpawnYaw: 0
+  prototypePlayerController: {fileID: 100002}
+  prototypePlayerMotor: {fileID: 100004}
 --- !u!114 &850340035
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13630,6 +13635,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &850340039
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 850340033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d21c7b2fca1249aaad949d9ed6659e27, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Networking.Client::UnityIsekaiGame.Networking.Client.LocalPlayerMovementBridge
+  client: {fileID: 850340035}
+  input: {fileID: 100003}
+  localMotor: {fileID: 100004}
+  presentationRoot: {fileID: 100001}
+  inputSendRate: 30
 --- !u!1 &851981566
 GameObject:
   m_ObjectHideFlags: 0

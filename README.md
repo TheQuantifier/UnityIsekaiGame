@@ -128,7 +128,7 @@ Skill and Proficiency progression is documented in `Documentation/SkillsAndProgr
 Base Attributes, Calculated Stats, and Current Resources are documented in `Documentation/BaseAttributes.md`, `Documentation/CalculatedStatsRefinement.md`, `Documentation/CurrentResources.md`, `Documentation/ResourceDefinitions.md`, `Documentation/ResourceTransactions.md`, `Documentation/CharacterNumericalModel.md`, `Documentation/Feature5_4aPersistenceAndMigration.md`, and `Documentation/Feature5_4bPersistenceAndMigration.md`.
 Step 5 Character System closeout documentation lives in `Documentation/CharacterSystemOverview.md`, `Documentation/CharacterOwnershipAndIdentity.md`, `Documentation/CharacterInitializationAndRestore.md`, `Documentation/CharacterSnapshotsAndQueries.md`, `Documentation/CharacterMutationBoundaries.md`, `Documentation/CharacterSystemPersistence.md`, `Documentation/CharacterSystemIntegrationContract.md`, and `Documentation/Step5Completion.md`.
 Phase 3 systems through Group 12 are documented across the Step 7 through Step 15 integration and feature documents in `Documentation/`. The consolidated quest, dialogue, and narrative architecture is in `Documentation/Step15QuestDialogueNarrativeArchitecture.md`.
-The Phase 5 local server foundation and player-session authority are documented in `Documentation/LocalDedicatedServerVerticalSlice.md` and `Documentation/LocalPlayerSessionAuthority.md`.
+The Phase 5 local server foundation, player-session authority, and server-authoritative movement slice are documented in `Documentation/LocalDedicatedServerVerticalSlice.md`, `Documentation/LocalPlayerSessionAuthority.md`, and `Documentation/ServerAuthoritativeMovement.md`.
 
 ### Inventory Item Instance Save Foundation
 

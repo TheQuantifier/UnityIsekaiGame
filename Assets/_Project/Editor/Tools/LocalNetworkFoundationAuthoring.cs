@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using Unity.Netcode.Transports.UTP;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -9,6 +10,8 @@ using UnityEngine.SceneManagement;
 using UnityIsekaiGame.Networking;
 using UnityIsekaiGame.Networking.Client;
 using UnityIsekaiGame.Networking.Server;
+using UnityIsekaiGame.Input;
+using UnityIsekaiGame.Player;
 
 namespace UnityIsekaiGame.Editor
 {
@@ -36,13 +39,21 @@ namespace UnityIsekaiGame.Editor
             UnityTransport transport = GetOrAdd<UnityTransport>(root);
             LocalGameClient client = GetOrAdd<LocalGameClient>(root);
             LocalDedicatedServer server = GetOrAdd<LocalDedicatedServer>(root);
+            LocalPlayerMovementBridge movementBridge = GetOrAdd<LocalPlayerMovementBridge>(root);
             NetworkPrefabsList prefabList = AssetDatabase.LoadAssetAtPath<NetworkPrefabsList>(DefaultNetworkPrefabsPath);
             if (prefabList == null)
             {
                 throw new InvalidOperationException($"The generated network prefab list is missing at '{DefaultNetworkPrefabsPath}'.");
             }
 
-            GameObject playerActorPrefab = EnsurePlayerActorPrefab();
+            PlayerInputReader playerInput = UnityEngine.Object.FindAnyObjectByType<PlayerInputReader>();
+            FirstPersonCharacterMotor playerMotor = UnityEngine.Object.FindAnyObjectByType<FirstPersonCharacterMotor>();
+            if (playerInput == null || playerMotor == null || playerMotor.MovementSettings == null)
+            {
+                throw new InvalidOperationException("The Prototype Scene requires a player input reader, character motor, and movement settings for the network movement bridge.");
+            }
+
+            GameObject playerActorPrefab = EnsurePlayerActorPrefab(playerMotor.MovementSettings);
             foreach (NetworkPrefab entry in prefabList.PrefabList
                          .Where(entry => entry == null || entry.Prefab == null || entry.Prefab == playerActorPrefab)
                          .ToArray())
@@ -65,11 +76,15 @@ namespace UnityIsekaiGame.Editor
             client.Configure(manager);
             server.Configure(manager);
             server.ConfigurePlayerActorPrefab(playerActorPrefab);
+            server.ConfigurePlayerSpawn(playerMotor.transform.position, playerMotor.transform.eulerAngles.y);
+            server.ConfigurePrototypePlayerMovement(playerMotor.GetComponent<CharacterController>(), playerMotor);
+            movementBridge.Configure(client, playerInput, playerMotor, playerMotor.transform);
 
             EditorUtility.SetDirty(manager);
             EditorUtility.SetDirty(transport);
             EditorUtility.SetDirty(client);
             EditorUtility.SetDirty(server);
+            EditorUtility.SetDirty(movementBridge);
             EditorUtility.SetDirty(prefabList);
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene))
@@ -81,47 +96,66 @@ namespace UnityIsekaiGame.Editor
             Debug.Log($"Baked the local network foundation into '{PrototypeScenePath}'.");
         }
 
-        private static GameObject EnsurePlayerActorPrefab()
+        private static GameObject EnsurePlayerActorPrefab(UnityIsekaiGame.Configuration.PlayerMovementSettings settings)
         {
             EnsureFolder("Assets/_Project/Content/Networking");
             EnsureFolder("Assets/_Project/Content/Networking/Prefabs");
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerActorPrefabPath);
-            if (prefab != null)
+            if (prefab == null)
             {
-                if (prefab.GetComponent<NetworkObject>() == null || prefab.GetComponent<NetworkPlayerActor>() == null)
+                GameObject source = new GameObject("Network Player Actor");
+                try
                 {
-                    throw new InvalidOperationException($"The player actor prefab at '{PlayerActorPrefabPath}' is missing its networking components.");
+                    source.AddComponent<NetworkObject>();
+                    PrefabUtility.SaveAsPrefabAsset(source, PlayerActorPrefabPath);
                 }
-
-                NormalizeNetworkPrefab(prefab);
-                return prefab;
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(source);
+                }
             }
 
-            GameObject source = new GameObject("Network Player Actor");
+            GameObject contents = PrefabUtility.LoadPrefabContents(PlayerActorPrefabPath);
             try
             {
-                source.AddComponent<NetworkObject>();
-                source.AddComponent<NetworkPlayerActor>();
-                prefab = PrefabUtility.SaveAsPrefabAsset(source, PlayerActorPrefabPath);
+                NetworkObject networkObject = GetOrAdd<NetworkObject>(contents);
+                GetOrAdd<NetworkPlayerActor>(contents);
+                NetworkPlayerMovement movement = GetOrAdd<NetworkPlayerMovement>(contents);
+                NetworkTransform networkTransform = GetOrAdd<NetworkTransform>(contents);
+                CharacterController controller = GetOrAdd<CharacterController>(contents);
+                controller.height = 2f;
+                controller.radius = 0.35f;
+                controller.center = new Vector3(0f, 1f, 0f);
+                controller.slopeLimit = 50f;
+                controller.stepOffset = 0.35f;
+                controller.skinWidth = 0.08f;
+                networkTransform.Interpolate = true;
+                networkTransform.InLocalSpace = false;
+                networkTransform.SyncScaleX = false;
+                networkTransform.SyncScaleY = false;
+                networkTransform.SyncScaleZ = false;
+                movement.ConfigureTuning(
+                    settings.WalkSpeed,
+                    settings.SprintSpeedMultiplier,
+                    settings.Acceleration,
+                    settings.Deceleration,
+                    settings.JumpHeight,
+                    settings.Gravity,
+                    settings.GroundedStickForce);
+                NormalizeNetworkPrefab(networkObject);
+                PrefabUtility.SaveAsPrefabAsset(contents, PlayerActorPrefabPath);
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(source);
+                PrefabUtility.UnloadPrefabContents(contents);
             }
 
-            if (prefab != null)
-            {
-                NormalizeNetworkPrefab(prefab);
-            }
-
-            return prefab == null
-                ? throw new InvalidOperationException($"Failed to create the player actor prefab at '{PlayerActorPrefabPath}'.")
-                : prefab;
+            prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerActorPrefabPath);
+            return prefab == null ? throw new InvalidOperationException($"Failed to create the player actor prefab at '{PlayerActorPrefabPath}'.") : prefab;
         }
 
-        private static void NormalizeNetworkPrefab(GameObject prefab)
+        private static void NormalizeNetworkPrefab(NetworkObject networkObject)
         {
-            NetworkObject networkObject = prefab.GetComponent<NetworkObject>();
             SerializedObject serializedNetworkObject = new SerializedObject(networkObject);
             SerializedProperty inScenePlaced = serializedNetworkObject.FindProperty("m_InScenePlaced");
             if (inScenePlaced != null && inScenePlaced.boolValue)

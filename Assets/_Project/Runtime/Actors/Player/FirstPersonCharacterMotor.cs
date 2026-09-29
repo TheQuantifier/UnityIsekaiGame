@@ -18,6 +18,8 @@ namespace UnityIsekaiGame.Player
         private float currentHorizontalSpeed;
         private float verticalVelocity;
 
+        public PlayerMovementSettings MovementSettings => movementSettings;
+
         private void Awake()
         {
             controller = GetComponent<CharacterController>();

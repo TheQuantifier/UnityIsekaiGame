@@ -2,6 +2,7 @@
     "name": "UnityIsekaiGame.Networking.Client",
     "rootNamespace": "UnityIsekaiGame.Networking.Client",
     "references": [
+        "UnityIsekaiGame.Gameplay",
         "UnityIsekaiGame.Networking.Protocol",
         "UnityIsekaiGame.Networking.Shared",
         "Unity.Netcode.Runtime",
