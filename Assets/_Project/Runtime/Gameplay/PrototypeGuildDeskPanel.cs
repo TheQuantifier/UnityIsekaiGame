@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityIsekaiGame.Dialogue;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Presentation;
@@ -33,12 +32,6 @@ namespace UnityIsekaiGame.Gameplay
         private void Awake()
         {
             services = GetComponent<PrototypePersistenceServiceBehaviour>();
-            input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
-        }
-
-        private void Update()
-        {
-            if (IsOpen && Keyboard.current?.escapeKey.wasPressedThisFrame == true) Close();
         }
 
         public void OpenAdventurersGuildDesk(string pointId, GameObject interactionOwner)
@@ -101,7 +94,19 @@ namespace UnityIsekaiGame.Gameplay
             GameObject interactionOwner)
         {
             services ??= GetComponent<PrototypePersistenceServiceBehaviour>();
-            input ??= FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            if (services == null || !services.OwnsPlayerInteractor(interactionOwner))
+            {
+                GameHudMessageBus.Show("This desk is not available to that character.");
+                return;
+            }
+
+            input = interactionOwner == null ? null : interactionOwner.GetComponentInParent<PlayerInputReader>();
+            if (input == null || input.GameplayInputBlocked)
+            {
+                GameHudMessageBus.Show("The interacting character is not available to use this desk.");
+                return;
+            }
+
             deskKind = kind;
             interactionPointId = pointId?.Trim() ?? string.Empty;
             questSourceId = sourceId?.Trim() ?? string.Empty;
@@ -112,8 +117,8 @@ namespace UnityIsekaiGame.Gameplay
             interactor = interactionOwner;
             status = string.Empty;
             IsOpen = true;
-            if (input != null) input.SetMenuInputBlocked(this, true);
-            else PlayerCursorMode.SetMenuOpen(this, true);
+            if (input != null) input.SetMenuInputBlocked(this, true, Close);
+            else PlayerCursorMode.SetMenuOpen(this, true, Close);
         }
 
         private void OnGUI()
@@ -123,17 +128,17 @@ namespace UnityIsekaiGame.Gameplay
             float width = Mathf.Min(540f, Screen.width - 30f);
             float height = Mathf.Min(480f, Screen.height - 30f);
             Rect window = new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height);
-            PrototypeUiTheme.DrawPanelFrame(window, modal: true);
+            GameUiTheme.DrawPanelFrame(window, modal: true);
             GUILayout.BeginArea(new Rect(window.x + 18f, window.y + 16f, window.width - 36f, window.height - 32f));
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label(title, PrototypeUiTheme.TitleStyle);
+            GUILayout.Label(title, GameUiTheme.TitleStyle);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Close", PrototypeUiTheme.DangerButtonStyle, GUILayout.Width(90f), GUILayout.Height(34f))) Close();
+            if (GUILayout.Button("Close", GameUiTheme.DangerButtonStyle, GUILayout.Width(90f), GUILayout.Height(34f))) Close();
             GUILayout.EndHorizontal();
             GUILayout.Space(10f);
 
-            GUILayout.BeginVertical(PrototypeUiTheme.CardStyle);
+            GUILayout.BeginVertical(GameUiTheme.CardStyle);
             if (deskKind == DeskKind.AdventurersGuild) DrawAdventurersGuildOptions();
             else DrawMerchantGuildOptions();
             GUILayout.EndVertical();
@@ -141,11 +146,11 @@ namespace UnityIsekaiGame.Gameplay
             if (!string.IsNullOrWhiteSpace(status))
             {
                 GUILayout.Space(10f);
-                GUILayout.Label(status, PrototypeUiTheme.StatusStyle);
+                GUILayout.Label(status, GameUiTheme.StatusStyle);
             }
 
             GUILayout.FlexibleSpace();
-            GUILayout.Label("Select a service. Press Escape to close.", PrototypeUiTheme.MutedStyle);
+            GUILayout.Label("Select a service. Press Escape to close.", GameUiTheme.MutedStyle);
             GUILayout.EndArea();
         }
 
@@ -153,40 +158,40 @@ namespace UnityIsekaiGame.Gameplay
         {
             bool registered = services.IsPlayerRegisteredAsAdventurer;
             GUI.enabled = !registered;
-            if (GUILayout.Button(registered ? "Registered Adventurer (G Rank)" : "Register as an Adventurer", registered ? PrototypeUiTheme.ButtonStyle : PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(42f)))
+            if (GUILayout.Button(registered ? "Registered Adventurer (G Rank)" : "Register as an Adventurer", registered ? GameUiTheme.ButtonStyle : GameUiTheme.PrimaryButtonStyle, GUILayout.Height(42f)))
             {
                 PrototypeAdventurerRegistrationResult result = services.RegisterPlayerAsAdventurerAtGuildDesk(interactionPointId);
                 status = result.Message;
-                PrototypeHudMessageBus.Show(status);
+                GameHudMessageBus.Show(status);
                 if (!result.Succeeded) Debug.LogWarning(result.Message);
             }
             GUI.enabled = true;
 
-            if (GUILayout.Button("Browse Guild Quests", PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(42f)))
+            if (GUILayout.Button("Browse Guild Quests", GameUiTheme.PrimaryButtonStyle, GUILayout.Height(42f)))
             {
                 OpenQuestSource(PrototypeSceneIntegrationIds.AdventurerGuildBoardSourceId, "Adventurers Guild Quests");
             }
-            if (GUILayout.Button("Speak with the Receptionist", PrototypeUiTheme.ButtonStyle, GUILayout.Height(42f))) OpenConversation();
+            if (GUILayout.Button("Speak with the Receptionist", GameUiTheme.ButtonStyle, GUILayout.Height(42f))) OpenConversation();
         }
 
         private void DrawMerchantGuildOptions()
         {
             bool registered = services.IsPlayerRegisteredWithMerchantGuild;
             GUI.enabled = !registered;
-            if (GUILayout.Button(registered ? "Merchant Guild Membership Active" : "Register with the Merchant Guild", registered ? PrototypeUiTheme.ButtonStyle : PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(42f)))
+            if (GUILayout.Button(registered ? "Merchant Guild Membership Active" : "Register with the Merchant Guild", registered ? GameUiTheme.ButtonStyle : GameUiTheme.PrimaryButtonStyle, GUILayout.Height(42f)))
             {
                 PrototypeMerchantRegistrationResult result = services.RegisterPlayerWithMerchantGuildAtDesk(interactionPointId);
                 status = result.Message;
-                PrototypeHudMessageBus.Show(status);
+                GameHudMessageBus.Show(status);
                 if (!result.Succeeded) Debug.LogWarning(result.Message);
             }
             GUI.enabled = true;
 
-            if (GUILayout.Button("Browse Delivery Contracts", PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(42f)))
+            if (GUILayout.Button("Browse Delivery Contracts", GameUiTheme.PrimaryButtonStyle, GUILayout.Height(42f)))
             {
                 OpenQuestSource(questSourceId, "Merchant Guild Contracts");
             }
-            if (GUILayout.Button("Speak with the Receptionist", PrototypeUiTheme.ButtonStyle, GUILayout.Height(42f))) OpenConversation();
+            if (GUILayout.Button("Speak with the Receptionist", GameUiTheme.ButtonStyle, GUILayout.Height(42f))) OpenConversation();
         }
 
         private void OpenQuestSource(string sourceId, string displayName)
@@ -213,7 +218,7 @@ namespace UnityIsekaiGame.Gameplay
 
             Close();
             DialogueFlowOperationResult result = panel.Open(conversationDefinitionId, providerPersonId, locationId, interactionPointId, questSourceId, title, interactor);
-            if (!result.Succeeded) PrototypeHudMessageBus.Show(result.Message);
+            if (!result.Succeeded) GameHudMessageBus.Show(result.Message);
         }
 
         private void OnDisable() => Close();

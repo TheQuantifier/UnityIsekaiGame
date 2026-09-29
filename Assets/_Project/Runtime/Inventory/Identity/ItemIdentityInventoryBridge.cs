@@ -95,7 +95,7 @@ namespace UnityIsekaiGame.Inventory.Identity
                 return ItemIdentityInventoryBridgeResult.Failure("InventoryProjectionFailed", failure);
             }
 
-            if (!CollectEquipment(saveData.equipment, registry, owner, scope, records, ids, out failure))
+            if (!ValidateEquipmentReferences(saveData.equipment, registry, records, out failure))
             {
                 return ItemIdentityInventoryBridgeResult.Failure("EquipmentProjectionFailed", failure);
             }
@@ -355,16 +355,15 @@ namespace UnityIsekaiGame.Inventory.Identity
                 && string.Equals(left.transitId, right.transitId, StringComparison.Ordinal);
         }
 
-        private static bool CollectEquipment(
+        private static bool ValidateEquipmentReferences(
             EquipmentSaveData equipment,
             DefinitionRegistry registry,
-            string owner,
-            string scope,
             List<ItemInstanceRecordData> records,
-            HashSet<string> ids,
             out string failure)
         {
             failure = string.Empty;
+            Dictionary<string, ItemInstanceRecordData> inventoryRecords = records.ToDictionary(record => record.itemInstanceId, StringComparer.Ordinal);
+            HashSet<string> equippedIds = new HashSet<string>(StringComparer.Ordinal);
             IReadOnlyList<EquipmentSlotSaveData> slots = equipment?.slots != null ? equipment.slots : Array.Empty<EquipmentSlotSaveData>();
             for (int i = 0; i < slots.Count; i++)
             {
@@ -374,34 +373,34 @@ namespace UnityIsekaiGame.Inventory.Identity
                     continue;
                 }
 
-                ItemInstanceRecordData record;
-                if (slot.mode == EquipmentEntrySaveMode.StatefulInstance)
+                if (slot.mode != EquipmentEntrySaveMode.InventoryReference)
                 {
-                    if (!TryCreateStatefulRecord(slot.definitionId, slot.itemInstanceId, 1, registry, owner, ItemLocationKind.Equipped, owner, slot.slotType.ToString(), out record, out failure))
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    string itemInstanceId = ResolveProjectionItemInstanceId(slot.itemInstanceId, $"{scope}.equipment.{slot.slotType}.{slot.definitionId}");
-                    if (!TryCreateFungibleStackRecord(slot.definitionId, 1, registry, owner, itemInstanceId, out record, out failure))
-                    {
-                        return false;
-                    }
-
-                    record.classification = ItemInstanceClassification.IndividuallyTracked;
-                    record.location = new ItemLocationStateData { kind = ItemLocationKind.Equipped, equipmentHolderId = owner, equipmentSlotId = slot.slotType.ToString() };
-                    record.stackQuantity = 1;
-                }
-
-                if (!ids.Add(record.itemInstanceId))
-                {
-                    failure = $"Duplicate migrated item instance ID '{record.itemInstanceId}'.";
+                    failure = $"Equipment slot '{slot.slotType}' must reference an inventory-owned item instance.";
                     return false;
                 }
 
-                records.Add(record);
+                if (!ItemInstanceId.IsValid(slot.itemInstanceId)
+                    || !inventoryRecords.TryGetValue(slot.itemInstanceId, out ItemInstanceRecordData record))
+                {
+                    failure = $"Equipment slot '{slot.slotType}' references missing inventory item '{slot.itemInstanceId}'.";
+                    return false;
+                }
+
+                if (!string.Equals(record.itemDefinitionId, slot.definitionId, StringComparison.Ordinal)
+                    || registry == null
+                    || !registry.TryGet(slot.definitionId, out ItemDefinition item)
+                    || !item.IsEquippable
+                    || item.Equipment.SlotType != slot.slotType)
+                {
+                    failure = $"Equipment slot '{slot.slotType}' has an invalid inventory item reference.";
+                    return false;
+                }
+
+                if (!equippedIds.Add(slot.itemInstanceId))
+                {
+                    failure = $"Item instance '{slot.itemInstanceId}' is referenced by multiple equipment slots.";
+                    return false;
+                }
             }
 
             return true;
@@ -540,6 +539,7 @@ namespace UnityIsekaiGame.Inventory.Identity
             List<string> diagnostics,
             HashSet<string> seenLocations)
         {
+            HashSet<string> equippedReferences = new HashSet<string>(StringComparer.Ordinal);
             IReadOnlyList<EquipmentSlotSaveData> slots = equipment?.slots != null ? equipment.slots : Array.Empty<EquipmentSlotSaveData>();
             for (int i = 0; i < slots.Count; i++)
             {
@@ -556,16 +556,25 @@ namespace UnityIsekaiGame.Inventory.Identity
                     continue;
                 }
 
-                if (record.location?.kind != ItemLocationKind.Equipped
-                    || !string.Equals(record.location.equipmentHolderId, owner, StringComparison.Ordinal)
-                    || !string.Equals(record.location.equipmentSlotId, slot.slotType.ToString(), StringComparison.Ordinal))
+                if (!equippedReferences.Add(itemInstanceId))
                 {
-                    diagnostics.Add($"Equipment slot {slot.slotType} contains item '{itemInstanceId}' but identity location is {record.location?.kind}/{record.location?.equipmentSlotId}.");
+                    diagnostics.Add($"Item '{itemInstanceId}' is referenced by multiple equipment slots.");
                 }
 
-                if (!seenLocations.Add(itemInstanceId))
+                if (!string.Equals(record.itemDefinitionId, slot.definitionId, StringComparison.Ordinal))
                 {
-                    diagnostics.Add($"Item '{itemInstanceId}' appears in multiple inventory/equipment locations.");
+                    diagnostics.Add($"Equipment slot {slot.slotType} references '{slot.definitionId}' but item '{itemInstanceId}' is '{record.itemDefinitionId}'.");
+                }
+
+                if (slot.mode != EquipmentEntrySaveMode.InventoryReference)
+                {
+                    diagnostics.Add($"Equipment slot {slot.slotType} is not stored as an inventory reference.");
+                }
+
+                if (record.location?.kind != ItemLocationKind.Inventory
+                    || !string.Equals(record.location.inventoryOwnerId, owner, StringComparison.Ordinal))
+                {
+                    diagnostics.Add($"Equipment slot {slot.slotType} references item '{itemInstanceId}' but its canonical identity location is {record.location?.kind}.");
                 }
             }
         }

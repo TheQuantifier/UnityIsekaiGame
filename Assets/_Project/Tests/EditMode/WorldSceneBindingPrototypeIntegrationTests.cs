@@ -1,9 +1,11 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Governments;
 using UnityIsekaiGame.Interaction;
 using UnityIsekaiGame.Laws;
@@ -103,6 +105,34 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void PlayerBindingPreservesScenePlacementDuringInitialSyncButStillMaterializesTravel()
+        {
+            Fixture fixture = CreateFixture();
+            WorldSceneBindingRuntime runtime = CreateBindingRuntime(fixture);
+            SpawnAnchorSceneBinding spawn = New<SpawnAnchorSceneBinding>("preserved-player-spawn");
+            spawn.ConfigureBinding("location.prototype.town", "prototype.scene.spawn.preserved-player", "scene.prototype", fixture.WorldId);
+            spawn.transform.position = new Vector3(40f, 3f, 50f);
+            WorldEntitySceneBinding player = EntityBinding(
+                "preserved-player",
+                LocationOccupantEntityType.Body,
+                PrototypeEntityLocationFactory.PlayerBodyId,
+                fixture.WorldId,
+                preserveInitialSceneTransform: true);
+            Vector3 authoredPosition = new Vector3(3f, 2f, 4f);
+            player.transform.position = authoredPosition;
+
+            runtime.Register(spawn);
+            runtime.Register(player);
+            runtime.SyncAllFromAuthoritative(initialSync: true);
+
+            Assert.That(player.transform.position, Is.EqualTo(authoredPosition));
+
+            runtime.SyncAllFromAuthoritative(initialSync: false);
+
+            Assert.That(player.transform.position, Is.EqualTo(spawn.transform.position));
+        }
+
+        [Test]
         public void SceneTransitionUsesConnectionAuthorityAndPreservesStateWhenDenied()
         {
             Fixture fixture = CreateFixture();
@@ -188,6 +218,7 @@ namespace UnityIsekaiGame.Tests
             InteractionPointSceneBinding counter = InteractionBinding("adventurer-counter", PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId, "prototype.scene.interaction.adventurer-guild-counter", fixture.WorldId);
             GameObject player = new GameObject("scene-binding-test-interactor");
             player.transform.position = counter.transform.position + Vector3.forward;
+            CreateAuthorityService(player);
             runtime.Register(counter);
 
             bool canInteract = counter.CanInteract(new InteractionContext(player, player.transform, default));
@@ -212,6 +243,7 @@ namespace UnityIsekaiGame.Tests
             collider.size = new Vector3(2f, 2f, 1f);
             GameObject player = new GameObject("scene-binding-test-offset-interactor");
             player.transform.position = new Vector3(6f, 0f, -2f);
+            CreateAuthorityService(player);
             Physics.SyncTransforms();
 
             runtime.Register(counter);
@@ -268,11 +300,34 @@ namespace UnityIsekaiGame.Tests
             return binding;
         }
 
-        private static WorldEntitySceneBinding EntityBinding(string name, LocationOccupantEntityType type, string entityId, string worldId)
+        private static WorldEntitySceneBinding EntityBinding(
+            string name,
+            LocationOccupantEntityType type,
+            string entityId,
+            string worldId,
+            bool preserveInitialSceneTransform = false)
         {
             WorldEntitySceneBinding binding = New<WorldEntitySceneBinding>(name);
-            binding.ConfigureEntity(type, entityId, $"prototype.entity.{name}", "scene.prototype", worldId, snapToGround: false);
+            binding.ConfigureEntity(
+                type,
+                entityId,
+                $"prototype.entity.{name}",
+                "scene.prototype",
+                worldId,
+                snapToGround: false,
+                preserveInitialSceneTransform: preserveInitialSceneTransform);
             return binding;
+        }
+
+        private static PrototypePersistenceServiceBehaviour CreateAuthorityService(GameObject player)
+        {
+            GameObject host = new GameObject("scene-binding-test-authority-service");
+            host.SetActive(false);
+            PrototypePersistenceServiceBehaviour service = host.AddComponent<PrototypePersistenceServiceBehaviour>();
+            typeof(PrototypePersistenceServiceBehaviour)
+                .GetField("playerRoot", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(service, player.transform);
+            return service;
         }
 
         private static T New<T>(string name) where T : Component

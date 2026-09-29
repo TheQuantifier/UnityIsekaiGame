@@ -37,7 +37,8 @@ namespace UnityIsekaiGame.UI.Parties
         private void OnEnable()
         {
             menu ??= GetComponent<InventoryScreenView>();
-            persistence ??= FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            InventoryScreenController controller = GetComponent<InventoryScreenController>() ?? GetComponentInParent<InventoryScreenController>(true);
+            persistence ??= controller?.ResolveRuntimePersistence();
             if (menu != null && !registered) registered = menu.RegisterMenuExtension(this);
             if (persistence != null) persistence.PartyOperations.Changed += OnPartyChanged;
         }
@@ -83,7 +84,6 @@ namespace UnityIsekaiGame.UI.Parties
         public void Refresh() { if (dirty && isActiveAndEnabled) Rebuild(); }
         private void Rebuild()
         {
-            if (persistence == null) persistence = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
             EnsureStructure();
             foreach (Transform child in content.Cast<Transform>().ToArray())
             {
@@ -92,17 +92,17 @@ namespace UnityIsekaiGame.UI.Parties
             }
             if (persistence == null)
             {
-                Label("Party services are unavailable. Return to the game world and reopen this screen.", 17, FontStyle.Bold, PrototypeUiTextRole.Warning);
+                Label("Party services are unavailable. Return to the game world and reopen this screen.", 17, FontStyle.Bold, GameUiTextRole.Warning);
                 return;
             }
             dirty = false;
             string playerId = persistence.PlayerPersonId;
             PartySnapshot party = persistence.AdventuringParties.GetPartyForPerson(playerId);
-            Label("ADVENTURING PARTY", 22, FontStyle.Bold, PrototypeUiTextRole.Title);
+            Label("ADVENTURING PARTY", 22, FontStyle.Bold, GameUiTextRole.Title);
             if (party == null)
             {
-                Label("NO ACTIVE PARTY", 16, FontStyle.Bold, PrototypeUiTextRole.Heading);
-                Label("Create a party to coordinate companions, share quest progress, configure formation and loot rules, and travel together.", 14, FontStyle.Normal, PrototypeUiTextRole.Muted);
+                Label("NO ACTIVE PARTY", 16, FontStyle.Bold, GameUiTextRole.Heading);
+                Label("Create a party to coordinate companions, share quest progress, configure formation and loot rules, and travel together.", 14, FontStyle.Normal, GameUiTextRole.Muted);
                 Button("Create Party", () => { string id = $"party.{Safe(playerId)}.{DateTime.UtcNow.Ticks}"; persistence.AdventuringParties.CreateParty(id, "Adventuring Party", playerId, Time.timeAsDouble, id + ".create"); Rebuild(); });
                 Invitations(playerId);
                 return;
@@ -110,23 +110,23 @@ namespace UnityIsekaiGame.UI.Parties
 
             PartySettingsData settings = persistence.PartyOperations.GetSettings(party.PartyId);
             int readyCount = persistence.PartyOperations.GetReadyMemberIds(party.PartyId).Count;
-            Label(party.DisplayName, 18, FontStyle.Bold, PrototypeUiTextRole.Heading);
+            Label(party.DisplayName, 18, FontStyle.Bold, GameUiTextRole.Heading);
             Label($"{party.MemberCount}/{party.MaximumMembers} MEMBERS   |   {readyCount}/{party.MemberCount} READY", 13, FontStyle.Bold,
-                readyCount == party.MemberCount ? PrototypeUiTextRole.Success : PrototypeUiTextRole.Warning);
-            Label($"Formation: {settings.formation}   |   Loot: {settings.lootPolicy}   |   Friendly fire: {settings.friendlyFire}", 13, FontStyle.Normal, PrototypeUiTextRole.Muted);
-            Label("TACTICS", 16, FontStyle.Bold, PrototypeUiTextRole.Heading);
+                readyCount == party.MemberCount ? GameUiTextRole.Success : GameUiTextRole.Warning);
+            Label($"Formation: {settings.formation}   |   Loot: {settings.lootPolicy}   |   Friendly fire: {settings.friendlyFire}", 13, FontStyle.Normal, GameUiTextRole.Muted);
+            Label("TACTICS", 16, FontStyle.Bold, GameUiTextRole.Heading);
             Horizontal("Formation", Enum.GetValues(typeof(PartyFormation)).Cast<PartyFormation>().Select(value => (value.ToString(), (Action)(() => UpdateSettings(party, value, settings.lootPolicy, settings.friendlyFire, settings.groupCommand)))).ToArray());
             Horizontal("Command", Enum.GetValues(typeof(PartyCommand)).Cast<PartyCommand>().Select(value => (value.ToString(), (Action)(() => UpdateSettings(party, settings.formation, settings.lootPolicy, settings.friendlyFire, value)))).ToArray());
             Horizontal("Loot", Enum.GetValues(typeof(PartyLootPolicy)).Cast<PartyLootPolicy>().Select(value => (value.ToString(), (Action)(() => UpdateSettings(party, settings.formation, value, settings.friendlyFire, settings.groupCommand)))).ToArray());
             Button(settings.friendlyFire == PartyFriendlyFirePolicy.Prevent ? "Friendly Fire: Prevented" : "Friendly Fire: Allowed", () => UpdateSettings(party, settings.formation, settings.lootPolicy, settings.friendlyFire == PartyFriendlyFirePolicy.Prevent ? PartyFriendlyFirePolicy.Allow : PartyFriendlyFirePolicy.Prevent, settings.groupCommand));
 
-            Label("ROSTER", 16, FontStyle.Bold, PrototypeUiTextRole.Heading);
+            Label("ROSTER", 16, FontStyle.Bold, GameUiTextRole.Heading);
             foreach (PartyMemberSnapshot member in party.Members)
             {
                 PartyMemberOperationalData state = persistence.PartyOperations.GetMember(party.PartyId, member.PersonId);
                 string label = $"{(member.IsLeader ? "Leader" : "Companion")}: {DisplayName(member.PersonId)} | {state?.readiness ?? PartyMemberReadiness.Missing} | {state?.command ?? PartyCommand.Follow}";
                 PartyMemberReadiness readiness = state?.readiness ?? PartyMemberReadiness.Missing;
-                Label(label, 13, FontStyle.Normal, readiness == PartyMemberReadiness.Ready ? PrototypeUiTextRole.Success : PrototypeUiTextRole.Warning);
+                Label(label, 13, FontStyle.Normal, readiness == PartyMemberReadiness.Ready ? GameUiTextRole.Success : GameUiTextRole.Warning);
                 if (party.LeaderPersonId == playerId && !member.IsLeader)
                 {
                     Horizontal(string.Empty,
@@ -135,10 +135,10 @@ namespace UnityIsekaiGame.UI.Parties
                 }
             }
 
-            Label("RECRUITMENT", 16, FontStyle.Bold, PrototypeUiTextRole.Heading);
+            Label("RECRUITMENT", 16, FontStyle.Bold, GameUiTextRole.Heading);
             PartyRecruitable[] candidates = FindObjectsByType<PartyRecruitable>(FindObjectsInactive.Exclude)
                 .Where(x => x != null && !string.IsNullOrWhiteSpace(x.PersonId) && !party.MemberPersonIds.Contains(x.PersonId, StringComparer.Ordinal)).ToArray();
-            if (candidates.Length == 0) Label("No recruitable companions are present in this scene.", 13, FontStyle.Italic, PrototypeUiTextRole.Muted);
+            if (candidates.Length == 0) Label("No recruitable companions are present in this scene.", 13, FontStyle.Italic, GameUiTextRole.Muted);
             foreach (PartyRecruitable candidate in candidates) Button($"Invite {DisplayName(candidate.PersonId)}", () => { candidate.Invite(persistence, playerId, out string message); Debug.Log(message, candidate); Rebuild(); });
             Invitations(playerId);
             if (party.LeaderPersonId == playerId) Button("Dissolve Party", () => { persistence.AdventuringParties.DissolveParty(party.PartyId, playerId, Time.timeAsDouble, Transaction("dissolve", party.PartyId)); Rebuild(); });
@@ -149,7 +149,7 @@ namespace UnityIsekaiGame.UI.Parties
         {
             PartyInvitationData[] invitations = persistence.PartyOperations.QueryInvitations(playerId, PartyInvitationStatus.Pending).Where(x => x.invitedPersonId == playerId).ToArray();
             if (invitations.Length == 0) return;
-            Label("INVITATIONS", 16, FontStyle.Bold, PrototypeUiTextRole.Heading);
+            Label("INVITATIONS", 16, FontStyle.Bold, GameUiTextRole.Heading);
             foreach (PartyInvitationData invitation in invitations)
             {
                 Horizontal($"From {DisplayName(invitation.inviterPersonId)}",
@@ -177,7 +177,7 @@ namespace UnityIsekaiGame.UI.Parties
             scrollTransform.anchorMax = Vector2.one;
             scrollTransform.offsetMin = Vector2.zero;
             scrollTransform.offsetMax = Vector2.zero;
-            PrototypeUiTheme.StylePanel(scrollObject.GetComponent<Image>());
+            GameUiTheme.StylePanel(scrollObject.GetComponent<Image>());
 
             Transform viewportExisting = scrollObject.transform.Find("Viewport");
             GameObject viewport = viewportExisting == null
@@ -222,12 +222,12 @@ namespace UnityIsekaiGame.UI.Parties
             scrollRect.scrollSensitivity = 28f;
         }
 
-        private Text Label(string value, int size, FontStyle style, PrototypeUiTextRole role = PrototypeUiTextRole.Body)
+        private Text Label(string value, int size, FontStyle style, GameUiTextRole role = GameUiTextRole.Body)
         {
             GameObject go = new GameObject("Party Label", typeof(RectTransform), typeof(Text), typeof(LayoutElement)); go.transform.SetParent(content, false);
             Text text = go.GetComponent<Text>(); text.font = font ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); text.text = value; text.fontSize = size; text.fontStyle = style; text.color = Color.white; text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.verticalOverflow = VerticalWrapMode.Overflow;
-            PrototypeUiTheme.StyleText(text, role);
+            GameUiTheme.StyleText(text, role);
             go.GetComponent<LayoutElement>().preferredHeight = Math.Max(28, (size + 8) * (1 + (value?.Length ?? 0) / 90)); return text;
         }
         private Button Button(string value, Action action)
@@ -235,18 +235,18 @@ namespace UnityIsekaiGame.UI.Parties
             GameObject go = new GameObject(value, typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement)); go.transform.SetParent(content, false);
             go.GetComponent<LayoutElement>().preferredHeight = 38f;
             Button button = go.GetComponent<Button>(); button.onClick.AddListener(() => action?.Invoke());
-            PrototypeUiTheme.StyleButton(button, PrototypeUiTheme.InferButtonTone(value));
+            GameUiTheme.StyleButton(button, GameUiTheme.InferButtonTone(value));
             GameObject textGo = new GameObject("Label", typeof(RectTransform), typeof(Text)); textGo.transform.SetParent(go.transform, false); RectTransform rect = textGo.GetComponent<RectTransform>(); rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = Vector2.zero; rect.offsetMax = Vector2.zero;
             Text text = textGo.GetComponent<Text>(); text.font = font ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); text.text = value; text.fontSize = 12; text.alignment = TextAnchor.MiddleCenter; text.color = Color.white; return button;
         }
         private void Horizontal(string heading, params (string label, Action action)[] actions)
         {
-            if (!string.IsNullOrWhiteSpace(heading)) Label(heading.ToUpperInvariant(), 12, FontStyle.Bold, PrototypeUiTextRole.Muted);
+            if (!string.IsNullOrWhiteSpace(heading)) Label(heading.ToUpperInvariant(), 12, FontStyle.Bold, GameUiTextRole.Muted);
             GameObject row = new GameObject("Party Action Row", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement)); row.transform.SetParent(content, false); row.GetComponent<HorizontalLayoutGroup>().spacing = 6f; row.GetComponent<HorizontalLayoutGroup>().childForceExpandWidth = true; row.GetComponent<LayoutElement>().preferredHeight = 36f;
             foreach ((string label, Action action) in actions)
             {
                 GameObject go = new GameObject(label, typeof(RectTransform), typeof(Image), typeof(Button)); go.transform.SetParent(row.transform, false); Button button = go.GetComponent<Button>(); button.onClick.AddListener(() => action());
-                PrototypeUiTheme.StyleButton(button, PrototypeUiTheme.InferButtonTone(label));
+                GameUiTheme.StyleButton(button, GameUiTheme.InferButtonTone(label));
                 GameObject textGo = new GameObject("Label", typeof(RectTransform), typeof(Text)); textGo.transform.SetParent(go.transform, false); RectTransform rect = textGo.GetComponent<RectTransform>(); rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = Vector2.zero; rect.offsetMax = Vector2.zero; Text text = textGo.GetComponent<Text>(); text.font = font ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); text.text = label; text.fontSize = 10; text.alignment = TextAnchor.MiddleCenter; text.color = Color.white;
             }
         }

@@ -97,7 +97,7 @@ namespace UnityIsekaiGame.Loot
             if (rolls.Count == 0)
             {
                 Debug.Log($"{name} dropped no loot.");
-                PrototypeHudMessageBus.Show($"{name} dropped no loot");
+                GameHudMessageBus.Show($"{name} dropped no loot");
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace UnityIsekaiGame.Loot
 
             if (dropMessages.Count > 0)
             {
-                PrototypeHudMessageBus.Show($"{name} dropped {string.Join(", ", dropMessages)}");
+                GameHudMessageBus.Show($"{name} dropped {string.Join(", ", dropMessages)}");
             }
         }
 
@@ -125,7 +125,7 @@ namespace UnityIsekaiGame.Loot
             }
 
             Vector3 spawnPosition = GetSpawnPosition(index, totalCount);
-            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            PrototypePersistenceServiceBehaviour services = PrototypePersistenceServiceBehaviour.FindUniqueInitialized();
             bool trackForDecomposition = roll.Quantity == 1
                 && roll.Item.InstanceMode == UnityIsekaiGame.GameData.ItemInstanceMode.AlwaysInstanced
                 && roll.Item.DefaultCompositionTemplate != null

@@ -30,8 +30,8 @@ namespace UnityIsekaiGame.Combat
                 targetRenderer = GetComponentInChildren<Renderer>();
             }
 
-            PrototypeUiTheme.StyleText(healthLabel, PrototypeUiTextRole.Body);
-            PrototypeUiTheme.EnsureTextShadow(healthLabel, 2f);
+            GameUiTheme.StyleText(healthLabel, GameUiTextRole.Body);
+            GameUiTheme.EnsureTextShadow(healthLabel, 2f);
 
             SetColor(normalColor);
             previousHealth = health == null ? -1f : health.CurrentHealth;
@@ -128,10 +128,10 @@ namespace UnityIsekaiGame.Combat
             healthLabel.text = $"{name}: {status}";
             float ratio = health.MaximumHealth <= 0f ? 0f : health.CurrentHealth / health.MaximumHealth;
             healthLabel.color = health.IsDefeated
-                ? PrototypeUiTheme.TextMuted
+                ? GameUiTheme.TextMuted
                 : ratio <= 0.25f
-                    ? PrototypeUiTheme.Danger
-                    : PrototypeUiTheme.TextPrimary;
+                    ? GameUiTheme.Danger
+                    : GameUiTheme.TextPrimary;
         }
 
         private void SetColor(Color color)

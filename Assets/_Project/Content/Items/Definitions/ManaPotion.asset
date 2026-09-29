@@ -27,6 +27,7 @@ MonoBehaviour:
   maximumStackSize: 10
   useEffects:
   - {fileID: 11400000, guid: c0838e3b44a24521981bd6777cc13ab0, type: 2}
+  consumablePresentation: 2
   equipment:
     equippable: 0
     slotType: 0

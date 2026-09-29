@@ -10,9 +10,10 @@ namespace UnityIsekaiGame.Inventory
         [SerializeField] private ItemDefinition item;
         [SerializeField, Min(0)] private int quantity;
         [SerializeField] private string itemInstanceId;
+        [SerializeField] private InventorySlotMode storageMode;
 
         public ItemDefinition Item => item;
-        public int Quantity => Mode == InventorySlotMode.StatefulInstance ? 1 : quantity;
+        public int Quantity => Mathf.Max(0, quantity);
         public string ItemInstanceId => itemInstanceId ?? string.Empty;
         public bool HasItemIdentity => !string.IsNullOrWhiteSpace(ItemInstanceId);
         public InventorySlotMode Mode
@@ -24,7 +25,10 @@ namespace UnityIsekaiGame.Inventory
                     return InventorySlotMode.Empty;
                 }
 
-                if (!item.Stackable && HasItemIdentity)
+                if (storageMode == InventorySlotMode.StatefulInstance
+                    || (storageMode == InventorySlotMode.Empty
+                        && (item.InstanceMode == ItemInstanceMode.AlwaysInstanced || !item.Stackable)
+                        && HasItemIdentity))
                 {
                     return InventorySlotMode.StatefulInstance;
                 }
@@ -67,19 +71,29 @@ namespace UnityIsekaiGame.Inventory
 
         internal void Set(ItemDefinition newItem, int newQuantity)
         {
-            SetIdentity(newItem, string.Empty, newQuantity);
+            SetDefinitionStack(newItem, string.Empty, newQuantity);
+        }
+
+        internal void SetDefinitionStack(ItemDefinition newItem, string newItemInstanceId, int newQuantity)
+        {
+            SetCore(newItem, newItemInstanceId, newQuantity, InventorySlotMode.DefinitionStack);
         }
 
         internal void SetIdentity(ItemDefinition newItem, string newItemInstanceId, int newQuantity)
         {
+            SetCore(newItem, newItemInstanceId, newQuantity, InventorySlotMode.StatefulInstance);
+        }
+
+        private void SetCore(ItemDefinition newItem, string newItemInstanceId, int newQuantity, InventorySlotMode newMode)
+        {
             item = newItem;
             quantity = Mathf.Max(0, newQuantity);
             itemInstanceId = newItemInstanceId ?? string.Empty;
+            storageMode = newMode;
 
-            if (quantity == 0)
+            if (item == null || quantity == 0)
             {
-                item = null;
-                itemInstanceId = string.Empty;
+                Clear();
             }
         }
 
@@ -88,22 +102,24 @@ namespace UnityIsekaiGame.Inventory
             item = null;
             quantity = 0;
             itemInstanceId = string.Empty;
+            storageMode = InventorySlotMode.Empty;
         }
 
         internal bool Remove(int amount)
         {
             if (Mode == InventorySlotMode.StatefulInstance)
             {
-                if (amount != 1)
+                if (amount <= 0 || amount > quantity)
                 {
                     return false;
                 }
 
-                Clear();
+                quantity -= amount;
+                if (quantity == 0) Clear();
                 return true;
             }
 
-            if (amount <= 0 || IsEmpty)
+            if (amount <= 0 || IsEmpty || amount > quantity)
             {
                 return false;
             }
@@ -111,7 +127,7 @@ namespace UnityIsekaiGame.Inventory
             quantity = Mathf.Max(0, quantity - amount);
             if (quantity == 0)
             {
-                item = null;
+                Clear();
             }
 
             return true;

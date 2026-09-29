@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityIsekaiGame.Interaction;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.Input;
 using UnityIsekaiGame.WorldLocations.SceneBinding;
 
 namespace UnityIsekaiGame.Tests
@@ -126,6 +127,11 @@ namespace UnityIsekaiGame.Tests
                 // their panel. Close them between independently audited interaction surfaces.
                 Object.FindAnyObjectByType<PrototypeQuestSourcePanel>(FindObjectsInactive.Include)?.Close();
                 Object.FindAnyObjectByType<PrototypeDialoguePanel>(FindObjectsInactive.Include)?.Close();
+                int menuCloseGuard = 16;
+                while (PlayerCursorMode.HasOpenMenu && menuCloseGuard-- > 0)
+                {
+                    PlayerCursorMode.TryCloseTopMenu();
+                }
             }
 
             Assert.That(counterCaptureDirection, Is.Not.EqualTo(Vector3.zero));

@@ -12,6 +12,7 @@ namespace UnityIsekaiGame.Inventory
 
         public IReadOnlyList<InventorySlot> Slots => slots;
         public int SlotCapacity => slotCapacity;
+        internal event Action InventoryMutated;
         public event Action InventoryChanged;
         public event Action<ItemDefinition, int> ItemAdded;
 
@@ -58,7 +59,7 @@ namespace UnityIsekaiGame.Inventory
 
             if (addedQuantity > 0)
             {
-                InventoryChanged?.Invoke();
+                NotifyInventoryChanged();
                 ItemAdded?.Invoke(item, addedQuantity);
             }
 
@@ -74,7 +75,7 @@ namespace UnityIsekaiGame.Inventory
 
             int emptySlotIndex = FindEmptySlotIndex();
             slots[emptySlotIndex].SetIdentity(item, itemInstanceId, Mathf.Max(1, quantity));
-            InventoryChanged?.Invoke();
+            NotifyInventoryChanged();
             ItemAdded?.Invoke(item, Mathf.Max(1, quantity));
 
             return InventoryInstanceOperationResult.Success($"Added {item.DisplayName}.", emptySlotIndex);
@@ -83,11 +84,6 @@ namespace UnityIsekaiGame.Inventory
         public bool CanAddExistingItemIdentity(ItemDefinition item, string itemInstanceId, int quantity = 1)
         {
             return CanAddItemIdentity(item, itemInstanceId, quantity, out _);
-        }
-
-        public bool CanAddExistingItemIdentityAfterRemovingFromSlot(ItemDefinition item, string itemInstanceId, int removeSlotIndex, int quantity = 1)
-        {
-            return CanAddItemIdentityAfterRemovingFromSlot(item, itemInstanceId, removeSlotIndex, quantity, out _);
         }
 
         public InventorySlot GetSlot(int slotIndex)
@@ -111,6 +107,33 @@ namespace UnityIsekaiGame.Inventory
                 {
                     return true;
                 }
+            }
+
+            return false;
+        }
+
+        public bool TryGetItemIdentity(string itemInstanceId, out InventorySlot slot, out int slotIndex)
+        {
+            slot = null;
+            slotIndex = -1;
+            if (string.IsNullOrWhiteSpace(itemInstanceId))
+            {
+                return false;
+            }
+
+            EnsureSlotCapacity();
+            for (int i = 0; i < slots.Count; i++)
+            {
+                InventorySlot candidate = slots[i];
+                if (candidate == null || candidate.IsEmpty
+                    || !string.Equals(candidate.ItemInstanceId, itemInstanceId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                slot = candidate;
+                slotIndex = i;
+                return true;
             }
 
             return false;
@@ -144,20 +167,14 @@ namespace UnityIsekaiGame.Inventory
                 return false;
             }
 
-            if (slot.IsStateful)
+            if (!slot.IsStateful || slot.Quantity != 1)
             {
-                slot.Clear();
-                InventoryChanged?.Invoke();
-                return true;
-            }
-
-            if (!slot.Remove(1))
-            {
-                failureReason = item == null ? "Could not remove item from inventory." : $"Could not remove {item.DisplayName} from inventory.";
+                failureReason = $"{item.DisplayName} is a stack. Transfer it through a quantity-aware inventory operation.";
                 return false;
             }
 
-            InventoryChanged?.Invoke();
+            slot.Clear();
+            NotifyInventoryChanged();
             return true;
         }
 
@@ -182,6 +199,7 @@ namespace UnityIsekaiGame.Inventory
                     entry.mode = InventoryEntrySaveMode.StatefulInstance;
                     entry.definitionId = slot.Item.ItemId;
                     entry.itemInstanceId = slot.ItemInstanceId;
+                    entry.quantity = slot.Quantity;
                 }
                 else
                 {
@@ -223,7 +241,7 @@ namespace UnityIsekaiGame.Inventory
 
             slotCapacity = restoredCapacity;
             slots = restoredSlots;
-            InventoryChanged?.Invoke();
+            NotifyInventoryChanged();
             return InventoryRestoreResult.Success();
         }
 
@@ -266,25 +284,19 @@ namespace UnityIsekaiGame.Inventory
 
             for (int i = 0; i < requestedQuantity; i++)
             {
-                if (FindEmptySlotIndex() < 0)
-                {
-                    break;
-                }
-
-                if (!AddExistingItemIdentity(item, ItemInstanceId.Generate()).Succeeded)
-                {
-                    break;
-                }
-
+                int emptySlotIndex = FindEmptySlotIndex();
+                if (emptySlotIndex < 0) break;
+                slots[emptySlotIndex].SetIdentity(item, ItemInstanceId.Generate(), 1);
                 addedQuantity++;
             }
 
-            return new InventoryAddResult(GetAddStatus(requestedQuantity, addedQuantity), requestedQuantity, addedQuantity);
-        }
+            if (addedQuantity > 0)
+            {
+                NotifyInventoryChanged();
+                ItemAdded?.Invoke(item, addedQuantity);
+            }
 
-        public bool CanAddItemAfterRemovingFromSlot(ItemDefinition item, int quantity, int removeSlotIndex, int removeQuantity)
-        {
-            return GetAddableQuantity(item, quantity, removeSlotIndex, removeQuantity) >= quantity;
+            return new InventoryAddResult(GetAddStatus(requestedQuantity, addedQuantity), requestedQuantity, addedQuantity);
         }
 
         public bool RemoveItemAt(int slotIndex, int quantity)
@@ -305,7 +317,7 @@ namespace UnityIsekaiGame.Inventory
             bool removed = slot.Remove(quantity);
             if (removed)
             {
-                InventoryChanged?.Invoke();
+                NotifyInventoryChanged();
             }
 
             return removed;
@@ -356,7 +368,7 @@ namespace UnityIsekaiGame.Inventory
                 remaining -= toRemove;
             }
 
-            InventoryChanged?.Invoke();
+            NotifyInventoryChanged();
             return true;
         }
 
@@ -405,7 +417,7 @@ namespace UnityIsekaiGame.Inventory
             }
 
             slot.Remove(1);
-            InventoryChanged?.Invoke();
+            NotifyInventoryChanged();
 
             string message = $"Used {item.DisplayName}.";
             Debug.Log(message);
@@ -421,7 +433,7 @@ namespace UnityIsekaiGame.Inventory
                 slots[i]?.Clear();
             }
 
-            InventoryChanged?.Invoke();
+            NotifyInventoryChanged();
         }
 
         public int DevelopmentOccupiedSlotCount()
@@ -460,6 +472,12 @@ namespace UnityIsekaiGame.Inventory
             return remainingQuantity;
         }
 
+        private void NotifyInventoryChanged()
+        {
+            InventoryMutated?.Invoke();
+            InventoryChanged?.Invoke();
+        }
+
         private bool CanAddItemIdentity(ItemDefinition item, string itemInstanceId, int quantity, out string failureReason)
         {
             if (!ValidateItemIdentityForInventory(item, itemInstanceId, quantity, out failureReason))
@@ -474,28 +492,6 @@ namespace UnityIsekaiGame.Inventory
             }
 
             return true;
-        }
-
-        private bool CanAddItemIdentityAfterRemovingFromSlot(ItemDefinition item, string itemInstanceId, int removeSlotIndex, int quantity, out string failureReason)
-        {
-            if (!ValidateItemIdentityForInventory(item, itemInstanceId, quantity, out failureReason))
-            {
-                return false;
-            }
-
-            if (FindEmptySlotIndex() >= 0)
-            {
-                return true;
-            }
-
-            if (removeSlotIndex >= 0 && removeSlotIndex < slots.Count && slots[removeSlotIndex] != null && !slots[removeSlotIndex].IsEmpty)
-            {
-                failureReason = string.Empty;
-                return true;
-            }
-
-            failureReason = "Inventory full.";
-            return false;
         }
 
         private bool ValidateItemIdentityForInventory(ItemDefinition item, string itemInstanceId, int quantity, out string failureReason)
@@ -553,6 +549,11 @@ namespace UnityIsekaiGame.Inventory
                 return TryCreateRestoredDefinitionStack(entry, registry, instanceIds, restoredSlot);
             }
 
+            if (entry.mode != InventoryEntrySaveMode.StatefulInstance)
+            {
+                return InventoryRestoreResult.Failure(InventoryRestoreStatus.WrongDefinitionType, $"Inventory entry has unsupported mode '{entry.mode}'.");
+            }
+
             string restoredInstanceId = entry.itemInstanceId;
             if (string.IsNullOrWhiteSpace(restoredInstanceId))
             {
@@ -579,7 +580,13 @@ namespace UnityIsekaiGame.Inventory
                 return InventoryRestoreResult.Failure(InventoryRestoreStatus.DuplicateInstanceId, $"Duplicate item instance ID '{restoredInstanceId}' found in inventory save data.");
             }
 
-            restoredSlot.SetIdentity(item, restoredInstanceId, 1);
+            int restoredQuantity = entry.quantity <= 0 ? 1 : entry.quantity;
+            if (restoredQuantity > item.MaximumStackSize)
+            {
+                return InventoryRestoreResult.Failure(InventoryRestoreStatus.InvalidQuantity, $"Inventory item instance '{restoredInstanceId}' has invalid quantity {restoredQuantity}.");
+            }
+
+            restoredSlot.SetIdentity(item, restoredInstanceId, restoredQuantity);
             return InventoryRestoreResult.Success();
         }
 
@@ -622,11 +629,11 @@ namespace UnityIsekaiGame.Inventory
                 return InventoryRestoreResult.Failure(InventoryRestoreStatus.DuplicateInstanceId, $"Duplicate item instance ID '{itemInstanceId}' found in inventory save data.");
             }
 
-            restoredSlot.SetIdentity(item, itemInstanceId, entry.quantity);
+            restoredSlot.SetDefinitionStack(item, itemInstanceId, entry.quantity);
             return InventoryRestoreResult.Success();
         }
 
-        private int GetAddableQuantity(ItemDefinition item, int quantity, int removeSlotIndex = -1, int removeQuantity = 0)
+        private int GetAddableQuantity(ItemDefinition item, int quantity)
         {
             if (item == null || quantity <= 0 || item.InstanceMode == ItemInstanceMode.AlwaysInstanced)
             {
@@ -649,26 +656,6 @@ namespace UnityIsekaiGame.Inventory
 
                 int simulatedQuantity = slot.Quantity;
                 ItemDefinition simulatedItem = slot.IsStateful ? null : slot.Item;
-
-                if (i == removeSlotIndex)
-                {
-                    if (slot.IsStateful)
-                    {
-                        if (removeQuantity >= 1)
-                        {
-                            createsEmptySlot = true;
-                        }
-
-                        continue;
-                    }
-
-                    simulatedQuantity = Mathf.Max(0, simulatedQuantity - removeQuantity);
-                    if (simulatedQuantity == 0)
-                    {
-                        simulatedItem = null;
-                        createsEmptySlot = true;
-                    }
-                }
 
                 if (simulatedItem == null)
                 {
@@ -706,15 +693,6 @@ namespace UnityIsekaiGame.Inventory
                 remainingQuantity -= Mathf.Min(remainingQuantity, item.MaximumStackSize);
             }
 
-            if (remainingQuantity > 0 && removeSlotIndex >= 0 && removeSlotIndex < slots.Count)
-            {
-                InventorySlot removedFromSlot = slots[removeSlotIndex];
-                if (removedFromSlot != null && removedFromSlot.Quantity <= removeQuantity)
-                {
-                    remainingQuantity -= Mathf.Min(remainingQuantity, item.MaximumStackSize);
-                }
-            }
-
             return quantity - Mathf.Max(0, remainingQuantity);
         }
 
@@ -733,7 +711,7 @@ namespace UnityIsekaiGame.Inventory
                 }
 
                 int quantityForSlot = Mathf.Min(remainingQuantity, item.MaximumStackSize);
-                slot.SetIdentity(item, ItemInstanceId.Generate(), quantityForSlot);
+                slot.SetDefinitionStack(item, ItemInstanceId.Generate(), quantityForSlot);
                 remainingQuantity -= quantityForSlot;
             }
 

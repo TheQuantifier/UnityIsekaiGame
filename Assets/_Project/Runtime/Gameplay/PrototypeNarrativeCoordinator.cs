@@ -157,7 +157,7 @@ namespace UnityIsekaiGame.Gameplay
                 InventoryAddResult parcelGrant = services.PlayerInventory.AddItemOrInstances(parcel, 1);
                 if (!parcelGrant.AddedAll)
                 {
-                    PrototypeHudMessageBus.Show("Make inventory space before accepting the merchant parcel.");
+                    GameHudMessageBus.Show("Make inventory space before accepting the merchant parcel.");
                 }
             }
             services.DirtyTracker?.MarkDirty("Quest accepted from an authoritative source.");
@@ -275,24 +275,26 @@ namespace UnityIsekaiGame.Gameplay
         {
             ThrowIfDisposed();
             string suffix = $"{Sanitize(conversationDefinitionId)}.{++transactionSequence:000000}";
-            ConversationOperationResult conversation = Conversations.StartConversation(new ConversationStartRequest
-            {
-                transactionId = $"tx.conversation.start.{suffix}",
-                conversationId = $"conversation.runtime.{suffix}",
-                conversationDefinitionId = conversationDefinitionId,
-                participants = new[]
-                {
-                    Participant("initiator", PlayerPersonId, ConversationParticipantRole.Initiator, locationId, interactionPointId),
-                    Participant("provider", providerPersonId, ConversationParticipantRole.Provider, locationId, interactionPointId)
-                },
-                activeSpeakerPersonId = providerPersonId,
-                hostLocationId = locationId,
-                hostInteractionPointId = interactionPointId,
-                questSourceId = questSourceId,
-                sceneBindingKey = $"prototype.dialogue.{Sanitize(providerPersonId)}",
-                worldTime = WorldTime,
-                provenanceId = "prototype.scene.dialogue"
-            });
+            ConversationFlowLifecycle.InterruptOpenConversationsForParticipant(
+                Conversations,
+                Dialogue,
+                PlayerPersonId,
+                WorldTime,
+                $"tx.conversation.recovery.{suffix}");
+            registry.TryGet(conversationDefinitionId, out ConversationDefinition definition);
+            ConversationStartRequest request = BuildSceneConversationRequest(
+                definition,
+                conversationDefinitionId,
+                PlayerPersonId,
+                providerPersonId,
+                interactionPointId,
+                locationId,
+                questSourceId,
+                $"tx.conversation.start.{suffix}",
+                $"conversation.runtime.{suffix}",
+                $"prototype.dialogue.{Sanitize(providerPersonId)}",
+                WorldTime);
+            ConversationOperationResult conversation = Conversations.StartConversation(request);
             if (!conversation.Succeeded)
             {
                 return DialogueFlowOperationResult.Failure(DialogueFlowOperationStatus.InvalidRequest, conversation.Message, Dialogue.Revision);
@@ -306,6 +308,17 @@ namespace UnityIsekaiGame.Gameplay
                 conditionContext = BuildDialogueContext(providerPersonId, interactionPointId, locationId),
                 worldTime = WorldTime
             });
+            if (!flow.Succeeded)
+            {
+                ConversationFlowLifecycle.CloseConversation(
+                    Conversations,
+                    conversation.Snapshot.ConversationId,
+                    ConversationLifecycleState.Cancelled,
+                    WorldTime,
+                    $"tx.conversation.rollback.{suffix}");
+                return flow;
+            }
+
             if (flow.Succeeded)
             {
                 QuestObjectiveSignalBus.ReportTalk(providerPersonId, PlayerPersonId, WorldTime);
@@ -313,6 +326,124 @@ namespace UnityIsekaiGame.Gameplay
                 Changed?.Invoke();
             }
             return flow;
+        }
+
+        private static ConversationStartRequest BuildSceneConversationRequest(
+            ConversationDefinition definition,
+            string conversationDefinitionId,
+            string playerPersonId,
+            string providerPersonId,
+            string interactionPointId,
+            string locationId,
+            string questSourceId,
+            string transactionId,
+            string conversationId,
+            string sceneBindingKey,
+            double worldTime)
+        {
+            IReadOnlyList<ConversationProviderRequirementData> requirements = definition?.ProviderRequirements
+                ?? Array.Empty<ConversationProviderRequirementData>();
+            string organizationId = FirstRequirementId(requirements, ConversationProviderRequirementKind.Organization, ConversationProviderRequirementKind.OrganizationMembership);
+            string officeId = FirstRequirementId(requirements, ConversationProviderRequirementKind.Office);
+            string governmentId = FirstRequirementId(requirements, ConversationProviderRequirementKind.Government);
+            string factionId = FirstRequirementId(requirements, ConversationProviderRequirementKind.Faction);
+            string businessId = FirstRequirementId(requirements, ConversationProviderRequirementKind.Business);
+            string[] authorityIds = requirements
+                .Where(value => value != null && value.kind == ConversationProviderRequirementKind.Authority && !string.IsNullOrWhiteSpace(value.requirementId))
+                .Select(value => value.requirementId.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+
+            List<ConversationParticipantRecordData> participants = new List<ConversationParticipantRecordData>();
+            AddSceneParticipant(participants, ConversationParticipantRole.Initiator, playerPersonId, playerPersonId, providerPersonId, locationId, interactionPointId, organizationId, officeId, governmentId, factionId, businessId, authorityIds);
+            AddSceneParticipant(participants, ConversationParticipantRole.Provider, providerPersonId, playerPersonId, providerPersonId, locationId, interactionPointId, organizationId, officeId, governmentId, factionId, businessId, authorityIds);
+            foreach (ConversationParticipantRole requiredRole in definition?.RequiredRoles ?? Array.Empty<ConversationParticipantRole>())
+            {
+                string personId = IsPlayerConversationRole(requiredRole) ? playerPersonId : providerPersonId;
+                AddSceneParticipant(participants, requiredRole, personId, playerPersonId, providerPersonId, locationId, interactionPointId, organizationId, officeId, governmentId, factionId, businessId, authorityIds);
+            }
+
+            return new ConversationStartRequest
+            {
+                transactionId = transactionId,
+                conversationId = conversationId,
+                conversationDefinitionId = conversationDefinitionId,
+                participants = participants.ToArray(),
+                activeSpeakerPersonId = providerPersonId,
+                hostLocationId = locationId,
+                hostInteractionPointId = interactionPointId,
+                questSourceId = questSourceId,
+                operatingOrganizationId = organizationId,
+                operatingOfficeId = officeId,
+                operatingGovernmentId = governmentId,
+                operatingFactionId = factionId,
+                operatingBusinessId = businessId,
+                sceneBindingKey = sceneBindingKey,
+                tagIds = authorityIds,
+                worldTime = worldTime,
+                provenanceId = "prototype.scene.dialogue"
+            };
+        }
+
+        private static void AddSceneParticipant(
+            ICollection<ConversationParticipantRecordData> participants,
+            ConversationParticipantRole role,
+            string personId,
+            string playerPersonId,
+            string providerPersonId,
+            string locationId,
+            string interactionPointId,
+            string organizationId,
+            string officeId,
+            string governmentId,
+            string factionId,
+            string businessId,
+            IReadOnlyList<string> authorityIds)
+        {
+            if (role == ConversationParticipantRole.Unknown
+                || string.IsNullOrWhiteSpace(personId)
+                || participants.Any(value => value.role == role))
+            {
+                return;
+            }
+
+            bool providerSide = string.Equals(personId, providerPersonId, StringComparison.Ordinal)
+                && !string.Equals(personId, playerPersonId, StringComparison.Ordinal);
+            participants.Add(new ConversationParticipantRecordData
+            {
+                participantId = $"role.{role.ToString().ToLowerInvariant()}",
+                personId = personId.Trim(),
+                role = role,
+                representedOrganizationId = providerSide ? organizationId : string.Empty,
+                representedOfficeId = providerSide ? officeId : string.Empty,
+                representedGovernmentId = providerSide ? governmentId : string.Empty,
+                representedFactionId = providerSide ? factionId : string.Empty,
+                representedBusinessId = providerSide ? businessId : string.Empty,
+                currentLocationId = locationId ?? string.Empty,
+                currentInteractionPointId = interactionPointId ?? string.Empty,
+                provenanceId = providerSide && authorityIds != null && authorityIds.Count > 0
+                    ? authorityIds[0]
+                    : "prototype.scene.dialogue"
+            });
+        }
+
+        private static bool IsPlayerConversationRole(ConversationParticipantRole role)
+        {
+            return role == ConversationParticipantRole.Initiator
+                || role == ConversationParticipantRole.Listener
+                || role == ConversationParticipantRole.QuestRecipient;
+        }
+
+        private static string FirstRequirementId(
+            IEnumerable<ConversationProviderRequirementData> requirements,
+            params ConversationProviderRequirementKind[] kinds)
+        {
+            HashSet<ConversationProviderRequirementKind> accepted = new HashSet<ConversationProviderRequirementKind>(kinds ?? Array.Empty<ConversationProviderRequirementKind>());
+            return (requirements ?? Array.Empty<ConversationProviderRequirementData>())
+                .Where(value => value != null && accepted.Contains(value.kind) && !string.IsNullOrWhiteSpace(value.requirementId))
+                .Select(value => value.requirementId.Trim())
+                .FirstOrDefault() ?? string.Empty;
         }
 
         public DialogueFlowOperationResult SelectDialogueChoice(string flowId, string choiceId)
@@ -329,6 +460,15 @@ namespace UnityIsekaiGame.Gameplay
             });
             if (result.Succeeded)
             {
+                if (result.Snapshot != null && ConversationFlowLifecycle.IsFlowTerminal(result.Snapshot.State))
+                {
+                    ConversationFlowLifecycle.CloseConversationForFlow(
+                        Conversations,
+                        result.Snapshot,
+                        ConversationLifecycleState.Completed,
+                        WorldTime,
+                        NextTransaction("conversation.complete"));
+                }
                 DialogueChanged?.Invoke(result.Snapshot);
                 Changed?.Invoke();
             }
@@ -338,24 +478,35 @@ namespace UnityIsekaiGame.Gameplay
         public DialogueFlowOperationResult EndDialogue(string flowId)
         {
             ThrowIfDisposed();
-            DialogueFlowOperationResult flow = Dialogue.TransitionLifecycle(new DialogueFlowLifecycleRequest
+            DialogueFlowOperationResult flow;
+            if (Dialogue.TryGetSnapshot(flowId, null, out DialogueFlowSnapshot existing)
+                && ConversationFlowLifecycle.IsFlowTerminal(existing.State))
             {
-                transactionId = NextTransaction("dialogue.end"),
-                flowId = flowId,
-                targetState = DialogueFlowState.Ended,
-                worldTime = WorldTime
-            });
+                flow = DialogueFlowOperationResult.Success(
+                    "Dialogue flow was already ended.",
+                    Dialogue.Revision,
+                    Dialogue.Revision,
+                    existing);
+            }
+            else
+            {
+                flow = Dialogue.TransitionLifecycle(new DialogueFlowLifecycleRequest
+                {
+                    transactionId = NextTransaction("dialogue.end"),
+                    flowId = flowId,
+                    targetState = DialogueFlowState.Ended,
+                    worldTime = WorldTime
+                });
+            }
             DialogueFlowSnapshot snapshot = flow.Snapshot;
             if (flow.Succeeded && snapshot != null)
             {
-                Conversations.TransitionLifecycle(new ConversationLifecycleRequest
-                {
-                    transactionId = NextTransaction("conversation.end"),
-                    conversationId = snapshot.ConversationId,
-                    targetState = ConversationLifecycleState.Completed,
-                    worldTime = WorldTime,
-                    provenanceId = "prototype.scene.dialogue"
-                });
+                ConversationFlowLifecycle.CloseConversationForFlow(
+                    Conversations,
+                    snapshot,
+                    ConversationLifecycleState.Completed,
+                    WorldTime,
+                    NextTransaction("conversation.end"));
                 Changed?.Invoke();
             }
             return flow;
@@ -398,7 +549,7 @@ namespace UnityIsekaiGame.Gameplay
             string itemId = deliveryDefinition.secondaryTarget?.subjectId ?? string.Empty;
             if (!registry.TryGet(itemId, out ItemDefinition item) || services.PlayerInventory == null || services.PlayerInventory.CountItem(item) < 1)
             {
-                PrototypeHudMessageBus.Show("The required delivery item is not in your inventory.");
+                GameHudMessageBus.Show("The required delivery item is not in your inventory.");
                 return;
             }
 
@@ -420,7 +571,7 @@ namespace UnityIsekaiGame.Gameplay
             if (delivered.Succeeded && delivered.Objectives.Any(objective => objective.Satisfied))
             {
                 services.PlayerInventory.RemoveItem(item, 1);
-                PrototypeHudMessageBus.Show($"Delivered {item.DisplayName}.");
+                GameHudMessageBus.Show($"Delivered {item.DisplayName}.");
             }
         }
 
@@ -835,12 +986,31 @@ namespace UnityIsekaiGame.Gameplay
         private void HandleObjectiveSignal(QuestObjectiveSignal signal)
         {
             if (signal == null) return;
-            if (string.IsNullOrWhiteSpace(signal.actorPersonId)) signal.actorPersonId = PlayerPersonId;
-            if (string.IsNullOrWhiteSpace(signal.participantPersonId)) signal.participantPersonId = PlayerPersonId;
-            if (signal.worldTime <= 0d) signal.worldTime = WorldTime;
-            if (string.IsNullOrWhiteSpace(signal.transactionId)) signal.transactionId = NextTransaction("quest.objective.bus");
-            if (string.IsNullOrWhiteSpace(signal.sourceEventId)) signal.sourceEventId = $"event.quest-objective.{++transactionSequence:000000}";
-            ApplyObjectiveSignal(signal);
+            QuestObjectiveSignal routedSignal = signal.Clone();
+            string contributor = string.IsNullOrWhiteSpace(routedSignal.participantPersonId)
+                ? routedSignal.actorPersonId
+                : routedSignal.participantPersonId;
+            if (!IsObjectiveContributorRelevant(contributor)) return;
+
+            // Never mutate the shared bus payload. Multiple player-scoped coordinators may
+            // observe the same world event, and changing it here would let the first observer
+            // choose the actor for every other character.
+            if (routedSignal.worldTime <= 0d) routedSignal.worldTime = WorldTime;
+            if (string.IsNullOrWhiteSpace(routedSignal.transactionId)) routedSignal.transactionId = NextTransaction("quest.objective.bus");
+            if (string.IsNullOrWhiteSpace(routedSignal.sourceEventId)) routedSignal.sourceEventId = $"event.quest-objective.{++transactionSequence:000000}";
+            ApplyObjectiveSignal(routedSignal);
+        }
+
+        private bool IsObjectiveContributorRelevant(string contributorPersonId)
+        {
+            if (string.IsNullOrWhiteSpace(contributorPersonId)) return false;
+            if (string.Equals(contributorPersonId, PlayerPersonId, StringComparison.Ordinal)) return true;
+
+            PartySnapshot playerParty = services.AdventuringParties.GetPartyForPerson(PlayerPersonId);
+            PartySnapshot contributorParty = services.AdventuringParties.GetPartyForPerson(contributorPersonId);
+            return playerParty != null
+                && contributorParty != null
+                && string.Equals(playerParty.PartyId, contributorParty.PartyId, StringComparison.Ordinal);
         }
 
         private void HandleDialogueEvent(DialogueFlowEventData evt)
@@ -864,10 +1034,6 @@ namespace UnityIsekaiGame.Gameplay
             PartySnapshot party = services.AdventuringParties.GetPartyForPerson(person);
             string[] undertakingMembers = party?.MemberPersonIds?.ToArray() ?? new[] { person };
             string playerLocation = ResolvePlayerLocation();
-            if (party != null)
-            {
-                services.PartyOperations.ReportMemberState(party.PartyId, person, PartyMemberReadiness.Ready, playerLocation, 0f, true, true, true);
-            }
             string[] readyMembers = party == null ? new[] { person } : services.PartyOperations.GetReadyMemberIds(party.PartyId, playerLocation).ToArray();
             OrganizationMembershipSnapshot[] memberships = services.OrganizationMemberships?.QueryMemberships(person, activeOnly: true).ToArray() ?? Array.Empty<OrganizationMembershipSnapshot>();
             string[] organizations = memberships.Select(value => value.OrganizationId).ToArray();

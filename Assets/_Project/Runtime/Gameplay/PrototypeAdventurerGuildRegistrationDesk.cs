@@ -54,17 +54,14 @@ namespace UnityIsekaiGame.Gameplay
 
         public string InteractionPrompt
         {
-            get
-            {
-                ResolveServices();
-                return "Use Adventurers Guild Desk";
-            }
+            get => "Use Adventurers Guild Desk";
         }
 
         public bool CanHandleInteraction(in InteractionContext context, InteractionPointSnapshot point)
         {
-            ResolveServices();
+            services = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
             return services != null
+                && services.OwnsPlayerInteractor(context.Interactor)
                 && point != null
                 && point.IsActive
                 && point.ServiceDefinitionIds.Contains(PrototypeInteractionPointDefinitionFactory.RegisterAdventurerServiceId);
@@ -72,26 +69,21 @@ namespace UnityIsekaiGame.Gameplay
 
         public void HandleInteraction(in InteractionContext context, InteractionPointSnapshot point)
         {
-            ResolveServices();
-            if (services == null)
+            services = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
+            if (services == null || !services.OwnsPlayerInteractor(context.Interactor))
             {
-                PrototypeHudMessageBus.Show("Adventurer registration services are unavailable.");
+                GameHudMessageBus.Show("Adventurer registration services are unavailable to that character.");
                 return;
             }
 
-            PrototypeGuildDeskPanel panel = FindAnyObjectByType<PrototypeGuildDeskPanel>(FindObjectsInactive.Include);
+            PrototypeGuildDeskPanel panel = services.GetComponent<PrototypeGuildDeskPanel>();
             if (panel == null)
             {
-                PrototypeHudMessageBus.Show("Guild desk services are unavailable.");
+                GameHudMessageBus.Show("Guild desk services are unavailable.");
                 return;
             }
 
             panel.OpenAdventurersGuildDesk(point?.InteractionPointId, context.Interactor);
-        }
-
-        private void ResolveServices()
-        {
-            if (services == null) services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
         }
     }
 }

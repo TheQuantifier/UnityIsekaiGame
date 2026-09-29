@@ -24,6 +24,7 @@ namespace UnityIsekaiGame.UI.Inventory
         private readonly List<SaveSlotDescriptor> descriptors = new List<SaveSlotDescriptor>();
 
         private PrototypePersistenceServiceBehaviour persistence;
+        private PersistenceService subscribedPlayerService;
         private Text slotValueText;
         private Text actionValueText;
         private Text detailsText;
@@ -40,41 +41,48 @@ namespace UnityIsekaiGame.UI.Inventory
 
         public void Initialize(PrototypePersistenceServiceBehaviour persistenceService)
         {
-            if (persistence != null && persistence.PlayerService != null)
-            {
-                persistence.PlayerService.SaveSlotsChanged -= HandleSaveSlotsChanged;
-            }
+            UnsubscribeFromSaveSlots();
 
             persistence = persistenceService;
             BuildUi();
-            if (persistence != null && persistence.PlayerService != null)
-            {
-                persistence.PlayerService.SaveSlotsChanged += HandleSaveSlotsChanged;
-            }
+            SubscribeToSaveSlotsIfReady();
 
             Refresh();
         }
 
         private void OnDestroy()
         {
-            if (persistence != null && persistence.PlayerService != null)
-            {
-                persistence.PlayerService.SaveSlotsChanged -= HandleSaveSlotsChanged;
-            }
+            UnsubscribeFromSaveSlots();
         }
 
         public void Refresh()
         {
             descriptors.Clear();
-            if (persistence != null)
+            if (persistence != null && persistence.IsInitialized)
             {
+                SubscribeToSaveSlotsIfReady();
                 descriptors.AddRange(persistence.BuildSaveSlotDescriptors());
             }
 
             selectedSlotIndex = descriptors.Count == 0 ? 0 : Mathf.Clamp(selectedSlotIndex, 0, descriptors.Count - 1);
             selectedActionIndex = Mathf.Clamp(selectedActionIndex, 0, Actions.Length - 1);
-            refreshPending = false;
+            refreshPending = persistence != null && !persistence.IsInitialized;
             Render();
+        }
+
+        private void SubscribeToSaveSlotsIfReady()
+        {
+            PersistenceService current = persistence?.PlayerService;
+            if (ReferenceEquals(current, subscribedPlayerService)) return;
+            UnsubscribeFromSaveSlots();
+            subscribedPlayerService = current;
+            if (subscribedPlayerService != null) subscribedPlayerService.SaveSlotsChanged += HandleSaveSlotsChanged;
+        }
+
+        private void UnsubscribeFromSaveSlots()
+        {
+            if (subscribedPlayerService != null) subscribedPlayerService.SaveSlotsChanged -= HandleSaveSlotsChanged;
+            subscribedPlayerService = null;
         }
 
         public void RefreshIfNeeded()
@@ -114,7 +122,7 @@ namespace UnityIsekaiGame.UI.Inventory
             panelRect.anchorMax = Vector2.one;
             panelRect.offsetMin = Vector2.zero;
             panelRect.offsetMax = Vector2.zero;
-            panel.GetComponent<Image>().color = PrototypeUiTheme.Panel;
+            panel.GetComponent<Image>().color = GameUiTheme.Panel;
 
             VerticalLayoutGroup layout = panel.GetComponent<VerticalLayoutGroup>();
             layout.spacing = 8f;
@@ -125,7 +133,7 @@ namespace UnityIsekaiGame.UI.Inventory
             layout.childForceExpandHeight = false;
 
             Text header = AddText(panel.transform, font, "Save / Load", 16, 28, FontStyle.Bold);
-            PrototypeUiTheme.StyleText(header, PrototypeUiTextRole.Title);
+            GameUiTheme.StyleText(header, GameUiTextRole.Title);
 
             slotValueText = AddSelectorRow(
                 panel.transform,
@@ -151,8 +159,8 @@ namespace UnityIsekaiGame.UI.Inventory
 
             detailsText = AddText(panel.transform, font, "No save slot selected.", 13, 300);
             feedbackText = AddText(panel.transform, font, string.Empty, 12, 48);
-            PrototypeUiTheme.StyleText(detailsText, PrototypeUiTextRole.Muted);
-            PrototypeUiTheme.StyleText(feedbackText, PrototypeUiTextRole.Feedback);
+            GameUiTheme.StyleText(detailsText, GameUiTextRole.Muted);
+            GameUiTheme.StyleText(feedbackText, GameUiTextRole.Feedback);
         }
 
         private void Render()
@@ -188,7 +196,9 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (descriptor == null)
             {
-                detailsText.text = "No save slots are available.";
+                detailsText.text = persistence != null && !persistence.IsInitialized
+                    ? "Save services are still initializing."
+                    : "No save slots are available.";
                 return;
             }
 
@@ -461,11 +471,11 @@ namespace UnityIsekaiGame.UI.Inventory
             if (feedbackText != null)
             {
                 feedbackText.text = message ?? string.Empty;
-                PrototypeUiTheme.StyleText(feedbackText,
+                GameUiTheme.StyleText(feedbackText,
                     message != null && (message.IndexOf("fail", StringComparison.OrdinalIgnoreCase) >= 0
                         || message.IndexOf("invalid", StringComparison.OrdinalIgnoreCase) >= 0)
-                        ? PrototypeUiTextRole.Danger
-                        : PrototypeUiTextRole.Feedback);
+                        ? GameUiTextRole.Danger
+                        : GameUiTextRole.Feedback);
             }
         }
 
@@ -507,7 +517,7 @@ namespace UnityIsekaiGame.UI.Inventory
             previousButton = AddButton(row.transform, font, "Prev", previous, 11);
             SetElement(previousButton.gameObject, 70f, 30f, 0f);
             Text valueText = AddText(row.transform, font, "None", 12, 30);
-            PrototypeUiTheme.StyleText(valueText, PrototypeUiTextRole.Body);
+            GameUiTheme.StyleText(valueText, GameUiTextRole.Body);
             SetElement(valueText.gameObject, 0f, 30f, 1f);
             nextButton = AddButton(row.transform, font, "Next", next, 11);
             SetElement(nextButton.gameObject, 70f, 30f, 0f);
@@ -558,7 +568,7 @@ namespace UnityIsekaiGame.UI.Inventory
             textRect.offsetMax = new Vector2(-4f, -2f);
 
             Button button = root.GetComponent<Button>();
-            PrototypeUiTheme.StyleButton(button, PrototypeUiTheme.InferButtonTone(label));
+            GameUiTheme.StyleButton(button, GameUiTheme.InferButtonTone(label));
             button.onClick.AddListener(() => action?.Invoke());
             return button;
         }

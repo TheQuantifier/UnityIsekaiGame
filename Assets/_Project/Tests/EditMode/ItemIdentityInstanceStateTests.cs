@@ -145,7 +145,6 @@ namespace UnityIsekaiGame.Tests
             ItemDefinition sword = LoadItem(SwordId, out DefinitionRegistry registry);
             ItemDefinition potion = LoadItem("item.health-potion", out _);
             string inventorySwordId = ItemInstanceId.Generate();
-            string equippedSwordId = ItemInstanceId.Generate();
             PlayerInventoryEquipmentSaveData projection = new PlayerInventoryEquipmentSaveData
             {
                 inventory = new InventorySaveData
@@ -161,7 +160,7 @@ namespace UnityIsekaiGame.Tests
                 {
                     slots =
                     {
-                        new EquipmentSlotSaveData { slotType = EquipmentSlotType.MainHand, mode = EquipmentEntrySaveMode.StatefulInstance, definitionId = sword.ItemId, itemInstanceId = equippedSwordId }
+                        new EquipmentSlotSaveData { slotType = EquipmentSlotType.MainHand, mode = EquipmentEntrySaveMode.InventoryReference, definitionId = sword.ItemId, itemInstanceId = inventorySwordId }
                     }
                 }
             };
@@ -169,9 +168,8 @@ namespace UnityIsekaiGame.Tests
             ItemIdentityInventoryBridgeResult migration = ItemIdentityInventoryBridge.BuildInventoryEquipmentProjection(projection, registry, "person.prototype.player", "test.projection");
 
             Assert.That(migration.Succeeded, Is.True, migration.Message);
-            Assert.That(migration.SaveData.records.Count, Is.EqualTo(3));
+            Assert.That(migration.SaveData.records.Count, Is.EqualTo(2));
             Assert.That(migration.SaveData.records.Exists(record => record.itemInstanceId == inventorySwordId && record.location.kind == ItemLocationKind.Inventory), Is.True);
-            Assert.That(migration.SaveData.records.Exists(record => record.itemInstanceId == equippedSwordId && record.location.kind == ItemLocationKind.Equipped), Is.True);
             ItemInstanceRecordData stack = migration.SaveData.records.Find(record => record.itemDefinitionId == potion.ItemId);
             Assert.That(stack, Is.Not.Null);
             Assert.That(stack.classification, Is.EqualTo(ItemInstanceClassification.Fungible));
@@ -204,8 +202,8 @@ namespace UnityIsekaiGame.Tests
                 EquipmentOperationResult equip = equipment.EquipFromInventorySlot(0);
                 Assert.That(equip.Succeeded, Is.True, equip.Message);
                 Assert.That(runtime.TryGetSnapshot(inventorySnapshot.ItemInstanceId, out ItemInstanceSnapshot equippedSnapshot), Is.True);
-                Assert.That(equippedSnapshot.LocationKind, Is.EqualTo(ItemLocationKind.Equipped));
-                Assert.That(equippedSnapshot.Data.location.equipmentSlotId, Is.EqualTo(EquipmentSlotType.MainHand.ToString()));
+                Assert.That(equippedSnapshot.LocationKind, Is.EqualTo(ItemLocationKind.Inventory));
+                Assert.That(inventory.GetSlot(0).ItemInstanceId, Is.EqualTo(inventorySnapshot.ItemInstanceId));
 
                 EquipmentOperationResult unequip = equipment.Unequip(EquipmentSlotType.MainHand);
                 Assert.That(unequip.Succeeded, Is.True, unequip.Message);
@@ -242,8 +240,10 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(equipment.EquipFromInventorySlot(0).Succeeded, Is.True);
                 EquipmentSlotSaveData equippedEntry = equipment.CreateSaveData().slots.Find(slot => slot.slotType == EquipmentSlotType.MainHand);
                 Assert.That(equippedEntry, Is.Not.Null);
+                Assert.That(equippedEntry.mode, Is.EqualTo(EquipmentEntrySaveMode.InventoryReference));
                 Assert.That(equippedEntry.definitionId, Is.EqualTo(SwordId));
                 Assert.That(equippedEntry.itemInstanceId, Is.EqualTo(inventoryEntry.itemInstanceId));
+                Assert.That(inventory.GetSlot(0).ItemInstanceId, Is.EqualTo(inventoryEntry.itemInstanceId));
             }
             finally
             {
@@ -354,6 +354,40 @@ namespace UnityIsekaiGame.Tests
             Assert.That(removed.StackQuantity, Is.EqualTo(3));
             Assert.That(removed.LifecycleState, Is.EqualTo(ItemLifecycleState.Consumed));
             Assert.That(removed.Data.provenance.parentItemInstanceIds, Does.Contain(sourceId));
+        }
+
+        [Test]
+        public void PartialStackDropCanSplitOneItemAndMoveOnlyThatIdentityToTheWorld()
+        {
+            ItemDefinition potion = LoadItem("item.health-potion", out _);
+            ItemInstanceIdentityRuntime runtime = new ItemInstanceIdentityRuntime();
+            string sourceId = ItemInstanceId.Generate();
+            ItemInstanceOperationResult created = runtime.CreateItem(
+                potion,
+                ItemInstanceClassification.StackableWhileEquivalent,
+                sourceId,
+                ownerPersonId: "person.owner",
+                custodianPersonId: "person.owner",
+                stackQuantity: 4);
+
+            Assert.That(created.Succeeded, Is.True, created.Message);
+            ItemInstanceOperationResult split = runtime.TransferStackQuantity(
+                sourceId,
+                1,
+                "person.owner",
+                "person.owner",
+                "person.owner");
+            Assert.That(split.Succeeded, Is.True, split.Message);
+            Assert.That(split.Snapshot.ItemInstanceId, Is.Not.EqualTo(sourceId));
+            Assert.That(runtime.SetWorldPlacement(split.Snapshot.ItemInstanceId, "placement.drop-one", "entity.drop-one", "scene.test").Succeeded, Is.True);
+
+            Assert.That(runtime.TryGetSnapshot(sourceId, out ItemInstanceSnapshot remainder), Is.True);
+            Assert.That(remainder.StackQuantity, Is.EqualTo(3));
+            Assert.That(remainder.LocationKind, Is.EqualTo(ItemLocationKind.Inventory));
+            Assert.That(runtime.TryGetSnapshot(split.Snapshot.ItemInstanceId, out ItemInstanceSnapshot dropped), Is.True);
+            Assert.That(dropped.StackQuantity, Is.EqualTo(1));
+            Assert.That(dropped.LocationKind, Is.EqualTo(ItemLocationKind.WorldPlacement));
+            Assert.That(dropped.Data.provenance.parentItemInstanceIds, Does.Contain(sourceId));
         }
 
         [Test]

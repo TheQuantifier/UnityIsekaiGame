@@ -7,6 +7,13 @@ using UnityIsekaiGame.Inventory.Composition;
 
 namespace UnityIsekaiGame.Inventory
 {
+    public enum ConsumablePresentationType
+    {
+        Generic = 0,
+        Food = 1,
+        Potion = 2
+    }
+
     [CreateAssetMenu(fileName = "NewItemDefinition", menuName = "Unity Isekai Game/Inventory/Item Definition")]
     public sealed class ItemDefinition : ScriptableObject, IInventoryItemDefinition, IUsableItemDefinition, IEquippableItemDefinition, IHasRarity, IItemInstancePolicy, IDefinitionCatalogValidationParticipant
     {
@@ -22,6 +29,7 @@ namespace UnityIsekaiGame.Inventory
         [SerializeField] private bool stackable = true;
         [SerializeField, Min(1)] private int maximumStackSize = 1;
         [SerializeField] private ItemUseEffect[] useEffects;
+        [SerializeField] private ConsumablePresentationType consumablePresentation;
         [SerializeField] private EquipmentData equipment;
         [SerializeField] private ItemCompositionTemplateData defaultCompositionTemplate = new ItemCompositionTemplateData();
 
@@ -39,6 +47,7 @@ namespace UnityIsekaiGame.Inventory
         public bool Stackable => stackable;
         public int MaximumStackSize => stackable ? Mathf.Max(1, maximumStackSize) : 1;
         public IReadOnlyList<ItemUseEffect> UseEffects => useEffects;
+        public ConsumablePresentationType ConsumablePresentation => consumablePresentation;
         public bool IsUsable => useEffects != null && useEffects.Length > 0;
         public int UseEffectCount => useEffects == null ? 0 : useEffects.Length;
         public bool HasMissingUseEffect
@@ -129,6 +138,21 @@ namespace UnityIsekaiGame.Inventory
             if (equipment == null || !equipment.Equippable)
             {
                 return;
+            }
+
+            if (stackable)
+            {
+                report.AddError($"Equippable item definition '{DisplayName}' cannot be stackable because equipment slots reference one exact item instance.");
+            }
+
+            if (instanceMode != ItemInstanceMode.AlwaysInstanced)
+            {
+                report.AddError($"Equippable item definition '{DisplayName}' must use Always Instanced identity mode.");
+            }
+
+            if (IsUsable)
+            {
+                report.AddError($"Item definition '{DisplayName}' cannot be both equippable and directly usable; the inventory has one context-sensitive primary action.");
             }
 
             ValidateDamageTypeReference(equipment.MeleeWeapon?.DamageType, "melee weapon", definitionsById, report);

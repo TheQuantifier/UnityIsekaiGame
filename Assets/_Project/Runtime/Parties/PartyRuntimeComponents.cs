@@ -49,15 +49,35 @@ namespace UnityIsekaiGame.Parties
 
     public static class PartyCombatContext
     {
-        private static AdventuringPartyService parties;
-        private static PartyOperationalRuntime operations;
-        public static void Configure(AdventuringPartyService partyService, PartyOperationalRuntime operationalRuntime) { parties = partyService; operations = operationalRuntime; }
-        public static void Clear(PartyOperationalRuntime operationalRuntime) { if (ReferenceEquals(operations, operationalRuntime)) { parties = null; operations = null; } }
+        private static readonly System.Collections.Generic.Dictionary<PartyOperationalRuntime, AdventuringPartyService> Contexts = new System.Collections.Generic.Dictionary<PartyOperationalRuntime, AdventuringPartyService>();
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void Reset() => Contexts.Clear();
+        public static void Configure(AdventuringPartyService partyService, PartyOperationalRuntime operationalRuntime)
+        {
+            if (partyService != null && operationalRuntime != null) Contexts[operationalRuntime] = partyService;
+        }
+        public static void Clear(PartyOperationalRuntime operationalRuntime)
+        {
+            if (operationalRuntime != null) Contexts.Remove(operationalRuntime);
+        }
         public static bool CanDamage(GameObject source, string sourceActorId, GameObject target, string targetActorId)
         {
             string sourcePerson = ResolvePerson(source, sourceActorId);
             string targetPerson = ResolvePerson(target, targetActorId);
-            return string.IsNullOrWhiteSpace(sourcePerson) || string.IsNullOrWhiteSpace(targetPerson) || PartyCombatRules.CanDamage(parties, operations, sourcePerson, targetPerson);
+            if (string.IsNullOrWhiteSpace(sourcePerson) || string.IsNullOrWhiteSpace(targetPerson)) return true;
+            foreach (System.Collections.Generic.KeyValuePair<PartyOperationalRuntime, AdventuringPartyService> context in Contexts.ToArray())
+            {
+                if (context.Key == null || context.Value == null)
+                {
+                    Contexts.Remove(context.Key);
+                    continue;
+                }
+
+                PartySnapshot sourceParty = context.Value.GetPartyForPerson(sourcePerson);
+                if (sourceParty == null || !sourceParty.MemberPersonIds.Contains(targetPerson)) continue;
+                return PartyCombatRules.CanDamage(context.Value, context.Key, sourcePerson, targetPerson);
+            }
+            return true;
         }
         private static string ResolvePerson(GameObject value, string fallback)
         {
@@ -168,7 +188,7 @@ namespace UnityIsekaiGame.Parties
 
         private void ResolveServices()
         {
-            persistence ??= FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            persistence ??= PrototypePersistenceServiceBehaviour.FindForPartyMember(PersonId);
             if (persistence == null) return;
 
             AdventuringPartyService resolvedPartyService = persistence.AdventuringParties;
@@ -313,13 +333,13 @@ namespace UnityIsekaiGame.Parties
             if (cachedParty == null) return;
             float width = Mathf.Min(310f, Screen.width - 30f);
             Rect panel = new Rect(Screen.width - width - 18f, 18f, width, 54f + 27f * cachedRows.Count);
-            PrototypeUiTheme.DrawPanelFrame(panel);
+            GameUiTheme.DrawPanelFrame(panel);
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 10f, panel.width - 24f, panel.height - 20f));
-            GUILayout.Label(cachedHeader, PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label(cachedHeader, GameUiTheme.HeadingStyle);
             for (int i = 0; i < cachedRows.Count; i++)
             {
                 PartyHudMemberRow row = cachedRows[i];
-                GUILayout.Label(row.Label, row.Ready ? PrototypeUiTheme.BodyStyle : PrototypeUiTheme.MutedStyle, GUILayout.Height(23f));
+                GUILayout.Label(row.Label, row.Ready ? GameUiTheme.BodyStyle : GameUiTheme.MutedStyle, GUILayout.Height(23f));
             }
             GUILayout.EndArea();
         }

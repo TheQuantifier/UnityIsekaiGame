@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Persistence;
 
 namespace UnityIsekaiGame.Combat
@@ -49,11 +48,6 @@ namespace UnityIsekaiGame.Combat
 
         private void Update()
         {
-            if (PrototypeGameplayModalState.IsModalActive)
-            {
-                return;
-            }
-
             if (target == null || health != null && health.IsDefeated)
             {
                 return;

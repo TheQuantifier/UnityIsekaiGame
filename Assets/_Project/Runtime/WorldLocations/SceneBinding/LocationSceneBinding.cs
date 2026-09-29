@@ -20,12 +20,16 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
         private void OnTriggerEnter(Collider other)
         {
-            if (Status != WorldSceneBindingStatus.Bound || other == null || other.GetComponentInParent<PlayerInputReader>() == null)
+            PrototypePersistenceServiceBehaviour services = PrototypePersistenceServiceBehaviour.FindForInteractor(other == null ? null : other.gameObject);
+            if (Status != WorldSceneBindingStatus.Bound
+                || other == null
+                || other.GetComponentInParent<PlayerInputReader>() == null
+                || services == null
+                || !services.OwnsPlayerInteractor(other.gameObject))
             {
                 return;
             }
 
-            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
             double worldTime = services?.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble;
             string playerId = services?.PlayerPersonId ?? "person.prototype.player";
             string targetId = string.IsNullOrWhiteSpace(LogicalId) ? LocationDefinitionId : LogicalId;
@@ -37,12 +41,16 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
         private void OnTriggerExit(Collider other)
         {
-            if (Status != WorldSceneBindingStatus.Bound || other == null || other.GetComponentInParent<PlayerInputReader>() == null)
+            PrototypePersistenceServiceBehaviour services = PrototypePersistenceServiceBehaviour.FindForInteractor(other == null ? null : other.gameObject);
+            if (Status != WorldSceneBindingStatus.Bound
+                || other == null
+                || other.GetComponentInParent<PlayerInputReader>() == null
+                || services == null
+                || !services.OwnsPlayerInteractor(other.gameObject))
             {
                 return;
             }
 
-            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
             QuestObjectiveSignalBus.Report(
                 QuestObjectiveCategory.LeaveLocation,
                 string.IsNullOrWhiteSpace(LogicalId) ? LocationDefinitionId : LogicalId,

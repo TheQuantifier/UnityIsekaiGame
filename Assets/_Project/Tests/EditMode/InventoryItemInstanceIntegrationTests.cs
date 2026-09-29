@@ -5,6 +5,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Inventory;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -44,7 +45,7 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(Get<bool>(equipResult, "Succeeded"), Is.True);
             Assert.That(Get<string>(mainHand, "ItemInstanceId"), Is.EqualTo(SwordInstanceId));
-            Assert.That(Get<bool>(GetSlot(inventory, 0), "IsEmpty"), Is.True);
+            Assert.That(Get<string>(GetSlot(inventory, 0), "ItemInstanceId"), Is.EqualTo(SwordInstanceId));
 
             object unequipResult = Invoke(equipment, "Unequip", MainHandValue());
 
@@ -53,6 +54,128 @@ namespace UnityIsekaiGame.Tests
             Assert.That(Get<bool>(mainHand, "IsEmpty"), Is.True);
 
             UnityEngine.Object.DestroyImmediate(inventory.gameObject);
+        }
+
+        [Test]
+        public void ReplacingEquipmentKeepsBothInstancesInCanonicalInventory()
+        {
+            ScriptableObject sword = CreateItem("item.prototype-sword", "Prototype Sword", ItemInstanceMode.AlwaysInstanced, false, 1, true);
+            Component inventory = CreateInventory(4);
+            Component equipment = inventory.gameObject.AddComponent(RequiredType("UnityIsekaiGame.Equipment.PlayerEquipment"));
+            AssignObject(equipment, "inventory", inventory);
+            string replacementId = "33333333-3333-4333-8333-333333333333";
+
+            Invoke(inventory, "AddExistingItemIdentity", sword, SwordInstanceId, 1);
+            Invoke(inventory, "AddExistingItemIdentity", sword, replacementId, 1);
+            Assert.That(Get<bool>(Invoke(equipment, "EquipFromInventorySlot", 0), "Succeeded"), Is.True);
+            Assert.That(Get<bool>(Invoke(equipment, "EquipFromInventorySlot", 1), "Succeeded"), Is.True);
+
+            object mainHand = Invoke(equipment, "GetSlot", MainHandValue());
+            Assert.That(Get<string>(mainHand, "ItemInstanceId"), Is.EqualTo(replacementId));
+            Assert.That(Get<string>(GetSlot(inventory, 0), "ItemInstanceId"), Is.EqualTo(SwordInstanceId));
+            Assert.That(Get<string>(GetSlot(inventory, 1), "ItemInstanceId"), Is.EqualTo(replacementId));
+
+            UnityEngine.Object.DestroyImmediate(inventory.gameObject);
+        }
+
+        [Test]
+        public void RemovingEquippedInventoryInstanceClearsDanglingEquipmentReference()
+        {
+            ScriptableObject sword = CreateItem("item.prototype-sword", "Prototype Sword", ItemInstanceMode.AlwaysInstanced, false, 1, true);
+            Component inventory = CreateInventory(2);
+            Component equipment = inventory.gameObject.AddComponent(RequiredType("UnityIsekaiGame.Equipment.PlayerEquipment"));
+            AssignObject(equipment, "inventory", inventory);
+
+            Invoke(inventory, "AddExistingItemIdentity", sword, SwordInstanceId, 1);
+            Assert.That(Get<bool>(Invoke(equipment, "EquipFromInventorySlot", 0), "Succeeded"), Is.True);
+            Assert.That((bool)Invoke(inventory, "RemoveItemAt", 0, 1), Is.True);
+
+            object mainHand = Invoke(equipment, "GetSlot", MainHandValue());
+            Assert.That(Get<bool>(mainHand, "IsEmpty"), Is.True);
+
+            UnityEngine.Object.DestroyImmediate(inventory.gameObject);
+        }
+
+        [Test]
+        public void AddingMultipleInstancedItemsPublishesOneCoherentInventoryChange()
+        {
+            ItemDefinition sword = (ItemDefinition)CreateItem("item.prototype-sword", "Prototype Sword", ItemInstanceMode.AlwaysInstanced, false, 1, true);
+            PlayerInventory inventory = (PlayerInventory)CreateInventory(4);
+            int inventoryChanges = 0;
+            int addedEvents = 0;
+            int reportedQuantity = 0;
+            inventory.InventoryChanged += () => inventoryChanges++;
+            inventory.ItemAdded += (_, quantity) =>
+            {
+                addedEvents++;
+                reportedQuantity += quantity;
+            };
+
+            InventoryAddResult result = inventory.AddItemOrInstances(sword, 3);
+
+            Assert.That(result.AddedAll, Is.True);
+            Assert.That(inventoryChanges, Is.EqualTo(1));
+            Assert.That(addedEvents, Is.EqualTo(1));
+            Assert.That(reportedQuantity, Is.EqualTo(3));
+            Assert.That(inventory.DevelopmentOccupiedSlotCount(), Is.EqualTo(3));
+            UnityEngine.Object.DestroyImmediate(inventory.gameObject);
+        }
+
+        [Test]
+        public void IdentityExtractionRejectsQuantityStacksWithoutMutatingThem()
+        {
+            ItemDefinition potion = (ItemDefinition)CreateItem("item.health-potion", "Health Potion", ItemInstanceMode.DefinitionOnly, true, 10);
+            PlayerInventory inventory = (PlayerInventory)CreateInventory(2);
+            Assert.That(inventory.AddItem(potion, 3).AddedAll, Is.True);
+
+            bool extracted = inventory.TryExtractSlotIdentity(0, out _, out _, out string failure);
+
+            Assert.That(extracted, Is.False);
+            StringAssert.Contains("quantity-aware", failure);
+            Assert.That(inventory.GetSlot(0).Quantity, Is.EqualTo(3));
+            UnityEngine.Object.DestroyImmediate(inventory.gameObject);
+        }
+
+        [Test]
+        public void EquipmentRejectsAmbiguousStackedItems()
+        {
+            ScriptableObject stackedEquipment = CreateItem("item.invalid-stack-equipment", "Stacked Equipment", ItemInstanceMode.DefinitionOnly, true, 10, true);
+            Component inventory = CreateInventory(2);
+            Component equipment = inventory.gameObject.AddComponent(RequiredType("UnityIsekaiGame.Equipment.PlayerEquipment"));
+            AssignObject(equipment, "inventory", inventory);
+            Invoke(inventory, "AddItem", stackedEquipment, 2);
+
+            object result = Invoke(equipment, "EquipFromInventorySlot", 0);
+
+            Assert.That(Get<bool>(result, "Succeeded"), Is.False);
+            Assert.That(Get<string>(result, "Message"), Does.Contain("stack"));
+            Assert.That(Get<bool>(Invoke(equipment, "GetSlot", MainHandValue()), "IsEmpty"), Is.True);
+            UnityEngine.Object.DestroyImmediate(inventory.gameObject);
+        }
+
+        [Test]
+        public void TrackedStacksPreserveIdentityQuantityAndModeAcrossSaveRestore()
+        {
+            ItemDefinition material = (ItemDefinition)CreateItem("item.tracked-material", "Tracked Material", ItemInstanceMode.AlwaysInstanced, true, 10);
+            PlayerInventory inventory = (PlayerInventory)CreateInventory(2);
+            string stackId = "44444444-4444-4444-8444-444444444444";
+            Assert.That(inventory.AddExistingItemIdentity(material, stackId, 3).Succeeded, Is.True);
+            Assert.That(inventory.GetSlot(0).IsStateful, Is.True);
+            Assert.That(inventory.RemoveItemAt(0, 1), Is.True);
+            Assert.That(inventory.GetSlot(0).Quantity, Is.EqualTo(2));
+
+            InventorySaveData save = inventory.CreateSaveData();
+            Assert.That(save.entries[0].mode, Is.EqualTo(InventoryEntrySaveMode.StatefulInstance));
+            Assert.That(save.entries[0].quantity, Is.EqualTo(2));
+            PlayerInventory restored = (PlayerInventory)CreateInventory(1);
+            InventoryRestoreResult result = restored.TryRestoreFromSaveData(save, new DefinitionRegistry(new IGameDefinition[] { material }));
+
+            Assert.That(result.Succeeded, Is.True, result.Message);
+            Assert.That(restored.GetSlot(0).IsStateful, Is.True);
+            Assert.That(restored.GetSlot(0).ItemInstanceId, Is.EqualTo(stackId));
+            Assert.That(restored.GetSlot(0).Quantity, Is.EqualTo(2));
+            UnityEngine.Object.DestroyImmediate(inventory.gameObject);
+            UnityEngine.Object.DestroyImmediate(restored.gameObject);
         }
 
         [Test]

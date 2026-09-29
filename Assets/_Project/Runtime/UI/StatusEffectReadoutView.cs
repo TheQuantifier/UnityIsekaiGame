@@ -25,8 +25,8 @@ namespace UnityIsekaiGame.UI
                 label = GetComponent<Text>();
             }
 
-            PrototypeUiTheme.StyleText(label, PrototypeUiTextRole.Body);
-            PrototypeUiTheme.EnsureTextShadow(label);
+            GameUiTheme.StyleText(label, GameUiTextRole.Body);
+            GameUiTheme.EnsureTextShadow(label);
 
             Refresh();
         }

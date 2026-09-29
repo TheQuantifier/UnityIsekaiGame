@@ -1,10 +1,12 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityIsekaiGame.Dialogue;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
+using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Persistence;
 using UnityIsekaiGame.Quests;
 
@@ -28,6 +30,65 @@ namespace UnityIsekaiGame.Tests
             }
 
             Assert.That(report.ErrorCount, Is.Zero, report.ToString());
+        }
+
+        [Test]
+        public void SceneConversationBuilderSuppliesRequiredDeskRolesAndProviderContext()
+        {
+            DefinitionRegistry registry = Registry();
+            MethodInfo builder = typeof(PrototypeNarrativeCoordinator).GetMethod(
+                "BuildSceneConversationRequest",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(builder, Is.Not.Null);
+
+            string[] definitionIds =
+            {
+                PrototypeConversationDefinitionFactory.RecordsDeskDefinitionId,
+                PrototypeConversationDefinitionFactory.MayorDeskDefinitionId,
+                PrototypeConversationDefinitionFactory.GuildHeadOfficeDefinitionId
+            };
+            for (int i = 0; i < definitionIds.Length; i++)
+            {
+                Assert.That(registry.TryGet(definitionIds[i], out ConversationDefinition definition), Is.True);
+                ConversationStartRequest request = (ConversationStartRequest)builder.Invoke(null, new object[]
+                {
+                    definition,
+                    definitionIds[i],
+                    "person.prototype.player",
+                    $"person.prototype.provider-{i}",
+                    $"interaction-point.prototype.test-{i}",
+                    $"location.prototype.test-{i}",
+                    $"quest-source.prototype.test-{i}",
+                    $"tx.test.scene-conversation.{i}",
+                    $"conversation.test.scene-conversation.{i}",
+                    $"prototype.scene.test-{i}",
+                    1d
+                });
+
+                ConversationRuntime runtime = new ConversationRuntime(registry, PersistenceService.LocalWorldId);
+                ConversationOperationResult result = runtime.StartConversation(request);
+
+                Assert.That(result.Succeeded, Is.True, $"{definitionIds[i]}: {result.Message}");
+                CollectionAssert.IsSubsetOf(
+                    definition.RequiredRoles,
+                    result.Snapshot.Participants.Select(value => value.role).ToArray());
+
+                DialogueFlowRuntime flows = new DialogueFlowRuntime(registry, runtime, null, PersistenceService.LocalWorldId);
+                DialogueFlowOperationResult flow = flows.StartFlow(new DialogueFlowStartRequest
+                {
+                    transactionId = $"tx.test.scene-conversation.flow.{i}",
+                    flowId = $"dialogue-flow.test.scene-conversation.{i}",
+                    conversationId = result.Snapshot.ConversationId,
+                    conditionContext = new DialogueConditionContext
+                    {
+                        actorPersonId = "person.prototype.player",
+                        locationId = $"location.prototype.test-{i}",
+                        interactionPointId = $"interaction-point.prototype.test-{i}"
+                    },
+                    worldTime = 1d
+                });
+                Assert.That(flow.Succeeded, Is.True, $"{definitionIds[i]} flow: {flow.Message}");
+            }
         }
 
         [Test]
@@ -97,6 +158,85 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void EndingDialogueClosesConversationAndAllowsAnotherDeskConversation()
+        {
+            DefinitionRegistry registry = Registry();
+            ConversationRuntime conversations = new ConversationRuntime(registry, PersistenceService.LocalWorldId);
+            ConversationOperationResult firstConversation = StartGuildConversation(conversations);
+            DialogueFlowRuntime flows = new DialogueFlowRuntime(registry, conversations, null, PersistenceService.LocalWorldId);
+            DialogueFlowOperationResult firstFlow = flows.StartFlow(new DialogueFlowStartRequest
+            {
+                transactionId = "tx.test.dialogue.lifecycle.start",
+                conversationId = firstConversation.Snapshot.ConversationId,
+                conditionContext = Context(),
+                worldTime = 1d
+            });
+
+            DialogueFlowOperationResult ended = flows.SelectChoice(new DialogueChoiceSelectionRequest
+            {
+                transactionId = "tx.test.dialogue.lifecycle.leave",
+                flowId = firstFlow.Snapshot.FlowId,
+                choiceId = "guild.choice.leave",
+                actorPersonId = "person.prototype.player",
+                conditionContext = Context(),
+                worldTime = 2d
+            });
+            Assert.That(ended.Succeeded, Is.True, ended.Message);
+            Assert.That(ended.Snapshot.State, Is.EqualTo(DialogueFlowState.Ended));
+
+            ConversationOperationResult completed = ConversationFlowLifecycle.CloseConversationForFlow(
+                conversations,
+                ended.Snapshot,
+                ConversationLifecycleState.Completed,
+                2d,
+                "tx.test.dialogue.lifecycle.complete");
+            Assert.That(completed.Succeeded, Is.True, completed.Message);
+            Assert.That(completed.Snapshot.LifecycleState, Is.EqualTo(ConversationLifecycleState.Completed));
+
+            ConversationOperationResult nextConversation = StartGuildConversation(
+                conversations,
+                "tx.test.dialogue.lifecycle.next",
+                "conversation.test.dialogue.guild.next");
+            Assert.That(nextConversation.Succeeded, Is.True, nextConversation.Message);
+        }
+
+        [Test]
+        public void StartingNewDeskCanRecoverAnAbandonedOverlappingConversation()
+        {
+            DefinitionRegistry registry = Registry();
+            ConversationRuntime conversations = new ConversationRuntime(registry, PersistenceService.LocalWorldId);
+            ConversationOperationResult abandonedConversation = StartGuildConversation(conversations);
+            DialogueFlowRuntime flows = new DialogueFlowRuntime(registry, conversations, null, PersistenceService.LocalWorldId);
+            DialogueFlowOperationResult abandonedFlow = flows.StartFlow(new DialogueFlowStartRequest
+            {
+                transactionId = "tx.test.dialogue.recovery.start",
+                conversationId = abandonedConversation.Snapshot.ConversationId,
+                conditionContext = Context(),
+                worldTime = 1d
+            });
+            Assert.That(abandonedFlow.Succeeded, Is.True, abandonedFlow.Message);
+
+            int recovered = ConversationFlowLifecycle.InterruptOpenConversationsForParticipant(
+                conversations,
+                flows,
+                "person.prototype.player",
+                2d,
+                "tx.test.dialogue.recovery");
+
+            Assert.That(recovered, Is.EqualTo(1));
+            Assert.That(conversations.TryGetSnapshot(abandonedConversation.Snapshot.ConversationId, out ConversationSnapshot interrupted), Is.True);
+            Assert.That(interrupted.LifecycleState, Is.EqualTo(ConversationLifecycleState.Interrupted));
+            Assert.That(flows.TryGetSnapshot(abandonedFlow.Snapshot.FlowId, Context(), out DialogueFlowSnapshot endedFlow), Is.True);
+            Assert.That(endedFlow.State, Is.EqualTo(DialogueFlowState.Ended));
+
+            ConversationOperationResult nextConversation = StartGuildConversation(
+                conversations,
+                "tx.test.dialogue.recovery.next",
+                "conversation.test.dialogue.guild.recovered");
+            Assert.That(nextConversation.Succeeded, Is.True, nextConversation.Message);
+        }
+
+        [Test]
         public void FlowSnapshotsAndChoiceCollectionsAreImmutable()
         {
             DefinitionRegistry registry = Registry();
@@ -150,12 +290,15 @@ namespace UnityIsekaiGame.Tests
             return PrototypeDialogueGraphDefinitionFactory.AddMissingPrototypeDialogueGraphDefinitions(PrototypeConversationDefinitionFactory.AddMissingPrototypeConversationDefinitions(PrototypeQuestDefinitionFactory.AddMissingPrototypeQuestDefinitions(baseRegistry)));
         }
 
-        private static ConversationOperationResult StartGuildConversation(ConversationRuntime conversations)
+        private static ConversationOperationResult StartGuildConversation(
+            ConversationRuntime conversations,
+            string transactionId = "tx.test.dialogue.conversation.start",
+            string conversationId = "conversation.test.dialogue.guild")
         {
             return conversations.StartConversation(new ConversationStartRequest
             {
-                transactionId = "tx.test.dialogue.conversation.start",
-                conversationId = "conversation.test.dialogue.guild",
+                transactionId = transactionId,
+                conversationId = conversationId,
                 conversationDefinitionId = PrototypeConversationDefinitionFactory.AdventurerGuildCounterDefinitionId,
                 participants = new[]
                 {

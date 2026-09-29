@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.Input;
 
 namespace UnityIsekaiGame.Interaction
 {
@@ -7,6 +8,10 @@ namespace UnityIsekaiGame.Interaction
     {
         [SerializeField] private CameraInteractionDetector detector;
         [SerializeField] private InteractionPromptView promptView;
+
+        private IInteractable lastTarget;
+        private string lastPrompt = string.Empty;
+        private bool wasSuppressed;
 
         private void Start()
         {
@@ -23,19 +28,32 @@ namespace UnityIsekaiGame.Interaction
                 return;
             }
 
-            if (PrototypeGameplayModalState.IsModalActive)
+            bool suppressed = GameUiModalState.IsModalActive || PlayerCursorMode.HasOpenMenu;
+            if (suppressed)
             {
-                promptView.Hide();
+                if (!wasSuppressed || promptView.IsVisible) promptView.Hide();
+                wasSuppressed = true;
+                lastTarget = null;
                 return;
             }
+            wasSuppressed = false;
 
             if (!detector.HasTarget)
             {
-                promptView.Hide();
+                if (lastTarget != null || promptView.IsVisible) promptView.Hide();
+                lastTarget = null;
+                lastPrompt = string.Empty;
                 return;
             }
 
-            promptView.Show(detector.CurrentInteractable.InteractionPrompt);
+            IInteractable target = detector.CurrentInteractable;
+            string prompt = target?.InteractionPrompt ?? string.Empty;
+            if (!ReferenceEquals(target, lastTarget) || !string.Equals(prompt, lastPrompt, System.StringComparison.Ordinal) || !promptView.IsVisible)
+            {
+                promptView.Show(prompt);
+                lastTarget = target;
+                lastPrompt = prompt;
+            }
         }
     }
 }

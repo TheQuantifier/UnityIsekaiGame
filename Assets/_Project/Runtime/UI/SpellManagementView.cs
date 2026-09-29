@@ -65,7 +65,7 @@ namespace UnityIsekaiGame.UI
                 if (knownSpellButtons[i] != null)
                 {
                     knownSpellButtons[i].gameObject.SetActive(spell != null);
-                    PrototypeUiTheme.StyleButton(knownSpellButtons[i], i == selectedKnownSpellIndex ? PrototypeUiButtonTone.Primary : PrototypeUiButtonTone.Neutral);
+                    GameUiTheme.StyleButton(knownSpellButtons[i], i == selectedKnownSpellIndex ? GameUiButtonTone.Primary : GameUiButtonTone.Neutral);
                 }
 
                 if (knownSpellLabels != null && i < knownSpellLabels.Length && knownSpellLabels[i] != null)
@@ -131,16 +131,16 @@ namespace UnityIsekaiGame.UI
 
         private void ApplyTheme()
         {
-            StyleButtons(knownSpellButtons, PrototypeUiButtonTone.Neutral);
-            StyleButtons(assignSlotButtons, PrototypeUiButtonTone.Primary);
-            StyleButtons(clearSlotButtons, PrototypeUiButtonTone.Danger);
-            PrototypeUiTheme.StyleText(selectedSpellLabel, PrototypeUiTextRole.Heading);
+            StyleButtons(knownSpellButtons, GameUiButtonTone.Neutral);
+            StyleButtons(assignSlotButtons, GameUiButtonTone.Primary);
+            StyleButtons(clearSlotButtons, GameUiButtonTone.Danger);
+            GameUiTheme.StyleText(selectedSpellLabel, GameUiTextRole.Heading);
         }
 
-        private static void StyleButtons(Button[] buttons, PrototypeUiButtonTone tone)
+        private static void StyleButtons(Button[] buttons, GameUiButtonTone tone)
         {
             if (buttons == null) return;
-            for (int i = 0; i < buttons.Length; i++) PrototypeUiTheme.StyleButton(buttons[i], tone);
+            for (int i = 0; i < buttons.Length; i++) GameUiTheme.StyleButton(buttons[i], tone);
         }
     }
 }

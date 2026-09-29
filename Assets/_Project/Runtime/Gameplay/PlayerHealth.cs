@@ -158,7 +158,7 @@ namespace UnityIsekaiGame.Gameplay
             input?.SetDefeatedInputBlocked(true);
             Defeated?.Invoke();
             Debug.Log("Player defeated. Prototype gameplay input is blocked.");
-            PrototypeHudMessageBus.Show("Defeated - Press R to reset");
+            GameHudMessageBus.Show("Defeated - Press R to reset", GameHudMessageTone.Danger, 4f);
         }
     }
 }

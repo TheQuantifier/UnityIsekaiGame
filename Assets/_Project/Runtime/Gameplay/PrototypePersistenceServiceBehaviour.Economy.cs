@@ -42,7 +42,7 @@ namespace UnityIsekaiGame.Gameplay
 
         public long GetPlayerBalance(string currencyId = PrototypeEconomyContentIds.CurrencyGold)
         {
-            EnsureInitialized();
+            if (!IsInitialized) return 0L;
             return Economy.TryGetAccount(PlayerEconomyAccountId, out EconomyAccountSnapshot account)
                 && string.Equals(account.CurrencyId, currencyId, StringComparison.Ordinal)
                 ? account.BalanceUnits
@@ -85,7 +85,7 @@ namespace UnityIsekaiGame.Gameplay
 
         public IReadOnlyList<PrototypeMarketListing> GetPrototypeMarketListings()
         {
-            EnsurePrototypeEconomyInitialized();
+            if (!IsInitialized || !prototypeEconomyInitialized) return Array.Empty<PrototypeMarketListing>();
             List<PrototypeMarketListing> listings = new List<PrototypeMarketListing>();
             AddListing(listings, PrototypeEconomyContentIds.ItemIronOre, buyable: true, sellable: false);
             AddListing(listings, PrototypeEconomyContentIds.ItemWoodLog, buyable: true, sellable: false);
@@ -296,6 +296,11 @@ namespace UnityIsekaiGame.Gameplay
                 return PrototypeEconomyOperation.Failure("The prototype town currently exports only iron swords and wooden bows.");
             }
 
+            if (playerEquipment != null && playerEquipment.IsItemEquipped(itemInstanceId))
+            {
+                return PrototypeEconomyOperation.Failure($"Unequip {slot.Item.DisplayName} before selling it.");
+            }
+
             playerItemIdentitySynchronizer?.SynchronizeNow();
             ItemIdentities.TryGetSnapshot(itemInstanceId, out ItemInstanceSnapshot identity);
             ItemQualityAffixes.TryGetQualityForItem(itemInstanceId, out ItemQualitySnapshot quality);
@@ -385,14 +390,17 @@ namespace UnityIsekaiGame.Gameplay
 
         public IReadOnlyList<PrototypeExportChoice> GetPrototypeExportChoices()
         {
-            if (playerInventory == null)
+            if (!IsInitialized || playerInventory == null)
             {
                 return Array.Empty<PrototypeExportChoice>();
             }
 
-            playerItemIdentitySynchronizer?.SynchronizeNow();
             return playerInventory.Slots
-                .Where(slot => slot != null && slot.Item != null && slot.IsStateful && PrototypeEconomyContentIds.IsTownExport(slot.Item.Id))
+                .Where(slot => slot != null
+                    && slot.Item != null
+                    && slot.IsStateful
+                    && PrototypeEconomyContentIds.IsTownExport(slot.Item.Id)
+                    && (playerEquipment == null || !playerEquipment.IsItemEquipped(slot.ItemInstanceId)))
                 .Select(slot => new PrototypeExportChoice(slot.ItemInstanceId, slot.Item.Id, slot.Item.DisplayName))
                 .ToArray();
         }

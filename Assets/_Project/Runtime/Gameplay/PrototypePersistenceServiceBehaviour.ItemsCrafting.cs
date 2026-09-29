@@ -132,7 +132,7 @@ namespace UnityIsekaiGame.Gameplay
         {
             get
             {
-                EnsureInitialized();
+                if (!IsInitialized) return Array.Empty<RecipeDefinition>();
                 return GetDefinitionRegistry().DefinitionsById.Values
                     .OfType<RecipeDefinition>()
                     .Where(recipe => recipe.State == RecipeLifecycleState.Active)
@@ -144,10 +144,7 @@ namespace UnityIsekaiGame.Gameplay
 
         public IReadOnlyList<PrototypeItemRecoveryChoice> GetPrototypeItemRecoveryChoices()
         {
-            EnsureInitialized();
-            ResolvePlayerPersistenceReferences();
-            EnsureGroup6GameplayRuntime();
-            playerItemIdentitySynchronizer?.SynchronizeNow();
+            if (!IsInitialized || playerInventory == null) return Array.Empty<PrototypeItemRecoveryChoice>();
             string personId = playerService?.PlayerId ?? PersistenceService.LocalPlayerId;
             List<PrototypeItemRecoveryChoice> choices = new List<PrototypeItemRecoveryChoice>();
             foreach (ItemInstanceSnapshot item in ItemIdentities.Snapshots.Where(snapshot => IsAvailableCraftingInventoryItem(snapshot, personId)))
@@ -210,6 +207,19 @@ namespace UnityIsekaiGame.Gameplay
 
         public PrototypeItemDropResult DropPrototypeItemToWorld(string itemInstanceId, Vector3 position, Quaternion rotation, Transform parent = null)
         {
+            return DropPrototypeItemToWorldInternal(itemInstanceId, null, position, rotation, parent);
+        }
+
+        public PrototypeItemDropResult DropPrototypeItemToWorld(string itemInstanceId, int quantity, Vector3 position, Quaternion rotation, Transform parent = null)
+        {
+            if (quantity <= 0)
+                return PrototypeItemDropResult.Failure("Drop quantity must be positive.");
+
+            return DropPrototypeItemToWorldInternal(itemInstanceId, quantity, position, rotation, parent);
+        }
+
+        private PrototypeItemDropResult DropPrototypeItemToWorldInternal(string itemInstanceId, int? requestedQuantity, Vector3 position, Quaternion rotation, Transform parent)
+        {
             EnsureInitialized();
             ResolvePlayerPersistenceReferences();
             EnsureGroup6GameplayRuntime();
@@ -220,6 +230,10 @@ namespace UnityIsekaiGame.Gameplay
                 || !GetDefinitionRegistry().TryGet(item.ItemDefinitionId, out ItemDefinition definition))
                 return PrototypeItemDropResult.Failure("The selected item is not available to drop.");
 
+            int quantity = requestedQuantity ?? item.StackQuantity;
+            if (quantity > item.StackQuantity)
+                return PrototypeItemDropResult.Failure($"Cannot drop {quantity}; the selected stack only contains {item.StackQuantity}.");
+
             int sourceSlot = FindInventorySlot(itemInstanceId);
             if (sourceSlot < 0) return PrototypeItemDropResult.Failure("The selected item has no inventory slot.");
             Group6TransactionSnapshot rollback = Group6TransactionSnapshot.Capture(this, playerInventory);
@@ -227,15 +241,39 @@ namespace UnityIsekaiGame.Gameplay
             group6InventoryTransaction = true;
             try
             {
-                if (!playerInventory.RemoveItemAt(sourceSlot, item.StackQuantity))
+                if (!playerInventory.RemoveItemAt(sourceSlot, quantity))
                     return PrototypeItemDropResult.Failure("The selected item could not be removed from inventory.");
+
+                string droppedItemInstanceId = itemInstanceId;
+                if (quantity < item.StackQuantity)
+                {
+                    string destinationOwnerId = string.IsNullOrWhiteSpace(item.OwnerPersonId) ? personId : item.OwnerPersonId;
+                    string destinationCustodianId = string.IsNullOrWhiteSpace(item.CustodianPersonId) ? personId : item.CustodianPersonId;
+                    string destinationInventoryOwnerId = item.Data.location?.inventoryOwnerId;
+                    if (string.IsNullOrWhiteSpace(destinationInventoryOwnerId)) destinationInventoryOwnerId = personId;
+                    ItemInstanceOperationResult split = ItemIdentities.TransferStackQuantity(
+                        itemInstanceId,
+                        quantity,
+                        destinationOwnerId,
+                        destinationCustodianId,
+                        destinationInventoryOwnerId);
+                    if (!split.Succeeded)
+                    {
+                        rollback.Restore(this, playerInventory, GetDefinitionRegistry());
+                        return PrototypeItemDropResult.Failure(split.Message);
+                    }
+
+                    droppedItemInstanceId = split.Snapshot.ItemInstanceId;
+                }
+
                 bool rawResource = string.Equals(definition.PrimaryCategory?.Id, "category.item.material", StringComparison.Ordinal)
                     || definition.Tags.Any(tag => tag != null && string.Equals(tag.Id, "tag.general.material", StringComparison.Ordinal));
                 bool decomposable = !rawResource
-                    && ItemCompositions.TryGetSnapshotForItem(itemInstanceId, out ItemCompositionSnapshot composition)
+                    && ItemCompositions.TryGetSnapshotForItem(droppedItemInstanceId, out ItemCompositionSnapshot composition)
                     && composition.Materials.Count > 0;
-                pickup = WorldItemPickupFactory.CreateTrackedDrop(definition, item.StackQuantity, itemInstanceId, position, rotation, parent, enableNaturalDecomposition: decomposable);
+                pickup = WorldItemPickupFactory.CreateTrackedDrop(definition, quantity, droppedItemInstanceId, position, rotation, parent, enableNaturalDecomposition: decomposable);
                 if (pickup == null) { rollback.Restore(this, playerInventory, GetDefinitionRegistry()); return PrototypeItemDropResult.Failure("The dropped world object could not be created."); }
+                pickup.GetComponent<WorldItemDecomposition>()?.Configure(droppedItemInstanceId, this);
                 string sceneKey = pickup.gameObject.scene.name;
                 string worldId = playerService?.WorldId ?? PersistenceService.LocalWorldId;
                 WorldEntitySpawnResult entity = WorldEntityIdentityFactory.CreateRuntimeIdentity(pickup.gameObject, sceneKey, worldId, definition.Id);
@@ -245,7 +283,7 @@ namespace UnityIsekaiGame.Gameplay
                     rollback.Restore(this, playerInventory, GetDefinitionRegistry());
                     return PrototypeItemDropResult.Failure(entity.Message);
                 }
-                ItemInstanceOperationResult placed = ItemIdentities.SetWorldPlacement(itemInstanceId, $"placement.{entity.Identity.EntityId}", entity.Identity.EntityId, sceneKey);
+                ItemInstanceOperationResult placed = ItemIdentities.SetWorldPlacement(droppedItemInstanceId, $"placement.{entity.Identity.EntityId}", entity.Identity.EntityId, sceneKey);
                 if (!placed.Succeeded)
                 {
                     Destroy(pickup.gameObject);
@@ -255,18 +293,19 @@ namespace UnityIsekaiGame.Gameplay
             }
             finally { group6InventoryTransaction = false; }
 
-            dirtyTracker?.MarkDirty($"Item dropped into world: {itemInstanceId}.");
+            string placedItemInstanceId = pickup.RuntimeItemInstanceId;
+            dirtyTracker?.MarkDirty($"Item dropped into world: {placedItemInstanceId}.");
             bool decomposedImmediately = pickup.GetComponent<WorldItemDecomposition>()?.EvaluateNow() ?? false;
             if (!decomposedImmediately)
             {
                 NaturalDecompositionRecordData schedule = ItemRecovery.NaturalDecompositions
-                    .FirstOrDefault(entry => string.Equals(entry.itemInstanceId, itemInstanceId, StringComparison.Ordinal)
+                    .FirstOrDefault(entry => string.Equals(entry.itemInstanceId, placedItemInstanceId, StringComparison.Ordinal)
                         && entry.state == NaturalDecompositionState.Scheduled);
                 if (schedule != null)
                 {
                     string itemName = ItemDisplayName(item);
                     string rate = schedule.rate == NaturalDecompositionRate.Fast ? "quickly" : "slowly";
-                    PrototypeHudMessageBus.Show($"{itemName} was dropped and will decay {rate} while left on the ground");
+                    GameHudMessageBus.Show($"{itemName} was dropped and will decay {rate} while left on the ground");
                 }
             }
             return PrototypeItemDropResult.Success(pickup);
@@ -303,6 +342,7 @@ namespace UnityIsekaiGame.Gameplay
                 rollback.Restore(this, playerInventory, GetDefinitionRegistry());
                 return PrototypeItemDropResult.Failure("The tracked world drop could not be created.");
             }
+            pickup.GetComponent<WorldItemDecomposition>()?.Configure(itemInstanceId, this);
             string sceneKey = pickup.gameObject.scene.name;
             string worldId = playerService?.WorldId ?? PersistenceService.LocalWorldId;
             WorldEntitySpawnResult entity = WorldEntityIdentityFactory.CreateRuntimeIdentity(pickup.gameObject, sceneKey, worldId, definition.Id);
@@ -382,7 +422,7 @@ namespace UnityIsekaiGame.Gameplay
             int recoveredKinds = SpawnSalvageableRecoveryOutputs(result.Operation, source.transform.position, source.transform.parent);
             ItemRecovery.CompleteNaturalDecomposition(source.ItemInstanceId, now);
             dirtyTracker?.MarkDirty($"Item naturally decomposed: {source.ItemInstanceId}.");
-            PrototypeHudMessageBus.Show(recoveredKinds > 0 ? "The dropped item broke down into salvageable parts" : "The dropped item decomposed");
+            GameHudMessageBus.Show(recoveredKinds > 0 ? "The dropped item broke down into salvageable parts" : "The dropped item decomposed");
             return true;
         }
 
@@ -487,28 +527,26 @@ namespace UnityIsekaiGame.Gameplay
 
         public string DescribeRecipeInput(RecipeInputSpecificationData input)
         {
-            EnsureInitialized();
+            if (!IsInitialized) return string.Empty;
             return RecipeInputMatcher.Describe(input, GetDefinitionRegistry());
         }
 
         public PrototypeCraftingResult CraftAtPrototypeWorkstation(string recipeId)
         {
+            EnsureInitialized();
             SlotCraftingRequest slots = BuildAutoFilledSlotCraftingRequest(recipeId);
             return CompleteCraftAtPrototypeWorkstation(recipeId, null, string.Empty, slots);
         }
 
         public SlotCraftingRequest BuildAutoFilledSlotCraftingRequest(string recipeId)
         {
-            EnsureInitialized();
-            ResolvePlayerPersistenceReferences();
+            if (!IsInitialized || playerInventory == null) return null;
             DefinitionRegistry registry = GetDefinitionRegistry();
             if (string.IsNullOrWhiteSpace(recipeId) || !registry.TryGet(recipeId, out RecipeDefinition recipe))
             {
                 return null;
             }
 
-            EnsureGroup6GameplayRuntime();
-            playerItemIdentitySynchronizer?.SynchronizeNow();
             string personId = playerService?.PlayerId ?? PersistenceService.LocalPlayerId;
             Dictionary<string, int> available = ItemIdentities.Snapshots
                 .Where(snapshot => IsAvailableCraftingInventoryItem(snapshot, personId))
@@ -568,10 +606,7 @@ namespace UnityIsekaiGame.Gameplay
 
         public IReadOnlyList<PrototypeCraftingMaterialChoice> GetPrototypeCraftingMaterialChoices(string recipeId, string inputId)
         {
-            EnsureInitialized();
-            ResolvePlayerPersistenceReferences();
-            EnsureGroup6GameplayRuntime();
-            playerItemIdentitySynchronizer?.SynchronizeNow();
+            if (!IsInitialized || playerInventory == null) return Array.Empty<PrototypeCraftingMaterialChoice>();
             DefinitionRegistry registry = GetDefinitionRegistry();
             if (!registry.TryGet(recipeId, out RecipeDefinition recipe))
             {
@@ -608,10 +643,7 @@ namespace UnityIsekaiGame.Gameplay
 
         public SlotCraftingRequest AssignPrototypeCraftingMaterial(SlotCraftingRequest request, string inputId, string itemDefinitionId)
         {
-            EnsureInitialized();
-            ResolvePlayerPersistenceReferences();
-            EnsureGroup6GameplayRuntime();
-            playerItemIdentitySynchronizer?.SynchronizeNow();
+            if (!IsInitialized || playerInventory == null) return request?.Clone();
             DefinitionRegistry registry = GetDefinitionRegistry();
             if (request == null
                 || !registry.TryGet(request.recipeId, out RecipeDefinition recipe)
@@ -665,10 +697,7 @@ namespace UnityIsekaiGame.Gameplay
 
         public IReadOnlyList<PrototypeCraftingCatalystChoice> GetPrototypeCraftingCatalystChoices()
         {
-            EnsureInitialized();
-            ResolvePlayerPersistenceReferences();
-            EnsureGroup6GameplayRuntime();
-            playerItemIdentitySynchronizer?.SynchronizeNow();
+            if (!IsInitialized || playerInventory == null) return Array.Empty<PrototypeCraftingCatalystChoice>();
             DefinitionRegistry registry = GetDefinitionRegistry();
             string personId = playerService?.PlayerId ?? PersistenceService.LocalPlayerId;
             return ItemIdentities.Snapshots
@@ -693,7 +722,7 @@ namespace UnityIsekaiGame.Gameplay
 
         public string DescribePrototypeCraftingCatalyst(string recipeId, string itemDefinitionId, int quantity)
         {
-            EnsureInitialized();
+            if (!IsInitialized) return "Crafting services are still initializing.";
             DefinitionRegistry registry = GetDefinitionRegistry();
             if (!registry.TryGet(itemDefinitionId, out ItemDefinition catalyst))
             {
@@ -722,8 +751,7 @@ namespace UnityIsekaiGame.Gameplay
 
         public CraftingScalingCalculation GetCraftingScaling(string recipeId)
         {
-            EnsureInitialized();
-            ResolvePlayerPersistenceReferences();
+            if (!IsInitialized) return null;
             DefinitionRegistry registry = GetDefinitionRegistry();
             return !string.IsNullOrWhiteSpace(recipeId) && registry.TryGet(recipeId, out RecipeDefinition recipe)
                 ? CraftingScalingCalculator.Calculate(recipe, registry, playerSkills)
@@ -732,6 +760,7 @@ namespace UnityIsekaiGame.Gameplay
 
         public PrototypeCraftingStartResult BeginCraftAtPrototypeWorkstation(string recipeId)
         {
+            EnsureInitialized();
             return BeginSlotCraftAtPrototypeWorkstation(BuildAutoFilledSlotCraftingRequest(recipeId));
         }
 
@@ -1241,7 +1270,7 @@ namespace UnityIsekaiGame.Gameplay
 
             bool storedInInventory = item.LocationKind == ItemLocationKind.Inventory;
             bool storedInContainer = item.LocationKind == ItemLocationKind.Container;
-            bool equipped = item.LocationKind == ItemLocationKind.Equipped;
+            bool equipped = playerEquipment != null && playerEquipment.IsItemEquipped(itemInstanceId);
             if (!storedInInventory && !storedInContainer && !equipped)
             {
                 return false;
@@ -1284,6 +1313,13 @@ namespace UnityIsekaiGame.Gameplay
                     {
                         rollback.Restore(this, playerInventory, GetDefinitionRegistry());
                         Debug.LogWarning($"Forced item decomposition could not remove equipped item '{itemInstanceId}'.");
+                        return false;
+                    }
+                    int sourceSlot = FindInventorySlot(itemInstanceId);
+                    if (sourceSlot < 0 || !playerInventory.RemoveItemAt(sourceSlot, item.StackQuantity))
+                    {
+                        rollback.Restore(this, playerInventory, GetDefinitionRegistry());
+                        Debug.LogWarning($"Forced item decomposition could not remove equipped inventory item '{itemInstanceId}'.");
                         return false;
                     }
                     SpawnSalvageableRecoveryOutputs(result.Operation, playerEquipment.transform.position, playerEquipment.transform.parent);
@@ -1339,7 +1375,7 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             dirtyTracker?.MarkDirty($"Item forcibly decomposed at five percent durability: {itemInstanceId}.");
-            PrototypeHudMessageBus.Show(equipped ? "Your item collapsed into salvageable parts" : "A stored item decomposed into recovered materials");
+            GameHudMessageBus.Show(equipped ? "Your item collapsed into salvageable parts" : "A stored item decomposed into recovered materials");
             return true;
         }
 
@@ -1358,16 +1394,16 @@ namespace UnityIsekaiGame.Gameplay
             int percent = Mathf.RoundToInt(current.NormalizedDurability * 100f);
             if (current.PendingForcedDecomposition && (previous == null || !previous.PendingForcedDecomposition))
             {
-                PrototypeHudMessageBus.Show($"{itemName} reached {percent}% durability without breaking and is decomposing");
+                GameHudMessageBus.Show($"{itemName} reached {percent}% durability without breaking and is decomposing");
             }
             else if (current.HasBroken && (previous == null || !previous.HasBroken))
             {
-                PrototypeHudMessageBus.Show($"{itemName} broke at {percent}% durability and no longer functions");
+                GameHudMessageBus.Show($"{itemName} broke at {percent}% durability and no longer functions");
             }
             else if (current.NormalizedDurability <= ItemDurability.BreakCheckStartNormalized
                 && (previous == null || previous.NormalizedDurability > ItemDurability.BreakCheckStartNormalized))
             {
-                PrototypeHudMessageBus.Show($"{itemName} is critically damaged ({percent}% durability); each further percent can break it");
+                GameHudMessageBus.Show($"{itemName} is critically damaged ({percent}% durability); each further percent can break it");
             }
         }
 
@@ -1579,12 +1615,13 @@ namespace UnityIsekaiGame.Gameplay
             return true;
         }
 
-        private static bool IsAvailableCraftingInventoryItem(ItemInstanceSnapshot item, string personId)
+        private bool IsAvailableCraftingInventoryItem(ItemInstanceSnapshot item, string personId)
         {
             return item != null
                 && item.LifecycleState is not (ItemLifecycleState.Consumed or ItemLifecycleState.Destroyed or ItemLifecycleState.Disassembled)
                 && item.LocationKind == ItemLocationKind.Inventory
-                && string.Equals(item.Data.location?.inventoryOwnerId, personId, StringComparison.Ordinal);
+                && string.Equals(item.Data.location?.inventoryOwnerId, personId, StringComparison.Ordinal)
+                && (playerEquipment == null || !playerEquipment.IsItemEquipped(item.ItemInstanceId));
         }
 
         private ProductionContextData BuildProductionContext(string personId, SlotCraftingRequest slotRequest = null)

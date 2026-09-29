@@ -24,14 +24,13 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
         private void Awake()
         {
             persistence = GetComponent<PrototypePersistenceServiceBehaviour>();
-            input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            input = persistence == null ? null : persistence.PlayerInput;
             SetVisible(visible);
         }
 
         private void Update()
         {
             if (Keyboard.current?.tKey.wasPressedThisFrame == true) SetVisible(!visible);
-            else if (visible && Keyboard.current?.escapeKey.wasPressedThisFrame == true) SetVisible(false);
 
             if (visible && Time.unscaledTime >= nextDestinationRefreshAt)
             {
@@ -47,12 +46,12 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             float width = Mathf.Min(420f, Screen.width - 30f);
             float height = Mathf.Min(580f, Screen.height - 100f);
             Rect window = new Rect(20f, 72f, width, height);
-            PrototypeUiTheme.DrawPanelFrame(window);
+            GameUiTheme.DrawPanelFrame(window);
             GUILayout.BeginArea(new Rect(window.x + 14f, window.y + 14f, window.width - 28f, window.height - 28f));
             GUILayout.BeginHorizontal();
-            GUILayout.Label("TRAVEL", PrototypeUiTheme.TitleStyle);
+            GUILayout.Label("TRAVEL", GameUiTheme.TitleStyle);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Close  [T]", PrototypeUiTheme.DangerButtonStyle, GUILayout.Width(100f), GUILayout.Height(34f)))
+            if (GUILayout.Button("Close  [T]", GameUiTheme.DangerButtonStyle, GUILayout.Width(100f), GUILayout.Height(34f)))
             {
                 SetVisible(false);
                 GUILayout.EndHorizontal();
@@ -61,19 +60,19 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             }
             GUILayout.EndHorizontal();
             EntityLocationReferenceData player = PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId, persistence.WorldLocations.WorldId);
-            GUILayout.Label($"CURRENT LOCATION\n{(string.IsNullOrWhiteSpace(currentLocationId) ? "Unknown" : currentLocationId)}", PrototypeUiTheme.HeadingStyle);
-            GUILayout.Label(status, PrototypeUiTheme.StatusStyle);
+            GUILayout.Label($"CURRENT LOCATION\n{(string.IsNullOrWhiteSpace(currentLocationId) ? "Unknown" : currentLocationId)}", GameUiTheme.HeadingStyle);
+            GUILayout.Label(status, GameUiTheme.StatusStyle);
             GUILayout.Space(6f);
-            GUILayout.Label("AVAILABLE DESTINATIONS", PrototypeUiTheme.HeadingStyle);
+            GUILayout.Label("AVAILABLE DESTINATIONS", GameUiTheme.HeadingStyle);
             scroll = GUILayout.BeginScrollView(scroll);
             for (int i = 0; i < visibleDestinations.Count; i++)
             {
                 LocationSnapshot destination = visibleDestinations[i];
-                if (!GUILayout.Button(destination.OfficialName, PrototypeUiTheme.PrimaryButtonStyle, GUILayout.Height(38f))) continue;
+                if (!GUILayout.Button(destination.OfficialName, GameUiTheme.PrimaryButtonStyle, GUILayout.Height(38f))) continue;
                 if (!persistence.PartyTravel.CanTravel(persistence.PlayerPersonId, requireAllReady: true, out string partyTravelMessage))
                 {
                     status = partyTravelMessage;
-                    PrototypeHudMessageBus.Show(status);
+                    GameHudMessageBus.Show(status);
                     continue;
                 }
                 double worldTime = persistence.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble;
@@ -88,7 +87,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
                     WorldTime = worldTime
                 });
                 status = result.Message;
-                PrototypeHudMessageBus.Show(status);
+                GameHudMessageBus.Show(status);
             }
             GUILayout.EndScrollView();
             GUILayout.EndArea();
@@ -101,9 +100,14 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             {
                 RefreshDestinations();
             }
-            if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
-            if (input != null) input.SetMenuInputBlocked(this, visible);
-            else PlayerCursorMode.SetMenuOpen(this, visible);
+            if (input == null && persistence != null) input = persistence.PlayerInput;
+            if (input != null) input.SetMenuInputBlocked(this, visible, visible ? CloseFromCancel : null);
+            else PlayerCursorMode.SetMenuOpen(this, visible, visible ? CloseFromCancel : null);
+        }
+
+        private void CloseFromCancel()
+        {
+            SetVisible(false);
         }
 
         private void RefreshDestinations()

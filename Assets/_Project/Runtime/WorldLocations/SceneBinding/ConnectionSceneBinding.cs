@@ -55,7 +55,10 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
         public bool CanInteract(in InteractionContext context)
         {
+            PrototypePersistenceServiceBehaviour persistence = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
             return interactTogglesOpenClosed
+                && persistence != null
+                && persistence.OwnsPlayerInteractor(context.Interactor)
                 && Status == WorldSceneBindingStatus.Bound
                 && IsWithinPhysicalRange(context)
                 && Runtime.TryGetConnection(LogicalId, out _);
@@ -63,13 +66,16 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
         public void Interact(in InteractionContext context)
         {
-            if (!interactTogglesOpenClosed || !Runtime.TryGetConnection(LogicalId, out LocationConnectionSnapshot connection))
+            PrototypePersistenceServiceBehaviour persistence = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
+            if (persistence == null
+                || !persistence.OwnsPlayerInteractor(context.Interactor)
+                || !interactTogglesOpenClosed
+                || !Runtime.TryGetConnection(LogicalId, out LocationConnectionSnapshot connection))
             {
                 return;
             }
 
             EntityLocationReferenceData actor = PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId);
-            PrototypePersistenceServiceBehaviour persistence = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
             double worldTime = persistence?.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble;
             LocationConnectionAccessContextData access = persistence != null
                 ? persistence.BuildWorldLocationAccessContext(actor, worldTime)
@@ -77,14 +83,14 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             if (connection.OpenState == LocationConnectionOpenState.Open)
             {
                 SceneBindingTransitionResult traversal = RequestTraversal(actor, access, worldTime);
-                PrototypeHudMessageBus.Show(traversal.Message);
+                GameHudMessageBus.Show(traversal.Message);
                 return;
             }
 
             LocationConnectionOperationResult result = Runtime.RequestConnectionOpenState($"scene-binding.open.{LogicalId}.{Guid.NewGuid():N}", LogicalId, LocationConnectionOpenState.Open, actor, access, worldTime, false);
             LastInteractionResult = result;
             if (result.Succeeded) SyncFromAuthoritative(Runtime, false);
-            PrototypeHudMessageBus.Show(result.Message);
+            GameHudMessageBus.Show(result.Message);
         }
 
         private bool IsWithinPhysicalRange(in InteractionContext context)

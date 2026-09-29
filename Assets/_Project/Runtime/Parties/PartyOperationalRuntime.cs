@@ -96,11 +96,7 @@ namespace UnityIsekaiGame.Parties
         public PartySettingsData GetSettings(string partyId)
         {
             partyId = N(partyId);
-            if (!settings.TryGetValue(partyId, out PartySettingsData value))
-            {
-                value = new PartySettingsData { partyId = partyId };
-                settings[partyId] = value;
-            }
+            if (!settings.TryGetValue(partyId, out PartySettingsData value)) value = new PartySettingsData { partyId = partyId };
             return value.Clone();
         }
 

@@ -62,10 +62,10 @@ namespace UnityIsekaiGame.UI.Quests
             if (feedbackLabel != null)
             {
                 feedbackLabel.text = message;
-                PrototypeUiTheme.StyleText(feedbackLabel,
+                GameUiTheme.StyleText(feedbackLabel,
                     message != null && message.IndexOf("fail", StringComparison.OrdinalIgnoreCase) >= 0
-                        ? PrototypeUiTextRole.Danger
-                        : PrototypeUiTextRole.Feedback);
+                        ? GameUiTextRole.Danger
+                        : GameUiTextRole.Feedback);
             }
         }
 
@@ -80,7 +80,7 @@ namespace UnityIsekaiGame.UI.Quests
                 Button button = Instantiate(questButtonTemplate, questListRoot);
                 button.gameObject.SetActive(true);
                 button.onClick.AddListener(() => questSelected?.Invoke(index));
-                PrototypeUiTheme.StyleButton(button, i == selectedIndex ? PrototypeUiButtonTone.Primary : PrototypeUiButtonTone.Neutral);
+                GameUiTheme.StyleButton(button, i == selectedIndex ? GameUiButtonTone.Primary : GameUiButtonTone.Neutral);
                 Text label = button.GetComponentInChildren<Text>(true);
                 if (label != null)
                 {
@@ -150,13 +150,13 @@ namespace UnityIsekaiGame.UI.Quests
 
         private void ApplyTheme()
         {
-            PrototypeUiTheme.StyleText(titleLabel, PrototypeUiTextRole.Title);
-            PrototypeUiTheme.StyleText(descriptionLabel, PrototypeUiTextRole.Muted);
-            PrototypeUiTheme.StyleText(objectiveLabel, PrototypeUiTextRole.Body);
-            PrototypeUiTheme.StyleText(rewardLabel, PrototypeUiTextRole.Body);
-            PrototypeUiTheme.StyleText(feedbackLabel, PrototypeUiTextRole.Feedback);
-            PrototypeUiTheme.StyleButton(abandonButton, PrototypeUiButtonTone.Danger);
-            PrototypeUiTheme.StyleButton(claimRewardButton, PrototypeUiButtonTone.Positive);
+            GameUiTheme.StyleText(titleLabel, GameUiTextRole.Title);
+            GameUiTheme.StyleText(descriptionLabel, GameUiTextRole.Muted);
+            GameUiTheme.StyleText(objectiveLabel, GameUiTextRole.Body);
+            GameUiTheme.StyleText(rewardLabel, GameUiTextRole.Body);
+            GameUiTheme.StyleText(feedbackLabel, GameUiTextRole.Feedback);
+            GameUiTheme.StyleButton(abandonButton, GameUiButtonTone.Danger);
+            GameUiTheme.StyleButton(claimRewardButton, GameUiButtonTone.Positive);
         }
     }
 }

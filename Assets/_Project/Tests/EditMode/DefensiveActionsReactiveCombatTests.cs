@@ -644,6 +644,7 @@ namespace UnityIsekaiGame.Tests
         {
             private readonly string targetLocalId;
             private DefinitionRegistry registry;
+            private PlayerInventory targetInventory;
             private PlayerEquipment targetEquipment;
 
             public GameObject Attacker { get; private set; }
@@ -682,6 +683,7 @@ namespace UnityIsekaiGame.Tests
                 fixture.TargetSkills.Configure(fixture.registry, fixture.TargetStats, null);
                 fixture.TargetLifecycle = fixture.Target.AddComponent<ActorLifecycleController>();
                 fixture.TargetLifecycle.Configure(null, fixture.TargetResources, null, null);
+                fixture.targetInventory = fixture.Target.AddComponent<PlayerInventory>();
                 fixture.targetEquipment = fixture.Target.AddComponent<PlayerEquipment>();
                 fixture.targetEquipment.GetSlot(EquipmentSlotType.MainHand);
                 return fixture;
@@ -777,9 +779,10 @@ namespace UnityIsekaiGame.Tests
             public void EquipTarget(string itemId)
             {
                 Assert.That(registry.TryGet(itemId, out ItemDefinition item), Is.True, itemId);
-                EquipmentSlotState slot = targetEquipment.GetSlot(item.Equipment.SlotType);
-                typeof(EquipmentSlotState).GetMethod("SetItem", BindingFlags.Instance | BindingFlags.NonPublic)
-                    .Invoke(slot, new object[] { item });
+                InventoryInstanceOperationResult added = targetInventory.AddExistingItemIdentity(item, ItemInstanceId.Generate());
+                Assert.That(added.Succeeded, Is.True, added.Message);
+                EquipmentOperationResult equipped = targetEquipment.EquipFromInventorySlot(added.SlotIndex);
+                Assert.That(equipped.Succeeded, Is.True, equipped.Message);
             }
 
             public void ClearTargetEquipment()

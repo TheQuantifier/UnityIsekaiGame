@@ -80,5 +80,64 @@ namespace UnityIsekaiGame.Tests.EditMode
                 PlayerCursorMode.SetMouseLookEnabled(true);
             }
         }
+
+        [Test]
+        public void CancelClosesOnlyTheMostRecentlyFocusedMenu()
+        {
+            GameObject firstMenu = new GameObject("First Menu");
+            GameObject secondMenu = new GameObject("Second Menu");
+            bool firstClosed = false;
+            bool secondClosed = false;
+            try
+            {
+                PlayerCursorMode.SetMenuOpen(firstMenu, true, () =>
+                {
+                    firstClosed = true;
+                    PlayerCursorMode.SetMenuOpen(firstMenu, false);
+                });
+                PlayerCursorMode.SetMenuOpen(secondMenu, true, () =>
+                {
+                    secondClosed = true;
+                    PlayerCursorMode.SetMenuOpen(secondMenu, false);
+                });
+
+                Assert.That(PlayerCursorMode.OpenMenuCount, Is.EqualTo(2));
+                Assert.That(PlayerCursorMode.TopMenuOwner, Is.SameAs(secondMenu));
+                Assert.That(PlayerCursorMode.TryCloseTopMenu(), Is.True);
+                Assert.That(secondClosed, Is.True);
+                Assert.That(firstClosed, Is.False);
+                Assert.That(PlayerCursorMode.OpenMenuCount, Is.EqualTo(1));
+                Assert.That(PlayerCursorMode.TopMenuOwner, Is.SameAs(firstMenu));
+
+                Assert.That(PlayerCursorMode.TryCloseTopMenu(), Is.True);
+                Assert.That(firstClosed, Is.True);
+                Assert.That(PlayerCursorMode.HasOpenMenu, Is.False);
+            }
+            finally
+            {
+                PlayerCursorMode.SetMenuOpen(firstMenu, false);
+                PlayerCursorMode.SetMenuOpen(secondMenu, false);
+                Object.DestroyImmediate(firstMenu);
+                Object.DestroyImmediate(secondMenu);
+            }
+        }
+
+        [Test]
+        public void MenuWithoutCloseCallbackStillConsumesCentralCancel()
+        {
+            GameObject menu = new GameObject("Self Managed Menu");
+            try
+            {
+                PlayerCursorMode.SetMenuOpen(menu, true);
+
+                Assert.That(PlayerCursorMode.TryCloseTopMenu(), Is.True);
+                Assert.That(PlayerCursorMode.HasOpenMenu, Is.True);
+            }
+            finally
+            {
+                PlayerCursorMode.SetMenuOpen(menu, false);
+                Object.DestroyImmediate(menu);
+            }
+        }
     }
 }

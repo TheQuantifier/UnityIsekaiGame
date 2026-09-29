@@ -100,10 +100,12 @@ namespace UnityIsekaiGame.Persistence
             }
 
             lastTrigger = reason;
-            PrototypeHudMessageBus.Show("Autosaving...");
+            GameHudMessageBus.Show("Autosaving...");
             PersistenceSaveResult result = persistence.SaveAutosave(reason);
             lastResult = result.Message;
-            PrototypeHudMessageBus.Show(result.Succeeded ? "Autosave complete" : "Autosave failed");
+            GameHudMessageBus.Show(
+                result.Succeeded ? "Autosave complete" : "Autosave failed",
+                result.Succeeded ? GameHudMessageTone.Success : GameHudMessageTone.Danger);
             nextTimerAutosaveAt = Time.unscaledTime + (result.Succeeded ? intervalSeconds : retryDelaySeconds);
             return result;
         }

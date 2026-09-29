@@ -45,7 +45,7 @@ namespace UnityIsekaiGame.Magic
             Debug.Log(result.Message);
             if (!result.Succeeded || result.Message.Contains("Empty"))
             {
-                PrototypeHudMessageBus.Show(result.Message);
+                GameHudMessageBus.Show(result.Message);
             }
         }
     }

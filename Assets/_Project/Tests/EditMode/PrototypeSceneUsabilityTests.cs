@@ -109,6 +109,41 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void PrototypeUiFolderOwnsEveryCanvasAndDisablesAsOneUnit()
+        {
+            string previousScenePath = UnityEngine.SceneManagement.SceneManager.GetActiveScene().path;
+            GameObject uiRoot = null;
+            bool uiWasActive = true;
+            try
+            {
+                UnityEngine.SceneManagement.Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+                GameObject sceneRoot = scene.GetRootGameObjects().Single(root => root.name == "PrototypeScene");
+                Transform uiTransform = sceneRoot.transform.Find("UI");
+                Assert.That(uiTransform, Is.Not.Null, "PrototypeScene must keep a single UI hierarchy folder.");
+
+                uiRoot = uiTransform.gameObject;
+                uiWasActive = uiRoot.activeSelf;
+                Canvas[] canvases = scene.GetRootGameObjects()
+                    .SelectMany(root => root.GetComponentsInChildren<Canvas>(true))
+                    .ToArray();
+
+                Assert.That(canvases.Length, Is.GreaterThanOrEqualTo(4));
+                Assert.That(canvases.All(canvas => canvas.transform.IsChildOf(uiTransform)), Is.True,
+                    "Every scene UI canvas must stay under PrototypeScene/UI so the hierarchy can be disabled as one unit.");
+
+                uiRoot.SetActive(false);
+                Assert.That(canvases.All(canvas => !canvas.gameObject.activeInHierarchy), Is.True,
+                    "Disabling PrototypeScene/UI must hide every canvas.");
+            }
+            finally
+            {
+                if (uiRoot != null) uiRoot.SetActive(uiWasActive);
+                if (!string.IsNullOrWhiteSpace(previousScenePath)) EditorSceneManager.OpenScene(previousScenePath, OpenSceneMode.Single);
+                else EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            }
+        }
+
+        [Test]
         public void PrototypeInventoryUiIsFullyAuthoredAndShowsOneSectionInEditMode()
         {
             UnityEngine.SceneManagement.Scene scene = EditorSceneManager.OpenScene(ScenePath);
@@ -136,8 +171,9 @@ namespace UnityIsekaiGame.Tests
 
             RectTransform navigation = inventoryButton.transform.parent as RectTransform;
             Assert.That(navigation, Is.Not.Null);
-            Assert.That(navigation.anchorMin, Is.EqualTo(new Vector2(0f, 1f)));
-            Assert.That(navigation.anchorMax, Is.EqualTo(Vector2.one));
+            Assert.That(navigation.anchorMin.x, Is.EqualTo(1f));
+            Assert.That(navigation.anchorMax.x, Is.EqualTo(1f));
+            Assert.That(navigation.anchorMin.y, Is.LessThan(navigation.anchorMax.y));
             VerticalLayoutGroup legacyVerticalLayout = navigation.GetComponent<VerticalLayoutGroup>();
             Assert.That(legacyVerticalLayout == null || !legacyVerticalLayout.enabled, Is.True,
                 "The legacy vertical navigation layout must not remain active in the authored scene.");

@@ -68,7 +68,13 @@ namespace UnityIsekaiGame.Inventory
                 return;
             }
 
-            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            PrototypePersistenceServiceBehaviour services = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
+            if (services != null && !services.OwnsPlayerInteractor(context.Interactor))
+            {
+                Debug.LogWarning($"{name} rejected pickup by a character that does not own the configured player inventory.", this);
+                return;
+            }
+
             if (TryCollectTrackedRuntimeInstance(inventory, services) || TryCollectSceneAuthoredInstance(context, inventory))
             {
                 return;
@@ -102,7 +108,7 @@ namespace UnityIsekaiGame.Inventory
             {
                 Debug.Log($"Collected all {totalAdded} x {item.ItemId} from {name}.");
                 string bonus = bonusAdded > 0 ? $" (Salvager bonus: +{bonusAdded})" : string.Empty;
-                PrototypeHudMessageBus.Show($"Picked up {totalAdded} x {item.DisplayName}{bonus}");
+                GameHudMessageBus.Show($"Picked up {totalAdded} x {item.DisplayName}{bonus}", GameHudMessageTone.Success);
                 CompletePickup();
                 return;
             }
@@ -111,12 +117,12 @@ namespace UnityIsekaiGame.Inventory
             {
                 quantity = result.RemainingQuantity;
                 Debug.Log($"Partial pickup from {name}. {quantity} x {item.ItemId} remain in the world.");
-                PrototypeHudMessageBus.Show($"Picked up {totalAdded} x {item.DisplayName}. Inventory full.");
+                GameHudMessageBus.Show($"Picked up {totalAdded} x {item.DisplayName}. Inventory full.", GameHudMessageTone.Warning);
                 return;
             }
 
             Debug.Log($"Inventory full. {name} remains in the world with {quantity} x {item.ItemId}.");
-            PrototypeHudMessageBus.Show("Inventory full");
+            GameHudMessageBus.Show("Inventory full", GameHudMessageTone.Warning);
         }
 
         private bool IsSalvageResourcePickup()
@@ -194,7 +200,7 @@ namespace UnityIsekaiGame.Inventory
             if (!inventory.CanAddExistingItemIdentity(item, itemInstanceId))
             {
                 Debug.Log($"Inventory full. {name} remains in the world with {quantity} x {item.ItemId}.");
-                PrototypeHudMessageBus.Show("Inventory full");
+                GameHudMessageBus.Show("Inventory full", GameHudMessageTone.Warning);
                 return true;
             }
 
@@ -202,12 +208,12 @@ namespace UnityIsekaiGame.Inventory
             if (!result.Succeeded)
             {
                 Debug.LogWarning($"{name} could not add scene-authored item instance '{itemInstanceId}' to inventory: {result.Message}");
-                PrototypeHudMessageBus.Show("Inventory full");
+                GameHudMessageBus.Show("Inventory full", GameHudMessageTone.Warning);
                 return true;
             }
 
             Debug.Log($"Collected scene-authored {item.ItemId} instance {itemInstanceId} from {name}.");
-            PrototypeHudMessageBus.Show($"Picked up {item.DisplayName}");
+            GameHudMessageBus.Show($"Picked up {item.DisplayName}", GameHudMessageTone.Success);
             CompletePickup();
             return true;
         }
@@ -222,7 +228,7 @@ namespace UnityIsekaiGame.Inventory
             }
             if (!inventory.CanAddExistingItemIdentity(item, runtimeItemInstanceId, snapshot.StackQuantity))
             {
-                PrototypeHudMessageBus.Show("Inventory full");
+                GameHudMessageBus.Show("Inventory full", GameHudMessageTone.Warning);
                 return true;
             }
             InventoryInstanceOperationResult result = inventory.AddExistingItemIdentity(item, runtimeItemInstanceId, snapshot.StackQuantity);
@@ -238,7 +244,7 @@ namespace UnityIsekaiGame.Inventory
                 services.RecordTheftCrime(services.PlayerPersonId, snapshot.OwnerPersonId, snapshot.ItemInstanceId, $"pickup.{snapshot.ItemInstanceId}");
             }
             services.CancelNaturalDecomposition(runtimeItemInstanceId);
-            PrototypeHudMessageBus.Show($"Picked up {item.DisplayName}");
+            GameHudMessageBus.Show($"Picked up {item.DisplayName}", GameHudMessageTone.Success);
             CompletePickup();
             return true;
         }

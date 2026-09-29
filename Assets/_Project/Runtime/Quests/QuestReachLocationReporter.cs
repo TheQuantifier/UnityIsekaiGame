@@ -41,12 +41,18 @@ namespace UnityIsekaiGame.Quests
 
         private void TryReport(Collider other)
         {
-            if (reported && reportOnce)
+            if (other == null || other.GetComponentInParent<PlayerInputReader>() == null)
             {
                 return;
             }
 
-            if (other == null || other.GetComponentInParent<PlayerInputReader>() == null)
+            PrototypePersistenceServiceBehaviour services = PrototypePersistenceServiceBehaviour.FindForInteractor(other.gameObject);
+            if (services == null || !services.OwnsPlayerInteractor(other.gameObject))
+            {
+                return;
+            }
+
+            if (reported && reportOnce)
             {
                 return;
             }
@@ -62,11 +68,10 @@ namespace UnityIsekaiGame.Quests
                 string message = string.IsNullOrWhiteSpace(prototypeHudMessage)
                     ? $"Entered {DisplayName}"
                     : prototypeHudMessage;
-                PrototypeHudMessageBus.Show(message);
+                GameHudMessageBus.Show(message);
                 nextPrototypeHudMessageTime = Time.time + prototypeHudMessageCooldown;
             }
 
-            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
             QuestObjectiveSignalBus.ReportReachLocation(ReportedLocationId, services?.PlayerPersonId, services?.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble);
         }
 
