@@ -19,12 +19,12 @@ namespace UnityIsekaiGame.Gameplay
         public void Configure(PrototypePersistenceServiceBehaviour value)
         {
             services = value;
-            input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            input = services == null ? null : services.PlayerInput;
         }
 
         private void Awake()
         {
-            input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            input = services == null ? null : services.PlayerInput;
             SetVisible(visible);
         }
 
@@ -68,7 +68,7 @@ namespace UnityIsekaiGame.Gameplay
         private void SetVisible(bool value)
         {
             visible = value;
-            if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            if (input == null && services != null) input = services.PlayerInput;
             if (input != null) input.SetMenuInputBlocked(this, visible, visible ? CloseFromCancel : null);
             else PlayerCursorMode.SetMenuOpen(this, visible, visible ? CloseFromCancel : null);
         }

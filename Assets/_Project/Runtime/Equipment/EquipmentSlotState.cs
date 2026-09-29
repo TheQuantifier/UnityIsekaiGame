@@ -24,11 +24,6 @@ namespace UnityIsekaiGame.Equipment
             slotType = type;
         }
 
-        internal void SetItem(ItemDefinition newItem)
-        {
-            SetIdentity(newItem, string.Empty);
-        }
-
         internal void SetIdentity(ItemDefinition newItem, string newItemInstanceId)
         {
             item = newItem;

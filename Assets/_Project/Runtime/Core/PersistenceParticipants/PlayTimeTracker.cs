@@ -5,27 +5,20 @@ namespace UnityIsekaiGame.Persistence
     public sealed class PlayTimeTracker : MonoBehaviour
     {
         [SerializeField, Min(0f)] private double cumulativeSeconds;
-        [SerializeField] private bool countWhileMenuOpen;
-
-        private bool paused;
-        private bool menuOpen;
+        [SerializeField, HideInInspector] private bool countWhileMenuOpen = true;
 
         public double CumulativeSeconds => cumulativeSeconds;
-        public bool CountWhileMenuOpen => countWhileMenuOpen;
+        public bool CountWhileMenuOpen => true;
 
         private void Update()
         {
-            if (paused || (menuOpen && !countWhileMenuOpen))
-            {
-                return;
-            }
-
-            cumulativeSeconds += Time.unscaledDeltaTime;
+            Advance(Time.unscaledDeltaTime);
         }
 
-        private void OnApplicationPause(bool pauseStatus)
+        public void Advance(double elapsedSeconds)
         {
-            paused = pauseStatus;
+            if (double.IsNaN(elapsedSeconds) || double.IsInfinity(elapsedSeconds) || elapsedSeconds <= 0d) return;
+            cumulativeSeconds += elapsedSeconds;
         }
 
         public void Restore(double seconds)
@@ -35,7 +28,8 @@ namespace UnityIsekaiGame.Persistence
 
         public void SetMenuOpen(bool open)
         {
-            menuOpen = open;
+            // Retained for save/UI compatibility. Player UI never pauses the authoritative world clock.
+            countWhileMenuOpen = true;
         }
     }
 }

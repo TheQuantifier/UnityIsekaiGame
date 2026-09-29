@@ -88,9 +88,13 @@ namespace UnityIsekaiGame.UI
 
         private void TryBind()
         {
-            services ??= FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
             PrototypeNarrativeCoordinator resolved = services?.NarrativeCoordinator;
-            if (ReferenceEquals(resolved, coordinator)) return;
+            if (ReferenceEquals(resolved, coordinator))
+            {
+                if (coordinator == null) SetVisible(false);
+                else Refresh();
+                return;
+            }
             Unbind();
             coordinator = resolved;
             if (coordinator != null)

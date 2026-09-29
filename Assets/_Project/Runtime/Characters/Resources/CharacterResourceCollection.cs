@@ -767,7 +767,7 @@ namespace UnityIsekaiGame.ResourceSystem
             }
         }
 
-        private static float CurrentPlaytimeSeconds => Application.isPlaying ? Time.time : 0f;
+        private static float CurrentPlaytimeSeconds => Application.isPlaying ? Time.unscaledTime : 0f;
 
         private static void AddLifetime(RuntimeResourceRecord record, ResourceChangeOperation operation, float applied)
         {

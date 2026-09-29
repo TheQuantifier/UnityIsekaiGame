@@ -53,20 +53,32 @@ namespace UnityIsekaiGame.Gameplay
 
         private static void InstallForPrototype(Scene scene)
         {
-            if (!scene.IsValid() || scene.name.IndexOf("Prototype", StringComparison.OrdinalIgnoreCase) < 0
-                || FindAnyObjectByType<PrototypeProfessionPanel>() != null)
+            if (!scene.IsValid() || scene.name.IndexOf("Prototype", StringComparison.OrdinalIgnoreCase) < 0)
             {
                 return;
             }
 
-            GameObject host = new GameObject("Prototype Profession Panel");
-            host.AddComponent<PrototypeProfessionPanel>();
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                foreach (PrototypePersistenceServiceBehaviour persistence in root.GetComponentsInChildren<PrototypePersistenceServiceBehaviour>(true))
+                {
+                    PrototypeProfessionPanel panel = persistence.GetComponent<PrototypeProfessionPanel>();
+                    if (panel == null) panel = persistence.gameObject.AddComponent<PrototypeProfessionPanel>();
+                    panel.Configure(persistence);
+                }
+            }
+        }
+
+        public void Configure(PrototypePersistenceServiceBehaviour persistence)
+        {
+            services = persistence;
+            input = services == null ? null : services.PlayerInput;
         }
 
         private void Awake()
         {
-            services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
-            input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            services ??= GetComponent<PrototypePersistenceServiceBehaviour>();
+            input = services == null ? null : services.PlayerInput;
             SetVisible(visible);
         }
 
@@ -97,10 +109,6 @@ namespace UnityIsekaiGame.Gameplay
             GameUiTheme.DrawPanelFrame(window);
             GUILayout.BeginArea(new Rect(window.x + 16f, window.y + 16f, window.width - 32f, window.height - 32f));
             GUILayout.Label("PROFESSIONS & CAREER", GameUiTheme.TitleStyle);
-            if (services == null)
-            {
-                services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
-            }
             if (services == null)
             {
                 GUILayout.Label("Career services are unavailable.", GameUiTheme.StatusStyle);
@@ -163,7 +171,7 @@ namespace UnityIsekaiGame.Gameplay
             {
                 RefreshCachedData();
             }
-            if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            if (input == null && services != null) input = services.PlayerInput;
             if (input != null) input.SetMenuInputBlocked(this, visible, visible ? CloseFromCancel : null);
             else PlayerCursorMode.SetMenuOpen(this, visible, visible ? CloseFromCancel : null);
         }
@@ -176,10 +184,6 @@ namespace UnityIsekaiGame.Gameplay
         private void RefreshCachedData()
         {
             nextDataRefreshAt = Time.unscaledTime + DataRefreshIntervalSeconds;
-            if (services == null)
-            {
-                services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
-            }
             if (services == null) return;
 
             string personId = services.PlayerPersonId;

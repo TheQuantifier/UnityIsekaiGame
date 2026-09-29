@@ -33,7 +33,8 @@ namespace UnityIsekaiGame.Magic
         {
             input = input == null ? GetComponent<PlayerInputReader>() : input;
             loadout = loadout == null ? GetComponent<PlayerSpellLoadout>() : loadout;
-            runtimeServices = runtimeServices == null ? FindAnyObjectByType<PrototypePersistenceServiceBehaviour>() : runtimeServices;
+            if (runtimeServices == null || !runtimeServices.OwnsPlayerInteractor(gameObject))
+                runtimeServices = PrototypePersistenceServiceBehaviour.FindForInteractor(gameObject);
             abilities = GetComponent<CharacterAbilityCollection>();
             if (castOrigin == null && Camera.main != null)
             {

@@ -232,6 +232,31 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void ResourceRegenerationContinuesWhileLocalModalUiIsOpen()
+        {
+            DefinitionRegistry registry = LoadCatalog().CreateRegistry();
+            GameObject owner = CreateConfiguredOwner(registry, out _, out _, out Component resourcesComponent);
+            try
+            {
+                CharacterResourceCollection resources = (CharacterResourceCollection)resourcesComponent;
+                float maximum = GetMaximum(resources, ResourceStamina);
+                object spend = Invoke(resources, "TrySpend", ResourceStamina, 20f, "test", "Spend", string.Empty, false);
+                Assert.That(GetProperty<bool>(spend, "Succeeded"), Is.True, GetProperty<string>(spend, "Message"));
+
+                GameUiModalState.SetNarrativeActive(true);
+                Invoke(resources, "TickResources", 10f, 100f);
+
+                Assert.That(GetCurrent(resources, ResourceStamina), Is.GreaterThan(maximum - 20f),
+                    "Local UI focus must not suspend authoritative resource regeneration.");
+            }
+            finally
+            {
+                GameUiModalState.SetNarrativeActive(false);
+                UnityEngine.Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
         public void DeferredModifierRebuild_DoesNotClampStaminaToTemporaryMaximum()
         {
             DefinitionRegistry registry = LoadCatalog().CreateRegistry();

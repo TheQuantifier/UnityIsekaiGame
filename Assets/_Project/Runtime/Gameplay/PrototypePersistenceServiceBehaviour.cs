@@ -343,6 +343,10 @@ namespace UnityIsekaiGame.Gameplay
 
         public PersistenceService PlayerService => playerService;
         public PersistenceService WorldService => worldService;
+        public bool IsInitialized => playerService != null
+            && worldService != null
+            && PlayerReadiness != null
+            && WorldReadiness != null;
         public PersistenceReadinessReport PlayerReadiness { get; private set; }
         public PersistenceReadinessReport WorldReadiness { get; private set; }
         public int ManualSlotCount => Mathf.Max(1, manualSlotCount);
@@ -353,7 +357,78 @@ namespace UnityIsekaiGame.Gameplay
         public DefinitionCatalog DefinitionCatalog => definitionCatalog;
         public string PlayerPersonId => ResolvePlayerPersonId();
         public PlayerInventory PlayerInventory => playerInventory;
+        public PlayerEquipment PlayerEquipment => playerEquipment;
+        public PlayerInputReader PlayerInput => playerInput;
         public PersonKnowledgeRuntime PlayerKnowledge => playerKnowledge;
+        /// <summary>
+        /// Returns whether an interaction object belongs to this service's authoritative player.
+        /// This is intentionally reference-based: UI must not guess an actor by searching the scene.
+        /// </summary>
+        public bool OwnsPlayerInteractor(GameObject interactor)
+        {
+            if (interactor == null)
+            {
+                return false;
+            }
+
+            Transform authoritativeRoot = playerRoot != null
+                ? playerRoot
+                : playerInventory == null ? null : playerInventory.transform;
+            if (authoritativeRoot == null)
+            {
+                return false;
+            }
+
+            Transform candidate = interactor.transform;
+            return candidate == authoritativeRoot
+                || candidate.IsChildOf(authoritativeRoot);
+        }
+
+        public static PrototypePersistenceServiceBehaviour FindForInteractor(GameObject interactor)
+        {
+            if (interactor == null) return null;
+            PrototypePersistenceServiceBehaviour[] services = FindObjectsByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            for (int i = 0; i < services.Length; i++)
+            {
+                if (services[i] != null && services[i].OwnsPlayerInteractor(interactor)) return services[i];
+            }
+
+            return null;
+        }
+
+        public static PrototypePersistenceServiceBehaviour FindUniqueInitialized()
+        {
+            PrototypePersistenceServiceBehaviour match = null;
+            PrototypePersistenceServiceBehaviour[] services = FindObjectsByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            for (int i = 0; i < services.Length; i++)
+            {
+                PrototypePersistenceServiceBehaviour candidate = services[i];
+                if (candidate == null || !candidate.IsInitialized) continue;
+                if (match != null && !ReferenceEquals(match, candidate)) return null;
+                match = candidate;
+            }
+
+            return match;
+        }
+
+        public static PrototypePersistenceServiceBehaviour FindForPartyMember(string personId)
+        {
+            if (string.IsNullOrWhiteSpace(personId)) return null;
+            PrototypePersistenceServiceBehaviour match = null;
+            PrototypePersistenceServiceBehaviour[] services = FindObjectsByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            for (int i = 0; i < services.Length; i++)
+            {
+                PrototypePersistenceServiceBehaviour candidate = services[i];
+                if (candidate == null || !candidate.IsInitialized) continue;
+                bool ownsPerson = string.Equals(candidate.PlayerPersonId, personId, StringComparison.Ordinal)
+                    || candidate.AdventuringParties.GetPartyForPerson(personId) != null;
+                if (!ownsPerson) continue;
+                if (match != null && !ReferenceEquals(match, candidate)) return null;
+                match = candidate;
+            }
+
+            return match;
+        }
         public DefinitionRegistry RuntimeDefinitionRegistry => GetDefinitionRegistry();
         public ProfessionCoordinator ProfessionCoordinator => professionCoordinator ??= new ProfessionCoordinator(
             GetDefinitionRegistry(),
@@ -381,12 +456,53 @@ namespace UnityIsekaiGame.Gameplay
         {
             DefensiveActionService defense = new DefensiveActionService();
             attackResolutionService = new AttackResolutionService(new DamageHealingService(), defense);
+            attackResolutionService.AttackDamageApplied += HandleAuthoritativeAttackDamageApplied;
             return new CombatExecutionService(new ICombatExecutionHandler[]
             {
                 new AbilityCombatExecutionHandler(),
                 new AttackCombatExecutionHandler(attackResolutionService),
                 new DefenseActivationCombatExecutionHandler(defense)
             });
+        }
+
+        private void HandleAuthoritativeAttackDamageApplied(AttackResolutionResult result)
+        {
+            if (result?.DamageResult == null || !result.DamageResult.Succeeded || !result.DamageResult.HealthChanged)
+            {
+                return;
+            }
+
+            HandleSceneCombatDamageApplied(result.Request.AttackerObject, result.Request.TargetObject, result.DamageResult);
+            if (!result.DamageResult.BecameZero || !OwnsPlayerInteractor(result.Request.AttackerObject))
+            {
+                return;
+            }
+
+            EnemyHealth enemy = result.Request.TargetObject == null
+                ? null
+                : result.Request.TargetObject.GetComponentInParent<EnemyHealth>();
+            if (enemy == null || string.IsNullOrWhiteSpace(enemy.QuestObjectiveTargetId))
+            {
+                return;
+            }
+
+            string personId = ResolvePlayerPersonId();
+            double worldTime = playTimeTracker == null ? Time.unscaledTimeAsDouble : playTimeTracker.CumulativeSeconds;
+            string eventSuffix = string.IsNullOrWhiteSpace(result.DamageTransactionId)
+                ? result.AttackTransactionId
+                : result.DamageTransactionId;
+            QuestObjectiveSignalBus.Report(
+                QuestObjectiveCategory.DefeatTarget,
+                enemy.QuestObjectiveTargetId,
+                personId,
+                worldTime,
+                sourceEventId: $"enemy-defeat.{eventSuffix}");
+            QuestObjectiveSignalBus.Report(
+                QuestObjectiveCategory.DefeatCount,
+                "enemy-family.prototype.monster",
+                personId,
+                worldTime,
+                sourceEventId: $"enemy-defeat-count.{eventSuffix}");
         }
         public InformationSourceRuntime InformationSources => playerInformationSources ??= new InformationSourceRuntime();
         public InformationTransferRuntime InformationTransfers => playerInformationTransfers ??= new InformationTransferRuntime();
@@ -1602,14 +1718,16 @@ namespace UnityIsekaiGame.Gameplay
 
         public IReadOnlyList<SaveSlotMetadata> ListSaveSlots()
         {
-            EnsureInitialized();
-            return playerService.ListSaveSlots();
+            return playerService == null
+                ? Array.Empty<SaveSlotMetadata>()
+                : playerService.ListSaveSlots();
         }
 
         public IReadOnlyList<SaveSlotDescriptor> BuildSaveSlotDescriptors()
         {
-            EnsureInitialized();
-            return PrototypeSaveSlotCatalog.BuildDescriptors(playerService, ManualSlotCount, AutosaveSlotCount);
+            return playerService == null
+                ? Array.Empty<SaveSlotDescriptor>()
+                : PrototypeSaveSlotCatalog.BuildDescriptors(playerService, ManualSlotCount, AutosaveSlotCount);
         }
 
         public SaveEligibilityResult CheckSaveEligibility(bool showDetailedPlayerMessage, bool allowOpenMenu = true)

@@ -804,7 +804,6 @@ namespace UnityIsekaiGame.Development.Automation
             }
 
             string inventorySword = RunGuid(context, "migration-inventory-sword");
-            string equippedSword = RunGuid(context, "migration-equipped-sword");
             PlayerInventoryEquipmentSaveData projection = new PlayerInventoryEquipmentSaveData
             {
                 inventory = new InventorySaveData
@@ -820,7 +819,7 @@ namespace UnityIsekaiGame.Development.Automation
                 {
                     slots =
                     {
-                        new EquipmentSlotSaveData { slotType = EquipmentSlotType.MainHand, mode = EquipmentEntrySaveMode.StatefulInstance, definitionId = sword.ItemId, itemInstanceId = equippedSword }
+                        new EquipmentSlotSaveData { slotType = EquipmentSlotType.MainHand, mode = EquipmentEntrySaveMode.InventoryReference, definitionId = sword.ItemId, itemInstanceId = inventorySword }
                     }
                 }
             };
@@ -833,9 +832,8 @@ namespace UnityIsekaiGame.Development.Automation
 
             ItemIdentityInventoryBridgeResult audit = ItemIdentityInventoryBridge.ValidateInventoryEquipmentProjection(projection, migration.SaveData, "person.prototype.player");
             bool valid = audit.Succeeded
-                && migration.SaveData.records.Count == 3
+                && migration.SaveData.records.Count == 2
                 && migration.SaveData.records.Any(record => record.itemInstanceId == inventorySword && record.location.kind == ItemLocationKind.Inventory)
-                && migration.SaveData.records.Any(record => record.itemInstanceId == equippedSword && record.location.kind == ItemLocationKind.Equipped)
                 && migration.SaveData.records.Any(record => record.itemDefinitionId == PotionId && record.classification == ItemInstanceClassification.Fungible && record.stackQuantity == 2);
             return valid
                 ? Pass(context, "step9-items-migration", $"Migrated={migration.SaveData.records.Count} Audit={audit.Status}")
@@ -869,8 +867,7 @@ namespace UnityIsekaiGame.Development.Automation
                 context.ScenarioContext.Runtimes.DefinitionRegistry,
                 "person.prototype.player",
                 context.ScenarioContext.Namespace);
-            projection.inventory.entries.Clear();
-            projection.equipment.slots.Add(new EquipmentSlotSaveData { slotType = EquipmentSlotType.MainHand, mode = EquipmentEntrySaveMode.StatefulInstance, definitionId = sword.ItemId, itemInstanceId = swordId });
+            projection.equipment.slots.Add(new EquipmentSlotSaveData { slotType = EquipmentSlotType.MainHand, mode = EquipmentEntrySaveMode.InventoryReference, definitionId = sword.ItemId, itemInstanceId = swordId });
             ItemIdentityInventoryBridgeResult second = ItemIdentityInventoryBridge.SynchronizeInventoryEquipmentRuntime(
                 runtime,
                 projection,
@@ -889,8 +886,7 @@ namespace UnityIsekaiGame.Development.Automation
                 && second.Succeeded
                 && audit.Succeeded
                 && runtime.TryGetSnapshot(swordId, out snapshot)
-                && snapshot.LocationKind == ItemLocationKind.Equipped
-                && snapshot.Data.location.equipmentSlotId == EquipmentSlotType.MainHand.ToString();
+                && snapshot.LocationKind == ItemLocationKind.Inventory;
             return valid
                 ? Pass(context, "step9-items-sync", $"Sync={first.Status}/{second.Status} Location={snapshot.LocationKind}/{snapshot.Data.location.equipmentSlotId}")
                 : Fail(context, "step9-items-sync", $"First={first.Status}:{first.Message} Second={second.Status}:{second.Message} Audit={audit.Status}:{audit.Message}");

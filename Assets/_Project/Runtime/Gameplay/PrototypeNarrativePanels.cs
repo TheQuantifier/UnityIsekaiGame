@@ -17,24 +17,36 @@ namespace UnityIsekaiGame.Gameplay
 
         protected virtual void Awake() => Services = GetComponent<PrototypePersistenceServiceBehaviour>();
 
-        protected void OpenModal(GameObject interactor)
+        protected bool OpenModal(GameObject interactor)
         {
-            if (IsOpen) return;
+            if (IsOpen) return true;
+            if (Services == null || !Services.OwnsPlayerInteractor(interactor))
+            {
+                GameHudMessageBus.Show("This interface is not available to that character.");
+                return false;
+            }
+
             Input = interactor == null ? null : interactor.GetComponentInParent<PlayerInputReader>();
-            if (Input == null) Input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            if (Input == null)
+            {
+                GameHudMessageBus.Show("Player input is unavailable for this interface.");
+                return false;
+            }
+
             IsOpen = true;
-            GameUiModalState.SetNarrativeActive(true);
-            if (Input != null) Input.SetMenuInputBlocked(this, true, Close);
-            else PlayerCursorMode.SetMenuOpen(this, true, Close);
+            GameUiModalState.SetNarrativeActive(this, true);
+            Input.SetMenuInputBlocked(this, true, Close);
+            return true;
         }
 
         public virtual void Close()
         {
             if (!IsOpen) return;
             IsOpen = false;
-            GameUiModalState.SetNarrativeActive(false);
+            GameUiModalState.SetNarrativeActive(this, false);
             if (Input != null) Input.SetMenuInputBlocked(this, false);
             else PlayerCursorMode.SetMenuOpen(this, false);
+            Input = null;
         }
 
         protected virtual void OnDisable() => Close();
@@ -55,7 +67,7 @@ namespace UnityIsekaiGame.Gameplay
             sourceId = questSourceId?.Trim() ?? string.Empty;
             interactionPointId = pointId?.Trim() ?? string.Empty;
             title = string.IsNullOrWhiteSpace(displayName) ? "Available Quests" : displayName;
-            OpenModal(interactor);
+            if (!OpenModal(interactor)) return;
             Refresh();
         }
 
@@ -151,18 +163,28 @@ namespace UnityIsekaiGame.Gameplay
         {
             if (Services?.NarrativeCoordinator == null)
                 return DialogueFlowOperationResult.Failure(DialogueFlowOperationStatus.InvalidRequest, "Dialogue runtime is unavailable.", 0L);
+            if (!Services.OwnsPlayerInteractor(interactor))
+                return DialogueFlowOperationResult.Failure(DialogueFlowOperationStatus.InvalidRequest, "This conversation was requested by a different character.", 0L);
+            PlayerInputReader playerInput = interactor == null ? null : interactor.GetComponentInParent<PlayerInputReader>();
+            if (playerInput == null || playerInput.GameplayInputBlocked)
+                return DialogueFlowOperationResult.Failure(DialogueFlowOperationStatus.InvalidRequest, "The interacting character is not available for conversation.", 0L);
             DialogueFlowOperationResult result = Services.NarrativeCoordinator.StartConversation(conversationDefinitionId, providerPersonId, interactionPointId, locationId, questSourceId);
             status = result.Message;
             if (!result.Succeeded) return result;
             flow = result.Snapshot;
             speakerName = string.IsNullOrWhiteSpace(displayName) ? "Conversation" : displayName;
-            OpenModal(interactor);
+            if (!OpenModal(interactor))
+            {
+                Services.NarrativeCoordinator.EndDialogue(flow.FlowId);
+                flow = null;
+                return DialogueFlowOperationResult.Failure(DialogueFlowOperationStatus.InvalidRequest, "Unable to bind the conversation to the interacting character.", 0L);
+            }
             return result;
         }
 
         public override void Close()
         {
-            if (IsOpen && flow != null && flow.State != DialogueFlowState.Ended)
+            if (IsOpen && flow != null)
                 Services?.NarrativeCoordinator?.EndDialogue(flow.FlowId);
             flow = null;
             base.Close();

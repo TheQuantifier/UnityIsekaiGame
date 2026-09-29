@@ -6,22 +6,38 @@ using UnityIsekaiGame.Inventory;
 
 namespace UnityIsekaiGame.Equipment
 {
+    /// <summary>
+    /// Slot-based references into the player's canonical inventory. Equipment never owns or
+    /// transfers an item instance; it only identifies which inventory instance occupies each slot.
+    /// </summary>
     public sealed class PlayerEquipment : MonoBehaviour
     {
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private List<EquipmentSlotState> slots = new List<EquipmentSlotState>();
+        private PlayerInventory subscribedInventory;
 
         public IReadOnlyList<EquipmentSlotState> Slots => slots;
         public event Action EquipmentChanged;
 
         private void Awake()
         {
-            if (inventory == null)
-            {
-                inventory = GetComponent<PlayerInventory>();
-            }
-
+            EnsureInventory();
             EnsureSlots();
+            EnsureInventorySubscription();
+        }
+
+        private void OnEnable()
+        {
+            EnsureInventory();
+            EnsureInventorySubscription();
+
+            RemoveDanglingReferences(false);
+        }
+
+        private void OnDisable()
+        {
+            if (subscribedInventory != null) subscribedInventory.InventoryMutated -= HandleInventoryChanged;
+            subscribedInventory = null;
         }
 
         private void OnValidate()
@@ -32,6 +48,7 @@ namespace UnityIsekaiGame.Equipment
         public EquipmentOperationResult EquipFromInventorySlot(int inventorySlotIndex)
         {
             EnsureInventory();
+            EnsureInventorySubscription();
             if (inventory == null)
             {
                 return EquipmentOperationResult.Failure("No inventory is assigned.");
@@ -46,123 +63,90 @@ namespace UnityIsekaiGame.Equipment
             ItemDefinition item = inventorySlot.Item;
             if (item == null || !item.IsEquippable)
             {
-                string itemName = item == null ? "Item" : item.DisplayName;
-                return EquipmentOperationResult.Failure($"{itemName} cannot be equipped.");
+                return EquipmentOperationResult.Failure($"{(item == null ? "Item" : item.DisplayName)} cannot be equipped.");
             }
 
-            EquipmentSlotState equipmentSlot = GetSlot(item.Equipment.SlotType);
-            if (equipmentSlot == null)
+            if (item.Stackable || inventorySlot.Quantity != 1)
+            {
+                return EquipmentOperationResult.Failure($"{item.DisplayName} cannot be equipped from a stack.");
+            }
+
+            string instanceId = inventorySlot.ItemInstanceId;
+            if (!ItemInstanceId.IsValid(instanceId))
+            {
+                return EquipmentOperationResult.Failure($"{item.DisplayName} has no valid item identity.");
+            }
+
+            EquipmentSlotState target = GetSlot(item.Equipment.SlotType);
+            if (target == null)
             {
                 return EquipmentOperationResult.Failure("Equipment slot is not supported.");
             }
 
-            ItemDefinition replacedItem = equipmentSlot.Item;
-            string replacedItemInstanceId = equipmentSlot.ItemInstanceId;
-            if (!CanReturnEquippedItemToInventory(replacedItem, replacedItemInstanceId, inventorySlotIndex))
+            bool repairedDuplicateReference = ClearDuplicateReferences(instanceId, target);
+            if (string.Equals(target.ItemInstanceId, instanceId, StringComparison.Ordinal))
             {
-                return EquipmentOperationResult.Failure($"No inventory room to unequip {replacedItem.DisplayName}.");
+                if (repairedDuplicateReference) EquipmentChanged?.Invoke();
+                return EquipmentOperationResult.Success($"{item.DisplayName} is already equipped.");
             }
 
-            if (!inventory.TryExtractSlotIdentity(inventorySlotIndex, out ItemDefinition extractedItem, out string extractedItemInstanceId, out string extractFailureReason))
-            {
-                return EquipmentOperationResult.Failure(string.IsNullOrWhiteSpace(extractFailureReason) ? $"Could not remove {item.DisplayName} from inventory." : extractFailureReason);
-            }
-
-            if (!TryReturnEquippedItemToInventory(replacedItem, replacedItemInstanceId))
-            {
-                RestoreExtractedInventoryItem(extractedItem, extractedItemInstanceId);
-                return EquipmentOperationResult.Failure($"No inventory room to unequip {replacedItem.DisplayName}.");
-            }
-
-            equipmentSlot.SetIdentity(extractedItem, extractedItemInstanceId);
-
+            string replacedName = target.IsEmpty ? string.Empty : target.Item.DisplayName;
+            target.SetIdentity(item, instanceId);
             EquipmentChanged?.Invoke();
 
-            string message = replacedItem == null
-                ? $"Equipped {extractedItem.DisplayName}."
-                : $"Equipped {item.DisplayName} and unequipped {replacedItem.DisplayName}.";
+            string message = string.IsNullOrWhiteSpace(replacedName)
+                ? $"Equipped {item.DisplayName}."
+                : $"Equipped {item.DisplayName} and unequipped {replacedName}.";
             Debug.Log(message);
             return EquipmentOperationResult.Success(message);
         }
 
         public EquipmentOperationResult Unequip(EquipmentSlotType slotType)
         {
-            EnsureInventory();
-            if (inventory == null)
-            {
-                return EquipmentOperationResult.Failure("No inventory is assigned.");
-            }
-
             EquipmentSlotState slot = GetSlot(slotType);
             if (slot == null || slot.IsEmpty)
             {
                 return EquipmentOperationResult.Failure($"{FormatSlotName(slotType)} is empty.");
             }
 
-            ItemDefinition item = slot.Item;
-            string itemInstanceId = slot.ItemInstanceId;
-            if (!string.IsNullOrWhiteSpace(itemInstanceId))
-            {
-                if (!inventory.CanAddExistingItemIdentity(item, itemInstanceId))
-                {
-                    return EquipmentOperationResult.Failure($"No inventory room to unequip {item.DisplayName}.");
-                }
-
-                InventoryInstanceOperationResult instanceResult = inventory.AddExistingItemIdentity(item, itemInstanceId);
-                if (!instanceResult.Succeeded)
-                {
-                    return EquipmentOperationResult.Failure($"No inventory room to unequip {item.DisplayName}.");
-                }
-
-                slot.Clear();
-                EquipmentChanged?.Invoke();
-
-                string instanceMessage = $"Unequipped {item.DisplayName}.";
-                Debug.Log(instanceMessage);
-                return EquipmentOperationResult.Success(instanceMessage);
-            }
-
-            if (!inventory.CanAddItem(item, 1))
-            {
-                return EquipmentOperationResult.Failure($"No inventory room to unequip {item.DisplayName}.");
-            }
-
-            InventoryAddResult result = inventory.AddItem(item, 1);
-            if (!result.AddedAll)
-            {
-                return EquipmentOperationResult.Failure($"No inventory room to unequip {item.DisplayName}.");
-            }
-
+            string itemName = slot.Item.DisplayName;
             slot.Clear();
             EquipmentChanged?.Invoke();
-
-            string message = $"Unequipped {item.DisplayName}.";
+            string message = $"Unequipped {itemName}.";
             Debug.Log(message);
             return EquipmentOperationResult.Success(message);
         }
 
-        public bool RemoveItemForDecomposition(string itemInstanceId, bool notifyChange = true)
+        public bool IsItemEquipped(string itemInstanceId)
         {
-            if (string.IsNullOrWhiteSpace(itemInstanceId))
-            {
-                return false;
-            }
+            return TryGetSlotForItem(itemInstanceId, out _);
+        }
 
+        public bool TryGetSlotForItem(string itemInstanceId, out EquipmentSlotState equipmentSlot)
+        {
+            equipmentSlot = null;
+            if (string.IsNullOrWhiteSpace(itemInstanceId)) return false;
             EnsureSlots();
-            foreach (EquipmentSlotState slot in slots)
+            for (int i = 0; i < slots.Count; i++)
             {
-                if (slot != null && string.Equals(slot.ItemInstanceId, itemInstanceId, StringComparison.Ordinal))
+                EquipmentSlotState candidate = slots[i];
+                if (candidate != null && !candidate.IsEmpty
+                    && string.Equals(candidate.ItemInstanceId, itemInstanceId, StringComparison.Ordinal))
                 {
-                    slot.Clear();
-                    if (notifyChange)
-                    {
-                        EquipmentChanged?.Invoke();
-                    }
+                    equipmentSlot = candidate;
                     return true;
                 }
             }
 
             return false;
+        }
+
+        public bool RemoveItemForDecomposition(string itemInstanceId, bool notifyChange = true)
+        {
+            if (!TryGetSlotForItem(itemInstanceId, out EquipmentSlotState slot)) return false;
+            slot.Clear();
+            if (notifyChange) EquipmentChanged?.Invoke();
+            return true;
         }
 
         public void NotifyEquipmentStateChanged()
@@ -173,13 +157,9 @@ namespace UnityIsekaiGame.Equipment
         public EquipmentSlotState GetSlot(EquipmentSlotType slotType)
         {
             EnsureSlots();
-
-            foreach (EquipmentSlotState slot in slots)
+            for (int i = 0; i < slots.Count; i++)
             {
-                if (slot.SlotType == slotType)
-                {
-                    return slot;
-                }
+                if (slots[i].SlotType == slotType) return slots[i];
             }
 
             return null;
@@ -187,34 +167,20 @@ namespace UnityIsekaiGame.Equipment
 
         public EquipmentSaveData CreateSaveData()
         {
+            EnsureInventory();
             EnsureSlots();
-
+            RemoveDanglingReferences(false);
             EquipmentSaveData saveData = new EquipmentSaveData();
-            foreach (EquipmentSlotState slot in slots)
+            for (int i = 0; i < slots.Count; i++)
             {
-                EquipmentSlotSaveData entry = new EquipmentSlotSaveData
+                EquipmentSlotState slot = slots[i];
+                saveData.slots.Add(new EquipmentSlotSaveData
                 {
-                    slotType = slot.SlotType
-                };
-
-                if (slot.IsEmpty)
-                {
-                    entry.mode = EquipmentEntrySaveMode.Empty;
-                }
-                else if (slot.IsStateful)
-                {
-                    entry.mode = EquipmentEntrySaveMode.StatefulInstance;
-                    entry.definitionId = slot.Item.ItemId;
-                    entry.itemInstanceId = slot.ItemInstanceId;
-                }
-                else
-                {
-                    entry.mode = EquipmentEntrySaveMode.DefinitionOnly;
-                    entry.definitionId = slot.Item.ItemId;
-                    entry.itemInstanceId = slot.ItemInstanceId;
-                }
-
-                saveData.slots.Add(entry);
+                    slotType = slot.SlotType,
+                    mode = slot.IsEmpty ? EquipmentEntrySaveMode.Empty : EquipmentEntrySaveMode.InventoryReference,
+                    definitionId = slot.IsEmpty ? string.Empty : slot.Item.ItemId,
+                    itemInstanceId = slot.IsEmpty ? string.Empty : slot.ItemInstanceId
+                });
             }
 
             return saveData;
@@ -222,6 +188,8 @@ namespace UnityIsekaiGame.Equipment
 
         public EquipmentRestoreResult TryRestoreFromSaveData(EquipmentSaveData saveData, DefinitionRegistry registry)
         {
+            EnsureInventory();
+            EnsureInventorySubscription();
             if (saveData == null)
             {
                 return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.MissingSaveData, "Equipment save data is missing.");
@@ -229,21 +197,13 @@ namespace UnityIsekaiGame.Equipment
 
             Dictionary<EquipmentSlotType, EquipmentSlotState> restoredBySlot = CreateEmptySlotMap();
             HashSet<EquipmentSlotType> restoredSlots = new HashSet<EquipmentSlotType>();
-            HashSet<string> instanceIds = new HashSet<string>();
-            IReadOnlyList<EquipmentSlotSaveData> savedSlots = saveData.slots;
-            if (savedSlots == null)
-            {
-                savedSlots = Array.Empty<EquipmentSlotSaveData>();
-            }
+            HashSet<string> equippedInstanceIds = new HashSet<string>(StringComparer.Ordinal);
+            IReadOnlyList<EquipmentSlotSaveData> savedSlots = saveData.slots ?? (IReadOnlyList<EquipmentSlotSaveData>)Array.Empty<EquipmentSlotSaveData>();
 
             for (int i = 0; i < savedSlots.Count; i++)
             {
                 EquipmentSlotSaveData entry = savedSlots[i];
-                if (entry == null)
-                {
-                    continue;
-                }
-
+                if (entry == null) continue;
                 if (!restoredSlots.Add(entry.slotType))
                 {
                     return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.DuplicateSlot, $"Equipment save data contains duplicate {entry.slotType} slots.");
@@ -254,20 +214,13 @@ namespace UnityIsekaiGame.Equipment
                     return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.WrongSlotType, $"Equipment slot '{entry.slotType}' is not supported.");
                 }
 
-                EquipmentRestoreResult entryResult = TryApplyRestoredSlot(entry, registry, instanceIds, restoredSlot);
-                if (!entryResult.Succeeded)
-                {
-                    return entryResult;
-                }
+                EquipmentRestoreResult result = TryApplyRestoredReference(entry, registry, equippedInstanceIds, restoredSlot);
+                if (!result.Succeeded) return result;
             }
 
             slots = new List<EquipmentSlotState>(restoredBySlot.Count);
             Array values = Enum.GetValues(typeof(EquipmentSlotType));
-            for (int i = 0; i < values.Length; i++)
-            {
-                slots.Add(restoredBySlot[(EquipmentSlotType)values.GetValue(i)]);
-            }
-
+            for (int i = 0; i < values.Length; i++) slots.Add(restoredBySlot[(EquipmentSlotType)values.GetValue(i)]);
             EquipmentChanged?.Invoke();
             return EquipmentRestoreResult.Success();
         }
@@ -276,42 +229,155 @@ namespace UnityIsekaiGame.Equipment
         public void DevelopmentClearEquipment()
         {
             EnsureSlots();
-            for (int i = 0; i < slots.Count; i++)
-            {
-                slots[i]?.Clear();
-            }
-
+            for (int i = 0; i < slots.Count; i++) slots[i]?.Clear();
             EquipmentChanged?.Invoke();
         }
 #endif
 
+        private void HandleInventoryChanged()
+        {
+            RemoveDanglingReferences(true);
+        }
+
+        private void RemoveDanglingReferences(bool notify)
+        {
+            if (inventory == null) return;
+            EnsureSlots();
+            bool changed = false;
+            for (int i = 0; i < slots.Count; i++)
+            {
+                EquipmentSlotState slot = slots[i];
+                if (slot == null || slot.IsEmpty) continue;
+                if (inventory.TryGetItemIdentity(slot.ItemInstanceId, out InventorySlot ownedItem, out _)
+                    && ownedItem.Item == slot.Item)
+                {
+                    continue;
+                }
+
+                slot.Clear();
+                changed = true;
+            }
+
+            if (changed && notify) EquipmentChanged?.Invoke();
+        }
+
         private void EnsureInventory()
         {
-            if (inventory == null)
-            {
-                inventory = GetComponent<PlayerInventory>();
-            }
+            if (inventory == null) inventory = GetComponent<PlayerInventory>();
+        }
+
+        private void EnsureInventorySubscription()
+        {
+            if (subscribedInventory == inventory) return;
+            if (subscribedInventory != null) subscribedInventory.InventoryMutated -= HandleInventoryChanged;
+            subscribedInventory = inventory;
+            if (subscribedInventory != null) subscribedInventory.InventoryMutated += HandleInventoryChanged;
         }
 
         private void EnsureSlots()
         {
             slots ??= new List<EquipmentSlotState>();
-
             Array values = Enum.GetValues(typeof(EquipmentSlotType));
-            while (slots.Count < values.Length)
-            {
-                slots.Add(new EquipmentSlotState());
-            }
-
-            if (slots.Count > values.Length)
-            {
-                slots.RemoveRange(values.Length, slots.Count - values.Length);
-            }
-
+            while (slots.Count < values.Length) slots.Add(new EquipmentSlotState());
+            if (slots.Count > values.Length) slots.RemoveRange(values.Length, slots.Count - values.Length);
             for (int i = 0; i < values.Length; i++)
             {
+                slots[i] ??= new EquipmentSlotState();
                 slots[i].Initialize((EquipmentSlotType)values.GetValue(i));
             }
+        }
+
+        private bool ClearDuplicateReferences(string itemInstanceId, EquipmentSlotState target)
+        {
+            bool changed = false;
+            for (int i = 0; i < slots.Count; i++)
+            {
+                EquipmentSlotState slot = slots[i];
+                if (slot == null || ReferenceEquals(slot, target)
+                    || !string.Equals(slot.ItemInstanceId, itemInstanceId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                slot.Clear();
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private EquipmentRestoreResult TryApplyRestoredReference(
+            EquipmentSlotSaveData entry,
+            DefinitionRegistry registry,
+            HashSet<string> equippedInstanceIds,
+            EquipmentSlotState restoredSlot)
+        {
+            if (entry.mode == EquipmentEntrySaveMode.Empty) return EquipmentRestoreResult.Success();
+            if (entry.mode != EquipmentEntrySaveMode.InventoryReference)
+            {
+                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.InvalidItemInstance, "Equipment entries must reference inventory-owned item instances.");
+            }
+
+            if (string.IsNullOrWhiteSpace(entry.definitionId))
+            {
+                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.MissingDefinitionId, "Equipment reference has no definition ID.");
+            }
+
+            if (registry == null || !registry.TryGet(entry.definitionId, out ItemDefinition item))
+            {
+                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.MissingItemDefinition, $"Item definition '{entry.definitionId}' was not found.");
+            }
+
+            EquipmentRestoreResult compatibility = ValidateSlotCompatibility(item, entry.slotType);
+            if (!compatibility.Succeeded) return compatibility;
+            if (!ItemInstanceId.IsValid(entry.itemInstanceId))
+            {
+                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.InvalidItemInstance, $"Equipment item identity '{entry.itemInstanceId}' is invalid.");
+            }
+
+            if (!equippedInstanceIds.Add(entry.itemInstanceId))
+            {
+                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.DuplicateInstanceId, $"Item instance '{entry.itemInstanceId}' is referenced by multiple equipment slots.");
+            }
+
+            if (inventory == null || !inventory.TryGetItemIdentity(entry.itemInstanceId, out InventorySlot ownedItem, out _)
+                || ownedItem.Item != item)
+            {
+                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.InvalidItemInstance, $"Equipment reference '{entry.itemInstanceId}' does not match an inventory-owned {item.DisplayName}.");
+            }
+
+            restoredSlot.SetIdentity(item, entry.itemInstanceId);
+            return EquipmentRestoreResult.Success();
+        }
+
+        private static Dictionary<EquipmentSlotType, EquipmentSlotState> CreateEmptySlotMap()
+        {
+            Dictionary<EquipmentSlotType, EquipmentSlotState> result = new Dictionary<EquipmentSlotType, EquipmentSlotState>();
+            Array values = Enum.GetValues(typeof(EquipmentSlotType));
+            for (int i = 0; i < values.Length; i++)
+            {
+                EquipmentSlotType type = (EquipmentSlotType)values.GetValue(i);
+                EquipmentSlotState slot = new EquipmentSlotState();
+                slot.Initialize(type);
+                result.Add(type, slot);
+            }
+
+            return result;
+        }
+
+        private static EquipmentRestoreResult ValidateSlotCompatibility(ItemDefinition item, EquipmentSlotType slotType)
+        {
+            if (item == null || !item.IsEquippable)
+            {
+                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.WrongDefinitionType, $"{(item == null ? "Item" : item.DisplayName)} cannot be equipped.");
+            }
+
+            if (item.Equipment.SlotType != slotType)
+            {
+                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.WrongSlotType, $"{item.DisplayName} belongs in {FormatSlotName(item.Equipment.SlotType)}, not {FormatSlotName(slotType)}.");
+            }
+
+            return EquipmentRestoreResult.Success();
         }
 
         private static string FormatSlotName(EquipmentSlotType slotType)
@@ -322,163 +388,6 @@ namespace UnityIsekaiGame.Equipment
                 EquipmentSlotType.OffHand => "Off Hand",
                 _ => slotType.ToString()
             };
-        }
-
-        private bool CanReturnEquippedItemToInventory(ItemDefinition item, string itemInstanceId, int removingInventorySlotIndex)
-        {
-            if (item == null)
-            {
-                return true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(itemInstanceId))
-            {
-                return inventory.CanAddExistingItemIdentityAfterRemovingFromSlot(item, itemInstanceId, removingInventorySlotIndex);
-            }
-
-            return inventory.CanAddItemAfterRemovingFromSlot(item, 1, removingInventorySlotIndex, 1);
-        }
-
-        private bool TryReturnEquippedItemToInventory(ItemDefinition item, string itemInstanceId)
-        {
-            if (item == null)
-            {
-                return true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(itemInstanceId))
-            {
-                return inventory.AddExistingItemIdentity(item, itemInstanceId).Succeeded;
-            }
-
-            return inventory.AddItem(item, 1).AddedAll;
-        }
-
-        private void RestoreExtractedInventoryItem(ItemDefinition item, string itemInstanceId)
-        {
-            if (!string.IsNullOrWhiteSpace(itemInstanceId))
-            {
-                inventory.AddExistingItemIdentity(item, itemInstanceId);
-                return;
-            }
-
-            inventory.AddItem(item, 1);
-        }
-
-        private static Dictionary<EquipmentSlotType, EquipmentSlotState> CreateEmptySlotMap()
-        {
-            Dictionary<EquipmentSlotType, EquipmentSlotState> slotMap = new Dictionary<EquipmentSlotType, EquipmentSlotState>();
-            Array values = Enum.GetValues(typeof(EquipmentSlotType));
-            for (int i = 0; i < values.Length; i++)
-            {
-                EquipmentSlotType slotType = (EquipmentSlotType)values.GetValue(i);
-                EquipmentSlotState slot = new EquipmentSlotState();
-                slot.Initialize(slotType);
-                slotMap.Add(slotType, slot);
-            }
-
-            return slotMap;
-        }
-
-        private static EquipmentRestoreResult TryApplyRestoredSlot(
-            EquipmentSlotSaveData entry,
-            DefinitionRegistry registry,
-            HashSet<string> instanceIds,
-            EquipmentSlotState restoredSlot)
-        {
-            if (entry.mode == EquipmentEntrySaveMode.Empty)
-            {
-                return EquipmentRestoreResult.Success();
-            }
-
-            if (entry.mode == EquipmentEntrySaveMode.DefinitionOnly)
-            {
-                return TryApplyRestoredDefinitionItem(entry, registry, restoredSlot);
-            }
-
-            string entryItemInstanceId = entry.itemInstanceId;
-            if (string.IsNullOrWhiteSpace(entryItemInstanceId))
-            {
-                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.InvalidItemInstance, "Equipment stateful item entry has no item instance ID.");
-            }
-
-            if (string.IsNullOrWhiteSpace(entry.definitionId))
-            {
-                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.MissingDefinitionId, "Equipment stateful entry has no definition ID.");
-            }
-
-            if (registry == null || !registry.TryGet(entry.definitionId, out ItemDefinition item))
-            {
-                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.MissingItemDefinition, $"Item definition '{entry.definitionId}' was not found.");
-            }
-
-            EquipmentRestoreResult compatibilityResult = ValidateSlotCompatibility(item, entry.slotType);
-            if (!compatibilityResult.Succeeded)
-            {
-                return compatibilityResult;
-            }
-
-            if (!ItemInstanceId.IsValid(entryItemInstanceId))
-            {
-                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.InvalidItemInstance, $"Equipment item identity '{entryItemInstanceId}' is invalid.");
-            }
-
-            if (!instanceIds.Add(entryItemInstanceId))
-            {
-                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.DuplicateInstanceId, $"Duplicate item instance ID '{entryItemInstanceId}' found in equipment save data.");
-            }
-
-            restoredSlot.SetIdentity(item, entryItemInstanceId);
-            return EquipmentRestoreResult.Success();
-        }
-
-        private static EquipmentRestoreResult TryApplyRestoredDefinitionItem(
-            EquipmentSlotSaveData entry,
-            DefinitionRegistry registry,
-            EquipmentSlotState restoredSlot)
-        {
-            if (string.IsNullOrWhiteSpace(entry.definitionId))
-            {
-                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.MissingDefinitionId, "Equipment entry has no definition ID.");
-            }
-
-            if (registry == null || !registry.TryGet(entry.definitionId, out ItemDefinition item))
-            {
-                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.MissingItemDefinition, $"Item definition '{entry.definitionId}' was not found.");
-            }
-
-            EquipmentRestoreResult compatibilityResult = ValidateSlotCompatibility(item, entry.slotType);
-            if (!compatibilityResult.Succeeded)
-            {
-                return compatibilityResult;
-            }
-
-            string itemInstanceId = string.IsNullOrWhiteSpace(entry.itemInstanceId)
-                ? ItemInstanceId.Generate()
-                : entry.itemInstanceId;
-            if (!ItemInstanceId.IsValid(itemInstanceId))
-            {
-                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.InvalidItemInstance, $"Equipment item identity '{itemInstanceId}' is invalid.");
-            }
-
-            restoredSlot.SetIdentity(item, itemInstanceId);
-            return EquipmentRestoreResult.Success();
-        }
-
-        private static EquipmentRestoreResult ValidateSlotCompatibility(ItemDefinition item, EquipmentSlotType slotType)
-        {
-            if (item == null || !item.IsEquippable)
-            {
-                string itemName = item == null ? "Item" : item.DisplayName;
-                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.WrongDefinitionType, $"{itemName} cannot be equipped.");
-            }
-
-            if (item.Equipment.SlotType != slotType)
-            {
-                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.WrongSlotType, $"{item.DisplayName} belongs in {FormatSlotName(item.Equipment.SlotType)}, not {FormatSlotName(slotType)}.");
-            }
-
-            return EquipmentRestoreResult.Success();
         }
     }
 }

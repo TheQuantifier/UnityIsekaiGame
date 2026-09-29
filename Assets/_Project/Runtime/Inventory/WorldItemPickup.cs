@@ -68,7 +68,13 @@ namespace UnityIsekaiGame.Inventory
                 return;
             }
 
-            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            PrototypePersistenceServiceBehaviour services = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
+            if (services != null && !services.OwnsPlayerInteractor(context.Interactor))
+            {
+                Debug.LogWarning($"{name} rejected pickup by a character that does not own the configured player inventory.", this);
+                return;
+            }
+
             if (TryCollectTrackedRuntimeInstance(inventory, services) || TryCollectSceneAuthoredInstance(context, inventory))
             {
                 return;

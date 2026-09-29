@@ -69,12 +69,15 @@ namespace UnityIsekaiGame.Tests.EditMode
         }
 
         [Test]
-        public void PlayTimeCanExcludeOpenMenuTime()
+        public void PlayTimeContinuesWhileMenuIsOpen()
         {
             PlayTimeTracker tracker = owner.AddComponent<PlayTimeTracker>();
             tracker.Restore(12d);
             tracker.SetMenuOpen(true);
-            Assert.That(tracker.CumulativeSeconds, Is.GreaterThanOrEqualTo(12d));
+            tracker.Advance(3d);
+
+            Assert.That(tracker.CountWhileMenuOpen, Is.True);
+            Assert.That(tracker.CumulativeSeconds, Is.EqualTo(15d));
             tracker.SetMenuOpen(false);
         }
 

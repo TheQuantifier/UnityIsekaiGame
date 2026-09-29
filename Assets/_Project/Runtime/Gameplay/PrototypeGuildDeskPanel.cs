@@ -32,7 +32,6 @@ namespace UnityIsekaiGame.Gameplay
         private void Awake()
         {
             services = GetComponent<PrototypePersistenceServiceBehaviour>();
-            input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
         }
 
         public void OpenAdventurersGuildDesk(string pointId, GameObject interactionOwner)
@@ -95,7 +94,19 @@ namespace UnityIsekaiGame.Gameplay
             GameObject interactionOwner)
         {
             services ??= GetComponent<PrototypePersistenceServiceBehaviour>();
-            input ??= FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            if (services == null || !services.OwnsPlayerInteractor(interactionOwner))
+            {
+                GameHudMessageBus.Show("This desk is not available to that character.");
+                return;
+            }
+
+            input = interactionOwner == null ? null : interactionOwner.GetComponentInParent<PlayerInputReader>();
+            if (input == null || input.GameplayInputBlocked)
+            {
+                GameHudMessageBus.Show("The interacting character is not available to use this desk.");
+                return;
+            }
+
             deskKind = kind;
             interactionPointId = pointId?.Trim() ?? string.Empty;
             questSourceId = sourceId?.Trim() ?? string.Empty;

@@ -19,9 +19,13 @@ namespace UnityIsekaiGame.Inventory.Identity
         private ItemInstanceIdentityRuntime runtime;
         private Func<DefinitionRegistry> registryProvider;
         private bool subscribed;
+        private PlayerInventory subscribedInventory;
+        private PlayerEquipment subscribedEquipment;
         private bool synchronizing;
         private int automaticSynchronizationPauseDepth;
         private string lastFailure;
+        private string lastProjectionFingerprint;
+        private long lastSynchronizedRuntimeRevision = -1L;
 
         public ItemInstanceIdentityRuntime Runtime => runtime;
         public string LastFailure => lastFailure ?? string.Empty;
@@ -58,6 +62,8 @@ namespace UnityIsekaiGame.Inventory.Identity
             inventory = playerInventory;
             equipment = playerEquipment;
             runtime = itemRuntime;
+            lastProjectionFingerprint = null;
+            lastSynchronizedRuntimeRevision = -1L;
             registryProvider = registry;
             ownerPersonId = string.IsNullOrWhiteSpace(ownerId) ? PersistenceService.LocalPlayerId : ownerId;
             if (!string.IsNullOrWhiteSpace(syncNamespace))
@@ -77,6 +83,7 @@ namespace UnityIsekaiGame.Inventory.Identity
             }
 
             ResolveReferences();
+            Subscribe();
             if (inventory == null || equipment == null)
             {
                 lastFailure = "Inventory or equipment is missing.";
@@ -99,6 +106,14 @@ namespace UnityIsekaiGame.Inventory.Identity
             {
                 synchronizing = true;
                 PlayerInventoryEquipmentSaveData saveData = CreateProjectionSaveData();
+                string projectionFingerprint = PersistenceSerialization.Serialize(saveData);
+                if (string.Equals(projectionFingerprint, lastProjectionFingerprint, StringComparison.Ordinal)
+                    && runtime.Revision == lastSynchronizedRuntimeRevision
+                    && string.IsNullOrWhiteSpace(lastFailure))
+                {
+                    return ItemIdentityInventoryBridgeResult.Success(runtime.CreateSaveData(), "Inventory/equipment identity projection is already synchronized.");
+                }
+
                 ItemIdentityInventoryBridgeResult result = ItemIdentityInventoryBridge.SynchronizeInventoryEquipmentRuntime(
                     runtime,
                     saveData,
@@ -106,6 +121,11 @@ namespace UnityIsekaiGame.Inventory.Identity
                     ownerPersonId,
                     synchronizationNamespace);
                 lastFailure = result.Succeeded ? string.Empty : result.Message;
+                if (result.Succeeded)
+                {
+                    lastProjectionFingerprint = projectionFingerprint;
+                    lastSynchronizedRuntimeRevision = runtime.Revision;
+                }
                 return result;
             }
             finally
@@ -177,23 +197,26 @@ namespace UnityIsekaiGame.Inventory.Identity
 
         private void Subscribe()
         {
-            if (subscribed)
+            ResolveReferences();
+            if (subscribed && subscribedInventory == inventory && subscribedEquipment == equipment)
             {
                 return;
             }
 
-            ResolveReferences();
+            Unsubscribe();
             if (inventory != null)
             {
                 inventory.InventoryChanged += OnInventoryOrEquipmentChanged;
+                subscribedInventory = inventory;
             }
 
             if (equipment != null)
             {
                 equipment.EquipmentChanged += OnInventoryOrEquipmentChanged;
+                subscribedEquipment = equipment;
             }
 
-            subscribed = true;
+            subscribed = subscribedInventory != null || subscribedEquipment != null;
         }
 
         private void Unsubscribe()
@@ -203,17 +226,19 @@ namespace UnityIsekaiGame.Inventory.Identity
                 return;
             }
 
-            if (inventory != null)
+            if (subscribedInventory != null)
             {
-                inventory.InventoryChanged -= OnInventoryOrEquipmentChanged;
+                subscribedInventory.InventoryChanged -= OnInventoryOrEquipmentChanged;
             }
 
-            if (equipment != null)
+            if (subscribedEquipment != null)
             {
-                equipment.EquipmentChanged -= OnInventoryOrEquipmentChanged;
+                subscribedEquipment.EquipmentChanged -= OnInventoryOrEquipmentChanged;
             }
 
             subscribed = false;
+            subscribedInventory = null;
+            subscribedEquipment = null;
         }
 
         private void OnInventoryOrEquipmentChanged()

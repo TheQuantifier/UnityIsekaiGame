@@ -33,7 +33,8 @@ namespace UnityIsekaiGame.Combat
             input = input == null ? GetComponent<PlayerInputReader>() : input;
             equipment = equipment == null ? GetComponent<PlayerEquipment>() : equipment;
             inventory = inventory == null ? GetComponent<PlayerInventory>() : inventory;
-            runtimeServices = runtimeServices == null ? FindAnyObjectByType<PrototypePersistenceServiceBehaviour>() : runtimeServices;
+            if (runtimeServices == null || !runtimeServices.OwnsPlayerInteractor(gameObject))
+                runtimeServices = PrototypePersistenceServiceBehaviour.FindForInteractor(gameObject);
             if (attackOrigin == null && Camera.main != null) attackOrigin = Camera.main.transform;
         }
 

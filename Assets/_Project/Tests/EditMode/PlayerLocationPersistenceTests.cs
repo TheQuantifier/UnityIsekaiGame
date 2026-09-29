@@ -254,6 +254,10 @@ namespace UnityIsekaiGame.Tests
             GameObject player = CreateGameObject("Player");
             player.AddComponent(RequiredType("UnityIsekaiGame.Input.PlayerInputReader"));
             Collider collider = player.AddComponent<BoxCollider>();
+            GameObject authority = CreateGameObject("Authority");
+            authority.SetActive(false);
+            Component persistence = authority.AddComponent(RequiredType("UnityIsekaiGame.Gameplay.PrototypePersistenceServiceBehaviour"));
+            SetField(persistence, "playerRoot", player.transform);
 
             int reached = 0;
             Type bus = RequiredType("UnityIsekaiGame.Quests.QuestObjectiveSignalBus");

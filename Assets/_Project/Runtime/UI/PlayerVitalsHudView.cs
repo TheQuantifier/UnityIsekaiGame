@@ -25,6 +25,7 @@ namespace UnityIsekaiGame.UI
 
         private void Awake()
         {
+            ApplyStandaloneBarPresentation();
             if (legacyLabel != null)
             {
                 GameUiTheme.StyleText(legacyLabel, GameUiTextRole.Heading);
@@ -66,8 +67,22 @@ namespace UnityIsekaiGame.UI
             manaBar = manaView;
             defeatedLabel = defeatedText;
             if (legacyLabel != null) legacyLabel.enabled = false;
+            ApplyStandaloneBarPresentation();
             GameUiTheme.StyleText(defeatedLabel, GameUiTextRole.Danger);
             Refresh();
+        }
+
+        private void ApplyStandaloneBarPresentation()
+        {
+            Image background = GetComponent<Image>();
+            if (background != null) background.enabled = false;
+            Outline outline = GetComponent<Outline>();
+            if (outline != null) outline.enabled = false;
+
+            Transform heading = transform.Find("Vitals Heading");
+            if (heading != null) heading.gameObject.SetActive(false);
+            Transform accent = transform.Find("Top Accent");
+            if (accent != null) accent.gameObject.SetActive(false);
         }
 
         public void Refresh()

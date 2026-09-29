@@ -69,19 +69,22 @@ namespace UnityIsekaiGame.Editor
             GameObject root = view.gameObject;
             root.name = "Player Vitals";
             root.transform.SetParent(canvas, false);
-            SetRect(root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -24f), new Vector2(360f, 178f));
+            SetRect(root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -24f), new Vector2(360f, 145f));
             Text legacy = root.GetComponent<Text>();
             if (legacy != null) UnityEngine.Object.DestroyImmediate(legacy);
             Image panel = GetOrAdd<Image>(root);
-            StyleHudPanel(root.transform, panel, GameUiTheme.Danger);
+            panel.enabled = false;
+            Outline panelOutline = panel.GetComponent<Outline>();
+            if (panelOutline != null) panelOutline.enabled = false;
+            Transform topAccent = FindDirectChild(root.transform, "Top Accent");
+            if (topAccent != null) topAccent.gameObject.SetActive(false);
 
             Text heading = EnsureText(root.transform, "Vitals Heading", "ADVENTURER", 16, TextAnchor.MiddleLeft);
-            SetRect(heading.gameObject, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(14f, -8f), new Vector2(-28f, 28f));
-            GameUiTheme.StyleText(heading, GameUiTextRole.Title);
+            heading.gameObject.SetActive(false);
 
-            HudResourceBarView healthBar = EnsureResourceBar(root.transform, "Health Bar", -43f);
-            HudResourceBarView staminaBar = EnsureResourceBar(root.transform, "Stamina Bar", -84f);
-            HudResourceBarView manaBar = EnsureResourceBar(root.transform, "Mana Bar", -125f);
+            HudResourceBarView healthBar = EnsureResourceBar(root.transform, "Health Bar", 0f);
+            HudResourceBarView staminaBar = EnsureResourceBar(root.transform, "Stamina Bar", -41f);
+            HudResourceBarView manaBar = EnsureResourceBar(root.transform, "Mana Bar", -82f);
             Text defeated = EnsureText(root.transform, "Defeated Label", string.Empty, 14, TextAnchor.MiddleCenter);
             SetRect(defeated.gameObject, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(14f, 5f), new Vector2(-28f, 24f));
 
@@ -95,16 +98,26 @@ namespace UnityIsekaiGame.Editor
         private static HudResourceBarView EnsureResourceBar(Transform parent, string name, float y)
         {
             GameObject root = EnsureChild(parent, name);
-            SetRect(root, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(14f, y), new Vector2(-28f, 35f));
+            SetRect(root, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(0f, 35f));
             Image track = GetOrAdd<Image>(root);
-            GameUiTheme.StylePanel(track);
-            track.color = GameUiTheme.SurfaceInset;
+            GameUiTheme.StylePanel(track, raised: true);
+            track.color = new Color(0.12f, 0.07f, 0.035f, 0.72f);
             track.raycastTarget = false;
 
             Image fill = EnsureImage(root.transform, "Fill");
-            SetRect(fill.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(-4f, -4f));
-            fill.type = Image.Type.Filled;
-            fill.fillMethod = Image.FillMethod.Horizontal;
+            SetRect(fill.gameObject, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(3f, 0f), new Vector2(0f, 29f));
+            GameUiTheme.StylePanel(fill);
+            fill.type = Image.Type.Sliced;
+            fill.raycastTarget = false;
+
+            Image highlight = EnsureImage(fill.transform, "Liquid Highlight");
+            SetRect(highlight.gameObject, new Vector2(0f, 0.52f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(3f, -2f), new Vector2(-6f, -3f));
+            GameUiTheme.StylePanel(highlight);
+            highlight.type = Image.Type.Sliced;
+            highlight.color = new Color(1f, 0.96f, 0.82f, 0.18f);
+            highlight.raycastTarget = false;
+            Outline highlightOutline = highlight.GetComponent<Outline>();
+            if (highlightOutline != null) highlightOutline.enabled = false;
 
             Text resourceName = EnsureText(root.transform, "Name", name.Replace(" Bar", string.Empty).ToUpperInvariant(), 13, TextAnchor.MiddleLeft);
             SetRect(resourceName.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(8f, 0f), new Vector2(-16f, 0f));
@@ -112,7 +125,7 @@ namespace UnityIsekaiGame.Editor
             SetRect(value.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(-8f, 0f), new Vector2(-16f, 0f));
 
             HudResourceBarView view = GetOrAdd<HudResourceBarView>(root);
-            view.Configure(fill, resourceName, value);
+            view.Configure(track, fill, highlight, resourceName, value);
             return view;
         }
 
@@ -138,6 +151,7 @@ namespace UnityIsekaiGame.Editor
             Image accent = EnsureImage(root.transform, "Accent");
             SetRect(accent.gameObject, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(0f, 0f), new Vector2(5f, 0f));
             view.Configure(group, panel, accent, label);
+            PersistTransientHud(view, group);
         }
 
         private static void BakeHotbar(Scene scene, Transform canvas)
@@ -180,7 +194,9 @@ namespace UnityIsekaiGame.Editor
             SetRect(title.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(14f, -10f), new Vector2(-28f, -20f));
             Text objective = EnsureText(root.transform, "Quest Objective", string.Empty, 14, TextAnchor.UpperLeft);
             SetRect(objective.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(14f, -46f), new Vector2(-28f, -58f));
-            GetOrAdd<QuestTrackerHudView>(root).Configure(FindAll<PrototypePersistenceServiceBehaviour>(scene).FirstOrDefault(), group, panel, title, objective);
+            QuestTrackerHudView view = GetOrAdd<QuestTrackerHudView>(root);
+            view.Configure(FindAll<PrototypePersistenceServiceBehaviour>(scene).FirstOrDefault(), group, panel, title, objective);
+            PersistTransientHud(view, group);
         }
 
         private static void BakeTargetFrame(Scene scene, Transform canvas)
@@ -201,7 +217,9 @@ namespace UnityIsekaiGame.Editor
             Text value = EnsureText(track.transform, "Health Value", string.Empty, 12, TextAnchor.MiddleCenter);
             SetRect(value.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             PlayerHealth player = FindAll<PlayerHealth>(scene).FirstOrDefault();
-            GetOrAdd<CombatTargetHudView>(root).Configure(Camera.main, player == null ? null : player.transform.root, group, panel, fill, targetName, value);
+            CombatTargetHudView view = GetOrAdd<CombatTargetHudView>(root);
+            view.Configure(Camera.main, player == null ? null : player.transform.root, group, panel, fill, targetName, value);
+            PersistTransientHud(view, group);
         }
 
         private static void BakeReticle(Transform canvas)
@@ -223,12 +241,17 @@ namespace UnityIsekaiGame.Editor
             GameObject root = view.gameObject;
             SetRect(root, new Vector2(0.5f, 0.33f), new Vector2(0.5f, 0.33f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(570f, 62f));
             CanvasGroup group = GetOrAdd<CanvasGroup>(root);
-            Text prompt = MigrateRootText(root, "Prompt Text");
+            Text prompt = MigrateInteractionPromptText(root);
             Image panel = GetOrAdd<Image>(root);
             StyleHudPanel(root.transform, panel, GameUiTheme.Accent);
-            SetRect(prompt.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(50f, 0f), new Vector2(-100f, 0f));
+            SetRect(prompt.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), new Vector2(82f, 0f), new Vector2(-18f, 0f));
             prompt.alignment = TextAnchor.MiddleCenter;
             prompt.fontSize = 17;
+            prompt.resizeTextForBestFit = true;
+            prompt.resizeTextMinSize = 12;
+            prompt.resizeTextMaxSize = 17;
+            prompt.horizontalOverflow = HorizontalWrapMode.Wrap;
+            prompt.verticalOverflow = VerticalWrapMode.Truncate;
             GameObject badge = EnsureChild(root.transform, "Input Badge");
             SetRect(badge, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(12f, 0f), new Vector2(64f, -16f));
             Image badgeImage = GetOrAdd<Image>(badge);
@@ -239,6 +262,30 @@ namespace UnityIsekaiGame.Editor
             Text key = EnsureText(badge.transform, "Input Hint", "[E]", 18, TextAnchor.MiddleCenter);
             SetRect(key.gameObject, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             view.Configure(group, panel, key, prompt);
+        }
+
+        private static Text MigrateInteractionPromptText(GameObject root)
+        {
+            const string canonicalName = "Prompt Text";
+            const string legacyName = "Interaction Prompt Text";
+            Transform canonical = FindDirectChild(root.transform, canonicalName);
+            Transform legacy = FindDirectChild(root.transform, legacyName);
+            if (canonical == null && legacy != null)
+            {
+                legacy.name = canonicalName;
+            }
+
+            Text prompt = MigrateRootText(root, canonicalName);
+            for (int i = root.transform.childCount - 1; i >= 0; i--)
+            {
+                Transform child = root.transform.GetChild(i);
+                if (child != prompt.transform && child.name == legacyName)
+                {
+                    UnityEngine.Object.DestroyImmediate(child.gameObject);
+                }
+            }
+
+            return prompt;
         }
 
         private static void StyleHudPanel(Transform root, Image panel, Color accent)
@@ -253,7 +300,28 @@ namespace UnityIsekaiGame.Editor
 
         private static T[] FindAll<T>(Scene scene) where T : Component => scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<T>(true)).ToArray();
 
-        private static T GetOrAdd<T>(GameObject target) where T : Component => target.GetComponent<T>() ?? target.AddComponent<T>();
+        private static T GetOrAdd<T>(GameObject target) where T : Component
+        {
+            T component = target.GetComponent<T>();
+            if (component == null)
+            {
+                component = target.AddComponent<T>();
+            }
+
+            EditorUtility.SetDirty(target);
+            EditorUtility.SetDirty(component);
+            return component;
+        }
+
+        private static void PersistTransientHud(Component view, CanvasGroup group)
+        {
+            group.alpha = 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            EditorUtility.SetDirty(group.gameObject);
+            EditorUtility.SetDirty(group);
+            EditorUtility.SetDirty(view);
+        }
 
         private static GameObject EnsureChild(Transform parent, string name)
         {

@@ -30,7 +30,9 @@ namespace UnityIsekaiGame.Dialogue
         public bool CanInteract(in InteractionContext context)
         {
             ResolveReferences();
-            if (!enabled || !isActiveAndEnabled || services?.NarrativeCoordinator == null || GameUiModalState.IsModalActive) return false;
+            if (services == null || !services.OwnsPlayerInteractor(context.Interactor))
+                services = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
+            if (!enabled || !isActiveAndEnabled || services?.NarrativeCoordinator == null || !services.OwnsPlayerInteractor(context.Interactor)) return false;
             PlayerInputReader input = context.Interactor == null ? null : context.Interactor.GetComponentInParent<PlayerInputReader>();
             if (input != null && input.GameplayInputBlocked) return false;
             PlayerHealth health = context.Interactor == null ? null : context.Interactor.GetComponentInParent<PlayerHealth>();
@@ -40,7 +42,7 @@ namespace UnityIsekaiGame.Dialogue
         public void Interact(in InteractionContext context)
         {
             if (!CanInteract(context)) return;
-            PrototypeDialoguePanel panel = FindAnyObjectByType<PrototypeDialoguePanel>();
+            PrototypeDialoguePanel panel = services.GetComponent<PrototypeDialoguePanel>();
             if (panel == null)
             {
                 GameHudMessageBus.Show("Dialogue presentation is unavailable.");
@@ -83,7 +85,6 @@ namespace UnityIsekaiGame.Dialogue
         private void ResolveReferences()
         {
             if (personIdentity == null) personIdentity = GetComponent<PersonIdentity>();
-            if (services == null) services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
         }
 
         private string ResolveConversationDefinitionId()

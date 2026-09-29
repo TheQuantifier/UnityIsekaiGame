@@ -27,15 +27,20 @@ namespace UnityIsekaiGame.Gameplay
         public bool CanInteract(in InteractionContext context)
         {
             ResolveReferences(context.Interactor);
-            return services != null && !open;
+            return services != null
+                && services.IsInitialized
+                && services.OwnsPlayerInteractor(context.Interactor)
+                && input != null
+                && !input.GameplayInputBlocked
+                && !open;
         }
 
         public void Interact(in InteractionContext context)
         {
             ResolveReferences(context.Interactor);
-            if (services == null)
+            if (!CanInteract(context))
             {
-                GameHudMessageBus.Show("Economy services are unavailable.");
+                GameHudMessageBus.Show("Market services are unavailable to that character.");
                 return;
             }
 
@@ -139,9 +144,9 @@ namespace UnityIsekaiGame.Gameplay
 
         private void ResolveReferences(GameObject interactor)
         {
-            if (services == null) services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
-            if (input == null && interactor != null) input = interactor.GetComponentInParent<PlayerInputReader>();
-            if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            if (services == null || !services.OwnsPlayerInteractor(interactor))
+                services = PrototypePersistenceServiceBehaviour.FindForInteractor(interactor);
+            input = interactor == null ? null : interactor.GetComponentInParent<PlayerInputReader>();
         }
 
         private void RefreshCatalog(bool force)
@@ -162,6 +167,7 @@ namespace UnityIsekaiGame.Gameplay
             open = false;
             if (input != null) input.SetMenuInputBlocked(this, false);
             else PlayerCursorMode.SetMenuOpen(this, false);
+            input = null;
         }
 
         private static string ShortId(string value) => string.IsNullOrWhiteSpace(value) ? "unassigned" : value.Substring(0, Math.Min(8, value.Length));

@@ -16,8 +16,10 @@ namespace UnityIsekaiGame.CharacterSystem
 
     public sealed class UnityCharacterSimulationClock : ICharacterSimulationClock
     {
-        public double WorldTimeSeconds => Time.timeAsDouble;
-        public float FrameDeltaSeconds => Time.deltaTime;
+        // Character simulation is authoritative world state. Local menus and presentation
+        // time scaling must never suspend resources, biology, or other actor simulation.
+        public double WorldTimeSeconds => Time.unscaledTimeAsDouble;
+        public float FrameDeltaSeconds => Time.unscaledDeltaTime;
     }
 
     public sealed class SequentialCharacterTransactionIdProvider : ICharacterTransactionIdProvider

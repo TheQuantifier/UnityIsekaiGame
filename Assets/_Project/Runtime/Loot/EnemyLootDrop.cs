@@ -125,7 +125,7 @@ namespace UnityIsekaiGame.Loot
             }
 
             Vector3 spawnPosition = GetSpawnPosition(index, totalCount);
-            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            PrototypePersistenceServiceBehaviour services = PrototypePersistenceServiceBehaviour.FindUniqueInitialized();
             bool trackForDecomposition = roll.Quantity == 1
                 && roll.Item.InstanceMode == UnityIsekaiGame.GameData.ItemInstanceMode.AlwaysInstanced
                 && roll.Item.DefaultCompositionTemplate != null

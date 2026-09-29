@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Persistence;
 
 namespace UnityIsekaiGame.Combat
@@ -39,8 +38,7 @@ namespace UnityIsekaiGame.Combat
 
         private void Update()
         {
-            if (GameUiModalState.IsModalActive
-                || health != null && health.IsDefeated
+            if (health != null && health.IsDefeated
                 || enemyController != null && enemyController.IsTargetWithinDetectionRadius())
             {
                 return;

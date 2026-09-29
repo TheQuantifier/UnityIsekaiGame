@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityIsekaiGame.Dialogue;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Interaction;
 using UnityIsekaiGame.WorldLocations;
 using UnityIsekaiGame.WorldLocations.SceneBinding;
@@ -22,16 +23,20 @@ namespace UnityIsekaiGame.PrototypeIntegration
 
         public bool CanHandleInteraction(in InteractionContext context, InteractionPointSnapshot point)
         {
-            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+            PrototypePersistenceServiceBehaviour services = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
+            PlayerInputReader input = context.Interactor == null ? null : context.Interactor.GetComponentInParent<PlayerInputReader>();
             return services?.NarrativeCoordinator != null
-                && !GameUiModalState.IsModalActive
+                && services.OwnsPlayerInteractor(context.Interactor)
+                && input != null
+                && !input.GameplayInputBlocked
                 && !string.IsNullOrWhiteSpace(conversationDefinitionId)
                 && !string.IsNullOrWhiteSpace(providerPersonId);
         }
 
         public void HandleInteraction(in InteractionContext context, InteractionPointSnapshot point)
         {
-            PrototypeDialoguePanel panel = FindAnyObjectByType<PrototypeDialoguePanel>();
+            PrototypePersistenceServiceBehaviour services = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
+            PrototypeDialoguePanel panel = services == null ? null : services.GetComponent<PrototypeDialoguePanel>();
             if (panel == null)
             {
                 GameHudMessageBus.Show("Dialogue presentation is unavailable.");

@@ -18,9 +18,10 @@ namespace UnityIsekaiGame.Inventory.Disassembly
         public string WorldEntityId => GetComponent<WorldEntityIdentity>()?.EntityId ?? $"world-item.{ItemInstanceId}";
         public string SceneKey => GetComponent<WorldEntityIdentity>()?.SceneKey ?? gameObject.scene.name;
 
-        public void Configure(string trackedItemInstanceId)
+        public void Configure(string trackedItemInstanceId, PrototypePersistenceServiceBehaviour persistence = null)
         {
             itemInstanceId = trackedItemInstanceId?.Trim() ?? string.Empty;
+            services = persistence;
             nextEvaluationTime = 0f;
         }
 
@@ -39,7 +40,7 @@ namespace UnityIsekaiGame.Inventory.Disassembly
         {
             nextEvaluationTime = Time.unscaledTime + Mathf.Max(0.1f, evaluationIntervalSeconds);
             if (string.IsNullOrWhiteSpace(ItemInstanceId)) return false;
-            services ??= FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            services ??= PrototypePersistenceServiceBehaviour.FindUniqueInitialized();
             if (services == null) return false;
             bool decomposed = services.TryAdvanceNaturalDecomposition(this);
             if (decomposed) Destroy(gameObject);

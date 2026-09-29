@@ -24,7 +24,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
         private void Awake()
         {
             persistence = GetComponent<PrototypePersistenceServiceBehaviour>();
-            input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            input = persistence == null ? null : persistence.PlayerInput;
             SetVisible(visible);
         }
 
@@ -100,7 +100,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             {
                 RefreshDestinations();
             }
-            if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            if (input == null && persistence != null) input = persistence.PlayerInput;
             if (input != null) input.SetMenuInputBlocked(this, visible, visible ? CloseFromCancel : null);
             else PlayerCursorMode.SetMenuOpen(this, visible, visible ? CloseFromCancel : null);
         }

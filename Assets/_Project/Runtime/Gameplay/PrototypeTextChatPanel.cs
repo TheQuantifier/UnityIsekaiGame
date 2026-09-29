@@ -30,7 +30,7 @@ namespace UnityIsekaiGame.Gameplay
 
         private void Awake()
         {
-            input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            input = GetComponent<PrototypePersistenceServiceBehaviour>()?.PlayerInput;
         }
 
         private void Update()

@@ -44,6 +44,12 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
         public bool CanInteract(in InteractionContext context)
         {
+            PrototypePersistenceServiceBehaviour persistence = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
+            if (persistence == null || !persistence.OwnsPlayerInteractor(context.Interactor))
+            {
+                return false;
+            }
+
             if (Status != WorldSceneBindingStatus.Bound)
             {
                 return false;
@@ -61,7 +67,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
             string serviceId = ResolveServiceId(point);
             if (string.IsNullOrWhiteSpace(serviceId)) return false;
-            InteractionEligibilityResult eligibility = Runtime.EvaluateInteraction(LogicalId, serviceId, PlayerConsumer(), WorldTime());
+            InteractionEligibilityResult eligibility = Runtime.EvaluateInteraction(LogicalId, serviceId, PlayerConsumer(persistence), WorldTime(persistence));
             if (eligibility == null || !eligibility.Eligible) return false;
 
             IInteractionPointDestinationHandler handler = ResolveDestinationHandler();
@@ -70,6 +76,12 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
         public void Interact(in InteractionContext context)
         {
+            PrototypePersistenceServiceBehaviour persistence = PrototypePersistenceServiceBehaviour.FindForInteractor(context.Interactor);
+            if (persistence == null || !persistence.OwnsPlayerInteractor(context.Interactor))
+            {
+                return;
+            }
+
             if (!Runtime.TryGetInteractionPoint(LogicalId, out InteractionPointSnapshot point))
             {
                 ApplyBindingResolution(WorldSceneBindingStatus.WaitingForLogicalRecord, "Interaction request blocked because the authoritative point is missing.");
@@ -78,19 +90,19 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
             LastPoint = point;
             string serviceId = ResolveServiceId(point);
-            double worldTime = WorldTime();
-            InteractionInvocationResult invocation = Runtime.InvokeInteraction(LogicalId, serviceId, PlayerConsumer(), worldTime);
+            double worldTime = WorldTime(persistence);
+            InteractionInvocationResult invocation = Runtime.InvokeInteraction(LogicalId, serviceId, PlayerConsumer(persistence), worldTime);
             if (invocation == null || !invocation.Success)
             {
                 GameHudMessageBus.Show(invocation?.Message ?? "That service is currently unavailable.");
                 return;
             }
             Runtime.SynchronizePhysicalPresence(PlayerBody(), point.ActiveHostLocationId, worldTime);
-            PrototypePersistenceServiceBehaviour services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+            PrototypePersistenceServiceBehaviour services = persistence;
             if (services?.NarrativeCoordinator != null)
                 services.NarrativeCoordinator.HandleInteractionPointUsed(point.InteractionPointId, string.IsNullOrWhiteSpace(invocation.RequestId) ? serviceId : invocation.RequestId);
             else
-                QuestObjectiveSignalBus.Report(QuestObjectiveCategory.UseInteractionPoint, point.InteractionPointId, PrototypeEntityLocationFactory.PlayerPersonId, worldTime, sourceEventId: invocation.RequestId);
+                QuestObjectiveSignalBus.Report(QuestObjectiveCategory.UseInteractionPoint, point.InteractionPointId, persistence.PlayerPersonId, worldTime, sourceEventId: invocation.RequestId);
 
             IInteractionPointDestinationHandler handler = ResolveDestinationHandler();
             if (handler != null)
@@ -109,9 +121,9 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             return point.ServiceDefinitionIds.FirstOrDefault() ?? string.Empty;
         }
 
-        private static EntityLocationReferenceData PlayerConsumer()
+        private static EntityLocationReferenceData PlayerConsumer(PrototypePersistenceServiceBehaviour persistence)
         {
-            return PrototypeEntityLocationFactory.Person(PrototypeEntityLocationFactory.PlayerPersonId);
+            return PrototypeEntityLocationFactory.Person(persistence.PlayerPersonId);
         }
 
         private static EntityLocationReferenceData PlayerBody()
@@ -119,9 +131,8 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
             return PrototypeEntityLocationFactory.Body(PrototypeEntityLocationFactory.PlayerBodyId);
         }
 
-        private static double WorldTime()
+        private static double WorldTime(PrototypePersistenceServiceBehaviour persistence)
         {
-            PrototypePersistenceServiceBehaviour persistence = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
             return persistence?.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble;
         }
 

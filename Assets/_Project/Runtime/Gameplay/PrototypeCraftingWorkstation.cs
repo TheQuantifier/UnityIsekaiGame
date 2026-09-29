@@ -35,16 +35,20 @@ namespace UnityIsekaiGame.Gameplay
 
         public bool CanHandleInteraction(in InteractionContext context, InteractionPointSnapshot point)
         {
-            ResolveServices();
-            return services != null;
+            ResolveServices(context.Interactor);
+            return services != null
+                && services.IsInitialized
+                && services.OwnsPlayerInteractor(context.Interactor)
+                && input != null
+                && !input.GameplayInputBlocked;
         }
 
         public void HandleInteraction(in InteractionContext context, InteractionPointSnapshot point)
         {
-            ResolveServices();
-            if (services == null)
+            ResolveServices(context.Interactor);
+            if (!CanHandleInteraction(context, point))
             {
-                GameHudMessageBus.Show("Crafting services are unavailable.");
+                GameHudMessageBus.Show("Crafting services are unavailable to that character.");
                 return;
             }
 
@@ -403,11 +407,12 @@ namespace UnityIsekaiGame.Gameplay
             return string.IsNullOrWhiteSpace(value) ? "unassigned" : value.Substring(0, Math.Min(8, value.Length));
         }
 
-        private void ResolveServices()
+        private void ResolveServices(GameObject interactor = null)
         {
-            if (services == null) services = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            if (interactor != null && (services == null || !services.OwnsPlayerInteractor(interactor)))
+                services = PrototypePersistenceServiceBehaviour.FindForInteractor(interactor);
             SubscribeToServices(services);
-            if (input == null) input = FindAnyObjectByType<PlayerInputReader>(FindObjectsInactive.Include);
+            if (interactor != null) input = interactor.GetComponentInParent<PlayerInputReader>();
         }
 
         private void SubscribeToServices(PrototypePersistenceServiceBehaviour target)
@@ -432,6 +437,7 @@ namespace UnityIsekaiGame.Gameplay
             open = false;
             if (input != null) input.SetMenuInputBlocked(this, false);
             else PlayerCursorMode.SetMenuOpen(this, false);
+            input = null;
         }
     }
 }

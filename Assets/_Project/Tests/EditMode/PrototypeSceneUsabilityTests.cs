@@ -109,6 +109,41 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void PrototypeUiFolderOwnsEveryCanvasAndDisablesAsOneUnit()
+        {
+            string previousScenePath = UnityEngine.SceneManagement.SceneManager.GetActiveScene().path;
+            GameObject uiRoot = null;
+            bool uiWasActive = true;
+            try
+            {
+                UnityEngine.SceneManagement.Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+                GameObject sceneRoot = scene.GetRootGameObjects().Single(root => root.name == "PrototypeScene");
+                Transform uiTransform = sceneRoot.transform.Find("UI");
+                Assert.That(uiTransform, Is.Not.Null, "PrototypeScene must keep a single UI hierarchy folder.");
+
+                uiRoot = uiTransform.gameObject;
+                uiWasActive = uiRoot.activeSelf;
+                Canvas[] canvases = scene.GetRootGameObjects()
+                    .SelectMany(root => root.GetComponentsInChildren<Canvas>(true))
+                    .ToArray();
+
+                Assert.That(canvases.Length, Is.GreaterThanOrEqualTo(4));
+                Assert.That(canvases.All(canvas => canvas.transform.IsChildOf(uiTransform)), Is.True,
+                    "Every scene UI canvas must stay under PrototypeScene/UI so the hierarchy can be disabled as one unit.");
+
+                uiRoot.SetActive(false);
+                Assert.That(canvases.All(canvas => !canvas.gameObject.activeInHierarchy), Is.True,
+                    "Disabling PrototypeScene/UI must hide every canvas.");
+            }
+            finally
+            {
+                if (uiRoot != null) uiRoot.SetActive(uiWasActive);
+                if (!string.IsNullOrWhiteSpace(previousScenePath)) EditorSceneManager.OpenScene(previousScenePath, OpenSceneMode.Single);
+                else EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            }
+        }
+
+        [Test]
         public void PrototypeInventoryUiIsFullyAuthoredAndShowsOneSectionInEditMode()
         {
             UnityEngine.SceneManagement.Scene scene = EditorSceneManager.OpenScene(ScenePath);

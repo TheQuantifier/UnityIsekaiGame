@@ -37,7 +37,8 @@ namespace UnityIsekaiGame.UI.Parties
         private void OnEnable()
         {
             menu ??= GetComponent<InventoryScreenView>();
-            persistence ??= FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
+            InventoryScreenController controller = GetComponent<InventoryScreenController>() ?? GetComponentInParent<InventoryScreenController>(true);
+            persistence ??= controller?.ResolveRuntimePersistence();
             if (menu != null && !registered) registered = menu.RegisterMenuExtension(this);
             if (persistence != null) persistence.PartyOperations.Changed += OnPartyChanged;
         }
@@ -83,7 +84,6 @@ namespace UnityIsekaiGame.UI.Parties
         public void Refresh() { if (dirty && isActiveAndEnabled) Rebuild(); }
         private void Rebuild()
         {
-            if (persistence == null) persistence = FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include);
             EnsureStructure();
             foreach (Transform child in content.Cast<Transform>().ToArray())
             {

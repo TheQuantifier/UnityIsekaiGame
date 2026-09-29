@@ -24,6 +24,7 @@ namespace UnityIsekaiGame.UI.Inventory
         private readonly List<SaveSlotDescriptor> descriptors = new List<SaveSlotDescriptor>();
 
         private PrototypePersistenceServiceBehaviour persistence;
+        private PersistenceService subscribedPlayerService;
         private Text slotValueText;
         private Text actionValueText;
         private Text detailsText;
@@ -40,41 +41,48 @@ namespace UnityIsekaiGame.UI.Inventory
 
         public void Initialize(PrototypePersistenceServiceBehaviour persistenceService)
         {
-            if (persistence != null && persistence.PlayerService != null)
-            {
-                persistence.PlayerService.SaveSlotsChanged -= HandleSaveSlotsChanged;
-            }
+            UnsubscribeFromSaveSlots();
 
             persistence = persistenceService;
             BuildUi();
-            if (persistence != null && persistence.PlayerService != null)
-            {
-                persistence.PlayerService.SaveSlotsChanged += HandleSaveSlotsChanged;
-            }
+            SubscribeToSaveSlotsIfReady();
 
             Refresh();
         }
 
         private void OnDestroy()
         {
-            if (persistence != null && persistence.PlayerService != null)
-            {
-                persistence.PlayerService.SaveSlotsChanged -= HandleSaveSlotsChanged;
-            }
+            UnsubscribeFromSaveSlots();
         }
 
         public void Refresh()
         {
             descriptors.Clear();
-            if (persistence != null)
+            if (persistence != null && persistence.IsInitialized)
             {
+                SubscribeToSaveSlotsIfReady();
                 descriptors.AddRange(persistence.BuildSaveSlotDescriptors());
             }
 
             selectedSlotIndex = descriptors.Count == 0 ? 0 : Mathf.Clamp(selectedSlotIndex, 0, descriptors.Count - 1);
             selectedActionIndex = Mathf.Clamp(selectedActionIndex, 0, Actions.Length - 1);
-            refreshPending = false;
+            refreshPending = persistence != null && !persistence.IsInitialized;
             Render();
+        }
+
+        private void SubscribeToSaveSlotsIfReady()
+        {
+            PersistenceService current = persistence?.PlayerService;
+            if (ReferenceEquals(current, subscribedPlayerService)) return;
+            UnsubscribeFromSaveSlots();
+            subscribedPlayerService = current;
+            if (subscribedPlayerService != null) subscribedPlayerService.SaveSlotsChanged += HandleSaveSlotsChanged;
+        }
+
+        private void UnsubscribeFromSaveSlots()
+        {
+            if (subscribedPlayerService != null) subscribedPlayerService.SaveSlotsChanged -= HandleSaveSlotsChanged;
+            subscribedPlayerService = null;
         }
 
         public void RefreshIfNeeded()
@@ -188,7 +196,9 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (descriptor == null)
             {
-                detailsText.text = "No save slots are available.";
+                detailsText.text = persistence != null && !persistence.IsInitialized
+                    ? "Save services are still initializing."
+                    : "No save slots are available.";
                 return;
             }
 

@@ -26,6 +26,7 @@ namespace UnityIsekaiGame.Interaction
             }
 
             ApplyTheme();
+            DisableUnboundTextLabels();
             visible = canvasGroup != null ? canvasGroup.alpha > 0.5f : gameObject.activeSelf;
         }
 
@@ -36,6 +37,7 @@ namespace UnityIsekaiGame.Interaction
             inputLabel = shortcut;
             promptText = prompt;
             ApplyTheme();
+            DisableUnboundTextLabels();
             visible = true;
             Hide();
         }
@@ -95,6 +97,19 @@ namespace UnityIsekaiGame.Interaction
             if (panelImage != null) panelImage.raycastTarget = false;
             if (inputLabel != null) inputLabel.raycastTarget = false;
             if (promptText != null) promptText.raycastTarget = false;
+        }
+
+        private void DisableUnboundTextLabels()
+        {
+            Text[] labels = GetComponentsInChildren<Text>(true);
+            for (int i = 0; i < labels.Length; i++)
+            {
+                Text label = labels[i];
+                if (label != null && label != inputLabel && label != promptText)
+                {
+                    label.enabled = false;
+                }
+            }
         }
     }
 }

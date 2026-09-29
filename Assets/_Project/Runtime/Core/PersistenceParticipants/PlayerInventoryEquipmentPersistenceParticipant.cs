@@ -14,7 +14,7 @@ namespace UnityIsekaiGame.Persistence
     public sealed class PlayerInventoryEquipmentPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
     {
         public const string Key = "player.inventory-equipment";
-        public const int CurrentParticipantSchemaVersion = 2;
+        public const int CurrentParticipantSchemaVersion = 3;
 
         private readonly PlayerInventory inventory;
         private readonly PlayerEquipment equipment;
@@ -145,7 +145,7 @@ namespace UnityIsekaiGame.Persistence
                 return PersistenceParticipantPrepareResult.Failure(failureReason);
             }
 
-            if (!ValidateCrossSystemInstanceIds(saveData, out failureReason))
+            if (!ValidateEquipmentReferences(saveData, out failureReason))
             {
                 return PersistenceParticipantPrepareResult.Failure(failureReason);
             }
@@ -270,65 +270,52 @@ namespace UnityIsekaiGame.Persistence
             }
         }
 
-        private static bool ValidateCrossSystemInstanceIds(PlayerInventoryEquipmentSaveData saveData, out string failureReason)
+        private static bool ValidateEquipmentReferences(PlayerInventoryEquipmentSaveData saveData, out string failureReason)
         {
             failureReason = string.Empty;
-            HashSet<string> inventoryIds = new HashSet<string>(StringComparer.Ordinal);
-            CollectInventoryInstanceIds(saveData.inventory, inventoryIds);
-
-            HashSet<string> equipmentIds = new HashSet<string>(StringComparer.Ordinal);
-            CollectEquipmentInstanceIds(saveData.equipment, equipmentIds);
-
-            foreach (string instanceId in inventoryIds)
+            Dictionary<string, string> inventoryItems = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (saveData.inventory?.entries != null)
             {
-                if (equipmentIds.Contains(instanceId))
+                for (int i = 0; i < saveData.inventory.entries.Count; i++)
                 {
-                    failureReason = $"Item instance ID '{instanceId}' appears in both inventory and equipment save data.";
+                    InventoryEntrySaveData entry = saveData.inventory.entries[i];
+                    if (entry == null || entry.mode == InventoryEntrySaveMode.Empty || string.IsNullOrWhiteSpace(entry.itemInstanceId)) continue;
+                    inventoryItems[entry.itemInstanceId] = entry.definitionId;
+                }
+            }
+
+            HashSet<string> equippedIds = new HashSet<string>(StringComparer.Ordinal);
+            if (saveData.equipment?.slots == null)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < saveData.equipment.slots.Count; i++)
+            {
+                EquipmentSlotSaveData entry = saveData.equipment.slots[i];
+                if (entry == null || entry.mode == EquipmentEntrySaveMode.Empty) continue;
+                if (entry.mode != EquipmentEntrySaveMode.InventoryReference)
+                {
+                    failureReason = $"Equipment slot '{entry.slotType}' is not an inventory reference.";
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(entry.itemInstanceId)
+                    || !inventoryItems.TryGetValue(entry.itemInstanceId, out string inventoryDefinitionId)
+                    || !string.Equals(inventoryDefinitionId, entry.definitionId, StringComparison.Ordinal))
+                {
+                    failureReason = $"Equipment slot '{entry.slotType}' does not reference a matching inventory item.";
+                    return false;
+                }
+
+                if (!equippedIds.Add(entry.itemInstanceId))
+                {
+                    failureReason = $"Item instance ID '{entry.itemInstanceId}' is referenced by multiple equipment slots.";
                     return false;
                 }
             }
 
             return true;
-        }
-
-        private static void CollectInventoryInstanceIds(InventorySaveData inventorySaveData, HashSet<string> instanceIds)
-        {
-            if (inventorySaveData?.entries == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < inventorySaveData.entries.Count; i++)
-            {
-                InventoryEntrySaveData entry = inventorySaveData.entries[i];
-                string instanceId = entry == null || entry.mode == InventoryEntrySaveMode.Empty
-                    ? null
-                    : entry.itemInstanceId;
-                if (!string.IsNullOrWhiteSpace(instanceId))
-                {
-                    instanceIds.Add(instanceId);
-                }
-            }
-        }
-
-        private static void CollectEquipmentInstanceIds(EquipmentSaveData equipmentSaveData, HashSet<string> instanceIds)
-        {
-            if (equipmentSaveData?.slots == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < equipmentSaveData.slots.Count; i++)
-            {
-                EquipmentSlotSaveData entry = equipmentSaveData.slots[i];
-                string instanceId = entry == null || entry.mode == EquipmentEntrySaveMode.Empty
-                    ? null
-                    : entry.itemInstanceId;
-                if (!string.IsNullOrWhiteSpace(instanceId))
-                {
-                    instanceIds.Add(instanceId);
-                }
-            }
         }
 
         private sealed class PreparedPayload

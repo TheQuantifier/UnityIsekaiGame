@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.Interaction;
 using UnityIsekaiGame.Crimes;
 using UnityIsekaiGame.Governments;
 using UnityIsekaiGame.Laws;
@@ -60,7 +61,9 @@ namespace UnityIsekaiGame.Tests
             Assert.That(persistence.ItemQualityDefinitionRegistry.TryGet("skill.swordsmanship", out SkillDefinition swordsmanship), Is.True);
             Assert.That(skills.GrantSkill(swordsmanship, SkillGrade.F, SkillAcquisitionSource.Development, "Registration eligibility test").Succeeded, Is.True);
             Assert.That(persistence.WorldInteractionPoints.TryGetPoint(PrototypeInteractionPointDefinitionFactory.AdventurerGuildCounterPointId, out InteractionPointSnapshot counterPoint), Is.True);
-            registrationDesk.HandleInteraction(default, counterPoint);
+            GameObject interactingPlayer = persistence.PlayerInput == null ? null : persistence.PlayerInput.gameObject;
+            Assert.That(interactingPlayer, Is.Not.Null);
+            registrationDesk.HandleInteraction(new InteractionContext(interactingPlayer, interactingPlayer.transform, default), counterPoint);
             PrototypeGuildDeskPanel deskPanel = Object.FindAnyObjectByType<PrototypeGuildDeskPanel>(FindObjectsInactive.Include);
             Assert.That(deskPanel, Is.Not.Null);
             Assert.That(deskPanel.IsOpen, Is.True, "Interacting with the guild counter must open its service menu instead of immediately registering the player.");

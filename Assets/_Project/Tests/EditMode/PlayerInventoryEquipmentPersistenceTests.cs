@@ -37,7 +37,7 @@ namespace UnityIsekaiGame.Tests
             object participant = CreateParticipant(fixture.Inventory, fixture.Equipment, fixture.Registry);
 
             Assert.That(Get<string>(participant, "ParticipantKey"), Is.EqualTo("player.inventory-equipment"));
-            Assert.That(Get<int>(participant, "ParticipantSchemaVersion"), Is.EqualTo(2));
+            Assert.That(Get<int>(participant, "ParticipantSchemaVersion"), Is.EqualTo(3));
             Assert.That(Get<bool>(participant, "IsRequired"), Is.True);
             Assert.That(Get<PersistenceScope>(participant, "Scope"), Is.EqualTo(PersistenceScope.Player));
             Assert.That(Get<string>(participant, "OwnerId"), Is.EqualTo(PersistenceService.LocalPlayerId));
@@ -61,13 +61,13 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(load.Succeeded, Is.True, load.Message);
             Assert.That(Get<int>(GetSlot(fixture.Inventory, 0), "Quantity"), Is.EqualTo(4));
-            Assert.That(Get<bool>(GetSlot(fixture.Inventory, 1), "IsEmpty"), Is.True);
+            Assert.That(Get<string>(GetSlot(fixture.Inventory, 1), "ItemInstanceId"), Is.EqualTo(SwordInstanceId));
             object mainHand = Invoke(fixture.Equipment, "GetSlot", MainHandValue());
             Assert.That(Get<string>(mainHand, "ItemInstanceId"), Is.EqualTo(SwordInstanceId));
         }
 
         [Test]
-        public void PrepareRejectsSameInstanceInInventoryAndEquipmentWithoutMutation()
+        public void PrepareAcceptsEquipmentReferenceToInventoryOwnedInstanceWithoutMutation()
         {
             using RuntimeFixture fixture = RuntimeFixture.Create();
             Invoke(fixture.Inventory, "AddItem", fixture.Potion, 2);
@@ -76,10 +76,9 @@ namespace UnityIsekaiGame.Tests
             AddInventoryStatefulEntry(payload, fixture.Sword, SwordInstanceId);
             AddEquipmentStatefulEntry(payload, fixture.Sword, SwordInstanceId);
 
-            object result = Invoke(participant, "PreparePayload", JsonUtility.ToJson(payload), 2);
+            object result = Invoke(participant, "PreparePayload", JsonUtility.ToJson(payload), 3);
 
-            Assert.That(Get<bool>(result, "Succeeded"), Is.False);
-            Assert.That(Get<string>(result, "Message"), Does.Contain("both inventory and equipment"));
+            Assert.That(Get<bool>(result, "Succeeded"), Is.True, Get<string>(result, "Message"));
             Assert.That(Get<int>(GetSlot(fixture.Inventory, 0), "Quantity"), Is.EqualTo(2));
         }
 
@@ -90,7 +89,8 @@ namespace UnityIsekaiGame.Tests
             object participant = CreateParticipant(fixture.Inventory, fixture.Equipment, fixture.Registry);
             object payload = CreatePayload(3);
 
-            object futureResult = Invoke(participant, "PreparePayload", JsonUtility.ToJson(payload), 3);
+            SetField(payload, "schemaVersion", 4);
+            object futureResult = Invoke(participant, "PreparePayload", JsonUtility.ToJson(payload), 4);
             SetField(payload, "schemaVersion", 1);
             object oldResult = Invoke(participant, "PreparePayload", JsonUtility.ToJson(payload), 1);
 
@@ -178,7 +178,7 @@ namespace UnityIsekaiGame.Tests
             IList slots = (IList)equipmentSave.GetType().GetField("slots").GetValue(equipmentSave);
             object entry = Activator.CreateInstance(RequiredType("UnityIsekaiGame.Equipment.EquipmentSlotSaveData"));
             SetField(entry, "slotType", MainHandValue());
-            SetField(entry, "mode", Enum.Parse(RequiredType("UnityIsekaiGame.Equipment.EquipmentEntrySaveMode"), "StatefulInstance"));
+            SetField(entry, "mode", Enum.Parse(RequiredType("UnityIsekaiGame.Equipment.EquipmentEntrySaveMode"), "InventoryReference"));
             SetField(entry, "definitionId", ((IGameDefinition)item).Id);
             SetField(entry, "itemInstanceId", instanceId);
             slots.Add(entry);
