@@ -9,6 +9,7 @@ namespace UnityIsekaiGame.Inventory
         WrongDefinitionType,
         InvalidQuantity,
         InvalidItemInstance,
-        DuplicateInstanceId
+        DuplicateInstanceId,
+        ExternalAuthority
     }
 }

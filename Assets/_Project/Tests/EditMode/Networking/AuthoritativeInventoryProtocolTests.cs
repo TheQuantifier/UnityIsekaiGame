@@ -1,4 +1,11 @@
 using NUnit.Framework;
+using System.Linq;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+using UnityIsekaiGame.Equipment;
+using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Networking;
 
 namespace UnityIsekaiGame.Tests
@@ -75,6 +82,79 @@ namespace UnityIsekaiGame.Tests
             };
             Assert.That(NetworkInventorySnapshotValidator.TryValidate(partialEmpty, null, 1, out string emptyFailure), Is.False);
             Assert.That(emptyFailure, Does.Contain("Empty inventory slot"));
+        }
+
+        [Test]
+        public void Connected_inventory_rejects_local_mutation_but_accepts_valid_replica_snapshot()
+        {
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(
+                "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset");
+            ItemDefinition item = catalog.DefinitionAssets.OfType<ItemDefinition>()
+                .First(candidate => candidate.InstanceMode != ItemInstanceMode.AlwaysInstanced);
+            GameObject owner = new GameObject("Authoritative Inventory Replica Test");
+            try
+            {
+                PlayerInventory inventory = owner.AddComponent<PlayerInventory>();
+                Assert.That(inventory.AddItem(item, 2).AddedQuantity, Is.EqualTo(2));
+                InventorySaveData snapshot = inventory.CreateSaveData();
+
+                inventory.SetExternalReplicaAuthority(true);
+
+                Assert.That(inventory.RemoveItemAt(0, 1), Is.False);
+                Assert.That(inventory.AddItem(item, 1).AddedQuantity, Is.Zero);
+                Assert.That(inventory.TryRestoreFromSaveData(snapshot, catalog.CreateRegistry()).Status,
+                    Is.EqualTo(InventoryRestoreStatus.ExternalAuthority));
+                Assert.That(inventory.ApplyExternalReplicaSnapshot(snapshot, catalog.CreateRegistry()).Succeeded, Is.True);
+                Assert.That(inventory.CountItem(item), Is.EqualTo(2));
+            }
+            finally
+            {
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void Connected_equipment_rejects_local_mutation_but_accepts_valid_replica_snapshot()
+        {
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(
+                "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset");
+            ItemDefinition item = catalog.DefinitionAssets.OfType<ItemDefinition>().First(candidate => candidate.IsEquippable);
+            GameObject owner = new GameObject("Authoritative Equipment Replica Test");
+            try
+            {
+                PlayerInventory inventory = owner.AddComponent<PlayerInventory>();
+                PlayerEquipment equipment = owner.AddComponent<PlayerEquipment>();
+                Assert.That(inventory.AddItemOrInstances(item, 1).AddedQuantity, Is.EqualTo(1));
+                int slotIndex = Enumerable.Range(0, inventory.Slots.Count)
+                    .First(index => inventory.GetSlot(index)?.Item == item);
+                Assert.That(equipment.EquipFromInventorySlot(slotIndex).Succeeded, Is.True);
+                EquipmentSaveData snapshot = equipment.CreateSaveData();
+
+                inventory.SetExternalReplicaAuthority(true);
+                equipment.SetExternalReplicaAuthority(true);
+
+                Assert.That(equipment.Unequip(item.Equipment.SlotType).Succeeded, Is.False);
+                Assert.That(equipment.TryRestoreFromSaveData(snapshot, catalog.CreateRegistry()).Status,
+                    Is.EqualTo(EquipmentRestoreStatus.ExternalAuthority));
+                Assert.That(equipment.ApplyExternalReplicaSnapshot(snapshot, catalog.CreateRegistry()).Succeeded, Is.True);
+                Assert.That(equipment.GetSlot(item.Equipment.SlotType).IsEmpty, Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void Command_result_messages_are_bounded_to_protocol_limit()
+        {
+            NetworkInventoryCommandResult result = NetworkInventoryCommandResult.Reject(
+                1u,
+                InventoryAuthorityFailure.ServerRejected,
+                new string('界', 200));
+
+            Assert.That(Encoding.UTF8.GetByteCount(result.MessageText),
+                Is.LessThanOrEqualTo(InventoryAuthorityLimits.MaximumResultMessageBytes));
         }
     }
 }

@@ -98,6 +98,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(networkObject.InScenePlaced, Is.False);
             Assert.That(prefab.GetComponent<NetworkPlayerActor>(), Is.Not.Null);
             Assert.That(prefab.GetComponent<NetworkPlayerMovement>(), Is.Not.Null);
+            Assert.That(prefab.GetComponent<NetworkPlayerInventory>(), Is.Not.Null);
             Assert.That(prefab.GetComponent<NetworkTransform>(), Is.Not.Null);
             Assert.That(prefab.GetComponent<CharacterController>(), Is.Not.Null);
             Assert.That(prefabs, Is.Not.Null);

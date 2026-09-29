@@ -9,9 +9,11 @@ namespace UnityIsekaiGame.Inventory
     {
         [SerializeField, Min(1)] private int slotCapacity = 16;
         [SerializeField] private List<InventorySlot> slots = new List<InventorySlot>();
+        private bool externalReplicaAuthorityActive;
 
         public IReadOnlyList<InventorySlot> Slots => slots;
         public int SlotCapacity => slotCapacity;
+        public bool ExternalReplicaAuthorityActive => externalReplicaAuthorityActive;
         internal event Action InventoryMutated;
         public event Action InventoryChanged;
         public event Action<ItemDefinition, int> ItemAdded;
@@ -29,6 +31,11 @@ namespace UnityIsekaiGame.Inventory
 
         public InventoryAddResult AddItem(ItemDefinition item, int quantity)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return new InventoryAddResult(InventoryAddStatus.None, Mathf.Max(0, quantity), 0);
+            }
+
             if (item == null || quantity <= 0)
             {
                 return new InventoryAddResult(InventoryAddStatus.None, Mathf.Max(0, quantity), 0);
@@ -68,6 +75,11 @@ namespace UnityIsekaiGame.Inventory
 
         public InventoryInstanceOperationResult AddExistingItemIdentity(ItemDefinition item, string itemInstanceId, int quantity = 1)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return InventoryInstanceOperationResult.Failure("Inventory is controlled by the server.");
+            }
+
             if (!CanAddItemIdentity(item, itemInstanceId, quantity, out string failureReason))
             {
                 return InventoryInstanceOperationResult.Failure(failureReason);
@@ -83,6 +95,7 @@ namespace UnityIsekaiGame.Inventory
 
         public bool CanAddExistingItemIdentity(ItemDefinition item, string itemInstanceId, int quantity = 1)
         {
+            if (externalReplicaAuthorityActive) return false;
             return CanAddItemIdentity(item, itemInstanceId, quantity, out _);
         }
 
@@ -145,6 +158,12 @@ namespace UnityIsekaiGame.Inventory
             itemInstanceId = string.Empty;
             failureReason = string.Empty;
             EnsureSlotCapacity();
+
+            if (externalReplicaAuthorityActive)
+            {
+                failureReason = "Inventory is controlled by the server.";
+                return false;
+            }
 
             if (slotIndex < 0 || slotIndex >= slots.Count)
             {
@@ -217,6 +236,42 @@ namespace UnityIsekaiGame.Inventory
 
         public InventoryRestoreResult TryRestoreFromSaveData(InventorySaveData saveData, DefinitionRegistry registry)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return InventoryRestoreResult.Failure(InventoryRestoreStatus.ExternalAuthority, "Inventory is controlled by the server.");
+            }
+
+            return RestoreFromSaveDataCore(saveData, registry, true);
+        }
+
+        public InventoryRestoreResult ApplyExternalReplicaSnapshot(
+            InventorySaveData saveData,
+            DefinitionRegistry registry,
+            bool notifyChange = true)
+        {
+            if (!externalReplicaAuthorityActive)
+            {
+                return InventoryRestoreResult.Failure(InventoryRestoreStatus.ExternalAuthority, "External replica authority is not active.");
+            }
+
+            return RestoreFromSaveDataCore(saveData, registry, notifyChange);
+        }
+
+        public void SetExternalReplicaAuthority(bool active)
+        {
+            externalReplicaAuthorityActive = active;
+        }
+
+        public void NotifyExternalReplicaChanged()
+        {
+            if (externalReplicaAuthorityActive) NotifyInventoryChanged();
+        }
+
+        private InventoryRestoreResult RestoreFromSaveDataCore(
+            InventorySaveData saveData,
+            DefinitionRegistry registry,
+            bool notifyChange)
+        {
             if (saveData == null)
             {
                 return InventoryRestoreResult.Failure(InventoryRestoreStatus.MissingSaveData, "Inventory save data is missing.");
@@ -241,17 +296,19 @@ namespace UnityIsekaiGame.Inventory
 
             slotCapacity = restoredCapacity;
             slots = restoredSlots;
-            NotifyInventoryChanged();
+            if (notifyChange) NotifyInventoryChanged();
             return InventoryRestoreResult.Success();
         }
 
         public bool CanAddItem(ItemDefinition item, int quantity)
         {
+            if (externalReplicaAuthorityActive) return false;
             return GetAddableQuantity(item, quantity) >= quantity;
         }
 
         public bool CanAddItemOrInstances(ItemDefinition item, int quantity)
         {
+            if (externalReplicaAuthorityActive) return false;
             if (item == null || quantity <= 0)
             {
                 return false;
@@ -268,6 +325,11 @@ namespace UnityIsekaiGame.Inventory
 
         public InventoryAddResult AddItemOrInstances(ItemDefinition item, int quantity)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return new InventoryAddResult(InventoryAddStatus.None, Mathf.Max(0, quantity), 0);
+            }
+
             if (item == null || quantity <= 0)
             {
                 return new InventoryAddResult(InventoryAddStatus.None, Mathf.Max(0, quantity), 0);
@@ -301,6 +363,7 @@ namespace UnityIsekaiGame.Inventory
 
         public bool RemoveItemAt(int slotIndex, int quantity)
         {
+            if (externalReplicaAuthorityActive) return false;
             EnsureSlotCapacity();
 
             if (slotIndex < 0 || slotIndex >= slots.Count || quantity <= 0)
@@ -345,6 +408,7 @@ namespace UnityIsekaiGame.Inventory
 
         public bool RemoveItem(ItemDefinition item, int quantity)
         {
+            if (externalReplicaAuthorityActive) return false;
             if (item == null || quantity <= 0 || CountItem(item) < quantity)
             {
                 return false;
@@ -374,6 +438,11 @@ namespace UnityIsekaiGame.Inventory
 
         public ItemUseResult UseItem(int slotIndex, GameObject user)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return ItemUseResult.Failure("Inventory is controlled by the server.");
+            }
+
             EnsureSlotCapacity();
 
             if (slotIndex < 0 || slotIndex >= slots.Count)
@@ -427,6 +496,7 @@ namespace UnityIsekaiGame.Inventory
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public void DevelopmentClearInventory()
         {
+            if (externalReplicaAuthorityActive) return;
             EnsureSlotCapacity();
             for (int i = 0; i < slots.Count; i++)
             {

@@ -4,6 +4,7 @@
     "references": [
         "UnityIsekaiGame.GameData",
         "UnityIsekaiGame.Gameplay",
+        "UnityIsekaiGame.Networking.Client",
         "Unity.InputSystem"
     ],
     "includePlatforms": [],

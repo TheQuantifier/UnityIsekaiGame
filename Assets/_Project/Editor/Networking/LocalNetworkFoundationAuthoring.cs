@@ -14,6 +14,8 @@ using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Player;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.ResourceSystem;
+using UnityIsekaiGame.Inventory;
+using UnityIsekaiGame.Equipment;
 
 namespace UnityIsekaiGame.Editor
 {
@@ -43,6 +45,7 @@ namespace UnityIsekaiGame.Editor
             LocalDedicatedServer server = GetOrAdd<LocalDedicatedServer>(root);
             LocalPlayerMovementBridge movementBridge = GetOrAdd<LocalPlayerMovementBridge>(root);
             LocalPlayerVitalsBridge vitalsBridge = GetOrAdd<LocalPlayerVitalsBridge>(root);
+            LocalPlayerInventoryBridge inventoryBridge = GetOrAdd<LocalPlayerInventoryBridge>(root);
             NetworkPrefabsList prefabList = AssetDatabase.LoadAssetAtPath<NetworkPrefabsList>(DefaultNetworkPrefabsPath);
             if (prefabList == null)
             {
@@ -53,9 +56,13 @@ namespace UnityIsekaiGame.Editor
             FirstPersonCharacterMotor playerMotor = UnityEngine.Object.FindAnyObjectByType<FirstPersonCharacterMotor>();
             CharacterResourceCollection playerResources = playerMotor == null ? null : playerMotor.GetComponent<CharacterResourceCollection>();
             PlayerStamina playerStamina = playerMotor == null ? null : playerMotor.GetComponent<PlayerStamina>();
-            if (playerInput == null || playerMotor == null || playerMotor.MovementSettings == null || playerResources == null || playerStamina == null)
+            PlayerInventory playerInventory = playerMotor == null ? null : playerMotor.GetComponent<PlayerInventory>();
+            PlayerEquipment playerEquipment = playerMotor == null ? null : playerMotor.GetComponent<PlayerEquipment>();
+            PrototypePersistenceServiceBehaviour persistence = UnityEngine.Object.FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+            if (playerInput == null || playerMotor == null || playerMotor.MovementSettings == null || playerResources == null || playerStamina == null
+                || playerInventory == null || playerEquipment == null || persistence == null || persistence.DefinitionCatalog == null)
             {
-                throw new InvalidOperationException("The Prototype Scene requires player input, movement, stamina, and resource components for the network bridges.");
+                throw new InvalidOperationException("The Prototype Scene requires player input, movement, vitals, inventory, equipment, persistence, and a definition catalog for the network bridges.");
             }
 
             GameObject playerActorPrefab = EnsurePlayerActorPrefab(playerMotor.MovementSettings, playerStamina);
@@ -84,8 +91,10 @@ namespace UnityIsekaiGame.Editor
             server.ConfigurePlayerSpawn(playerMotor.transform.position, playerMotor.transform.eulerAngles.y);
             server.ConfigurePrototypePlayerMovement(playerMotor.GetComponent<CharacterController>(), playerMotor);
             server.ConfigurePrototypePlayerVitals(playerResources);
+            server.ConfigurePrototypePlayerInventory(playerInventory, playerEquipment, persistence.DefinitionCatalog);
             movementBridge.Configure(client, playerInput, playerMotor, playerMotor.transform);
             vitalsBridge.Configure(client, playerResources, playerInput);
+            inventoryBridge.Configure(client, playerInventory, playerEquipment, persistence.DefinitionCatalog);
 
             EditorUtility.SetDirty(manager);
             EditorUtility.SetDirty(transport);
@@ -93,6 +102,7 @@ namespace UnityIsekaiGame.Editor
             EditorUtility.SetDirty(server);
             EditorUtility.SetDirty(movementBridge);
             EditorUtility.SetDirty(vitalsBridge);
+            EditorUtility.SetDirty(inventoryBridge);
             EditorUtility.SetDirty(prefabList);
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene))
@@ -130,6 +140,7 @@ namespace UnityIsekaiGame.Editor
                 GetOrAdd<NetworkPlayerActor>(contents);
                 NetworkPlayerMovement movement = GetOrAdd<NetworkPlayerMovement>(contents);
                 NetworkPlayerVitals vitals = GetOrAdd<NetworkPlayerVitals>(contents);
+                GetOrAdd<NetworkPlayerInventory>(contents);
                 NetworkTransform networkTransform = GetOrAdd<NetworkTransform>(contents);
                 CharacterController controller = GetOrAdd<CharacterController>(contents);
                 controller.height = 2f;

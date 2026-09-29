@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
+using UnityIsekaiGame.Equipment;
+using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.ResourceSystem;
 
 namespace UnityIsekaiGame.Networking.Server
@@ -11,6 +14,7 @@ namespace UnityIsekaiGame.Networking.Server
     [RequireComponent(typeof(NetworkManager), typeof(UnityTransport))]
     public sealed class LocalDedicatedServer : MonoBehaviour
     {
+        public const string InventorySmokeSeedFlag = "--inventory-smoke-seed";
         [SerializeField] private NetworkManager networkManager;
         [SerializeField] private string listenAddress = LocalServerEndpoint.DefaultListenAddress;
         [SerializeField] private int serverPort = LocalServerEndpoint.DefaultPort;
@@ -22,13 +26,18 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField] private CharacterController prototypePlayerController;
         [SerializeField] private MonoBehaviour prototypePlayerMotor;
         [SerializeField] private CharacterResourceCollection prototypePlayerResources;
+        [SerializeField] private PlayerInventory prototypePlayerInventory;
+        [SerializeField] private PlayerEquipment prototypePlayerEquipment;
+        [SerializeField] private DefinitionCatalog definitionCatalog;
 
         private readonly Dictionary<ulong, string> connectedPlayerIds = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, ConnectionRequestPayload> pendingConnections = new Dictionary<ulong, ConnectionRequestPayload>();
         private readonly Dictionary<ulong, NetworkPlayerActor> playerActors = new Dictionary<ulong, NetworkPlayerActor>();
         private readonly PlayerSessionRegistry playerSessions = new PlayerSessionRegistry();
+        private readonly Dictionary<string, InventorySessionState> inventorySessions = new Dictionary<string, InventorySessionState>(StringComparer.OrdinalIgnoreCase);
         private bool ownsServerSession;
         private bool prototypeMovementSuppressed;
+        private bool inventorySmokeSeeded;
         private bool prototypeControllerWasEnabled;
         private bool prototypeMotorWasEnabled;
         private LocalConnectionStatus status = new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline.");
@@ -97,6 +106,13 @@ namespace UnityIsekaiGame.Networking.Server
             prototypePlayerResources = resources;
         }
 
+        public void ConfigurePrototypePlayerInventory(PlayerInventory inventory, PlayerEquipment equipment, DefinitionCatalog catalog)
+        {
+            prototypePlayerInventory = inventory;
+            prototypePlayerEquipment = equipment;
+            definitionCatalog = catalog;
+        }
+
         public bool StartServer()
         {
             ResolveReferences();
@@ -131,6 +147,8 @@ namespace UnityIsekaiGame.Networking.Server
             pendingConnections.Clear();
             playerActors.Clear();
             playerSessions.Clear();
+            inventorySessions.Clear();
+            inventorySmokeSeeded = false;
             networkManager.NetworkConfig.ConnectionApproval = true;
             networkManager.ConnectionApprovalCallback = ApproveConnection;
             networkManager.OnClientConnectedCallback += OnClientConnected;
@@ -159,6 +177,8 @@ namespace UnityIsekaiGame.Networking.Server
                 pendingConnections.Clear();
                 playerActors.Clear();
                 playerSessions.Clear();
+                inventorySessions.Clear();
+                inventorySmokeSeeded = false;
                 RestorePrototypeMovement();
                 SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline."));
                 return;
@@ -172,6 +192,8 @@ namespace UnityIsekaiGame.Networking.Server
             pendingConnections.Clear();
             playerActors.Clear();
             playerSessions.Clear();
+            inventorySessions.Clear();
+            inventorySmokeSeeded = false;
             RestorePrototypeMovement();
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server stopped.", status.Endpoint));
         }
@@ -262,9 +284,16 @@ namespace UnityIsekaiGame.Networking.Server
             NetworkPlayerActor prefabActor = playerActorPrefab.GetComponent<NetworkPlayerActor>();
             NetworkPlayerMovement prefabMovement = playerActorPrefab.GetComponent<NetworkPlayerMovement>();
             NetworkPlayerVitals prefabVitals = playerActorPrefab.GetComponent<NetworkPlayerVitals>();
-            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null || prefabVitals == null)
+            NetworkPlayerInventory prefabInventory = playerActorPrefab.GetComponent<NetworkPlayerInventory>();
+            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null || prefabVitals == null || prefabInventory == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, NetworkPlayerMovement, and NetworkPlayerVitals components.";
+                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, NetworkPlayerMovement, NetworkPlayerVitals, and NetworkPlayerInventory components.";
+                return false;
+            }
+
+            if (prototypePlayerInventory == null || prototypePlayerEquipment == null || definitionCatalog == null)
+            {
+                failure = "The server requires a prototype inventory, equipment container, and definition catalog for session initialization.";
                 return false;
             }
 
@@ -274,6 +303,7 @@ namespace UnityIsekaiGame.Networking.Server
             actor = instance.GetComponent<NetworkPlayerActor>();
             NetworkPlayerMovement movement = instance.GetComponent<NetworkPlayerMovement>();
             NetworkPlayerVitals vitals = instance.GetComponent<NetworkPlayerVitals>();
+            NetworkPlayerInventory replicatedInventory = instance.GetComponent<NetworkPlayerInventory>();
             try
             {
                 actor.ConfigureServer(session);
@@ -282,6 +312,16 @@ namespace UnityIsekaiGame.Networking.Server
                 {
                     vitals.ConfigureInitialStateServer(initialVitals);
                 }
+
+                InventorySessionState inventoryState = GetOrCreateInventorySession(session.PlayerId);
+                ServerPlayerInventoryAuthority inventoryAuthority = instance.AddComponent<ServerPlayerInventoryAuthority>();
+                inventoryAuthority.Configure(
+                    replicatedInventory,
+                    vitals,
+                    definitionCatalog.CreateRegistry(),
+                    inventoryState.Inventory,
+                    inventoryState.Equipment,
+                    (inventorySave, equipmentSave) => inventorySessions[session.PlayerId] = new InventorySessionState(inventorySave, equipmentSave));
 
                 networkObject.SpawnAsPlayerObject(session.ClientId, true);
                 failure = string.Empty;
@@ -307,9 +347,10 @@ namespace UnityIsekaiGame.Networking.Server
             if (playerActorPrefab.GetComponent<NetworkObject>() == null
                 || playerActorPrefab.GetComponent<NetworkPlayerActor>() == null
                 || playerActorPrefab.GetComponent<NetworkPlayerMovement>() == null
-                || playerActorPrefab.GetComponent<NetworkPlayerVitals>() == null)
+                || playerActorPrefab.GetComponent<NetworkPlayerVitals>() == null
+                || playerActorPrefab.GetComponent<NetworkPlayerInventory>() == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, NetworkPlayerMovement, and NetworkPlayerVitals components.";
+                failure = "The server player actor prefab must contain NetworkObject, NetworkPlayerActor, NetworkPlayerMovement, NetworkPlayerVitals, and NetworkPlayerInventory components.";
                 return false;
             }
 
@@ -339,6 +380,49 @@ namespace UnityIsekaiGame.Networking.Server
             networkManager = networkManager == null ? GetComponent<NetworkManager>() : networkManager;
         }
 
+        private InventorySessionState GetOrCreateInventorySession(string playerId)
+        {
+            if (inventorySessions.TryGetValue(playerId, out InventorySessionState existing))
+            {
+                Debug.Log($"[Network Inventory] Restored authoritative inventory session for reconnecting player '{playerId}'.", this);
+                return existing;
+            }
+
+            EnsureInventorySmokeSeed();
+            InventorySessionState created = new InventorySessionState(
+                prototypePlayerInventory.CreateSaveData(),
+                prototypePlayerEquipment.CreateSaveData());
+            inventorySessions[playerId] = created;
+            return created;
+        }
+
+        private void EnsureInventorySmokeSeed()
+        {
+            if (inventorySmokeSeeded
+                || !HasCommandLineFlag(InventorySmokeSeedFlag))
+            {
+                return;
+            }
+
+            inventorySmokeSeeded = true;
+            DefinitionRegistry definitions = definitionCatalog.CreateRegistry();
+            if (!definitions.TryGet("item.wood-log", out ItemDefinition dropItem)
+                || !definitions.TryGet("item.prototype-sword", out ItemDefinition equipItem)
+                || !definitions.TryGet("item.stamina-potion", out ItemDefinition useItem))
+            {
+                Debug.LogWarning("[Network Inventory] One or more inventory smoke seed items are unavailable.", this);
+                return;
+            }
+
+            InventoryAddResult dropped = prototypePlayerInventory.AddItem(dropItem, 2);
+            InventoryAddResult equipped = prototypePlayerInventory.AddItemOrInstances(equipItem, 1);
+            InventoryAddResult used = prototypePlayerInventory.AddItem(useItem, 2);
+            Debug.Log(
+                $"[Network Inventory] Seeded smoke inventory: {dropped.AddedQuantity} {dropItem.DisplayName}, "
+                + $"{equipped.AddedQuantity} {equipItem.DisplayName}, and {used.AddedQuantity} {useItem.DisplayName}.",
+                this);
+        }
+
         private bool TryCreateInitialVitalsState(out NetworkVitalsState state)
         {
             if (prototypePlayerResources == null
@@ -352,16 +436,29 @@ namespace UnityIsekaiGame.Networking.Server
             }
 
             float health = prototypePlayerResources.GetCurrent(ResourceIds.Health);
+            float maximumStamina = prototypePlayerResources.GetMaximum(ResourceIds.Stamina);
+            float stamina = prototypePlayerResources.GetCurrent(ResourceIds.Stamina);
+            if (HasCommandLineFlag(InventorySmokeSeedFlag))
+            {
+                stamina = Mathf.Max(0f, maximumStamina - 50f);
+            }
+
             state = new NetworkVitalsState(
                 health,
                 prototypePlayerResources.GetMaximum(ResourceIds.Health),
-                prototypePlayerResources.GetCurrent(ResourceIds.Stamina),
-                prototypePlayerResources.GetMaximum(ResourceIds.Stamina),
+                stamina,
+                maximumStamina,
                 prototypePlayerResources.GetCurrent(ResourceIds.Mana),
                 prototypePlayerResources.GetMaximum(ResourceIds.Mana),
                 health <= CharacterResourceCollection.Epsilon ? NetworkActorLifeState.Defeated : NetworkActorLifeState.Active,
                 1u);
             return true;
+        }
+
+        private static bool HasCommandLineFlag(string flag)
+        {
+            return Array.Exists(Environment.GetCommandLineArgs(), value =>
+                string.Equals(value, flag, StringComparison.OrdinalIgnoreCase));
         }
 
         private void SuppressPrototypeMovement()
@@ -464,6 +561,18 @@ namespace UnityIsekaiGame.Networking.Server
 
             Configure(networkManager, options.ListenAddress, options.Port, options.MaximumPlayers);
             StartServer();
+        }
+
+        private sealed class InventorySessionState
+        {
+            public InventorySessionState(InventorySaveData inventory, EquipmentSaveData equipment)
+            {
+                Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
+                Equipment = equipment ?? throw new ArgumentNullException(nameof(equipment));
+            }
+
+            public InventorySaveData Inventory { get; }
+            public EquipmentSaveData Equipment { get; }
         }
     }
 }

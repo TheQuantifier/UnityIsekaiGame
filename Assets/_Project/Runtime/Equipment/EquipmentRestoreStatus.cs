@@ -10,6 +10,7 @@ namespace UnityIsekaiGame.Equipment
         WrongDefinitionType,
         WrongSlotType,
         InvalidItemInstance,
-        DuplicateInstanceId
+        DuplicateInstanceId,
+        ExternalAuthority
     }
 }

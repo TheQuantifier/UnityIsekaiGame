@@ -4981,6 +4981,7 @@ MonoBehaviour:
   spellManagementView: {fileID: 472352635}
   questJournalView: {fileID: 1997247200}
   itemUser: {fileID: 100000}
+  inventoryAuthority: {fileID: 0}
   saveLoadDefinitionCatalog: {fileID: 0}
   saveLoadPersistence: {fileID: 0}
   columns: 4
@@ -13502,6 +13503,7 @@ GameObject:
   - component: {fileID: 850340034}
   - component: {fileID: 850340039}
   - component: {fileID: 850340040}
+  - component: {fileID: 850340041}
   m_Layer: 0
   m_Name: Local Network Runtime
   m_TagString: Untagged
@@ -13532,6 +13534,9 @@ MonoBehaviour:
   prototypePlayerController: {fileID: 100002}
   prototypePlayerMotor: {fileID: 100004}
   prototypePlayerResources: {fileID: 343134210}
+  prototypePlayerInventory: {fileID: 100006}
+  prototypePlayerEquipment: {fileID: 343134188}
+  definitionCatalog: {fileID: 11400000, guid: 357d3d18865946889262f9bf55802d62, type: 2}
 --- !u!114 &850340035
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13669,6 +13674,22 @@ MonoBehaviour:
   client: {fileID: 850340035}
   localResources: {fileID: 343134210}
   input: {fileID: 100003}
+--- !u!114 &850340041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 850340033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 662925883d6e49f1989b018cf226cc36, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Networking.Client::UnityIsekaiGame.Networking.Client.LocalPlayerInventoryBridge
+  client: {fileID: 850340035}
+  localInventory: {fileID: 100006}
+  localEquipment: {fileID: 343134188}
+  definitionCatalog: {fileID: 11400000, guid: 357d3d18865946889262f9bf55802d62, type: 2}
 --- !u!1 &851981566
 GameObject:
   m_ObjectHideFlags: 0

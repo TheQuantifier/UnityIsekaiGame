@@ -15,8 +15,10 @@ namespace UnityIsekaiGame.Equipment
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private List<EquipmentSlotState> slots = new List<EquipmentSlotState>();
         private PlayerInventory subscribedInventory;
+        private bool externalReplicaAuthorityActive;
 
         public IReadOnlyList<EquipmentSlotState> Slots => slots;
+        public bool ExternalReplicaAuthorityActive => externalReplicaAuthorityActive;
         public event Action EquipmentChanged;
 
         private void Awake()
@@ -47,6 +49,11 @@ namespace UnityIsekaiGame.Equipment
 
         public EquipmentOperationResult EquipFromInventorySlot(int inventorySlotIndex)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return EquipmentOperationResult.Failure("Equipment is controlled by the server.");
+            }
+
             EnsureInventory();
             EnsureInventorySubscription();
             if (inventory == null)
@@ -103,6 +110,11 @@ namespace UnityIsekaiGame.Equipment
 
         public EquipmentOperationResult Unequip(EquipmentSlotType slotType)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return EquipmentOperationResult.Failure("Equipment is controlled by the server.");
+            }
+
             EquipmentSlotState slot = GetSlot(slotType);
             if (slot == null || slot.IsEmpty)
             {
@@ -143,6 +155,7 @@ namespace UnityIsekaiGame.Equipment
 
         public bool RemoveItemForDecomposition(string itemInstanceId, bool notifyChange = true)
         {
+            if (externalReplicaAuthorityActive) return false;
             if (!TryGetSlotForItem(itemInstanceId, out EquipmentSlotState slot)) return false;
             slot.Clear();
             if (notifyChange) EquipmentChanged?.Invoke();
@@ -151,6 +164,7 @@ namespace UnityIsekaiGame.Equipment
 
         public void NotifyEquipmentStateChanged()
         {
+            if (externalReplicaAuthorityActive) return;
             EquipmentChanged?.Invoke();
         }
 
@@ -188,6 +202,42 @@ namespace UnityIsekaiGame.Equipment
 
         public EquipmentRestoreResult TryRestoreFromSaveData(EquipmentSaveData saveData, DefinitionRegistry registry)
         {
+            if (externalReplicaAuthorityActive)
+            {
+                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.ExternalAuthority, "Equipment is controlled by the server.");
+            }
+
+            return RestoreFromSaveDataCore(saveData, registry, true);
+        }
+
+        public EquipmentRestoreResult ApplyExternalReplicaSnapshot(
+            EquipmentSaveData saveData,
+            DefinitionRegistry registry,
+            bool notifyChange = true)
+        {
+            if (!externalReplicaAuthorityActive)
+            {
+                return EquipmentRestoreResult.Failure(EquipmentRestoreStatus.ExternalAuthority, "External replica authority is not active.");
+            }
+
+            return RestoreFromSaveDataCore(saveData, registry, notifyChange);
+        }
+
+        public void SetExternalReplicaAuthority(bool active)
+        {
+            externalReplicaAuthorityActive = active;
+        }
+
+        public void NotifyExternalReplicaChanged()
+        {
+            if (externalReplicaAuthorityActive) EquipmentChanged?.Invoke();
+        }
+
+        private EquipmentRestoreResult RestoreFromSaveDataCore(
+            EquipmentSaveData saveData,
+            DefinitionRegistry registry,
+            bool notifyChange)
+        {
             EnsureInventory();
             EnsureInventorySubscription();
             if (saveData == null)
@@ -221,13 +271,14 @@ namespace UnityIsekaiGame.Equipment
             slots = new List<EquipmentSlotState>(restoredBySlot.Count);
             Array values = Enum.GetValues(typeof(EquipmentSlotType));
             for (int i = 0; i < values.Length; i++) slots.Add(restoredBySlot[(EquipmentSlotType)values.GetValue(i)]);
-            EquipmentChanged?.Invoke();
+            if (notifyChange) EquipmentChanged?.Invoke();
             return EquipmentRestoreResult.Success();
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public void DevelopmentClearEquipment()
         {
+            if (externalReplicaAuthorityActive) return;
             EnsureSlots();
             for (int i = 0; i < slots.Count; i++) slots[i]?.Clear();
             EquipmentChanged?.Invoke();

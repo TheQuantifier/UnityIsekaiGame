@@ -16,6 +16,7 @@ using UnityIsekaiGame.Stats;
 using UnityIsekaiGame.StatusEffects;
 using UnityIsekaiGame.Traits;
 using UnityIsekaiGame.UI.Quests;
+using UnityIsekaiGame.Networking.Client;
 
 namespace UnityIsekaiGame.UI.Inventory
 {
@@ -40,6 +41,7 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private SpellManagementView spellManagementView;
         [SerializeField] private QuestJournalView questJournalView;
         [SerializeField] private GameObject itemUser;
+        [SerializeField] private LocalPlayerInventoryBridge inventoryAuthority;
         [Header("Save/Load")]
         [SerializeField] private DefinitionCatalog saveLoadDefinitionCatalog;
         [SerializeField] private PrototypePersistenceServiceBehaviour saveLoadPersistence;
@@ -58,6 +60,11 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void Awake()
         {
+            if (inventoryAuthority == null)
+            {
+                inventoryAuthority = FindAnyObjectByType<LocalPlayerInventoryBridge>();
+            }
+
             if (equipment == null && inventory != null)
             {
                 equipment = inventory.GetComponent<PlayerEquipment>();
@@ -116,6 +123,12 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             if (ResolveNarrativeCoordinator() != null) ResolveNarrativeCoordinator().Changed += RefreshIfOpen;
+
+            if (inventoryAuthority != null)
+            {
+                inventoryAuthority.ReplicaChanged += RefreshIfOpen;
+                inventoryAuthority.FeedbackReceived += OnInventoryAuthorityFeedback;
+            }
 
             SubscribeCharacterSources();
         }
@@ -184,6 +197,12 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             if (ResolveNarrativeCoordinator() != null) ResolveNarrativeCoordinator().Changed -= RefreshIfOpen;
+
+            if (inventoryAuthority != null)
+            {
+                inventoryAuthority.ReplicaChanged -= RefreshIfOpen;
+                inventoryAuthority.FeedbackReceived -= OnInventoryAuthorityFeedback;
+            }
 
             UnsubscribeCharacterSources();
 
@@ -392,6 +411,14 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
+            if (inventoryAuthority != null && inventoryAuthority.IsServerAuthorityActive)
+            {
+                SetAuthorityRequestFeedback(
+                    inventoryAuthority.RequestUse(selectedSlotIndex),
+                    "Use request sent to server.");
+                return;
+            }
+
             ItemUseResult result = inventory.UseItem(selectedSlotIndex, itemUser);
             if (!result.Succeeded)
             {
@@ -413,6 +440,15 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
+            InventorySlot selected = inventory == null ? null : inventory.GetSlot(selectedSlotIndex);
+            if (inventoryAuthority != null && inventoryAuthority.IsServerAuthorityActive)
+            {
+                bool requested = selected != null && !selected.IsEmpty && selected.Item?.IsEquippable == true
+                    && inventoryAuthority.RequestEquip(selectedSlotIndex, selected.Item.Equipment.SlotType);
+                SetAuthorityRequestFeedback(requested, "Equip request sent to server.");
+                return;
+            }
+
             EquipmentOperationResult result = equipment.EquipFromInventorySlot(selectedSlotIndex);
             Debug.Log(result.Message);
 
@@ -428,6 +464,14 @@ namespace UnityIsekaiGame.UI.Inventory
         {
             if (!isOpen || equipment == null)
             {
+                return;
+            }
+
+            if (inventoryAuthority != null && inventoryAuthority.IsServerAuthorityActive)
+            {
+                SetAuthorityRequestFeedback(
+                    inventoryAuthority.RequestUnequip(selectedEquipmentSlot),
+                    "Unequip request sent to server.");
                 return;
             }
 
@@ -508,6 +552,14 @@ namespace UnityIsekaiGame.UI.Inventory
             ItemDefinition droppedItem = slot.Item;
             string droppedName = droppedItem.DisplayName;
             int quantity = dropEntireStack ? slot.Quantity : 1;
+            if (inventoryAuthority != null && inventoryAuthority.IsServerAuthorityActive)
+            {
+                SetAuthorityRequestFeedback(
+                    inventoryAuthority.RequestDrop(selectedSlotIndex, quantity),
+                    "Drop request sent to server.");
+                return;
+            }
+
             Vector3 forward = Vector3.ProjectOnPlane(source.forward, Vector3.up).normalized;
             if (forward.sqrMagnitude < 0.01f) forward = Vector3.forward;
             Vector3 dropPosition = source.position + forward * 1.25f + Vector3.up * 0.35f;
@@ -549,6 +601,17 @@ namespace UnityIsekaiGame.UI.Inventory
             return droppedEntireStack && quantity > 1
                 ? $"Dropped all {quantity} {itemName}."
                 : $"Dropped 1 {itemName}.";
+        }
+
+        private void SetAuthorityRequestFeedback(bool requested, string pendingMessage)
+        {
+            view?.SetFeedback(requested ? pendingMessage : "The server inventory is not ready.");
+        }
+
+        private void OnInventoryAuthorityFeedback(string message)
+        {
+            view?.SetFeedback(message);
+            RefreshIfOpen();
         }
 
         private void SelectSlot(int slotIndex)

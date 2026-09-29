@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using Unity.Collections;
 using Unity.Netcode;
 
@@ -73,6 +74,66 @@ namespace UnityIsekaiGame.Networking
 
         public static InventoryCommandValidationResult Success() => new InventoryCommandValidationResult(true, InventoryAuthorityFailure.None, string.Empty);
         public static InventoryCommandValidationResult Reject(InventoryAuthorityFailure failure, string message) => new InventoryCommandValidationResult(false, failure, message);
+    }
+
+    public struct NetworkInventoryCommandResult : INetworkSerializable, IEquatable<NetworkInventoryCommandResult>
+    {
+        public NetworkInventoryCommandResult(uint sequence, bool succeeded, InventoryAuthorityFailure failure, string message)
+        {
+            Sequence = sequence;
+            Succeeded = succeeded;
+            Failure = failure;
+            Message = LimitMessage(message);
+        }
+
+        public uint Sequence;
+        public bool Succeeded;
+        public InventoryAuthorityFailure Failure;
+        public FixedString512Bytes Message;
+        public string MessageText => Message.ToString();
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref Sequence);
+            serializer.SerializeValue(ref Succeeded);
+            serializer.SerializeValue(ref Failure);
+            serializer.SerializeValue(ref Message);
+        }
+
+        public bool Equals(NetworkInventoryCommandResult other)
+        {
+            return Sequence == other.Sequence
+                && Succeeded == other.Succeeded
+                && Failure == other.Failure
+                && Message.Equals(other.Message);
+        }
+
+        public override bool Equals(object obj) => obj is NetworkInventoryCommandResult other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(Sequence, Succeeded, (byte)Failure, Message);
+
+        public static NetworkInventoryCommandResult Success(uint sequence, string message)
+        {
+            return new NetworkInventoryCommandResult(sequence, true, InventoryAuthorityFailure.None, message);
+        }
+
+        public static NetworkInventoryCommandResult Reject(uint sequence, InventoryAuthorityFailure failure, string message)
+        {
+            return new NetworkInventoryCommandResult(sequence, false, failure, message);
+        }
+
+        private static string LimitMessage(string message)
+        {
+            if (string.IsNullOrEmpty(message)) return string.Empty;
+            if (Encoding.UTF8.GetByteCount(message) <= InventoryAuthorityLimits.MaximumResultMessageBytes) return message;
+
+            int length = Math.Min(message.Length, InventoryAuthorityLimits.MaximumResultMessageBytes);
+            while (length > 0 && Encoding.UTF8.GetByteCount(message, 0, length) > InventoryAuthorityLimits.MaximumResultMessageBytes)
+            {
+                length--;
+            }
+
+            return message.Substring(0, length);
+        }
     }
 
     public static class NetworkInventoryCommandValidator
@@ -261,17 +322,15 @@ namespace UnityIsekaiGame.Networking
                     return false;
                 }
 
-                if (slot.IsStateful)
+                if (slot.IsStateful && string.IsNullOrWhiteSpace(instanceId))
                 {
-                    if (string.IsNullOrWhiteSpace(instanceId) || !instances.TryAdd(instanceId, slot))
-                    {
-                        failure = $"Inventory slot {slot.SlotIndex} has a missing or duplicate item identity.";
-                        return false;
-                    }
+                    failure = $"Stateful inventory slot {slot.SlotIndex} has no item identity.";
+                    return false;
                 }
-                else if (!string.IsNullOrEmpty(instanceId))
+
+                if (!string.IsNullOrEmpty(instanceId) && !instances.TryAdd(instanceId, slot))
                 {
-                    failure = $"Definition stack in inventory slot {slot.SlotIndex} must not contain an instance identity.";
+                    failure = $"Inventory slot {slot.SlotIndex} has a duplicate item identity.";
                     return false;
                 }
             }
@@ -305,6 +364,7 @@ namespace UnityIsekaiGame.Networking
                 if (string.IsNullOrWhiteSpace(instanceId)
                     || !equippedInstances.Add(instanceId)
                     || !instances.TryGetValue(instanceId, out NetworkInventorySlotState owned)
+                    || !owned.IsStateful
                     || !string.Equals(owned.DefinitionId.ToString(), entry.DefinitionId.ToString(), StringComparison.Ordinal))
                 {
                     failure = $"Equipment slot {entry.EquipmentSlot} does not reference one matching inventory-owned item instance.";

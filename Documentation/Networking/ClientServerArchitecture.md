@@ -65,7 +65,7 @@ The existing `UnityIsekaiGame.Gameplay` assembly still contains some prototype-l
 The extraction order is:
 
 1. Network protocol, replication, client, server, and UI physical roots — complete.
-2. Server-authoritative inventory commands and snapshots.
+2. Server-authoritative inventory commands and snapshots — complete in Phase 5 Group 6.
 3. Combat, ability, quest, party, and interaction command boundaries.
 4. Server-only persistence ownership and player-session restore.
 5. Split reusable gameplay domains into embedded versioned packages.
