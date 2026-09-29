@@ -16,6 +16,30 @@ Maintenance M1 reorganizes project-owned Unity assets under `Assets/_Project`.
 
 `Assets/ThirdParty` and `Assets/StreamingAssets` are reserved for future use and should only be created when needed.
 
+## Runtime Authority Roots
+
+Runtime code is physically separated by execution authority:
+
+- `Runtime/Shared`: contracts, deterministic models, and replicated state required by both executables. It must not reference Client, Server, UI, or local input code.
+- `Runtime/Client`: connection clients, local input adapters, cameras, presentation bridges, and other code that may run only on a player's process.
+- `Runtime/Server`: admission, sessions, authoritative command handling, spawning, persistence ownership, and world simulation adapters.
+- Other folders directly under `Runtime` currently contain reusable game-domain code. Those systems move under `Shared` only after their APIs no longer depend on prototype player presentation.
+
+Networking follows the enforced layout:
+
+```text
+Runtime/
+├─ Shared/Networking/
+│  ├─ Protocol/
+│  └─ Replication/
+├─ Client/
+│  ├─ Networking/
+│  └─ UI/
+└─ Server/Networking/
+```
+
+Project-specific networking authoring lives in `Editor/Networking`, network tests live in `Tests/EditMode/Networking`, and architecture/history documents live in `Documentation/Networking`.
+
 ## Character and Actor Boundaries
 
 - `Runtime/Characters` owns reusable character systems shared by players, NPCs, companions, enemies, summons, and future remote players.
@@ -42,10 +66,14 @@ M1.1 splits project-owned code into explicit assemblies:
 
 - `UnityIsekaiGame.GameData`: stable definition interfaces, catalogs, registry, validation, and persistence definition primitives.
 - `UnityIsekaiGame.Gameplay`: production runtime gameplay systems. It may reference `GameData`, but not UI, Development, Editor, or Tests.
-- `UnityIsekaiGame.UI`: production runtime UI. It may reference `GameData` and `Gameplay`.
+- `UnityIsekaiGame.UI`: client-only production runtime UI under `Runtime/Client/UI`. It may reference `GameData` and `Gameplay`.
 - `UnityIsekaiGame.Development`: Editor/development-build tools such as the Prototype Test Lab. It may reference runtime/UI contracts, but production runtime assemblies must not reference it.
 - `UnityIsekaiGame.Editor`: Editor-only validation, setup, and batch tooling.
 - `UnityIsekaiGame.EditModeTests`: Editor-only test assembly.
+- `UnityIsekaiGame.Networking.Protocol`: transport-independent payloads, launch options, endpoint validation, and session records under `Runtime/Shared`.
+- `UnityIsekaiGame.Networking.Shared`: Netcode replication and deterministic authoritative models under `Runtime/Shared`.
+- `UnityIsekaiGame.Networking.Client`: local connection and presentation/input bridges under `Runtime/Client`.
+- `UnityIsekaiGame.Networking.Server`: server lifecycle, admission, sessions, and spawning under `Runtime/Server`.
 
 Dependency direction is intentionally one-way:
 
@@ -59,7 +87,7 @@ The project must support a production configuration where Development, Test Lab,
 
 Current rules:
 
-- Production runtime code lives in `GameData`, `Gameplay`, and `UI`.
+- Production runtime code lives in `GameData`, `Gameplay`, `UI`, and the four networking assemblies.
 - Production runtime assemblies must not reference `UnityIsekaiGame.Development`, `UnityIsekaiGame.Editor`, or `UnityIsekaiGame.EditModeTests`.
 - Production prefabs must not contain Development components.
 - Production scenes must not contain Test Lab components.

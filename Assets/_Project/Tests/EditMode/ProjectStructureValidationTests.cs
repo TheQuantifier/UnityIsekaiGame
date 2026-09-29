@@ -44,6 +44,19 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void Client_server_and_shared_network_assemblies_use_physical_authority_roots()
+        {
+            Assert.That(Directory.Exists("Assets/_Project/Runtime/Networking"), Is.False, "The former mixed networking root must not return.");
+            Assert.That(File.Exists("Assets/_Project/Runtime/Shared/Networking/Protocol/UnityIsekaiGame.Networking.Protocol.asmdef"), Is.True);
+            Assert.That(File.Exists("Assets/_Project/Runtime/Shared/Networking/Replication/UnityIsekaiGame.Networking.Shared.asmdef"), Is.True);
+            Assert.That(File.Exists("Assets/_Project/Runtime/Client/Networking/UnityIsekaiGame.Networking.Client.asmdef"), Is.True);
+            Assert.That(File.Exists("Assets/_Project/Runtime/Client/UI/UnityIsekaiGame.UI.asmdef"), Is.True);
+            Assert.That(File.Exists("Assets/_Project/Runtime/Server/Networking/UnityIsekaiGame.Networking.Server.asmdef"), Is.True);
+            Assert.That(File.Exists("Assets/_Project/Editor/Networking/LocalNetworkFoundationAuthoring.cs"), Is.True);
+            Assert.That(File.Exists("Assets/_Project/Tests/EditMode/Networking/LocalNetworkFoundationTests.cs"), Is.True);
+        }
+
+        [Test]
         public void TerrainDataAssetsAreTrackedAsBinary()
         {
             Assert.That(File.Exists(".gitattributes"), Is.True, "Missing repository .gitattributes.");

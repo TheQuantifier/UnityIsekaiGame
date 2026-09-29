@@ -210,7 +210,7 @@ namespace UnityIsekaiGame.Editor
                         report.AddError($"Runtime script '{normalized}' imports Development. Runtime assemblies must not depend on development tooling.");
                     }
 
-                    bool isUiRuntime = normalized.StartsWith("Assets/_Project/Runtime/UI/", StringComparison.Ordinal);
+                    bool isUiRuntime = normalized.StartsWith("Assets/_Project/Runtime/Client/UI/", StringComparison.Ordinal);
                     if (!isUiRuntime && Regex.IsMatch(contents, @"using\s+UnityIsekaiGame\.UI(?:\.|\s*;)"))
                     {
                         report.AddError($"Runtime script '{normalized}' imports UI. Gameplay/Core runtime code must communicate through gameplay-owned contracts.");
@@ -346,6 +346,11 @@ namespace UnityIsekaiGame.Editor
             RequireAsmdef(report, asmdefs, "UnityIsekaiGame.Development");
             RequireAsmdef(report, asmdefs, "UnityIsekaiGame.Editor");
             RequireAsmdef(report, asmdefs, "UnityIsekaiGame.EditModeTests");
+            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.UI", "Assets/_Project/Runtime/Client/UI/UnityIsekaiGame.UI.asmdef");
+            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Protocol", "Assets/_Project/Runtime/Shared/Networking/Protocol/UnityIsekaiGame.Networking.Protocol.asmdef");
+            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Shared", "Assets/_Project/Runtime/Shared/Networking/Replication/UnityIsekaiGame.Networking.Shared.asmdef");
+            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Client", "Assets/_Project/Runtime/Client/Networking/UnityIsekaiGame.Networking.Client.asmdef");
+            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Server", "Assets/_Project/Runtime/Server/Networking/UnityIsekaiGame.Networking.Server.asmdef");
 
             ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.GameData", "UnityIsekaiGame.Gameplay");
             ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.GameData", "UnityIsekaiGame.UI");
@@ -361,6 +366,22 @@ namespace UnityIsekaiGame.Editor
             ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.UI", "UnityIsekaiGame.EditModeTests");
             ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Development", "UnityIsekaiGame.Editor");
             ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Development", "UnityIsekaiGame.EditModeTests");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Protocol", "UnityIsekaiGame.Networking.Shared");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Protocol", "UnityIsekaiGame.Networking.Client");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Protocol", "UnityIsekaiGame.Networking.Server");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Protocol", "UnityIsekaiGame.Gameplay");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Protocol", "UnityIsekaiGame.UI");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Shared", "UnityIsekaiGame.Networking.Client");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Shared", "UnityIsekaiGame.Networking.Server");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Shared", "UnityIsekaiGame.Gameplay");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Shared", "UnityIsekaiGame.UI");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Client", "UnityIsekaiGame.Networking.Server");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Server", "UnityIsekaiGame.Networking.Client");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Networking.Server", "UnityIsekaiGame.UI");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Gameplay", "UnityIsekaiGame.Networking.Client");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Gameplay", "UnityIsekaiGame.Networking.Server");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Gameplay", "UnityIsekaiGame.Networking.Shared");
+            ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.Gameplay", "UnityIsekaiGame.Networking.Protocol");
 
             if (asmdefs.TryGetValue("UnityIsekaiGame.Editor", out AsmdefInfo editorInfo) && !editorInfo.IncludePlatforms.Contains("Editor"))
             {
@@ -518,6 +539,20 @@ namespace UnityIsekaiGame.Editor
             if (!asmdefs.ContainsKey(name))
             {
                 report.AddError($"Required asmdef '{name}' is missing.");
+            }
+        }
+
+        private static void RequireAsmdefAtPath(ProjectStructureValidationReport report, Dictionary<string, AsmdefInfo> asmdefs, string name, string expectedPath)
+        {
+            if (!asmdefs.TryGetValue(name, out AsmdefInfo info))
+            {
+                report.AddError($"Required asmdef '{name}' is missing from '{expectedPath}'.");
+                return;
+            }
+
+            if (!string.Equals(info.Path, expectedPath, StringComparison.Ordinal))
+            {
+                report.AddError($"Asmdef '{name}' belongs at '{expectedPath}', not '{info.Path}'.");
             }
         }
 

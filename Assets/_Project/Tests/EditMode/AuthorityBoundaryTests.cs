@@ -102,7 +102,7 @@ namespace UnityIsekaiGame.Tests
         {
             string sourcePath = Path.Combine(
                 Application.dataPath,
-                "_Project/Runtime/UI/Inventory/InventoryScreenController.cs");
+                "_Project/Runtime/Client/UI/Inventory/InventoryScreenController.cs");
             string source = File.ReadAllText(sourcePath);
 
             StringAssert.DoesNotContain(".InitializeFromRegistry(", source);
@@ -204,10 +204,10 @@ namespace UnityIsekaiGame.Tests
         {
             string[] relativePaths =
             {
-                "_Project/Runtime/UI/Inventory/InventoryScreenController.cs",
-                "_Project/Runtime/UI/Inventory/InventoryScreenView.cs",
-                "_Project/Runtime/UI/Parties/PartyMenuExtension.cs",
-                "_Project/Runtime/UI/QuestTrackerHudView.cs",
+                "_Project/Runtime/Client/UI/Inventory/InventoryScreenController.cs",
+                "_Project/Runtime/Client/UI/Inventory/InventoryScreenView.cs",
+                "_Project/Runtime/Client/UI/Parties/PartyMenuExtension.cs",
+                "_Project/Runtime/Client/UI/QuestTrackerHudView.cs",
                 "_Project/Runtime/Gameplay/PrototypeProfessionPanel.cs",
                 "_Project/Runtime/Parties/PartyRuntimeComponents.cs"
             };

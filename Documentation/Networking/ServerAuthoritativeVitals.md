@@ -30,11 +30,11 @@ Phase 5 Group 4 makes player health, stamina, mana, regeneration, sprint cost, a
 ```text
 Assets/_Project/
 ├─ Runtime/
-│  ├─ Networking/
-│  │  ├─ Protocol/   connection payloads and versioned wire contracts
-│  │  ├─ Shared/     replicated actors, movement, vitals, and deterministic models
-│  │  ├─ Server/     dedicated-server lifecycle, admission, sessions, and spawning
-│  │  └─ Client/     local connection, input bridges, and presentation mirroring
+│  ├─ Shared/Networking/
+│  │  ├─ Protocol/      connection payloads and versioned wire contracts
+│  │  └─ Replication/   replicated actors, movement, vitals, and deterministic models
+│  ├─ Server/Networking/ dedicated-server lifecycle, admission, sessions, and spawning
+│  ├─ Client/Networking/ local connection, input bridges, and presentation mirroring
 │  ├─ Characters/    shared character/resource/stat simulation used behind authority
 │  ├─ Gameplay/      player-facing gameplay views and prototype adapters
 │  ├─ UI/            client presentation only
