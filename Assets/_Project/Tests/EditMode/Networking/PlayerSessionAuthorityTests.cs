@@ -18,6 +18,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(registry.TryOpen(42UL, request, out PlayerSessionSnapshot active, out string failure), Is.True, failure);
             Assert.That(active.Phase, Is.EqualTo(PlayerSessionPhase.Active));
             Assert.That(active.PlayerId, Is.EqualTo("Player.One"));
+            Assert.That(active.PersonId, Is.EqualTo("person.player.player.one"));
             Assert.That(active.ActorId, Is.EqualTo("actor.player.player.one"));
             Assert.That(active.SessionId, Is.EqualTo("session.42.1"));
             Assert.That(registry.Count, Is.EqualTo(1));
@@ -56,6 +57,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(registry.TryOpen(7UL, Request("client.reconnected", "player.one"), out PlayerSessionSnapshot second, out string secondFailure), Is.True, secondFailure);
 
             Assert.That(second.ActorId, Is.EqualTo(first.ActorId), "A player's actor identity must remain stable across sessions.");
+            Assert.That(second.PersonId, Is.EqualTo(first.PersonId), "A player's narrative identity must remain stable across sessions.");
             Assert.That(second.SessionId, Is.Not.EqualTo(first.SessionId));
             Assert.That(second.ClientId, Is.EqualTo(7UL));
         }
@@ -76,6 +78,7 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(actor.SessionId, Is.EqualTo(session.SessionId));
                 Assert.That(actor.ClientInstanceId, Is.EqualTo(session.ClientInstanceId));
                 Assert.That(actor.PlayerId, Is.EqualTo(session.PlayerId));
+                Assert.That(actor.PersonId, Is.EqualTo(session.PersonId));
                 Assert.That(actor.ActorId, Is.EqualTo(session.ActorId));
                 Assert.That(actor.SessionRevision, Is.EqualTo(session.Revision));
                 Assert.That(actor.HasIdentity, Is.True);

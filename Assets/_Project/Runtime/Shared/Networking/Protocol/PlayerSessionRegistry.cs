@@ -17,6 +17,7 @@ namespace UnityIsekaiGame.Networking
             ulong clientId,
             string clientInstanceId,
             string playerId,
+            string personId,
             string actorId,
             PlayerSessionPhase phase,
             long startedAtUnixMilliseconds,
@@ -27,6 +28,7 @@ namespace UnityIsekaiGame.Networking
             ClientId = clientId;
             ClientInstanceId = clientInstanceId ?? string.Empty;
             PlayerId = playerId ?? string.Empty;
+            PersonId = personId ?? string.Empty;
             ActorId = actorId ?? string.Empty;
             Phase = phase;
             StartedAtUnixMilliseconds = startedAtUnixMilliseconds;
@@ -38,6 +40,7 @@ namespace UnityIsekaiGame.Networking
         public ulong ClientId { get; }
         public string ClientInstanceId { get; }
         public string PlayerId { get; }
+        public string PersonId { get; }
         public string ActorId { get; }
         public PlayerSessionPhase Phase { get; }
         public long StartedAtUnixMilliseconds { get; }
@@ -50,6 +53,7 @@ namespace UnityIsekaiGame.Networking
             && ClientId == other.ClientId
             && string.Equals(ClientInstanceId, other.ClientInstanceId, StringComparison.Ordinal)
             && string.Equals(PlayerId, other.PlayerId, StringComparison.Ordinal)
+            && string.Equals(PersonId, other.PersonId, StringComparison.Ordinal)
             && string.Equals(ActorId, other.ActorId, StringComparison.Ordinal)
             && StartedAtUnixMilliseconds == other.StartedAtUnixMilliseconds
             && EndedAtUnixMilliseconds == other.EndedAtUnixMilliseconds
@@ -97,6 +101,7 @@ namespace UnityIsekaiGame.Networking
                 clientId,
                 request.ClientInstanceId,
                 request.PlayerId,
+                $"person.player.{canonicalPlayerId}",
                 $"actor.player.{canonicalPlayerId}",
                 PlayerSessionPhase.Active,
                 DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
@@ -125,6 +130,7 @@ namespace UnityIsekaiGame.Networking
                 active.ClientId,
                 active.ClientInstanceId,
                 active.PlayerId,
+                active.PersonId,
                 active.ActorId,
                 PlayerSessionPhase.Disconnected,
                 active.StartedAtUnixMilliseconds,

@@ -21,6 +21,10 @@ namespace UnityIsekaiGame.Networking
             default,
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server);
+        private readonly NetworkVariable<FixedString128Bytes> personId = new NetworkVariable<FixedString128Bytes>(
+            default,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
         private readonly NetworkVariable<FixedString128Bytes> actorId = new NetworkVariable<FixedString128Bytes>(
             default,
             NetworkVariableReadPermission.Everyone,
@@ -33,6 +37,7 @@ namespace UnityIsekaiGame.Networking
         private FixedString128Bytes configuredSessionId;
         private FixedString128Bytes configuredClientInstanceId;
         private FixedString128Bytes configuredPlayerId;
+        private FixedString128Bytes configuredPersonId;
         private FixedString128Bytes configuredActorId;
         private long configuredSessionRevision;
         private bool hasConfiguredIdentity;
@@ -42,10 +47,12 @@ namespace UnityIsekaiGame.Networking
         public string SessionId => (IsSpawned ? sessionId.Value : configuredSessionId).ToString();
         public string ClientInstanceId => (IsSpawned ? clientInstanceId.Value : configuredClientInstanceId).ToString();
         public string PlayerId => (IsSpawned ? playerId.Value : configuredPlayerId).ToString();
+        public string PersonId => (IsSpawned ? personId.Value : configuredPersonId).ToString();
         public string ActorId => (IsSpawned ? actorId.Value : configuredActorId).ToString();
         public long SessionRevision => IsSpawned ? sessionRevision.Value : configuredSessionRevision;
         public bool HasIdentity => !string.IsNullOrWhiteSpace(SessionId)
             && !string.IsNullOrWhiteSpace(PlayerId)
+            && !string.IsNullOrWhiteSpace(PersonId)
             && !string.IsNullOrWhiteSpace(ActorId);
 
         public void ConfigureServer(PlayerSessionSnapshot session)
@@ -63,6 +70,7 @@ namespace UnityIsekaiGame.Networking
             configuredSessionId = session.SessionId;
             configuredClientInstanceId = session.ClientInstanceId;
             configuredPlayerId = session.PlayerId;
+            configuredPersonId = session.PersonId;
             configuredActorId = session.ActorId;
             configuredSessionRevision = session.Revision;
             hasConfiguredIdentity = true;
@@ -73,6 +81,7 @@ namespace UnityIsekaiGame.Networking
             sessionId.OnValueChanged += OnIdentityValueChanged;
             clientInstanceId.OnValueChanged += OnIdentityValueChanged;
             playerId.OnValueChanged += OnIdentityValueChanged;
+            personId.OnValueChanged += OnIdentityValueChanged;
             actorId.OnValueChanged += OnIdentityValueChanged;
             sessionRevision.OnValueChanged += OnRevisionChanged;
 
@@ -86,6 +95,7 @@ namespace UnityIsekaiGame.Networking
                 sessionId.Value = configuredSessionId;
                 clientInstanceId.Value = configuredClientInstanceId;
                 playerId.Value = configuredPlayerId;
+                personId.Value = configuredPersonId;
                 actorId.Value = configuredActorId;
                 sessionRevision.Value = configuredSessionRevision;
             }
@@ -98,6 +108,7 @@ namespace UnityIsekaiGame.Networking
             sessionId.OnValueChanged -= OnIdentityValueChanged;
             clientInstanceId.OnValueChanged -= OnIdentityValueChanged;
             playerId.OnValueChanged -= OnIdentityValueChanged;
+            personId.OnValueChanged -= OnIdentityValueChanged;
             actorId.OnValueChanged -= OnIdentityValueChanged;
             sessionRevision.OnValueChanged -= OnRevisionChanged;
         }

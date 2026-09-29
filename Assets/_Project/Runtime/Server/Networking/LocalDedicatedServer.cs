@@ -6,6 +6,7 @@ using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.ResourceSystem;
 using UnityIsekaiGame.Combat;
@@ -41,12 +42,18 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField] private PlayerMeleeCombat prototypePlayerMeleeCombat;
         [SerializeField] private PlayerSpellLoadout prototypePlayerSpellLoadout;
         [SerializeField] private PrototypePersistenceServiceBehaviour prototypePersistence;
+        [SerializeField, Min(1f)] private float playerProfileAutosaveSeconds = 15f;
+        [SerializeField, Min(5f)] private float worldCheckpointAutosaveSeconds = 60f;
 
         private readonly Dictionary<ulong, string> connectedPlayerIds = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, ConnectionRequestPayload> pendingConnections = new Dictionary<ulong, ConnectionRequestPayload>();
         private readonly Dictionary<ulong, NetworkPlayerActor> playerActors = new Dictionary<ulong, NetworkPlayerActor>();
         private readonly PlayerSessionRegistry playerSessions = new PlayerSessionRegistry();
-        private readonly Dictionary<string, InventorySessionState> inventorySessions = new Dictionary<string, InventorySessionState>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ServerPlayerProfileData> playerProfiles = new Dictionary<string, ServerPlayerProfileData>(StringComparer.OrdinalIgnoreCase);
+        private ServerPlayerProfileStore playerProfileStore;
+        private float nextPlayerProfileAutosaveAt;
+        private float nextWorldCheckpointAutosaveAt;
+        private bool serverPersistenceReady;
         private bool ownsServerSession;
         private bool prototypeMovementSuppressed;
         private bool inventorySmokeSeeded;
@@ -88,6 +95,23 @@ namespace UnityIsekaiGame.Networking.Server
             if (ownsServerSession)
             {
                 StopServer();
+            }
+        }
+
+        private void Update()
+        {
+            if (!ownsServerSession || networkManager == null || !networkManager.IsServer || !serverPersistenceReady) return;
+            float now = Time.unscaledTime;
+            if (now >= nextPlayerProfileAutosaveAt)
+            {
+                SaveAllConnectedPlayerProfiles("Scheduled autosave");
+                nextPlayerProfileAutosaveAt = now + Mathf.Max(1f, playerProfileAutosaveSeconds);
+            }
+
+            if (now >= nextWorldCheckpointAutosaveAt)
+            {
+                SaveWorldCheckpoint("Scheduled autosave");
+                nextWorldCheckpointAutosaveAt = now + Mathf.Max(5f, worldCheckpointAutosaveSeconds);
             }
         }
 
@@ -144,6 +168,11 @@ namespace UnityIsekaiGame.Networking.Server
             prototypePersistence = persistence;
         }
 
+        public void ConfigurePlayerProfileStore(ServerPlayerProfileStore store)
+        {
+            playerProfileStore = store;
+        }
+
         public bool StartServer()
         {
             ResolveReferences();
@@ -178,10 +207,14 @@ namespace UnityIsekaiGame.Networking.Server
             pendingConnections.Clear();
             playerActors.Clear();
             playerSessions.Clear();
-            inventorySessions.Clear();
+            playerProfiles.Clear();
             combatWorldState = null;
             combatWorldAuthority = null;
             inventorySmokeSeeded = false;
+            playerProfileStore ??= new ServerPlayerProfileStore();
+            serverPersistenceReady = TryLoadWorldCheckpoint();
+            nextPlayerProfileAutosaveAt = Time.unscaledTime + Mathf.Max(1f, playerProfileAutosaveSeconds);
+            nextWorldCheckpointAutosaveAt = Time.unscaledTime + Mathf.Max(5f, worldCheckpointAutosaveSeconds);
             networkManager.NetworkConfig.ConnectionApproval = true;
             networkManager.ConnectionApprovalCallback = ApproveConnection;
             networkManager.OnClientConnectedCallback += OnClientConnected;
@@ -219,7 +252,8 @@ namespace UnityIsekaiGame.Networking.Server
                 pendingConnections.Clear();
                 playerActors.Clear();
                 playerSessions.Clear();
-                inventorySessions.Clear();
+                playerProfiles.Clear();
+                serverPersistenceReady = false;
                 inventorySmokeSeeded = false;
                 combatWorldState = null;
                 combatWorldAuthority = null;
@@ -229,6 +263,8 @@ namespace UnityIsekaiGame.Networking.Server
             }
 
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Disconnecting, "Stopping the local server.", status.Endpoint));
+            SaveAllConnectedPlayerProfiles("Server shutdown");
+            SaveWorldCheckpoint("Server shutdown");
             Unsubscribe();
             networkManager.Shutdown();
             ownsServerSession = false;
@@ -236,7 +272,8 @@ namespace UnityIsekaiGame.Networking.Server
             pendingConnections.Clear();
             playerActors.Clear();
             playerSessions.Clear();
-            inventorySessions.Clear();
+            playerProfiles.Clear();
+            serverPersistenceReady = false;
             inventorySmokeSeeded = false;
             combatWorldState = null;
             combatWorldAuthority = null;
@@ -303,6 +340,7 @@ namespace UnityIsekaiGame.Networking.Server
 
         private void OnClientDisconnected(ulong clientId)
         {
+            SavePlayerProfile(clientId, "Client disconnect");
             combatWorldAuthority?.UnregisterPlayerTarget(clientId);
             pendingConnections.Remove(clientId);
             playerActors.Remove(clientId);
@@ -348,9 +386,16 @@ namespace UnityIsekaiGame.Networking.Server
                 return false;
             }
 
-            Vector3 effectiveSpawnPosition = playerSpawnPosition;
-            float effectiveSpawnYaw = playerSpawnYaw;
-            if (HasCommandLineFlag(NarrativeSmokeSeedFlag))
+            if (!TryCreateInitialVitalsState(out NetworkVitalsState prototypeVitals))
+            {
+                failure = "The prototype player vitals are incomplete and cannot seed a new server profile.";
+                return false;
+            }
+
+            ServerPlayerProfileData profile = GetOrCreatePlayerProfile(session, prototypeVitals);
+            Vector3 effectiveSpawnPosition = profile.Position;
+            float effectiveSpawnYaw = profile.yawDegrees;
+            if (profile.revision == 1L && HasCommandLineFlag(NarrativeSmokeSeedFlag))
             {
                 InteractionPointSceneBinding smokeBinding = FindObjectsByType<InteractionPointSceneBinding>(FindObjectsInactive.Exclude)
                     .FirstOrDefault(value =>
@@ -381,21 +426,17 @@ namespace UnityIsekaiGame.Networking.Server
             {
                 actor.ConfigureServer(session);
                 movement.ConfigureSpawnServer(effectiveSpawnPosition, effectiveSpawnYaw);
-                if (TryCreateInitialVitalsState(out NetworkVitalsState initialVitals))
-                {
-                    vitals.ConfigureInitialStateServer(initialVitals);
-                }
+                vitals.ConfigureInitialStateServer(profile.vitals);
                 vitals.ConfigureCombatDefenseServer(CombatStatUtility.GetDefense(prototypePlayerMeleeCombat.gameObject));
 
-                InventorySessionState inventoryState = GetOrCreateInventorySession(session.PlayerId);
                 ServerPlayerInventoryAuthority inventoryAuthority = instance.AddComponent<ServerPlayerInventoryAuthority>();
                 inventoryAuthority.Configure(
                     replicatedInventory,
                     vitals,
                     definitionCatalog.CreateRegistry(),
-                    inventoryState.Inventory,
-                    inventoryState.Equipment,
-                    (inventorySave, equipmentSave) => inventorySessions[session.PlayerId] = new InventorySessionState(inventorySave, equipmentSave));
+                    profile.inventory,
+                    profile.equipment,
+                    (inventorySave, equipmentSave) => PersistInventoryProfile(session.PlayerId, inventorySave, equipmentSave));
 
                 if (combatWorldAuthority == null)
                 {
@@ -417,7 +458,9 @@ namespace UnityIsekaiGame.Networking.Server
                 narrativeAuthority.Configure(actor, replicatedNarrative, prototypePersistence, inventoryAuthority);
 
                 networkObject.SpawnAsPlayerObject(session.ClientId, true);
+                narrativeAuthority.PublishProjection();
                 combatWorldAuthority.RegisterPlayerTarget(session.ClientId, instance.transform);
+                SavePlayerProfile(session.ClientId, "Session start");
                 failure = string.Empty;
                 return true;
             }
@@ -517,20 +560,106 @@ namespace UnityIsekaiGame.Networking.Server
             networkManager = networkManager == null ? GetComponent<NetworkManager>() : networkManager;
         }
 
-        private InventorySessionState GetOrCreateInventorySession(string playerId)
+        private ServerPlayerProfileData GetOrCreatePlayerProfile(PlayerSessionSnapshot session, NetworkVitalsState prototypeVitals)
         {
-            if (inventorySessions.TryGetValue(playerId, out InventorySessionState existing))
+            if (playerProfiles.TryGetValue(session.PlayerId, out ServerPlayerProfileData existing))
             {
-                Debug.Log($"[Network Inventory] Restored authoritative inventory session for reconnecting player '{playerId}'.", this);
                 return existing;
             }
 
             EnsureInventorySmokeSeed();
-            InventorySessionState created = new InventorySessionState(
+            if (playerProfileStore.TryLoad(session, out ServerPlayerProfileData loaded, out string loadMessage))
+            {
+                playerProfiles[session.PlayerId] = loaded;
+                Debug.Log($"[Server Persistence] {loadMessage}", this);
+                return loaded;
+            }
+
+            ServerPlayerProfileData created = ServerPlayerProfileData.Create(
+                session,
+                playerSpawnPosition,
+                playerSpawnYaw,
+                prototypeVitals,
                 prototypePlayerInventory.CreateSaveData(),
                 prototypePlayerEquipment.CreateSaveData());
-            inventorySessions[playerId] = created;
+            playerProfiles[session.PlayerId] = created;
+            Debug.Log($"[Server Persistence] Created a new authoritative profile for '{session.PlayerId}'. {loadMessage}", this);
             return created;
+        }
+
+        private void PersistInventoryProfile(string playerId, InventorySaveData inventory, EquipmentSaveData equipment)
+        {
+            if (!playerProfiles.TryGetValue(playerId, out ServerPlayerProfileData profile)) return;
+            profile.inventory = inventory;
+            profile.equipment = equipment;
+            profile.revision = checked(profile.revision + 1L);
+            PersistProfile(profile, "Inventory mutation");
+        }
+
+        private void SaveAllConnectedPlayerProfiles(string reason)
+        {
+            foreach (ulong clientId in playerActors.Keys.ToArray()) SavePlayerProfile(clientId, reason);
+        }
+
+        private void SavePlayerProfile(ulong clientId, string reason)
+        {
+            if (!playerActors.TryGetValue(clientId, out NetworkPlayerActor actor)
+                || actor == null
+                || !playerProfiles.TryGetValue(actor.PlayerId, out ServerPlayerProfileData profile)) return;
+
+            NetworkPlayerVitals vitals = actor.GetComponent<NetworkPlayerVitals>();
+            ServerPlayerInventoryAuthority inventory = actor.GetComponent<ServerPlayerInventoryAuthority>();
+            profile.positionX = actor.transform.position.x;
+            profile.positionY = actor.transform.position.y;
+            profile.positionZ = actor.transform.position.z;
+            profile.yawDegrees = Mathf.Repeat(actor.transform.eulerAngles.y, 360f);
+            if (vitals != null && vitals.HasState) profile.vitals = vitals.CurrentState;
+            if (inventory != null)
+            {
+                profile.inventory = inventory.CreateInventorySaveData();
+                profile.equipment = inventory.CreateEquipmentSaveData();
+            }
+
+            profile.revision = checked(profile.revision + 1L);
+            PersistProfile(profile, reason);
+        }
+
+        private void PersistProfile(ServerPlayerProfileData profile, string reason)
+        {
+            playerProfileStore ??= new ServerPlayerProfileStore();
+            if (playerProfileStore.TrySave(profile, out string message))
+                Debug.Log($"[Server Persistence] {message} Reason={reason}.", this);
+            else
+                Debug.LogError($"[Server Persistence] {message} Reason={reason}.", this);
+        }
+
+        private bool TryLoadWorldCheckpoint()
+        {
+            if (prototypePersistence == null || !prototypePersistence.IsInitialized) return false;
+            PersistenceValidationResult validation = prototypePersistence.WorldService.ValidateSlot(PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId);
+            if (validation.Status == PersistenceValidationStatus.FileMissing)
+            {
+                Debug.Log("[Server Persistence] No world checkpoint exists yet; starting from initialized world state.", this);
+                return true;
+            }
+
+            if (!validation.Succeeded)
+            {
+                Debug.LogError($"[Server Persistence] World checkpoint validation failed: {validation.Message}", this);
+                return false;
+            }
+
+            PersistenceLoadResult result = prototypePersistence.LoadWorldCheckpoint();
+            if (!result.Succeeded) Debug.LogError($"[Server Persistence] World checkpoint load failed: {result.Message}", this);
+            else Debug.Log($"[Server Persistence] {result.Message}", this);
+            return result.Succeeded;
+        }
+
+        private void SaveWorldCheckpoint(string reason)
+        {
+            if (!serverPersistenceReady || prototypePersistence == null) return;
+            PersistenceSaveResult result = prototypePersistence.SaveWorldCheckpoint(reason);
+            if (!result.Succeeded) Debug.LogError($"[Server Persistence] World checkpoint save failed: {result.Message}", this);
         }
 
         private void EnsureInventorySmokeSeed()
@@ -700,16 +829,5 @@ namespace UnityIsekaiGame.Networking.Server
             StartServer();
         }
 
-        private sealed class InventorySessionState
-        {
-            public InventorySessionState(InventorySaveData inventory, EquipmentSaveData equipment)
-            {
-                Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
-                Equipment = equipment ?? throw new ArgumentNullException(nameof(equipment));
-            }
-
-            public InventorySaveData Inventory { get; }
-            public EquipmentSaveData Equipment { get; }
-        }
     }
 }

@@ -42,6 +42,7 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private QuestJournalView questJournalView;
         [SerializeField] private GameObject itemUser;
         [SerializeField] private LocalPlayerInventoryBridge inventoryAuthority;
+        private LocalNarrativeAuthorityBridge narrativeAuthority;
         [Header("Save/Load")]
         [SerializeField] private DefinitionCatalog saveLoadDefinitionCatalog;
         [SerializeField] private PrototypePersistenceServiceBehaviour saveLoadPersistence;
@@ -64,6 +65,7 @@ namespace UnityIsekaiGame.UI.Inventory
             {
                 inventoryAuthority = FindAnyObjectByType<LocalPlayerInventoryBridge>();
             }
+            narrativeAuthority = LocalNarrativeAuthorityBridge.Active ?? FindAnyObjectByType<LocalNarrativeAuthorityBridge>();
 
             if (equipment == null && inventory != null)
             {
@@ -129,12 +131,19 @@ namespace UnityIsekaiGame.UI.Inventory
                 inventoryAuthority.ReplicaChanged += RefreshIfOpen;
                 inventoryAuthority.FeedbackReceived += OnInventoryAuthorityFeedback;
             }
+            if (narrativeAuthority != null) narrativeAuthority.ReplicaChanged += RefreshIfOpen;
 
             SubscribeCharacterSources();
         }
 
         private void Update()
         {
+            if (narrativeAuthority == null && LocalNarrativeAuthorityBridge.Active != null)
+            {
+                narrativeAuthority = LocalNarrativeAuthorityBridge.Active;
+                narrativeAuthority.ReplicaChanged += RefreshIfOpen;
+            }
+
             if (isOpen && refreshPending && Time.unscaledTime >= nextQueuedRefreshAt)
             {
                 Refresh();
@@ -203,6 +212,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 inventoryAuthority.ReplicaChanged -= RefreshIfOpen;
                 inventoryAuthority.FeedbackReceived -= OnInventoryAuthorityFeedback;
             }
+            if (narrativeAuthority != null) narrativeAuthority.ReplicaChanged -= RefreshIfOpen;
 
             UnsubscribeCharacterSources();
 
@@ -349,7 +359,7 @@ namespace UnityIsekaiGame.UI.Inventory
 
                 if (questJournalView != null)
                 {
-                    System.Collections.Generic.IReadOnlyList<PrototypeQuestJournalEntry> journal = ResolveNarrativeCoordinator()?.GetJournal();
+                    System.Collections.Generic.IReadOnlyList<PrototypeQuestJournalEntry> journal = GetQuestJournal();
                     ClampQuestSelection();
                     questJournalView.Render(journal, selectedQuestIndex);
                 }
@@ -904,19 +914,27 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void ClampQuestSelection()
         {
-            int questCount = ResolveNarrativeCoordinator()?.GetJournal()?.Count ?? 0;
+            int questCount = GetQuestJournal()?.Count ?? 0;
             selectedQuestIndex = questCount <= 0 ? 0 : Mathf.Clamp(selectedQuestIndex, 0, questCount - 1);
         }
 
         private PrototypeQuestJournalEntry GetSelectedQuest()
         {
-            System.Collections.Generic.IReadOnlyList<PrototypeQuestJournalEntry> quests = ResolveNarrativeCoordinator()?.GetJournal();
+            System.Collections.Generic.IReadOnlyList<PrototypeQuestJournalEntry> quests = GetQuestJournal();
             return quests == null || selectedQuestIndex < 0 || selectedQuestIndex >= quests.Count ? null : quests[selectedQuestIndex];
         }
 
         private PrototypeNarrativeCoordinator ResolveNarrativeCoordinator()
         {
             return ResolveRuntimePersistence()?.NarrativeCoordinator;
+        }
+
+        private System.Collections.Generic.IReadOnlyList<PrototypeQuestJournalEntry> GetQuestJournal()
+        {
+            LocalNarrativeAuthorityBridge bridge = LocalNarrativeAuthorityBridge.Active;
+            return bridge != null && bridge.IsServerAuthorityActive
+                ? bridge.ReplicatedJournal
+                : ResolveNarrativeCoordinator()?.GetJournal();
         }
 
         private void ResolveCharacterSources()

@@ -22,6 +22,8 @@ namespace UnityIsekaiGame.Networking.Server
 
         public PlayerInventory Inventory => inventory;
         public PlayerEquipment Equipment => equipment;
+        public InventorySaveData CreateInventorySaveData() => inventory?.CreateSaveData();
+        public EquipmentSaveData CreateEquipmentSaveData() => equipment?.CreateSaveData();
 
         public void Configure(
             NetworkPlayerInventory replicatedInventory,

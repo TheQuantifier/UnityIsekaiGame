@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.Networking.Client;
 using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI.Inventory
@@ -24,6 +25,7 @@ namespace UnityIsekaiGame.UI.Inventory
         private readonly List<SaveSlotDescriptor> descriptors = new List<SaveSlotDescriptor>();
 
         private PrototypePersistenceServiceBehaviour persistence;
+        private LocalGameClient localGameClient;
         private PersistenceService subscribedPlayerService;
         private Text slotValueText;
         private Text actionValueText;
@@ -44,6 +46,7 @@ namespace UnityIsekaiGame.UI.Inventory
             UnsubscribeFromSaveSlots();
 
             persistence = persistenceService;
+            localGameClient = FindAnyObjectByType<LocalGameClient>(FindObjectsInactive.Include);
             BuildUi();
             SubscribeToSaveSlotsIfReady();
 
@@ -194,6 +197,12 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
+            if (IsServerManagedSession())
+            {
+                detailsText.text = "Persistence is server-managed while connected. Your position, vitals, inventory, equipment, quests, party, and world progress are saved authoritatively and restored when you reconnect.";
+                return;
+            }
+
             if (descriptor == null)
             {
                 detailsText.text = persistence != null && !persistence.IsInitialized
@@ -281,6 +290,12 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void ExecuteSelectedAction()
         {
+            if (IsServerManagedSession())
+            {
+                SetFeedback("Save and load are managed by the server while connected.");
+                return;
+            }
+
             switch (SelectedAction())
             {
                 case SaveLoadAction.Save:
@@ -423,7 +438,7 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private bool CanExecute(SaveSlotDescriptor descriptor, SaveLoadAction action)
         {
-            if (persistence == null || IsOperationActive())
+            if (persistence == null || IsOperationActive() || IsServerManagedSession())
             {
                 return false;
             }
@@ -464,6 +479,13 @@ namespace UnityIsekaiGame.UI.Inventory
         private bool IsOperationActive()
         {
             return persistence != null && persistence.PlayerService != null && persistence.PlayerService.OperationInProgress;
+        }
+
+        private bool IsServerManagedSession()
+        {
+            if (localGameClient == null)
+                localGameClient = FindAnyObjectByType<LocalGameClient>(FindObjectsInactive.Include);
+            return localGameClient != null && localGameClient.IsConnected;
         }
 
         private void SetFeedback(string message)

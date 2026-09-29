@@ -8,6 +8,8 @@ using UnityIsekaiGame.Parties;
 using UnityIsekaiGame.Presentation;
 using UnityIsekaiGame.WorldLocations.SceneBinding;
 using UnityIsekaiGame.PrototypeIntegration;
+using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.Quests;
 
 namespace UnityIsekaiGame.Networking.Client
 {
@@ -26,10 +28,18 @@ namespace UnityIsekaiGame.Networking.Client
         private bool applyingReplica;
         private bool smokeEnabled;
         private int smokePhase;
+        private IReadOnlyList<PrototypeQuestJournalEntry> replicatedJournal = Array.Empty<PrototypeQuestJournalEntry>();
+        private NarrativePartyReplicaData replicatedParty;
+        private IReadOnlyList<NarrativePartyInvitationReplicaData> replicatedInvitations = Array.Empty<NarrativePartyInvitationReplicaData>();
+        private string replicatedPersonId = string.Empty;
 
         public static LocalNarrativeAuthorityBridge Active { get; private set; }
         public bool IsServerAuthorityActive => networkNarrative != null && networkNarrative.IsSpawned && networkNarrative.IsOwner;
         public bool IsApplyingReplica => applyingReplica;
+        public IReadOnlyList<PrototypeQuestJournalEntry> ReplicatedJournal => replicatedJournal;
+        public NarrativePartyReplicaData ReplicatedParty => replicatedParty;
+        public IReadOnlyList<NarrativePartyInvitationReplicaData> ReplicatedInvitations => replicatedInvitations;
+        public string ReplicatedPersonId => replicatedPersonId;
         public event Action ReplicaChanged;
         public event Action<string> FeedbackReceived;
 
@@ -124,6 +134,7 @@ namespace UnityIsekaiGame.Networking.Client
         {
             if (ReferenceEquals(networkNarrative, narrative)) return;
             if (networkNarrative != null) networkNarrative.CommandResultChanged -= OnCommandResultChanged;
+            if (networkNarrative != null) networkNarrative.AuthoritativeSnapshotChanged -= OnAuthoritativeSnapshotChanged;
             if (interactionDetector != null && interactionDetector.ExternalInteractionHandler == HandleExternalInteraction)
                 interactionDetector.ExternalInteractionHandler = null;
 
@@ -131,9 +142,16 @@ namespace UnityIsekaiGame.Networking.Client
             authorizedInteractionPointId = string.Empty;
             authorizedQuestSourceId = string.Empty;
             networkNarrative = narrative;
+            replicatedJournal = Array.Empty<PrototypeQuestJournalEntry>();
+            replicatedParty = null;
+            replicatedInvitations = Array.Empty<NarrativePartyInvitationReplicaData>();
+            replicatedPersonId = string.Empty;
             smokePhase = 0;
             if (networkNarrative == null) return;
             networkNarrative.CommandResultChanged += OnCommandResultChanged;
+            networkNarrative.AuthoritativeSnapshotChanged += OnAuthoritativeSnapshotChanged;
+            if (!string.IsNullOrWhiteSpace(networkNarrative.AuthoritativeSnapshotJson))
+                OnAuthoritativeSnapshotChanged(networkNarrative.AuthoritativeSnapshotJson);
             if (interactionDetector != null) interactionDetector.ExternalInteractionHandler = HandleExternalInteraction;
         }
 
@@ -191,6 +209,47 @@ namespace UnityIsekaiGame.Networking.Client
             AdvanceSmoke(result);
         }
 
+        private void OnAuthoritativeSnapshotChanged(string json)
+        {
+            try
+            {
+                NarrativeSessionSnapshotData snapshot = JsonUtility.FromJson<NarrativeSessionSnapshotData>(json);
+                if (snapshot == null || snapshot.schemaVersion != NarrativeSessionSnapshotData.CurrentSchemaVersion)
+                    throw new InvalidOperationException("The server sent an unsupported narrative snapshot.");
+                string expectedPersonId = client?.LocalPlayerActor?.PersonId ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(expectedPersonId)
+                    && !string.Equals(snapshot.personId, expectedPersonId, StringComparison.Ordinal))
+                    throw new InvalidOperationException("The server narrative snapshot belongs to a different Person identity.");
+
+                DefinitionRegistry definitions = persistence?.DefinitionCatalog?.CreateRegistry();
+                List<PrototypeQuestJournalEntry> journal = new List<PrototypeQuestJournalEntry>();
+                foreach (NarrativeQuestReplicaData replica in snapshot.quests ?? new List<NarrativeQuestReplicaData>())
+                {
+                    if (replica?.assignment == null || replica.quest == null) continue;
+                    QuestDefinition definition = null;
+                    definitions?.TryGet(replica.quest.questDefinitionId, out definition);
+                    journal.Add(new PrototypeQuestJournalEntry(
+                        new QuestAssignmentSnapshot(replica.assignment),
+                        new QuestSnapshot(replica.quest),
+                        definition,
+                        (replica.objectives ?? new List<QuestObjectiveRecordData>()).Select(value => new QuestObjectiveSnapshot(value)).ToArray(),
+                        replica.outcome == null ? null : new QuestTerminalOutcomeSnapshot(replica.outcome),
+                        (replica.rewards ?? new List<QuestRewardEntitlementRecordData>()).Select(value => new QuestRewardEntitlementSnapshot(value)).ToArray()));
+                }
+
+                replicatedJournal = journal.OrderBy(entry => entry.IsTerminal).ThenBy(entry => entry.Title, StringComparer.Ordinal).ToArray();
+                replicatedPersonId = snapshot.personId ?? string.Empty;
+                replicatedParty = snapshot.party;
+                replicatedInvitations = snapshot.invitations?.ToArray() ?? Array.Empty<NarrativePartyInvitationReplicaData>();
+                ReplicaChanged?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                PublishFeedback("The authoritative quest and party snapshot could not be applied.", true);
+            }
+        }
+
         private void AdvanceSmoke(NetworkNarrativeCommandResult result)
         {
             if (!smokeEnabled || !result.Succeeded) return;
@@ -218,7 +277,6 @@ namespace UnityIsekaiGame.Networking.Client
 
         private void ApplySuccessfulCommand(NetworkNarrativeCommand command, NetworkNarrativeCommandResult result)
         {
-            PrototypeNarrativeCoordinator coordinator = persistence?.NarrativeCoordinator;
             switch (command.CommandType)
             {
                 case NarrativeAuthorityCommandType.Interact:
@@ -232,14 +290,11 @@ namespace UnityIsekaiGame.Networking.Client
                     FindAnyObjectByType<PrototypeQuestSourcePanel>()?.ApplyAuthorizedBrowse();
                     break;
                 case NarrativeAuthorityCommandType.AcceptQuestListing:
-                    coordinator?.AcceptListing(command.PrimaryIdText, authorizedInteractionPointId);
                     FindAnyObjectByType<PrototypeQuestSourcePanel>()?.ApplyAuthorizedBrowse();
                     break;
                 case NarrativeAuthorityCommandType.AbandonQuest:
-                    coordinator?.AbandonAssignment(command.PrimaryIdText);
                     break;
                 case NarrativeAuthorityCommandType.ClaimQuestReward:
-                    coordinator?.ClaimReward(command.PrimaryIdText);
                     break;
                 case NarrativeAuthorityCommandType.SelectDialogueChoice:
                     FindAnyObjectByType<PrototypeDialoguePanel>()?.ApplyAuthorizedChoice(command.PrimaryIdText);
@@ -248,7 +303,6 @@ namespace UnityIsekaiGame.Networking.Client
                     FindAnyObjectByType<PrototypeDialoguePanel>()?.ApplyAuthorizedEnd();
                     break;
                 default:
-                    ApplyPartyReplica(command, result);
                     break;
             }
         }

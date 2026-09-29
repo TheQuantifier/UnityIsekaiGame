@@ -10,6 +10,7 @@ namespace UnityIsekaiGame.Networking
         Defeated = 1
     }
 
+    [Serializable]
     public struct NetworkVitalsState : INetworkSerializable, IEquatable<NetworkVitalsState>
     {
         public NetworkVitalsState(

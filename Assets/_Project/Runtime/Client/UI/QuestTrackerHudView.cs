@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Presentation;
 using UnityIsekaiGame.Quests;
+using UnityIsekaiGame.Networking.Client;
 
 namespace UnityIsekaiGame.UI
 {
@@ -18,6 +19,7 @@ namespace UnityIsekaiGame.UI
         [SerializeField] private Text objectiveLabel;
 
         private PrototypeNarrativeCoordinator coordinator;
+        private LocalNarrativeAuthorityBridge authorityBridge;
         private float nextResolveTime;
 
         public string DisplayedTitle => titleLabel == null ? string.Empty : titleLabel.text;
@@ -33,7 +35,7 @@ namespace UnityIsekaiGame.UI
 
         private void Update()
         {
-            if (coordinator == null && Time.unscaledTime >= nextResolveTime)
+            if (Time.unscaledTime >= nextResolveTime)
             {
                 nextResolveTime = Time.unscaledTime + 0.5f;
                 TryBind();
@@ -54,7 +56,10 @@ namespace UnityIsekaiGame.UI
 
         public void Refresh()
         {
-            PrototypeQuestJournalEntry quest = coordinator?.GetJournal()?.FirstOrDefault(entry => entry != null && !entry.IsTerminal);
+            PrototypeQuestJournalEntry quest = (authorityBridge != null && authorityBridge.IsServerAuthorityActive
+                    ? authorityBridge.ReplicatedJournal
+                    : coordinator?.GetJournal())
+                ?.FirstOrDefault(entry => entry != null && !entry.IsTerminal);
             if (quest == null)
             {
                 SetVisible(false);
@@ -89,7 +94,8 @@ namespace UnityIsekaiGame.UI
         private void TryBind()
         {
             PrototypeNarrativeCoordinator resolved = services?.NarrativeCoordinator;
-            if (ReferenceEquals(resolved, coordinator))
+            LocalNarrativeAuthorityBridge resolvedBridge = LocalNarrativeAuthorityBridge.Active;
+            if (ReferenceEquals(resolved, coordinator) && ReferenceEquals(resolvedBridge, authorityBridge))
             {
                 if (coordinator == null) SetVisible(false);
                 else Refresh();
@@ -97,21 +103,21 @@ namespace UnityIsekaiGame.UI
             }
             Unbind();
             coordinator = resolved;
+            authorityBridge = resolvedBridge;
             if (coordinator != null)
             {
                 coordinator.Changed += Refresh;
-                Refresh();
             }
-            else
-            {
-                SetVisible(false);
-            }
+            if (authorityBridge != null) authorityBridge.ReplicaChanged += Refresh;
+            Refresh();
         }
 
         private void Unbind()
         {
             if (coordinator != null) coordinator.Changed -= Refresh;
+            if (authorityBridge != null) authorityBridge.ReplicaChanged -= Refresh;
             coordinator = null;
+            authorityBridge = null;
         }
 
         private void SetVisible(bool visible)

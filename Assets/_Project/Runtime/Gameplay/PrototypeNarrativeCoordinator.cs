@@ -26,19 +26,32 @@ namespace UnityIsekaiGame.Gameplay
 
         private readonly PrototypePersistenceServiceBehaviour services;
         private readonly DefinitionRegistry registry;
+        private readonly string playerPersonId;
+        private readonly bool subscribedToRuntimeEvents;
         private readonly HashSet<string> processedObjectiveTransactions = new HashSet<string>(StringComparer.Ordinal);
         private double nextScheduledEvaluation;
         private long transactionSequence;
         private bool disposed;
 
-        public PrototypeNarrativeCoordinator(PrototypePersistenceServiceBehaviour owner, DefinitionRegistry definitions)
+        public PrototypeNarrativeCoordinator(
+            PrototypePersistenceServiceBehaviour owner,
+            DefinitionRegistry definitions,
+            string authoritativePlayerPersonId = null,
+            bool subscribeToRuntimeEvents = true)
         {
             services = owner ?? throw new ArgumentNullException(nameof(owner));
             registry = definitions ?? throw new ArgumentNullException(nameof(definitions));
-            QuestObjectiveSignalBus.SignalReported += HandleObjectiveSignal;
-            services.WorldDialogue.EventCommitted += HandleDialogueEvent;
-            if (services.PlayerInventory != null) services.PlayerInventory.ItemAdded += HandleItemAdded;
-            services.AdventuringParties.Changed += HandlePartyChanged;
+            playerPersonId = string.IsNullOrWhiteSpace(authoritativePlayerPersonId)
+                ? services.PlayerPersonId
+                : authoritativePlayerPersonId.Trim();
+            subscribedToRuntimeEvents = subscribeToRuntimeEvents;
+            if (subscribedToRuntimeEvents)
+            {
+                QuestObjectiveSignalBus.SignalReported += HandleObjectiveSignal;
+                services.WorldDialogue.EventCommitted += HandleDialogueEvent;
+                if (services.PlayerInventory != null) services.PlayerInventory.ItemAdded += HandleItemAdded;
+                services.AdventuringParties.Changed += HandlePartyChanged;
+            }
         }
 
         public event Action Changed;
@@ -55,7 +68,7 @@ namespace UnityIsekaiGame.Gameplay
         public NarrativeStateRuntime NarrativeState => services.WorldNarrativeState;
         public NarrativeArcRuntime NarrativeArcs => services.WorldNarrativeArcs;
         public AdventuringPartyService Parties => services.AdventuringParties;
-        public string PlayerPersonId => services.PlayerPersonId;
+        public string PlayerPersonId => playerPersonId;
         public double WorldTime => services.PlayTime?.CumulativeSeconds ?? Time.unscaledTimeAsDouble;
 
         public void InitializePrototypeContent()
@@ -689,10 +702,13 @@ namespace UnityIsekaiGame.Gameplay
         {
             if (disposed) return;
             disposed = true;
-            QuestObjectiveSignalBus.SignalReported -= HandleObjectiveSignal;
-            if (services.WorldDialogue != null) services.WorldDialogue.EventCommitted -= HandleDialogueEvent;
-            if (services.PlayerInventory != null) services.PlayerInventory.ItemAdded -= HandleItemAdded;
-            services.AdventuringParties.Changed -= HandlePartyChanged;
+            if (subscribedToRuntimeEvents)
+            {
+                QuestObjectiveSignalBus.SignalReported -= HandleObjectiveSignal;
+                if (services.WorldDialogue != null) services.WorldDialogue.EventCommitted -= HandleDialogueEvent;
+                if (services.PlayerInventory != null) services.PlayerInventory.ItemAdded -= HandleItemAdded;
+                services.AdventuringParties.Changed -= HandlePartyChanged;
+            }
             Changed = null;
             DialogueChanged = null;
         }

@@ -10,6 +10,5 @@ This register keeps intentional temporary limits visible until their owning Phas
 | Ammunition | Online ranged attacks that require ammunition are rejected. | Server atomically reserves/consumes ammunition with attack execution and refunds it if the authoritative shot cannot begin. |
 | Crafting/disassembly | Connected replicas reject local inventory transformations. | Server owns recipes, inputs, catalysts, outputs, identity/composition/quality/durability changes, and rollback. |
 | Projectile presentation | Spell collision/damage is server-simulated; clients receive outcomes and target snapshots without a replicated flight visual. | Replicate presentation-only projectile spawn/path/despawn events while retaining server collision and impact authority. |
-| Narrative reconnect projection | Quest and party mutations are server-authoritative, but successful results are mirrored into a disposable local presentation model. | Group 9 assigns a durable person identity per admitted session, restores server-owned narrative state, and sends authoritative quest/party/dialogue snapshots on connect and reconnect. |
 
 The physical-drop requirement is not optional: replacing an online drop with permanent removal is only a temporary Group 6 boundary, not the final game behavior.

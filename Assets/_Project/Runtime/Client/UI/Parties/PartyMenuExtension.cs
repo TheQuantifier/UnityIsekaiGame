@@ -97,8 +97,10 @@ namespace UnityIsekaiGame.UI.Parties
                 return;
             }
             dirty = false;
-            string playerId = persistence.PlayerPersonId;
-            PartySnapshot party = persistence.AdventuringParties.GetPartyForPerson(playerId);
+            LocalNarrativeAuthorityBridge authority = LocalNarrativeAuthorityBridge.Active;
+            bool online = authority != null && authority.IsServerAuthorityActive;
+            string playerId = online ? authority.ReplicatedPersonId : persistence.PlayerPersonId;
+            PartySnapshot party = online ? BuildReplicatedParty(authority.ReplicatedParty) : persistence.AdventuringParties.GetPartyForPerson(playerId);
             Label("ADVENTURING PARTY", 22, FontStyle.Bold, GameUiTextRole.Title);
             if (party == null)
             {
@@ -119,8 +121,10 @@ namespace UnityIsekaiGame.UI.Parties
                 return;
             }
 
-            PartySettingsData settings = persistence.PartyOperations.GetSettings(party.PartyId);
-            int readyCount = persistence.PartyOperations.GetReadyMemberIds(party.PartyId).Count;
+            PartySettingsData settings = online ? BuildReplicatedSettings(authority.ReplicatedParty) : persistence.PartyOperations.GetSettings(party.PartyId);
+            int readyCount = online
+                ? authority.ReplicatedParty.members.Count(member => member.readiness == (int)PartyMemberReadiness.Ready)
+                : persistence.PartyOperations.GetReadyMemberIds(party.PartyId).Count;
             Label(party.DisplayName, 18, FontStyle.Bold, GameUiTextRole.Heading);
             Label($"{party.MemberCount}/{party.MaximumMembers} MEMBERS   |   {readyCount}/{party.MemberCount} READY", 13, FontStyle.Bold,
                 readyCount == party.MemberCount ? GameUiTextRole.Success : GameUiTextRole.Warning);
@@ -134,7 +138,9 @@ namespace UnityIsekaiGame.UI.Parties
             Label("ROSTER", 16, FontStyle.Bold, GameUiTextRole.Heading);
             foreach (PartyMemberSnapshot member in party.Members)
             {
-                PartyMemberOperationalData state = persistence.PartyOperations.GetMember(party.PartyId, member.PersonId);
+                PartyMemberOperationalData state = online
+                    ? BuildReplicatedMemberState(authority.ReplicatedParty, member.PersonId)
+                    : persistence.PartyOperations.GetMember(party.PartyId, member.PersonId);
                 string label = $"{(member.IsLeader ? "Leader" : "Companion")}: {DisplayName(member.PersonId)} | {state?.readiness ?? PartyMemberReadiness.Missing} | {state?.command ?? PartyCommand.Follow}";
                 PartyMemberReadiness readiness = state?.readiness ?? PartyMemberReadiness.Missing;
                 Label(label, 13, FontStyle.Normal, readiness == PartyMemberReadiness.Ready ? GameUiTextRole.Success : GameUiTextRole.Warning);
@@ -176,6 +182,23 @@ namespace UnityIsekaiGame.UI.Parties
 
         private void Invitations(string playerId)
         {
+            LocalNarrativeAuthorityBridge authority = LocalNarrativeAuthorityBridge.Active;
+            if (authority != null && authority.IsServerAuthorityActive)
+            {
+                NarrativePartyInvitationReplicaData[] replicas = authority.ReplicatedInvitations
+                    .Where(value => value != null && value.invitedPersonId == playerId)
+                    .ToArray();
+                if (replicas.Length == 0) return;
+                Label("INVITATIONS", 16, FontStyle.Bold, GameUiTextRole.Heading);
+                foreach (NarrativePartyInvitationReplicaData invitation in replicas)
+                {
+                    Horizontal($"From {DisplayName(invitation.inviterPersonId)}",
+                        ("Accept", (Action)(() => authority.RequestAcceptPartyInvitation(invitation.invitationId))),
+                        ("Decline", (Action)(() => authority.RequestDeclinePartyInvitation(invitation.invitationId))));
+                }
+                return;
+            }
+
             PartyInvitationData[] invitations = persistence.PartyOperations.QueryInvitations(playerId, PartyInvitationStatus.Pending).Where(x => x.invitedPersonId == playerId).ToArray();
             if (invitations.Length == 0) return;
             Label("INVITATIONS", 16, FontStyle.Bold, GameUiTextRole.Heading);
@@ -189,6 +212,48 @@ namespace UnityIsekaiGame.UI.Parties
                         bridge => bridge.RequestDeclinePartyInvitation(invitation.invitationId),
                         () => { persistence.PartyOperations.ResolveInvitation(invitation.invitationId, playerId, PartyInvitationStatus.Declined, Time.timeAsDouble, out _); }))));
             }
+        }
+
+        private static PartySnapshot BuildReplicatedParty(NarrativePartyReplicaData replica)
+        {
+            if (replica == null || string.IsNullOrWhiteSpace(replica.partyId)) return null;
+            return new PartySnapshot(
+                replica.partyId,
+                replica.displayName,
+                (replica.members ?? new System.Collections.Generic.List<NarrativePartyMemberReplicaData>())
+                    .Where(member => member != null)
+                    .Select(member => new PartyMemberSnapshot(member.personId, member.membershipId, member.isLeader)),
+                replica.minimumOperationalMembers,
+                replica.maximumMembers);
+        }
+
+        private static PartySettingsData BuildReplicatedSettings(NarrativePartyReplicaData replica)
+        {
+            return new PartySettingsData
+            {
+                partyId = replica?.partyId ?? string.Empty,
+                formation = (PartyFormation)(replica?.formation ?? (int)PartyFormation.Wedge),
+                lootPolicy = (PartyLootPolicy)(replica?.lootPolicy ?? (int)PartyLootPolicy.Individual),
+                friendlyFire = (PartyFriendlyFirePolicy)(replica?.friendlyFirePolicy ?? (int)PartyFriendlyFirePolicy.Prevent),
+                groupCommand = (PartyCommand)(replica?.groupCommand ?? (int)PartyCommand.Follow)
+            };
+        }
+
+        private static PartyMemberOperationalData BuildReplicatedMemberState(NarrativePartyReplicaData party, string personId)
+        {
+            NarrativePartyMemberReplicaData member = party?.members?.FirstOrDefault(value => value != null && value.personId == personId);
+            return member == null ? null : new PartyMemberOperationalData
+            {
+                partyId = party.partyId,
+                personId = member.personId,
+                readiness = (PartyMemberReadiness)member.readiness,
+                command = (PartyCommand)party.groupCommand,
+                locationId = member.locationId,
+                distanceToLeader = member.distanceToLeader,
+                loaded = member.connected,
+                alive = member.alive,
+                conscious = member.conscious
+            };
         }
         private void UpdateSettings(PartySnapshot party, PartyFormation formation, PartyLootPolicy loot, PartyFriendlyFirePolicy friendly, PartyCommand command)
         {
