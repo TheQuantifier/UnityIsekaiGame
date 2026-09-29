@@ -4,10 +4,15 @@
     "references": [
         "UnityIsekaiGame.GameData",
         "UnityIsekaiGame.Gameplay",
+        "UnityIsekaiGame.Networking.Client",
+        "UnityIsekaiGame.Networking.Protocol",
+        "UnityIsekaiGame.Networking.Server",
         "UnityIsekaiGame.UI",
         "UnityIsekaiGame.Development",
         "UnityIsekaiGame.Editor",
-        "SceneZoneTool.Runtime"
+        "SceneZoneTool.Runtime",
+        "Unity.Netcode.Runtime",
+        "Unity.Networking.Transport"
     ],
     "includePlatforms": [
         "Editor"

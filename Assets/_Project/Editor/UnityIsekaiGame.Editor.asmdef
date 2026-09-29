@@ -4,9 +4,13 @@
     "references": [
         "UnityIsekaiGame.GameData",
         "UnityIsekaiGame.Gameplay",
+        "UnityIsekaiGame.Networking.Client",
+        "UnityIsekaiGame.Networking.Server",
         "UnityIsekaiGame.UI",
         "UnityIsekaiGame.Development",
         "SceneZoneTool.Runtime",
+        "Unity.Netcode.Runtime",
+        "Unity.Networking.Transport",
         "UnityEditor.TestRunner"
     ],
     "includePlatforms": [

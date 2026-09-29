@@ -1,0 +1,18 @@
+{
+    "name": "UnityIsekaiGame.Networking.Client",
+    "rootNamespace": "UnityIsekaiGame.Networking.Client",
+    "references": [
+        "UnityIsekaiGame.Networking.Protocol",
+        "Unity.Netcode.Runtime",
+        "Unity.Networking.Transport"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,16 @@
+{
+    "name": "UnityIsekaiGame.Networking.Protocol",
+    "rootNamespace": "UnityIsekaiGame.Networking",
+    "references": [
+        "Unity.Newtonsoft.Json"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}
