@@ -46,6 +46,28 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void Snapshot_revision_queue_keeps_newest_callback_before_application()
+        {
+            uint pending = 0u;
+
+            Assert.That(NetworkSnapshotRevisionQueue.TryQueue(12u, 10u, ref pending), Is.True);
+            Assert.That(NetworkSnapshotRevisionQueue.TryQueue(11u, 10u, ref pending), Is.False);
+            Assert.That(NetworkSnapshotRevisionQueue.TryQueue(12u, 10u, ref pending), Is.False);
+            Assert.That(pending, Is.EqualTo(12u));
+        }
+
+        [Test]
+        public void Snapshot_revision_queue_handles_wraparound_and_rejects_applied_revisions()
+        {
+            uint pending = 0u;
+
+            Assert.That(NetworkSnapshotRevisionQueue.TryQueue(1u, uint.MaxValue, ref pending), Is.True);
+            Assert.That(NetworkSnapshotRevisionQueue.TryQueue(uint.MaxValue, uint.MaxValue, ref pending), Is.False);
+            Assert.That(NetworkSnapshotRevisionQueue.TryQueue(2u, uint.MaxValue, ref pending), Is.True);
+            Assert.That(pending, Is.EqualTo(2u));
+        }
+
+        [Test]
         public void Snapshot_requires_equipment_to_reference_inventory_owned_identity()
         {
             NetworkInventorySlotState[] inventory =

@@ -165,8 +165,7 @@ namespace UnityIsekaiGame.Networking.Client
 
         private void QueueSnapshot(uint revision)
         {
-            if (revision != 0u && NetworkInventoryCommandValidator.IsNewer(revision, appliedSnapshotRevision))
-                pendingSnapshotRevision = revision;
+            NetworkSnapshotRevisionQueue.TryQueue(revision, appliedSnapshotRevision, ref pendingSnapshotRevision);
         }
 
         private void DiscoverLocalCombatants()

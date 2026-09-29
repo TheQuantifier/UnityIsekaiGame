@@ -48,6 +48,28 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void Vitals_state_rejects_non_finite_deserialized_values()
+        {
+            NetworkVitalsState state = new NetworkVitalsState(50f, 100f, 50f, 100f, 50f, 100f, NetworkActorLifeState.Active, 1u);
+            state.Health = float.NaN;
+
+            Assert.That(NetworkVitalsStateValidator.TryValidate(state, out string failure), Is.False);
+            Assert.That(failure, Does.Contain("non-finite"));
+        }
+
+        [Test]
+        public void Vitals_constructors_sanitize_non_finite_inputs()
+        {
+            NetworkVitalsState state = new NetworkVitalsState(float.NaN, float.PositiveInfinity, 5f, 10f, 5f, 10f, NetworkActorLifeState.Active, 1u);
+            AuthoritativeVitalsTuning tuning = new AuthoritativeVitalsTuning(float.NaN, 1f, 1f, float.PositiveInfinity, 1f, 1f, 1f);
+
+            Assert.That(state.Health, Is.Zero);
+            Assert.That(state.MaximumHealth, Is.Zero);
+            Assert.That(tuning.HealthRegenerationPerSecond, Is.Zero);
+            Assert.That(tuning.SprintDrainPerSecond, Is.Zero);
+        }
+
+        [Test]
         public void External_resource_replica_rejects_local_mutation_and_accepts_server_snapshots()
         {
             GameObject root = new GameObject("Resource replica test");

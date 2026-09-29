@@ -28,22 +28,19 @@ Phase 5 Group 4 makes player health, stamina, mana, regeneration, sprint cost, a
 ## Relevant folders
 
 ```text
-Assets/_Project/
-├─ Runtime/
-│  ├─ Shared/Networking/
-│  │  ├─ Protocol/      connection payloads and versioned wire contracts
-│  │  └─ Replication/   replicated actors, movement, vitals, and deterministic models
-│  ├─ Server/Networking/ dedicated-server lifecycle, admission, sessions, and spawning
-│  ├─ Client/Networking/ local connection, input bridges, and presentation mirroring
-│  ├─ Characters/    shared character/resource/stat simulation used behind authority
-│  ├─ Gameplay/      player-facing gameplay views and prototype adapters
-│  ├─ UI/            client presentation only
-│  └─ Input/         client input collection only
-├─ Content/Networking/Prefabs/NetworkPlayerActor.prefab
-└─ Scenes/Prototype/PrototypeScene.unity
+Projects/
+|-- Client/Assets/_Project/Scenes/Prototype/PrototypeScene.unity
+`-- Server/Assets/Scenes/ServerPrototypeScene.unity
+Packages/
+|-- com.thequantifier.isekai.protocol/       versioned wire contracts
+|-- com.thequantifier.isekai.networking/     shared replication and deterministic network models
+|-- com.thequantifier.isekai.simulation/     shared character/resource/stat simulation
+|-- com.thequantifier.isekai.client/         local connection, input bridges, and UI
+|-- com.thequantifier.isekai.server/         dedicated-server authority and persistence
+`-- com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkPlayerActor.prefab
 ```
 
-The server and client are currently assemblies and separate executables in one Unity project. They are not duplicated source trees. This keeps shared schemas and deterministic models in one place while the assembly boundaries prevent presentation code from becoming the authority.
+The server and client are separate Unity projects and executables that consume one shared set of versioned repository packages. The client project does not install the server adapter package, and the server project does not install the client adapter/UI package.
 
 ## Authored integration
 

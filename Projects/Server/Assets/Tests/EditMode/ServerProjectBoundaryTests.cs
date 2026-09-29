@@ -29,6 +29,17 @@ namespace UnityIsekaiGame.ServerProject.Tests
         }
 
         [Test]
+        public void Server_build_output_resolves_inside_the_repository()
+        {
+            string projectRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, ".."));
+            string actual = System.IO.Path.GetFullPath(System.IO.Path.Combine(projectRoot, ServerProjectBuildAutomation.DefaultOutputPath));
+            string repositoryRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(projectRoot, "..", ".."));
+            string expected = System.IO.Path.Combine(repositoryRoot, "Builds", "LocalServer", "UnityIsekaiServer.exe");
+
+            Assert.That(actual, Is.EqualTo(expected).IgnoreCase);
+        }
+
+        [Test]
         public void Server_scene_contains_authority_without_client_or_presentation_components()
         {
             Scene previous = SceneManager.GetActiveScene();
@@ -36,10 +47,11 @@ namespace UnityIsekaiGame.ServerProject.Tests
             try
             {
                 Scene scene = EditorSceneManager.OpenScene(ServerProjectBuildAutomation.ServerScenePath, OpenSceneMode.Single);
-                Component[] components = scene.GetRootGameObjects()
+                Component[] serializedComponents = scene.GetRootGameObjects()
                     .SelectMany(root => root.GetComponentsInChildren<Component>(true))
-                    .Where(component => component != null)
                     .ToArray();
+                Assert.That(serializedComponents, Has.None.Null, "The dedicated-server scene contains a missing script reference.");
+                Component[] components = serializedComponents.Where(component => component != null).ToArray();
 
                 Assert.That(components.OfType<NetworkManager>().SingleOrDefault(), Is.Not.Null);
                 Assert.That(components.OfType<UnityTransport>().SingleOrDefault(), Is.Not.Null);

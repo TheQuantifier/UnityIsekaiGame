@@ -23,7 +23,6 @@ namespace UnityIsekaiGame.Networking.Client
 
         private readonly Dictionary<uint, NetworkNarrativeCommand> pending = new Dictionary<uint, NetworkNarrativeCommand>();
         private NetworkPlayerNarrative networkNarrative;
-        private string authorizedInteractionPointId = string.Empty;
         private string authorizedQuestSourceId = string.Empty;
         private bool applyingReplica;
         private bool smokeEnabled;
@@ -139,7 +138,6 @@ namespace UnityIsekaiGame.Networking.Client
                 interactionDetector.ExternalInteractionHandler = null;
 
             pending.Clear();
-            authorizedInteractionPointId = string.Empty;
             authorizedQuestSourceId = string.Empty;
             networkNarrative = narrative;
             replicatedJournal = Array.Empty<PrototypeQuestJournalEntry>();
@@ -185,8 +183,14 @@ namespace UnityIsekaiGame.Networking.Client
 
         private void OnCommandResultChanged(NetworkNarrativeCommandResult result)
         {
-            pending.TryGetValue(result.Sequence, out NetworkNarrativeCommand command);
-            pending.Remove(result.Sequence);
+            if (!pending.Remove(result.Sequence, out NetworkNarrativeCommand command))
+            {
+                Debug.LogWarning(
+                    $"[Network Narrative] Ignored unmatched command result {result.Sequence}; it cannot safely drive client presentation.",
+                    this);
+                return;
+            }
+
             PublishFeedback(result.MessageText, !result.Succeeded);
             if (!result.Succeeded) return;
 
@@ -280,7 +284,6 @@ namespace UnityIsekaiGame.Networking.Client
             switch (command.CommandType)
             {
                 case NarrativeAuthorityCommandType.Interact:
-                    authorizedInteractionPointId = result.PrimaryIdText;
                     authorizedQuestSourceId = result.Presentation is NarrativePresentationAction.OpenQuestSource or NarrativePresentationAction.OpenGuildDesk
                         ? result.SecondaryIdText
                         : string.Empty;
@@ -303,56 +306,6 @@ namespace UnityIsekaiGame.Networking.Client
                     FindAnyObjectByType<PrototypeDialoguePanel>()?.ApplyAuthorizedEnd();
                     break;
                 default:
-                    break;
-            }
-        }
-
-        private void ApplyPartyReplica(NetworkNarrativeCommand command, NetworkNarrativeCommandResult result)
-        {
-            if (persistence == null) return;
-            string playerId = persistence.PlayerPersonId;
-            PartySnapshot party = persistence.AdventuringParties.GetPartyForPerson(playerId);
-            double now = Time.unscaledTimeAsDouble;
-            string transaction = $"replica.party.{command.CommandType}.{command.Sequence}";
-            switch (command.CommandType)
-            {
-                case NarrativeAuthorityCommandType.CreateParty:
-                    persistence.AdventuringParties.CreateParty(result.PrimaryIdText, command.PrimaryIdText, playerId, now, transaction);
-                    break;
-                case NarrativeAuthorityCommandType.InvitePartyMember:
-                    if (party != null) persistence.PartyOperations.Invite(party.PartyId, playerId, command.PrimaryIdText, now, transaction, out _);
-                    break;
-                case NarrativeAuthorityCommandType.AcceptPartyInvitation:
-                    persistence.PartyOperations.AcceptInvitation(command.PrimaryIdText, playerId, now, transaction);
-                    break;
-                case NarrativeAuthorityCommandType.DeclinePartyInvitation:
-                    persistence.PartyOperations.ResolveInvitation(command.PrimaryIdText, playerId, PartyInvitationStatus.Declined, now, out _);
-                    break;
-                case NarrativeAuthorityCommandType.RemovePartyMember:
-                    if (party != null) persistence.AdventuringParties.RemoveMember(party.PartyId, playerId, command.PrimaryIdText, now, transaction);
-                    break;
-                case NarrativeAuthorityCommandType.TransferPartyLeadership:
-                    if (party != null) persistence.AdventuringParties.TransferLeadership(party.PartyId, playerId, command.PrimaryIdText, now, transaction);
-                    break;
-                case NarrativeAuthorityCommandType.SetPartyReady:
-                    if (party != null)
-                    {
-                        PartyMemberOperationalData member = persistence.PartyOperations.GetMember(party.PartyId, playerId);
-                        persistence.PartyOperations.ReportMemberState(party.PartyId, playerId, command.Value != 0 ? PartyMemberReadiness.Ready : PartyMemberReadiness.Busy, member?.locationId ?? string.Empty, member?.distanceToLeader ?? 0f, true, member?.alive ?? true, member?.conscious ?? true);
-                    }
-                    break;
-                case NarrativeAuthorityCommandType.SetPartySettings:
-                    if (party != null)
-                    {
-                        UnpackSettings(command.Value, out PartyFormation formation, out PartyLootPolicy loot, out PartyFriendlyFirePolicy friendly, out PartyCommand partyCommand);
-                        persistence.PartyOperations.SetSettings(party.PartyId, playerId, formation, loot, friendly, partyCommand, out _);
-                    }
-                    break;
-                case NarrativeAuthorityCommandType.LeaveParty:
-                    if (party != null) persistence.AdventuringParties.RemoveMember(party.PartyId, playerId, playerId, now, transaction);
-                    break;
-                case NarrativeAuthorityCommandType.DissolveParty:
-                    if (party != null) persistence.AdventuringParties.DissolveParty(party.PartyId, playerId, now, transaction);
                     break;
             }
         }

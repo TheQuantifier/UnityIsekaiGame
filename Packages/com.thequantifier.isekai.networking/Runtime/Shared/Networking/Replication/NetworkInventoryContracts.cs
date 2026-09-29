@@ -192,6 +192,30 @@ namespace UnityIsekaiGame.Networking
         }
     }
 
+    /// <summary>
+    /// Keeps deferred replica application pinned to the newest revision observed.
+    /// Multiple network callbacks can arrive before the client's application pass;
+    /// an older callback must never replace a newer pending snapshot.
+    /// </summary>
+    public static class NetworkSnapshotRevisionQueue
+    {
+        public static bool TryQueue(uint candidate, uint applied, ref uint pending)
+        {
+            if (candidate == 0u || !NetworkInventoryCommandValidator.IsNewer(candidate, applied))
+            {
+                return false;
+            }
+
+            if (pending != 0u && !NetworkInventoryCommandValidator.IsNewer(candidate, pending))
+            {
+                return false;
+            }
+
+            pending = candidate;
+            return true;
+        }
+    }
+
     public struct NetworkInventorySlotState : INetworkSerializable, IEquatable<NetworkInventorySlotState>
     {
         public NetworkInventorySlotState(

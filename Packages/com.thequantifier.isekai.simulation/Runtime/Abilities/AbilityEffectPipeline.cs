@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace UnityIsekaiGame.Abilities
 {
@@ -25,7 +26,19 @@ namespace UnityIsekaiGame.Abilities
                     return AbilityExecutionResult.Failure(AbilityExecutionStatus.EffectValidationFailure, missing.Message, i, missing);
                 }
 
-                EffectExecutionResult result = effect.CanExecute(in context);
+                EffectExecutionResult result;
+                try
+                {
+                    result = effect.CanExecute(in context);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                    result = EffectExecutionResult.Failure(
+                        EffectExecutionStatus.InvalidConfiguration,
+                        $"Effect at index {i} threw during validation.");
+                }
+
                 if (!result.Succeeded)
                 {
                     return AbilityExecutionResult.Failure(AbilityExecutionStatus.EffectValidationFailure, result.Message, i, result);
@@ -48,21 +61,39 @@ namespace UnityIsekaiGame.Abilities
             for (int i = 0; i < effects.Count; i++)
             {
                 EffectExecutionContext effectContext = context.WithExecutionId(string.IsNullOrWhiteSpace(context.ExecutionId) ? $"effect.{i}" : $"{context.ExecutionId}.{i}");
-                EffectExecutionResult result = effects[i].Execute(in effectContext);
+                EffectExecutionResult result;
+                try
+                {
+                    result = effects[i].Execute(in effectContext);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                    result = EffectExecutionResult.Failure(
+                        EffectExecutionStatus.InvalidConfiguration,
+                        $"Effect at index {i} threw during execution.");
+                }
+
                 if (!result.Succeeded)
                 {
+                    int rollbackFailureCount = 0;
                     for (int rollbackIndex = rollbacks.Count - 1; rollbackIndex >= 0; rollbackIndex--)
                     {
                         try
                         {
                             rollbacks[rollbackIndex]?.Invoke();
                         }
-                        catch (Exception)
+                        catch (Exception exception)
                         {
-                            // Continue rolling back the remainder of the batch.
+                            Debug.LogException(exception);
+                            rollbackFailureCount++;
                         }
                     }
-                    return AbilityExecutionResult.Failure(AbilityExecutionStatus.EffectExecutionFailure, result.Message, i, result);
+
+                    string failureMessage = rollbackFailureCount == 0
+                        ? result.Message
+                        : $"{result.Message} {rollbackFailureCount} rollback operation(s) failed; authoritative state requires reconciliation.";
+                    return AbilityExecutionResult.Failure(AbilityExecutionStatus.EffectExecutionFailure, failureMessage, i, result);
                 }
 
                 if (result.Rollback != null)

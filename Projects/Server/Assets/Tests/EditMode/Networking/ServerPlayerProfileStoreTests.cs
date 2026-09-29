@@ -83,6 +83,25 @@ namespace UnityIsekaiGame.Tests
             Assert.That(failure, Does.Contain("identity"));
         }
 
+        [Test]
+        public void Profile_save_rejects_non_finite_authoritative_state()
+        {
+            PlayerSessionSnapshot session = OpenSession("invalid-numeric-player");
+            ServerPlayerProfileData profile = CreateProfile(session);
+            ServerPlayerProfileStore store = new ServerPlayerProfileStore(root);
+            profile.positionX = float.NaN;
+
+            Assert.That(store.TrySave(profile, out string transformFailure), Is.False);
+            Assert.That(transformFailure, Does.Contain("non-finite"));
+
+            profile.positionX = 12.5f;
+            NetworkVitalsState invalidVitals = profile.vitals;
+            invalidVitals.Mana = float.PositiveInfinity;
+            profile.vitals = invalidVitals;
+            Assert.That(store.TrySave(profile, out string vitalsFailure), Is.False);
+            Assert.That(vitalsFailure, Does.Contain("vitals"));
+        }
+
         private static PlayerSessionSnapshot OpenSession(string playerId)
         {
             PlayerSessionRegistry registry = new PlayerSessionRegistry();

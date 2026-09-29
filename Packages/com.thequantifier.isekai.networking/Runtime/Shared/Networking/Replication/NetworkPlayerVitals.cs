@@ -70,6 +70,11 @@ namespace UnityIsekaiGame.Networking
                 throw new InvalidOperationException("Initial vitals must be configured before network spawn.");
             }
 
+            if (!NetworkVitalsStateValidator.TryValidate(initialState, out string failure))
+            {
+                throw new ArgumentException(failure, nameof(initialState));
+            }
+
             configuredInitialState = initialState;
             hasConfiguredInitialState = true;
         }

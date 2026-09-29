@@ -215,10 +215,21 @@ namespace UnityIsekaiGame.Networking.Server
                 || string.IsNullOrWhiteSpace(profile.actorId)
                 || profile.revision < 1L
                 || profile.inventory == null
-                || profile.equipment == null
-                || profile.vitals.Revision == 0u)
+                || profile.equipment == null)
             {
                 message = "Profile identity or required gameplay state is incomplete.";
+                return false;
+            }
+
+            if (!IsFinite(profile.positionX) || !IsFinite(profile.positionY) || !IsFinite(profile.positionZ) || !IsFinite(profile.yawDegrees))
+            {
+                message = "Profile transform contains a non-finite numeric value.";
+                return false;
+            }
+
+            if (!NetworkVitalsStateValidator.TryValidate(profile.vitals, out string vitalsFailure))
+            {
+                message = $"Profile vitals are invalid: {vitalsFailure}";
                 return false;
             }
 
@@ -235,6 +246,8 @@ namespace UnityIsekaiGame.Networking.Server
             return true;
         }
 
+        private static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
         private static string ComputeSha256(string value)
         {
             using SHA256 sha = SHA256.Create();
@@ -247,7 +260,10 @@ namespace UnityIsekaiGame.Networking.Server
         private static void TryDeleteTemporary(string path)
         {
             try { if (File.Exists(path)) File.Delete(path); }
-            catch { }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"[Server Persistence] Could not delete temporary profile file '{path}': {exception.Message}");
+            }
         }
     }
 }

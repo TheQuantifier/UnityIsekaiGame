@@ -23,13 +23,13 @@ namespace UnityIsekaiGame.Networking
             NetworkActorLifeState lifeState,
             uint revision)
         {
-            MaximumHealth = Mathf.Max(0f, maximumHealth);
-            MaximumStamina = Mathf.Max(0f, maximumStamina);
-            MaximumMana = Mathf.Max(0f, maximumMana);
-            Health = Mathf.Clamp(health, 0f, MaximumHealth);
-            Stamina = Mathf.Clamp(stamina, 0f, MaximumStamina);
-            Mana = Mathf.Clamp(mana, 0f, MaximumMana);
-            LifeState = lifeState;
+            MaximumHealth = NonNegativeFinite(maximumHealth);
+            MaximumStamina = NonNegativeFinite(maximumStamina);
+            MaximumMana = NonNegativeFinite(maximumMana);
+            Health = Mathf.Clamp(NonNegativeFinite(health), 0f, MaximumHealth);
+            Stamina = Mathf.Clamp(NonNegativeFinite(stamina), 0f, MaximumStamina);
+            Mana = Mathf.Clamp(NonNegativeFinite(mana), 0f, MaximumMana);
+            LifeState = IsKnownLifeState(lifeState) ? lifeState : NetworkActorLifeState.Active;
             Revision = revision;
         }
 
@@ -67,6 +67,56 @@ namespace UnityIsekaiGame.Networking
 
         public override bool Equals(object obj) => obj is NetworkVitalsState other && Equals(other);
         public override int GetHashCode() => HashCode.Combine(Health, MaximumHealth, Stamina, MaximumStamina, Mana, MaximumMana, LifeState, Revision);
+
+        private static float NonNegativeFinite(float value)
+        {
+            return float.IsNaN(value) || float.IsInfinity(value) ? 0f : Mathf.Max(0f, value);
+        }
+
+        private static bool IsKnownLifeState(NetworkActorLifeState value)
+        {
+            return value == NetworkActorLifeState.Active || value == NetworkActorLifeState.Defeated;
+        }
+    }
+
+    public static class NetworkVitalsStateValidator
+    {
+        public static bool TryValidate(NetworkVitalsState state, out string failure)
+        {
+            if (state.Revision == 0u)
+            {
+                failure = "Vitals revision must be non-zero.";
+                return false;
+            }
+
+            if (state.LifeState != NetworkActorLifeState.Active && state.LifeState != NetworkActorLifeState.Defeated)
+            {
+                failure = "Vitals life state is invalid.";
+                return false;
+            }
+
+            if (!IsFinite(state.Health) || !IsFinite(state.MaximumHealth)
+                || !IsFinite(state.Stamina) || !IsFinite(state.MaximumStamina)
+                || !IsFinite(state.Mana) || !IsFinite(state.MaximumMana))
+            {
+                failure = "Vitals contain a non-finite numeric value.";
+                return false;
+            }
+
+            if (!WithinRange(state.Health, state.MaximumHealth)
+                || !WithinRange(state.Stamina, state.MaximumStamina)
+                || !WithinRange(state.Mana, state.MaximumMana))
+            {
+                failure = "A current vital is outside its zero-to-maximum range.";
+                return false;
+            }
+
+            failure = string.Empty;
+            return true;
+        }
+
+        private static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+        private static bool WithinRange(float current, float maximum) => maximum >= 0f && current >= 0f && current <= maximum;
     }
 
     [Serializable]
@@ -81,13 +131,13 @@ namespace UnityIsekaiGame.Networking
             float staminaRegenerationDelayAfterSpend,
             float manaRegenerationDelayAfterSpend)
         {
-            HealthRegenerationPerSecond = Mathf.Max(0f, healthRegenerationPerSecond);
-            StaminaRegenerationPerSecond = Mathf.Max(0f, staminaRegenerationPerSecond);
-            ManaRegenerationPerSecond = Mathf.Max(0f, manaRegenerationPerSecond);
-            SprintDrainPerSecond = Mathf.Max(0f, sprintDrainPerSecond);
-            SprintRestartThreshold = Mathf.Max(0f, sprintRestartThreshold);
-            StaminaRegenerationDelayAfterSpend = Mathf.Max(0f, staminaRegenerationDelayAfterSpend);
-            ManaRegenerationDelayAfterSpend = Mathf.Max(0f, manaRegenerationDelayAfterSpend);
+            HealthRegenerationPerSecond = NonNegativeFinite(healthRegenerationPerSecond);
+            StaminaRegenerationPerSecond = NonNegativeFinite(staminaRegenerationPerSecond);
+            ManaRegenerationPerSecond = NonNegativeFinite(manaRegenerationPerSecond);
+            SprintDrainPerSecond = NonNegativeFinite(sprintDrainPerSecond);
+            SprintRestartThreshold = NonNegativeFinite(sprintRestartThreshold);
+            StaminaRegenerationDelayAfterSpend = NonNegativeFinite(staminaRegenerationDelayAfterSpend);
+            ManaRegenerationDelayAfterSpend = NonNegativeFinite(manaRegenerationDelayAfterSpend);
         }
 
         public float HealthRegenerationPerSecond;
@@ -97,5 +147,10 @@ namespace UnityIsekaiGame.Networking
         public float SprintRestartThreshold;
         public float StaminaRegenerationDelayAfterSpend;
         public float ManaRegenerationDelayAfterSpend;
+
+        private static float NonNegativeFinite(float value)
+        {
+            return float.IsNaN(value) || float.IsInfinity(value) ? 0f : Mathf.Max(0f, value);
+        }
     }
 }

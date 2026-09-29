@@ -10,7 +10,7 @@ namespace UnityIsekaiGame.Editor
 {
     public static class LocalNetworkBuildAutomation
     {
-        public const string DefaultClientPath = "../../../Builds/LocalClient/UnityIsekaiClient.exe";
+        public const string DefaultClientPath = "../../Builds/LocalClient/UnityIsekaiClient.exe";
 
         [MenuItem("Tools/Unity Isekai Game/Networking/Build Windows Local Client")]
         public static void BuildWindowsLocalClient() => Build(DefaultClientPath, StandaloneBuildSubtarget.Player);

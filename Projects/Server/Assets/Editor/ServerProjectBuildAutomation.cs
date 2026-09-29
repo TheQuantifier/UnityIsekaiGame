@@ -10,7 +10,7 @@ namespace UnityIsekaiGame.ServerProject.Editor
     public static class ServerProjectBuildAutomation
     {
         public const string ServerScenePath = "Assets/Scenes/ServerPrototypeScene.unity";
-        public const string DefaultOutputPath = "../../../Builds/LocalServer/UnityIsekaiServer.exe";
+        public const string DefaultOutputPath = "../../Builds/LocalServer/UnityIsekaiServer.exe";
 
         [MenuItem("Tools/Unity Isekai Game/Build Windows Dedicated Server")]
         public static void BuildWindowsDedicatedServer() => Build(DefaultOutputPath);

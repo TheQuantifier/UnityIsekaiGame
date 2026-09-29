@@ -322,6 +322,8 @@ namespace SceneZoneTool.Editor
             }
             catch (UnauthorizedAccessException)
             {
+                // The dependency preview is advisory; inaccessible assets are skipped and
+                // deletion still requires the user's explicit confirmation.
             }
             return false;
         }

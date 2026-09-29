@@ -2,7 +2,7 @@
 
 ## Product boundary
 
-Phase 4 develops the real player interface. `Assets/_Project/Scenes/Prototype` remains a development integration scene until the first production world scene is authored, and `Assets/_Project/Prototype` remains a holding area for temporary world art and prefabs. New reusable UI code belongs under `Packages/com.thequantifier.isekai.networking/Runtime/Client/UI`; production presentation assets belong under `Assets/_Project/Presentation`; configuration belongs under `Assets/_Project/Configuration`.
+Phase 4 develops the real player interface. `Projects/Client/Assets/_Project/Scenes/Prototype` remains a development integration scene until the first production world scene is authored, and `Projects/Client/Assets/_Project/Prototype` remains a holding area for temporary world art and prefabs. New reusable UI code belongs under `Packages/com.thequantifier.isekai.client/Runtime/UI`; production presentation assets belong under `Projects/Client/Assets/_Project/Presentation`; configuration belongs under `Projects/Client/Assets/_Project/Configuration`.
 
 Prototype-only world assets are not promoted merely by moving them. They move into production folders during Phase 5 only after their visuals, licensing, performance, naming, and reuse expectations are accepted.
 

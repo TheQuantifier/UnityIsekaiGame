@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
 using UnityIsekaiGame.Abilities;
 using UnityIsekaiGame.Combat.Execution;
 using UnityIsekaiGame.GameData;
@@ -44,6 +45,62 @@ namespace UnityIsekaiGame.Tests
             Assert.That(second.RollbackCount, Is.Zero);
             Object.DestroyImmediate(first);
             Object.DestroyImmediate(second);
+        }
+
+        [Test]
+        public void EffectPipeline_ReportsRollbackFailureAndContinuesRemainingRollbacks()
+        {
+            TestEffectDefinition first = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            TestEffectDefinition second = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            TestEffectDefinition failing = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            second.RollbackThrows = true;
+            failing.ExecuteSuccessfully = false;
+            EffectExecutionContext context = new EffectExecutionContext(null, null, null, Vector3.zero, Vector3.zero, Vector3.forward, executionId: "execution.test.rollback-failure");
+
+            LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("Injected rollback failure"));
+            AbilityExecutionResult result = AbilityEffectPipeline.Execute(in context, new EffectDefinition[] { first, second, failing });
+
+            Assert.That(result.Status, Is.EqualTo(AbilityExecutionStatus.EffectExecutionFailure));
+            Assert.That(result.Message, Does.Contain("1 rollback operation(s) failed"));
+            Assert.That(first.RollbackCount, Is.EqualTo(1), "A failed rollback must not prevent earlier effects from rolling back.");
+            Assert.That(second.RollbackCount, Is.EqualTo(1));
+            Object.DestroyImmediate(first);
+            Object.DestroyImmediate(second);
+            Object.DestroyImmediate(failing);
+        }
+
+        [Test]
+        public void EffectPipeline_RollsBackWhenAnEffectThrowsDuringExecution()
+        {
+            TestEffectDefinition first = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            TestEffectDefinition throwing = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            throwing.ExecuteThrows = true;
+            EffectExecutionContext context = new EffectExecutionContext(null, null, null, Vector3.zero, Vector3.zero, Vector3.forward, executionId: "execution.test.effect-exception");
+
+            LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("Injected effect execution failure"));
+            AbilityExecutionResult result = AbilityEffectPipeline.Execute(in context, new EffectDefinition[] { first, throwing });
+
+            Assert.That(result.Status, Is.EqualTo(AbilityExecutionStatus.EffectExecutionFailure));
+            Assert.That(result.Message, Does.Contain("threw during execution"));
+            Assert.That(first.RollbackCount, Is.EqualTo(1));
+            Object.DestroyImmediate(first);
+            Object.DestroyImmediate(throwing);
+        }
+
+        [Test]
+        public void EffectPipeline_ConvertsValidationExceptionToAControlledFailure()
+        {
+            TestEffectDefinition throwing = ScriptableObject.CreateInstance<TestEffectDefinition>();
+            throwing.CanExecuteThrows = true;
+            EffectExecutionContext context = new EffectExecutionContext(null, null, null, Vector3.zero, Vector3.zero, Vector3.forward, executionId: "execution.test.validation-exception");
+
+            LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("Injected effect validation failure"));
+            AbilityExecutionResult result = AbilityEffectPipeline.Execute(in context, new EffectDefinition[] { throwing });
+
+            Assert.That(result.Status, Is.EqualTo(AbilityExecutionStatus.EffectValidationFailure));
+            Assert.That(result.Message, Does.Contain("threw during validation"));
+            Assert.That(throwing.ExecuteCount, Is.Zero);
+            Object.DestroyImmediate(throwing);
         }
 
         [Test]
@@ -178,12 +235,16 @@ namespace UnityIsekaiGame.Tests
         private sealed class TestEffectDefinition : EffectDefinition
         {
             public bool CanExecuteSuccessfully { get; set; } = true;
+            public bool CanExecuteThrows { get; set; }
             public bool ExecuteSuccessfully { get; set; } = true;
+            public bool ExecuteThrows { get; set; }
+            public bool RollbackThrows { get; set; }
             public int ExecuteCount { get; private set; }
             public int RollbackCount { get; private set; }
 
             public override EffectExecutionResult CanExecute(in EffectExecutionContext context)
             {
+                if (CanExecuteThrows) throw new System.InvalidOperationException("Injected effect validation failure.");
                 return CanExecuteSuccessfully
                     ? EffectExecutionResult.Success("Valid test effect.")
                     : EffectExecutionResult.Failure(EffectExecutionStatus.InvalidTarget, "Invalid test target.");
@@ -192,9 +253,16 @@ namespace UnityIsekaiGame.Tests
             public override EffectExecutionResult Execute(in EffectExecutionContext context)
             {
                 ExecuteCount++;
+                if (ExecuteThrows) throw new System.InvalidOperationException("Injected effect execution failure.");
                 return ExecuteSuccessfully
-                    ? EffectExecutionResult.Success("Executed test effect.", rollback: () => RollbackCount++)
+                    ? EffectExecutionResult.Success("Executed test effect.", rollback: Rollback)
                     : EffectExecutionResult.Failure(EffectExecutionStatus.NoStateChange, "Execution failed.");
+            }
+
+            private void Rollback()
+            {
+                RollbackCount++;
+                if (RollbackThrows) throw new System.InvalidOperationException("Injected rollback failure.");
             }
         }
     }

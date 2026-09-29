@@ -123,6 +123,48 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void Online_narrative_client_does_not_mutate_authoritative_party_services()
+        {
+            string bridgePath = ClientPackageRoot + "/Runtime/Networking/LocalNarrativeAuthorityBridge.cs";
+            string source = File.ReadAllText(bridgePath);
+
+            Assert.That(source, Does.Not.Contain("ApplyPartyReplica"), bridgePath);
+            Assert.That(source, Does.Not.Contain("persistence.AdventuringParties"), bridgePath);
+            Assert.That(source, Does.Not.Contain("persistence.PartyOperations"), bridgePath);
+        }
+
+        [Test]
+        public void Runtime_menus_and_clients_do_not_pause_the_shared_simulation_clock()
+        {
+            string[] runtimeRoots =
+            {
+                SimulationPackageRoot + "/Runtime",
+                NetworkingPackageRoot + "/Runtime",
+                ClientPackageRoot + "/Runtime",
+                ServerPackageRoot + "/Runtime"
+            };
+
+            foreach (string root in runtimeRoots)
+            {
+                foreach (string path in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
+                {
+                    string source = File.ReadAllText(path);
+                    Assert.That(source, Does.Not.Contain("Time.timeScale"), $"{path} must not globally pause server or shared simulation time.");
+                }
+            }
+        }
+
+        [Test]
+        public void Client_build_output_resolves_inside_the_repository()
+        {
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string actual = Path.GetFullPath(Path.Combine(projectRoot, LocalNetworkBuildAutomation.DefaultClientPath));
+            string expected = RepositoryPath("Builds/LocalClient/UnityIsekaiClient.exe");
+
+            Assert.That(actual, Is.EqualTo(expected).IgnoreCase);
+        }
+
+        [Test]
         public void TerrainDataAssetsAreTrackedAsBinary()
         {
             string attributesPath = RepositoryPath(".gitattributes");
