@@ -49,7 +49,9 @@ Equipment records must reference a matching, inventory-owned stateful item ident
 6. Server-held reconnect state for the lifetime of the dedicated-server process.
 7. Separate-process drop/equip/unequip/use and reconnect verification.
 
-World pickup creation is intentionally not faked by a client-owned object: Group 6 drop removes the item authoritatively. Replicated world entities, rewards, ammunition consumption, crafting transactions, durable database persistence, and durability/quality mutation enter through their later dedicated server-authority groups. Until then, connected replica guards reject those legacy local writes.
+Phase 6 Group 1 completes the former physical-drop boundary. An online drop now creates a server-owned `NetworkWorldItemPickup`, replicates its exact definition ID, item instance ID, storage mode, quantity, display name, and spawn transform, and commits inventory removal only as part of the same rollback-capable transaction. Pickup requests are accepted from non-owning clients but resolved against the sender's server session, authoritative actor distance, inventory capacity, and identity uniqueness. The client never mutates inventory directly.
+
+Rewards, ammunition consumption, crafting transactions, durable world-pickup persistence, and durability/quality payload expansion remain in their dedicated authority groups.
 
 ## Security and correctness rules
 
@@ -75,3 +77,5 @@ Verified on September 29, 2026 with Unity `6000.5.4f1`:
 - Separate-process smoke: drop, equip, unequip, use, graceful disconnect, same-player reconnect, and restored quantities all observed.
 
 The opt-in smoke flags are `--inventory-smoke-seed` on the server and `--inventory-smoke` on the client. They only seed and exercise test data when explicitly supplied.
+
+As of Phase 6 Group 1, that smoke sequence also requires the physical replicated drop to spawn and be collected back into authoritative inventory before the equipment and consumable checks continue.

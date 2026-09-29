@@ -16,6 +16,7 @@ namespace UnityIsekaiGame.Networking.Server
         private PlayerInventory inventory;
         private PlayerEquipment equipment;
         private DefinitionRegistry registry;
+        private ServerWorldItemAuthority worldItemAuthority;
         private Action<InventorySaveData, EquipmentSaveData> statePersisted;
         private bool executingCommand;
         private bool configured;
@@ -29,6 +30,7 @@ namespace UnityIsekaiGame.Networking.Server
             NetworkPlayerInventory replicatedInventory,
             NetworkPlayerVitals replicatedVitals,
             DefinitionRegistry definitionRegistry,
+            ServerWorldItemAuthority authoritativeWorldItems,
             InventorySaveData initialInventory,
             EquipmentSaveData initialEquipment,
             Action<InventorySaveData, EquipmentSaveData> onStatePersisted)
@@ -37,6 +39,7 @@ namespace UnityIsekaiGame.Networking.Server
             networkInventory = replicatedInventory ?? throw new ArgumentNullException(nameof(replicatedInventory));
             networkVitals = replicatedVitals ?? throw new ArgumentNullException(nameof(replicatedVitals));
             registry = definitionRegistry ?? throw new ArgumentNullException(nameof(definitionRegistry));
+            worldItemAuthority = authoritativeWorldItems ?? throw new ArgumentNullException(nameof(authoritativeWorldItems));
             statePersisted = onStatePersisted;
 
             inventory = GetComponent<PlayerInventory>();
@@ -87,7 +90,7 @@ namespace UnityIsekaiGame.Networking.Server
                     _ => NetworkInventoryCommandResult.Reject(command.Sequence, InventoryAuthorityFailure.InvalidCommand, "Unsupported inventory command.")
                 };
 
-                if (result.Succeeded)
+                if (result.Succeeded && command.CommandType != InventoryAuthorityCommandType.DropQuantity)
                 {
                     PublishAndPersist();
                 }
@@ -216,18 +219,117 @@ namespace UnityIsekaiGame.Networking.Server
                 return RejectNotAllowed(command, "Unequip this item before dropping it.");
             }
 
-            string itemName = slot.Item.DisplayName;
-            if (!inventory.RemoveItemAt(command.InventorySlotIndex, command.Quantity))
+            ItemDefinition item = slot.Item;
+            string itemName = item.DisplayName;
+            string droppedInstanceId = command.Quantity == slot.Quantity
+                ? slot.ItemInstanceId
+                : ItemInstanceId.Generate();
+            NetworkWorldItemStorageMode storageMode = slot.IsStateful
+                ? NetworkWorldItemStorageMode.StatefulInstance
+                : NetworkWorldItemStorageMode.DefinitionStack;
+            InventorySaveData rollback = inventory.CreateSaveData();
+            if (!worldItemAuthority.TrySpawnDrop(
+                    this,
+                    item,
+                    droppedInstanceId,
+                    command.Quantity,
+                    storageMode,
+                    out NetworkWorldItemPickup pickup,
+                    out string spawnFailure))
             {
-                return NetworkInventoryCommandResult.Reject(command.Sequence, InventoryAuthorityFailure.ServerRejected, "The server could not remove the dropped item.");
+                return NetworkInventoryCommandResult.Reject(command.Sequence, InventoryAuthorityFailure.ServerRejected, spawnFailure);
             }
 
-            // World pickup replication belongs to the world-entity authority slice. Until then,
-            // the authoritative drop is intentionally a discard instead of creating a client-owned pickup.
-            string message = command.Quantity == 1
-                ? $"Dropped 1 {itemName}."
-                : $"Dropped {command.Quantity} {itemName}.";
-            return NetworkInventoryCommandResult.Success(command.Sequence, message);
+            try
+            {
+                if (!inventory.RemoveItemAt(command.InventorySlotIndex, command.Quantity))
+                    throw new InvalidOperationException("The server could not remove the dropped item.");
+
+                PublishAndPersist();
+                string message = command.Quantity == 1
+                    ? $"Dropped 1 {itemName}."
+                    : $"Dropped {command.Quantity} {itemName}.";
+                return NetworkInventoryCommandResult.Success(command.Sequence, message);
+            }
+            catch (Exception exception)
+            {
+                worldItemAuthority.RollBackSpawn(pickup);
+                RestoreInventoryRollback(rollback);
+                Debug.LogException(exception, this);
+                return NetworkInventoryCommandResult.Reject(
+                    command.Sequence,
+                    InventoryAuthorityFailure.ServerRejected,
+                    "The server rolled back the drop because the world pickup transaction could not complete.");
+            }
+        }
+
+        public bool TryCollectWorldPickup(NetworkWorldItemState pickupState, out string message)
+        {
+            if (!configured)
+            {
+                message = "Authoritative inventory is not configured.";
+                return false;
+            }
+
+            if (!NetworkWorldItemStateValidator.TryValidate(pickupState, out message)) return false;
+            string definitionId = pickupState.DefinitionId.ToString();
+            string itemInstanceId = pickupState.ItemInstanceId.ToString();
+            if (!registry.TryGet(definitionId, out ItemDefinition item))
+            {
+                message = $"Item definition '{definitionId}' is unavailable on the server.";
+                return false;
+            }
+
+            bool canAdd = pickupState.StorageMode == NetworkWorldItemStorageMode.StatefulInstance
+                ? inventory.CanAddExistingItemIdentity(item, itemInstanceId, pickupState.Quantity)
+                : inventory.CanAddExistingDefinitionStackIdentity(item, itemInstanceId, pickupState.Quantity);
+            if (!canAdd)
+            {
+                message = "Inventory full or the item identity is already owned.";
+                return false;
+            }
+
+            InventorySaveData rollback = inventory.CreateSaveData();
+            bool previousExecutingCommand = executingCommand;
+            executingCommand = true;
+            try
+            {
+                InventoryInstanceOperationResult added = pickupState.StorageMode == NetworkWorldItemStorageMode.StatefulInstance
+                    ? inventory.AddExistingItemIdentity(item, itemInstanceId, pickupState.Quantity)
+                    : inventory.AddExistingDefinitionStackIdentity(item, itemInstanceId, pickupState.Quantity);
+                if (!added.Succeeded) throw new InvalidOperationException(added.Message);
+                PublishAndPersist();
+                message = pickupState.Quantity == 1
+                    ? $"Picked up {item.DisplayName}."
+                    : $"Picked up {pickupState.Quantity} x {item.DisplayName}.";
+                return true;
+            }
+            catch (Exception exception)
+            {
+                RestoreInventoryRollback(rollback);
+                Debug.LogException(exception, this);
+                message = "The server rolled back the pickup because the inventory transaction could not complete.";
+                return false;
+            }
+            finally
+            {
+                executingCommand = previousExecutingCommand;
+            }
+        }
+
+        private void RestoreInventoryRollback(InventorySaveData rollback)
+        {
+            InventoryRestoreResult restored = inventory.TryRestoreFromSaveData(rollback, registry);
+            if (!restored.Succeeded)
+                throw new InvalidOperationException($"Authoritative inventory rollback failed: {restored.Message}");
+
+            // Re-publish the restored state when a failed transaction had already reached replication.
+            if (networkInventory != null && networkInventory.IsSpawned)
+            {
+                BuildSnapshot(out List<NetworkInventorySlotState> inventoryState, out List<NetworkEquipmentReferenceState> equipmentState);
+                if (!networkInventory.PublishServerSnapshot(inventoryState, equipmentState, inventory.SlotCapacity))
+                    throw new InvalidOperationException("The restored authoritative inventory snapshot failed validation.");
+            }
         }
 
         private void OnDomainStateChanged()

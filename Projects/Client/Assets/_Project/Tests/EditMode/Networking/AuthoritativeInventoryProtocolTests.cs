@@ -178,5 +178,67 @@ namespace UnityIsekaiGame.Tests
             Assert.That(Encoding.UTF8.GetByteCount(result.MessageText),
                 Is.LessThanOrEqualTo(InventoryAuthorityLimits.MaximumResultMessageBytes));
         }
+
+        [Test]
+        public void World_pickup_state_requires_exact_identity_quantity_and_storage_mode()
+        {
+            NetworkWorldItemState valid = new NetworkWorldItemState(
+                "item.wood-log",
+                "c8fd91b1-77b4-4aa7-877a-ec74b2ebda2f",
+                "Wood Log",
+                2,
+                NetworkWorldItemStorageMode.DefinitionStack);
+            Assert.That(NetworkWorldItemStateValidator.TryValidate(valid, out string failure), Is.True, failure);
+
+            NetworkWorldItemState missingIdentity = new NetworkWorldItemState(
+                "item.wood-log",
+                string.Empty,
+                "Wood Log",
+                2,
+                NetworkWorldItemStorageMode.DefinitionStack);
+            Assert.That(NetworkWorldItemStateValidator.TryValidate(missingIdentity, out failure), Is.False);
+            Assert.That(failure, Does.Contain("instance ID"));
+
+            NetworkWorldItemState invalidQuantity = new NetworkWorldItemState(
+                "item.wood-log",
+                "c8fd91b1-77b4-4aa7-877a-ec74b2ebda2f",
+                "Wood Log",
+                0,
+                NetworkWorldItemStorageMode.DefinitionStack);
+            Assert.That(NetworkWorldItemStateValidator.TryValidate(invalidQuantity, out failure), Is.False);
+            Assert.That(failure, Does.Contain("quantity"));
+        }
+
+        [Test]
+        public void Exact_definition_stack_identity_can_leave_and_reenter_inventory_without_becoming_stateful()
+        {
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(
+                "Packages/com.thequantifier.isekai.content/Content/Prototype/GameData/PrototypeDefinitionCatalog.asset");
+            ItemDefinition item = catalog.DefinitionAssets.OfType<ItemDefinition>()
+                .First(candidate => candidate.Stackable && candidate.InstanceMode != ItemInstanceMode.AlwaysInstanced);
+            GameObject owner = new GameObject("Exact Stack Identity Test");
+            try
+            {
+                PlayerInventory inventory = owner.AddComponent<PlayerInventory>();
+                Assert.That(inventory.AddItem(item, 2).AddedQuantity, Is.EqualTo(2));
+                InventorySlot original = inventory.Slots.First(slot => slot != null && !slot.IsEmpty && slot.Item == item);
+                string identity = original.ItemInstanceId;
+                Assert.That(original.IsStateful, Is.False);
+                int originalIndex = Enumerable.Range(0, inventory.Slots.Count).First(index => ReferenceEquals(inventory.Slots[index], original));
+                Assert.That(inventory.RemoveItemAt(originalIndex, 2), Is.True);
+
+                InventoryInstanceOperationResult restored = inventory.AddExistingDefinitionStackIdentity(item, identity, 2);
+                Assert.That(restored.Succeeded, Is.True, restored.Message);
+                InventorySlot roundTripped = inventory.GetSlot(restored.SlotIndex);
+                Assert.That(roundTripped.ItemInstanceId, Is.EqualTo(identity));
+                Assert.That(roundTripped.Quantity, Is.EqualTo(2));
+                Assert.That(roundTripped.IsStateful, Is.False);
+                Assert.That(inventory.CreateSaveData().entries[restored.SlotIndex].mode, Is.EqualTo(InventoryEntrySaveMode.DefinitionStack));
+            }
+            finally
+            {
+                Object.DestroyImmediate(owner);
+            }
+        }
     }
 }

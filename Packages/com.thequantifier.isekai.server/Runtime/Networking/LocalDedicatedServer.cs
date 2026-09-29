@@ -31,6 +31,7 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField] private bool startAutomaticallyInServerBuild = true;
         [SerializeField] private GameObject playerActorPrefab;
         [SerializeField] private GameObject combatWorldStatePrefab;
+        [SerializeField] private GameObject worldItemPickupPrefab;
         [SerializeField] private Vector3 playerSpawnPosition = new Vector3(-29.2f, 1.1f, 69f);
         [SerializeField] private float playerSpawnYaw;
         [SerializeField] private CharacterController prototypePlayerController;
@@ -61,6 +62,7 @@ namespace UnityIsekaiGame.Networking.Server
         private bool prototypeMotorWasEnabled;
         private NetworkCombatWorldState combatWorldState;
         private ServerCombatWorldAuthority combatWorldAuthority;
+        private ServerWorldItemAuthority worldItemAuthority;
         private LocalConnectionStatus status = new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline.");
 
         public event Action<LocalConnectionStatus> StatusChanged;
@@ -72,6 +74,7 @@ namespace UnityIsekaiGame.Networking.Server
         public IReadOnlyList<PlayerSessionSnapshot> PlayerSessions => playerSessions.ActiveSessions;
         public GameObject PlayerActorPrefab => playerActorPrefab;
         public GameObject CombatWorldStatePrefab => combatWorldStatePrefab;
+        public GameObject WorldItemPickupPrefab => worldItemPickupPrefab;
         public Vector3 PlayerSpawnPosition => playerSpawnPosition;
         public float PlayerSpawnYaw => playerSpawnYaw;
         public bool StartAutomaticallyInServerBuild => startAutomaticallyInServerBuild;
@@ -131,6 +134,11 @@ namespace UnityIsekaiGame.Networking.Server
         public void ConfigureCombatWorldStatePrefab(GameObject prefab)
         {
             combatWorldStatePrefab = prefab;
+        }
+
+        public void ConfigureWorldItemPickupPrefab(GameObject prefab)
+        {
+            worldItemPickupPrefab = prefab;
         }
 
         public void ConfigurePlayerSpawn(Vector3 position, float yawDegrees)
@@ -210,6 +218,7 @@ namespace UnityIsekaiGame.Networking.Server
             playerProfiles.Clear();
             combatWorldState = null;
             combatWorldAuthority = null;
+            worldItemAuthority = null;
             inventorySmokeSeeded = false;
             playerProfileStore ??= new ServerPlayerProfileStore();
             serverPersistenceReady = TryLoadWorldCheckpoint();
@@ -229,6 +238,21 @@ namespace UnityIsekaiGame.Networking.Server
                 Unsubscribe();
                 RestorePrototypeMovement();
                 return Fail($"Could not start the local server on {endpoint}.", endpoint);
+            }
+
+            try
+            {
+                worldItemAuthority = GetComponent<ServerWorldItemAuthority>();
+                if (worldItemAuthority == null) worldItemAuthority = gameObject.AddComponent<ServerWorldItemAuthority>();
+                worldItemAuthority.Configure(networkManager, worldItemPickupPrefab, ResolvePlayerInventoryAuthority);
+            }
+            catch (Exception exception)
+            {
+                Unsubscribe();
+                networkManager.Shutdown();
+                ownsServerSession = false;
+                RestorePrototypeMovement();
+                return Fail($"The server could not initialize world item authority: {exception.Message}", endpoint);
             }
 
             if (!TrySpawnCombatWorldState(out string combatWorldFailure))
@@ -257,6 +281,7 @@ namespace UnityIsekaiGame.Networking.Server
                 inventorySmokeSeeded = false;
                 combatWorldState = null;
                 combatWorldAuthority = null;
+                worldItemAuthority = null;
                 RestorePrototypeMovement();
                 SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline."));
                 return;
@@ -277,6 +302,7 @@ namespace UnityIsekaiGame.Networking.Server
             inventorySmokeSeeded = false;
             combatWorldState = null;
             combatWorldAuthority = null;
+            worldItemAuthority = null;
             RestorePrototypeMovement();
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server stopped.", status.Endpoint));
         }
@@ -434,6 +460,7 @@ namespace UnityIsekaiGame.Networking.Server
                     replicatedInventory,
                     vitals,
                     definitionCatalog.CreateRegistry(),
+                    worldItemAuthority,
                     profile.inventory,
                     profile.equipment,
                     (inventorySave, equipmentSave) => PersistInventoryProfile(session.PlayerId, inventorySave, equipmentSave));
@@ -501,16 +528,28 @@ namespace UnityIsekaiGame.Networking.Server
                 return false;
             }
 
+            if (worldItemPickupPrefab == null
+                || worldItemPickupPrefab.GetComponent<NetworkObject>() == null
+                || worldItemPickupPrefab.GetComponent<NetworkWorldItemPickup>() == null
+                || worldItemPickupPrefab.GetComponent<Collider>() == null)
+            {
+                failure = "The world item pickup prefab must contain NetworkObject, NetworkWorldItemPickup, and a Collider.";
+                return false;
+            }
+
             foreach (NetworkPrefabsList list in networkManager.NetworkConfig.Prefabs.NetworkPrefabsLists)
             {
-                if (list != null && list.Contains(playerActorPrefab) && list.Contains(combatWorldStatePrefab))
+                if (list != null
+                    && list.Contains(playerActorPrefab)
+                    && list.Contains(combatWorldStatePrefab)
+                    && list.Contains(worldItemPickupPrefab))
                 {
                     failure = string.Empty;
                     return true;
                 }
             }
 
-            failure = "The player actor and combat world state prefabs must both be registered in the NetworkManager prefab lists.";
+            failure = "The player actor, combat world state, and world item pickup prefabs must all be registered in the NetworkManager prefab lists.";
             return false;
         }
 
@@ -558,6 +597,25 @@ namespace UnityIsekaiGame.Networking.Server
         private void ResolveReferences()
         {
             networkManager = networkManager == null ? GetComponent<NetworkManager>() : networkManager;
+            if (worldItemPickupPrefab == null && networkManager != null)
+            {
+                foreach (NetworkPrefabsList list in networkManager.NetworkConfig.Prefabs.NetworkPrefabsLists)
+                {
+                    if (list == null) continue;
+                    NetworkPrefab entry = list.PrefabList.FirstOrDefault(value =>
+                        value?.Prefab != null && value.Prefab.GetComponent<NetworkWorldItemPickup>() != null);
+                    if (entry?.Prefab == null) continue;
+                    worldItemPickupPrefab = entry.Prefab;
+                    break;
+                }
+            }
+        }
+
+        private ServerPlayerInventoryAuthority ResolvePlayerInventoryAuthority(ulong clientId)
+        {
+            return playerActors.TryGetValue(clientId, out NetworkPlayerActor actor) && actor != null
+                ? actor.GetComponent<ServerPlayerInventoryAuthority>()
+                : null;
         }
 
         private ServerPlayerProfileData GetOrCreatePlayerProfile(PlayerSessionSnapshot session, NetworkVitalsState prototypeVitals)

@@ -88,14 +88,20 @@ namespace UnityIsekaiGame.ServerProject.Tests
                 "Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkPlayerActor.prefab");
             GameObject combat = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkCombatWorldState.prefab");
+            GameObject pickup = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkWorldItemPickup.prefab");
 
             Assert.That(list, Is.Not.Null);
             Assert.That(player, Is.Not.Null);
             Assert.That(combat, Is.Not.Null);
+            Assert.That(pickup, Is.Not.Null);
             Assert.That(player.GetComponent<NetworkPlayerActor>(), Is.Not.Null);
             Assert.That(combat.GetComponent<NetworkCombatWorldState>(), Is.Not.Null);
+            Assert.That(pickup.GetComponent<NetworkWorldItemPickup>(), Is.Not.Null);
+            Assert.That(pickup.GetComponent<Collider>(), Is.Not.Null);
             Assert.That(list.Contains(player), Is.True);
             Assert.That(list.Contains(combat), Is.True);
+            Assert.That(list.Contains(pickup), Is.True);
         }
     }
 }

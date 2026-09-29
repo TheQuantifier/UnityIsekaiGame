@@ -286,7 +286,13 @@ namespace UnityIsekaiGame.Networking.Client
                     BeginSmoke();
                     break;
                 case InventorySmokePhase.WaitingForDrop:
-                    ObserveDropAndRequestEquip();
+                    ObserveDropAndRequestPickup();
+                    break;
+                case InventorySmokePhase.WaitingForPickupSpawn:
+                    RequestSpawnedPickup();
+                    break;
+                case InventorySmokePhase.WaitingForPickup:
+                    ObservePickupAndRequestEquip();
                     break;
                 case InventorySmokePhase.WaitingForEquip:
                     ObserveEquipAndRequestUnequip();
@@ -327,11 +333,33 @@ namespace UnityIsekaiGame.Networking.Client
             }
         }
 
-        private void ObserveDropAndRequestEquip()
+        private void ObserveDropAndRequestPickup()
         {
             int currentQuantity = GetQuantity(smokeDropSlotIndex);
             if (currentQuantity >= smokeDropInitialQuantity) return;
             Debug.Log($"[Network Inventory] Client observed authoritative quantity change: {smokeDropInitialQuantity} -> {currentQuantity}.", this);
+            smokePhase = InventorySmokePhase.WaitingForPickupSpawn;
+            RequestSpawnedPickup();
+        }
+
+        private void RequestSpawnedPickup()
+        {
+            NetworkWorldItemPickup[] pickups = FindObjectsByType<NetworkWorldItemPickup>(FindObjectsInactive.Exclude);
+            for (int i = 0; i < pickups.Length; i++)
+            {
+                NetworkWorldItemPickup pickup = pickups[i];
+                if (pickup == null || !string.Equals(pickup.DefinitionId, "item.wood-log", StringComparison.Ordinal)) continue;
+                if (!pickup.RequestCollection()) return;
+                smokePhase = InventorySmokePhase.WaitingForPickup;
+                Debug.Log($"[Network Inventory] Client requested authoritative collection of replicated pickup {pickup.ItemInstanceId}.", this);
+                return;
+            }
+        }
+
+        private void ObservePickupAndRequestEquip()
+        {
+            if (GetTotalQuantity("item.wood-log") < smokeDropInitialQuantity) return;
+            Debug.Log("[Network Inventory] Client observed the exact replicated world pickup return to authoritative inventory.", this);
             if (RequestEquip(smokeEquipSlotIndex, smokeEquipmentSlot))
             {
                 smokePhase = InventorySmokePhase.WaitingForEquip;
@@ -365,7 +393,7 @@ namespace UnityIsekaiGame.Networking.Client
             int currentQuantity = GetQuantity(smokeUseSlotIndex);
             if (currentQuantity >= smokeUseInitialQuantity) return;
             smokePhase = InventorySmokePhase.Complete;
-            Debug.Log($"[Network Inventory] Authoritative inventory smoke completed: drop, equip, unequip, and use; consumable {smokeUseInitialQuantity} -> {currentQuantity}.", this);
+            Debug.Log($"[Network Inventory] Authoritative inventory smoke completed: replicated drop/pickup, equip, unequip, and use; consumable {smokeUseInitialQuantity} -> {currentQuantity}.", this);
             client?.Disconnect();
         }
 
@@ -384,6 +412,19 @@ namespace UnityIsekaiGame.Networking.Client
         {
             InventorySlot slot = localInventory.GetSlot(slotIndex);
             return slot == null || slot.IsEmpty ? 0 : slot.Quantity;
+        }
+
+        private int GetTotalQuantity(string itemId)
+        {
+            int quantity = 0;
+            for (int i = 0; i < localInventory.Slots.Count; i++)
+            {
+                InventorySlot slot = localInventory.Slots[i];
+                if (slot?.Item != null && string.Equals(slot.Item.ItemId, itemId, StringComparison.Ordinal))
+                    quantity += slot.Quantity;
+            }
+
+            return quantity;
         }
 
         private void ResetSmoke()
@@ -409,6 +450,8 @@ namespace UnityIsekaiGame.Networking.Client
             None,
             WaitingForInitialSnapshot,
             WaitingForDrop,
+            WaitingForPickupSpawn,
+            WaitingForPickup,
             WaitingForEquip,
             WaitingForUnequip,
             WaitingForUse,

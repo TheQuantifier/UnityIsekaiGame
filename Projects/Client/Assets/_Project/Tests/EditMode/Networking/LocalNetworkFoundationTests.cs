@@ -32,6 +32,7 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(root.GetComponent<LocalPlayerMovementBridge>(), Is.Not.Null);
                 Assert.That(root.GetComponent<LocalPlayerVitalsBridge>(), Is.Not.Null);
                 Assert.That(root.GetComponent<LocalPlayerInventoryBridge>(), Is.Not.Null);
+                Assert.That(root.GetComponent<LocalWorldItemPickupBridge>(), Is.Not.Null);
                 Assert.That(root.GetComponent<LocalCombatAuthorityBridge>(), Is.Not.Null);
                 Assert.That(root.GetComponent<LocalNarrativeAuthorityBridge>(), Is.Not.Null);
                 Assert.That(manager.NetworkConfig.NetworkTransport, Is.SameAs(transport));
@@ -44,6 +45,7 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(manager.IsListening, Is.False);
                 GameObject playerActor = AssetDatabase.LoadAssetAtPath<GameObject>(LocalNetworkFoundationAuthoring.PlayerActorPrefabPath);
                 GameObject combatWorld = AssetDatabase.LoadAssetAtPath<GameObject>(LocalNetworkFoundationAuthoring.CombatWorldStatePrefabPath);
+                GameObject worldPickup = AssetDatabase.LoadAssetAtPath<GameObject>(LocalNetworkFoundationAuthoring.WorldItemPickupPrefabPath);
                 Assert.That(playerActor, Is.Not.Null);
                 Assert.That(playerActor.GetComponent<NetworkObject>(), Is.Not.Null);
                 Assert.That(playerActor.GetComponent<NetworkPlayerActor>(), Is.Not.Null);
@@ -55,8 +57,13 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(combatWorld, Is.Not.Null);
                 Assert.That(combatWorld.GetComponent<NetworkObject>(), Is.Not.Null);
                 Assert.That(combatWorld.GetComponent<NetworkCombatWorldState>(), Is.Not.Null);
+                Assert.That(worldPickup, Is.Not.Null);
+                Assert.That(worldPickup.GetComponent<NetworkObject>(), Is.Not.Null);
+                Assert.That(worldPickup.GetComponent<NetworkWorldItemPickup>(), Is.Not.Null);
+                Assert.That(worldPickup.GetComponent<Collider>(), Is.Not.Null);
                 Assert.That(prefabList.Contains(playerActor), Is.True);
                 Assert.That(prefabList.Contains(combatWorld), Is.True);
+                Assert.That(prefabList.Contains(worldPickup), Is.True);
             }
             finally
             {

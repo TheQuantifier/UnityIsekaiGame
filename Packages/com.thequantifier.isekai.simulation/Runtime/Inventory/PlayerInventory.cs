@@ -99,6 +99,36 @@ namespace UnityIsekaiGame.Inventory
             return CanAddItemIdentity(item, itemInstanceId, quantity, out _);
         }
 
+        public InventoryInstanceOperationResult AddExistingDefinitionStackIdentity(ItemDefinition item, string itemInstanceId, int quantity)
+        {
+            if (externalReplicaAuthorityActive)
+            {
+                return InventoryInstanceOperationResult.Failure("Inventory is controlled by the server.");
+            }
+
+            if (item != null && item.InstanceMode == ItemInstanceMode.AlwaysInstanced)
+            {
+                return InventoryInstanceOperationResult.Failure($"{item.DisplayName} must be stored as a stateful item instance.");
+            }
+
+            if (!CanAddItemIdentity(item, itemInstanceId, quantity, out string failureReason))
+            {
+                return InventoryInstanceOperationResult.Failure(failureReason);
+            }
+
+            int emptySlotIndex = FindEmptySlotIndex();
+            slots[emptySlotIndex].SetDefinitionStack(item, itemInstanceId, quantity);
+            NotifyInventoryChanged();
+            ItemAdded?.Invoke(item, quantity);
+            return InventoryInstanceOperationResult.Success($"Added {item.DisplayName}.", emptySlotIndex);
+        }
+
+        public bool CanAddExistingDefinitionStackIdentity(ItemDefinition item, string itemInstanceId, int quantity)
+        {
+            if (externalReplicaAuthorityActive || item == null || item.InstanceMode == ItemInstanceMode.AlwaysInstanced) return false;
+            return CanAddItemIdentity(item, itemInstanceId, quantity, out _);
+        }
+
         public InventorySlot GetSlot(int slotIndex)
         {
             EnsureSlotCapacity();

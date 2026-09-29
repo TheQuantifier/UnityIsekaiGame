@@ -13505,6 +13505,7 @@ GameObject:
   - component: {fileID: 850340041}
   - component: {fileID: 850340042}
   - component: {fileID: 850340043}
+  - component: {fileID: 850340044}
   m_Layer: 0
   m_Name: Local Network Runtime
   m_TagString: Untagged
@@ -13698,6 +13699,18 @@ MonoBehaviour:
   client: {fileID: 850340035}
   interactionDetector: {fileID: 100016}
   persistence: {fileID: 520862414}
+--- !u!114 &850340044
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 850340033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7370eb294df74fb88839334578b0c984, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityIsekaiGame.Networking.Client::UnityIsekaiGame.Networking.Client.LocalWorldItemPickupBridge
 --- !u!1 &851981566
 GameObject:
   m_ObjectHideFlags: 0

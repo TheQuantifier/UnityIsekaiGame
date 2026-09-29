@@ -28,6 +28,7 @@ namespace UnityIsekaiGame.Editor
         public const string DefaultNetworkPrefabsPath = "Assets/DefaultNetworkPrefabs.asset";
         public const string PlayerActorPrefabPath = "Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkPlayerActor.prefab";
         public const string CombatWorldStatePrefabPath = "Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkCombatWorldState.prefab";
+        public const string WorldItemPickupPrefabPath = "Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkWorldItemPickup.prefab";
 
         [MenuItem("Tools/Unity Isekai Game/Networking/Bake Local Network Foundation")]
         public static void BakePrototypeSceneMenu() => BakePrototypeScene();
@@ -49,6 +50,7 @@ namespace UnityIsekaiGame.Editor
             LocalPlayerMovementBridge movementBridge = GetOrAdd<LocalPlayerMovementBridge>(root);
             LocalPlayerVitalsBridge vitalsBridge = GetOrAdd<LocalPlayerVitalsBridge>(root);
             LocalPlayerInventoryBridge inventoryBridge = GetOrAdd<LocalPlayerInventoryBridge>(root);
+            GetOrAdd<LocalWorldItemPickupBridge>(root);
             LocalCombatAuthorityBridge combatBridge = GetOrAdd<LocalCombatAuthorityBridge>(root);
             LocalNarrativeAuthorityBridge narrativeBridge = GetOrAdd<LocalNarrativeAuthorityBridge>(root);
             NetworkPrefabsList prefabList = AssetDatabase.LoadAssetAtPath<NetworkPrefabsList>(DefaultNetworkPrefabsPath);
@@ -77,8 +79,13 @@ namespace UnityIsekaiGame.Editor
 
             GameObject playerActorPrefab = EnsurePlayerActorPrefab(playerMotor.MovementSettings, playerStamina);
             GameObject combatWorldStatePrefab = EnsureCombatWorldStatePrefab();
+            GameObject worldItemPickupPrefab = EnsureWorldItemPickupPrefab();
             foreach (NetworkPrefab entry in prefabList.PrefabList
-                         .Where(entry => entry == null || entry.Prefab == null || entry.Prefab == playerActorPrefab || entry.Prefab == combatWorldStatePrefab)
+                         .Where(entry => entry == null
+                             || entry.Prefab == null
+                             || entry.Prefab == playerActorPrefab
+                             || entry.Prefab == combatWorldStatePrefab
+                             || entry.Prefab == worldItemPickupPrefab)
                          .ToArray())
             {
                 prefabList.Remove(entry);
@@ -93,6 +100,11 @@ namespace UnityIsekaiGame.Editor
             {
                 Override = NetworkPrefabOverride.None,
                 Prefab = combatWorldStatePrefab
+            });
+            prefabList.Add(new NetworkPrefab
+            {
+                Override = NetworkPrefabOverride.None,
+                Prefab = worldItemPickupPrefab
             });
 
             manager.NetworkConfig.NetworkTransport = transport;
@@ -240,6 +252,53 @@ namespace UnityIsekaiGame.Editor
 
             prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CombatWorldStatePrefabPath);
             return prefab == null ? throw new InvalidOperationException($"Failed to create the combat world state prefab at '{CombatWorldStatePrefabPath}'.") : prefab;
+        }
+
+        private static GameObject EnsureWorldItemPickupPrefab()
+        {
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Networking");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs");
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(WorldItemPickupPrefabPath);
+            if (prefab == null)
+            {
+                GameObject source = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                try
+                {
+                    source.name = "Network World Item Pickup";
+                    source.transform.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+                    source.AddComponent<NetworkObject>();
+                    source.AddComponent<NetworkWorldItemPickup>();
+                    PrefabUtility.SaveAsPrefabAsset(source, WorldItemPickupPrefabPath);
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(source);
+                }
+            }
+
+            GameObject contents = PrefabUtility.LoadPrefabContents(WorldItemPickupPrefabPath);
+            try
+            {
+                NetworkObject networkObject = GetOrAdd<NetworkObject>(contents);
+                GetOrAdd<NetworkWorldItemPickup>(contents);
+                Collider collider = contents.GetComponent<Collider>();
+                if (collider == null) collider = contents.AddComponent<CapsuleCollider>();
+                collider.isTrigger = true;
+                Renderer renderer = contents.GetComponent<Renderer>();
+                Material pickupMaterial = AssetDatabase.LoadAssetAtPath<Material>(
+                    "Packages/com.thequantifier.isekai.content/Content/Economy/PrototypeMarketStall.mat");
+                if (renderer != null && pickupMaterial != null) renderer.sharedMaterial = pickupMaterial;
+                contents.transform.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+                NormalizeNetworkPrefab(networkObject);
+                PrefabUtility.SaveAsPrefabAsset(contents, WorldItemPickupPrefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(contents);
+            }
+
+            prefab = AssetDatabase.LoadAssetAtPath<GameObject>(WorldItemPickupPrefabPath);
+            return prefab == null ? throw new InvalidOperationException($"Failed to create the world item pickup prefab at '{WorldItemPickupPrefabPath}'.") : prefab;
         }
 
         private static void NormalizeNetworkPrefab(NetworkObject networkObject)
