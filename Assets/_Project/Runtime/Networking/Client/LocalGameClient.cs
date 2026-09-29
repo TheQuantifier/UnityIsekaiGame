@@ -45,7 +45,21 @@ namespace UnityIsekaiGame.Networking.Client
         private void Start()
         {
 #if !UNITY_SERVER
-            if (connectAutomatically)
+            if (!LocalNetworkCommandLine.TryParse(
+                    Environment.GetCommandLineArgs(),
+                    false,
+                    out LocalNetworkLaunchOptions options,
+                    out string failure))
+            {
+                Fail($"Invalid local-network command line: {failure}");
+                return;
+            }
+
+            if (options.Mode == LocalNetworkLaunchMode.Client)
+            {
+                Connect(options.ServerAddress, options.Port, options.PlayerId);
+            }
+            else if (connectAutomatically && options.Mode == LocalNetworkLaunchMode.None)
             {
                 Connect();
             }
@@ -182,6 +196,15 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             status = next;
+            if (next.Phase == LocalConnectionPhase.Failed)
+            {
+                Debug.LogError($"[Local Client] {next.Message}", this);
+            }
+            else
+            {
+                Debug.Log($"[Local Client] {next.Message}", this);
+            }
+
             StatusChanged?.Invoke(status);
         }
     }

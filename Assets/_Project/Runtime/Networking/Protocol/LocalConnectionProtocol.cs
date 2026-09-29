@@ -115,7 +115,7 @@ namespace UnityIsekaiGame.Networking
             return true;
         }
 
-        private static bool IsValidIdentifier(string value)
+        public static bool IsValidIdentifier(string value)
         {
             return !string.IsNullOrWhiteSpace(value)
                 && value.Length <= MaximumIdentifierLength

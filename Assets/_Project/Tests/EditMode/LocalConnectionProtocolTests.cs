@@ -77,5 +77,85 @@ namespace UnityIsekaiGame.Tests
             Assert.That(result.Approved, Is.True, result.Reason);
             Assert.That(result.Request.PlayerId, Is.EqualTo("player.two"));
         }
+
+        [Test]
+        public void Command_line_is_inert_without_an_explicit_mode()
+        {
+            Assert.That(LocalNetworkCommandLine.TryParse(
+                new[] { "Game.exe", "-batchmode" },
+                false,
+                out LocalNetworkLaunchOptions options,
+                out string failure), Is.True, failure);
+
+            Assert.That(options.Mode, Is.EqualTo(LocalNetworkLaunchMode.None));
+            Assert.That(options.Port, Is.EqualTo(LocalServerEndpoint.DefaultPort));
+        }
+
+        [Test]
+        public void Dedicated_build_defaults_to_server_and_accepts_overrides()
+        {
+            Assert.That(LocalNetworkCommandLine.TryParse(
+                new[]
+                {
+                    "Server.exe",
+                    "--listen-address=127.0.0.1",
+                    "--server-port", "7788",
+                    "--max-players=12"
+                },
+                true,
+                out LocalNetworkLaunchOptions options,
+                out string failure), Is.True, failure);
+
+            Assert.That(options.Mode, Is.EqualTo(LocalNetworkLaunchMode.Server));
+            Assert.That(options.ListenAddress, Is.EqualTo("127.0.0.1"));
+            Assert.That(options.Port, Is.EqualTo(7788));
+            Assert.That(options.MaximumPlayers, Is.EqualTo(12));
+        }
+
+        [Test]
+        public void Client_command_line_accepts_endpoint_and_identity()
+        {
+            Assert.That(LocalNetworkCommandLine.TryParse(
+                new[]
+                {
+                    "Client.exe",
+                    "--local-client",
+                    "--server-address", "localhost",
+                    "--server-port=7788",
+                    "--player-id", "player.command-line"
+                },
+                false,
+                out LocalNetworkLaunchOptions options,
+                out string failure), Is.True, failure);
+
+            Assert.That(options.Mode, Is.EqualTo(LocalNetworkLaunchMode.Client));
+            Assert.That(options.ServerAddress, Is.EqualTo("localhost"));
+            Assert.That(options.Port, Is.EqualTo(7788));
+            Assert.That(options.PlayerId, Is.EqualTo("player.command-line"));
+        }
+
+        [TestCase("--server-port", "0")]
+        [TestCase("--max-players", "0")]
+        [TestCase("--player-id", "bad player")]
+        public void Command_line_rejects_invalid_network_values(string option, string value)
+        {
+            Assert.That(LocalNetworkCommandLine.TryParse(
+                new[] { "Game.exe", "--local-client", option, value },
+                false,
+                out _,
+                out string failure), Is.False);
+            Assert.That(failure, Is.Not.Empty);
+        }
+
+        [Test]
+        public void Command_line_rejects_conflicting_process_modes()
+        {
+            Assert.That(LocalNetworkCommandLine.TryParse(
+                new[] { "Game.exe", "--local-server", "--local-client" },
+                false,
+                out _,
+                out string failure), Is.False);
+            Assert.That(failure, Does.Contain("both"));
+        }
     }
 }

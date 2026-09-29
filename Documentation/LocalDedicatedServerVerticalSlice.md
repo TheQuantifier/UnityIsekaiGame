@@ -48,6 +48,59 @@ Opening a menu may block local input, but it must never pause the server or rese
 5. Provide explicit localhost client and dedicated-server lifecycle components.
 6. Author a networking root into the Prototype Scene without changing existing gameplay behavior.
 7. Add protocol and scene-structure tests and keep the full regression suite green.
+8. Support explicit command-line server/client startup with endpoint and identity overrides.
+9. Produce repeatable Windows server and client builds and verify a real loopback handshake between separate processes.
+
+## Build and run
+
+Windows Dedicated Server Build Support for Unity `6000.5.4f1` must be installed in Unity Hub. Visual Studio is not required to run either executable.
+
+Build from the Unity Editor menus:
+
+- `Tools > Unity Isekai Game > Networking > Build Windows Local Server`
+- `Tools > Unity Isekai Game > Networking > Build Windows Local Client`
+
+The outputs are intentionally ignored by Git:
+
+- `Builds/LocalServer/UnityIsekaiServer.exe`
+- `Builds/LocalClient/UnityIsekaiClient.exe`
+
+Start the server first:
+
+```powershell
+cd Builds/LocalServer
+.\UnityIsekaiServer.exe -batchmode -nographics -logFile server.log
+```
+
+A dedicated-server build starts automatically on `0.0.0.0:7777`. Optional overrides are `--listen-address`, `--server-port`, and `--max-players`:
+
+```powershell
+.\UnityIsekaiServer.exe -batchmode -nographics --listen-address 127.0.0.1 --server-port 7788 --max-players 4 -logFile server.log
+```
+
+Start a client in a second terminal. The `--local-client` flag is deliberately required so an ordinary game launch remains inert until a connection screen is added:
+
+```powershell
+cd Builds/LocalClient
+.\UnityIsekaiClient.exe -batchmode -nographics --local-client --server-address 127.0.0.1 --server-port 7777 --player-id local-player -logFile client.log
+```
+
+The server log reports `Local server is listening`, followed by the approved client ID and player ID. The client log reports `Connected`. Each build folder is a portable unit; keep its executable and generated data/dependency folders together.
+
+## Current boundary
+
+Group 1 proves process separation, transport startup, versioned admission, capacity checks, unique player identity, disconnect cleanup, and a real client/server handshake. It does not yet replicate the player actor or gameplay state. Those authoritative adapters begin in Group 2; until then, the existing Prototype Scene gameplay still runs locally inside each process.
+
+## Group 1 verification
+
+Verified on September 28, 2026 with Unity `6000.5.4f1`:
+
+- EditMode: 1,383 passed, 0 failed.
+- PlayMode: 5 passed, 0 failed.
+- Windows dedicated-server build: succeeded.
+- Windows client build: succeeded.
+- Separate-process smoke test: server bound UDP `127.0.0.1:7777`; client `e2e-player` connected and was approved.
+- Headless logs: no missing-script, serialization-layout, networking, exception, or error warnings.
 
 ## Migration sequence
 

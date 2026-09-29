@@ -34,15 +34,9 @@ namespace UnityIsekaiGame.Networking.Server
         private void Start()
         {
 #if UNITY_SERVER && !UNITY_EDITOR
-            if (startAutomaticallyInServerBuild)
-            {
-                StartServer();
-            }
+            TryStartFromCommandLine(startAutomaticallyInServerBuild);
 #else
-            if (HasCommandLineFlag("--local-server"))
-            {
-                StartServer();
-            }
+            TryStartFromCommandLine(false);
 #endif
         }
 
@@ -138,12 +132,20 @@ namespace UnityIsekaiGame.Networking.Server
             if (admission.Approved)
             {
                 connectedPlayerIds[request.ClientNetworkId] = admission.Request.PlayerId;
+                Debug.Log($"[Local Server] Approved client {request.ClientNetworkId} as player '{admission.Request.PlayerId}'.", this);
+            }
+            else
+            {
+                Debug.LogWarning($"[Local Server] Rejected client {request.ClientNetworkId}: {admission.Reason}", this);
             }
         }
 
         private void OnClientDisconnected(ulong clientId)
         {
-            connectedPlayerIds.Remove(clientId);
+            if (connectedPlayerIds.Remove(clientId))
+            {
+                Debug.Log($"[Local Server] Client {clientId} disconnected.", this);
+            }
         }
 
         private void ResolveReferences()
@@ -177,21 +179,37 @@ namespace UnityIsekaiGame.Networking.Server
             }
 
             status = next;
+            if (next.Phase == LocalConnectionPhase.Failed)
+            {
+                Debug.LogError($"[Local Server] {next.Message}", this);
+            }
+            else
+            {
+                Debug.Log($"[Local Server] {next.Message}", this);
+            }
+
             StatusChanged?.Invoke(status);
         }
 
-        private static bool HasCommandLineFlag(string flag)
+        private void TryStartFromCommandLine(bool dedicatedServerBuild)
         {
-            string[] arguments = Environment.GetCommandLineArgs();
-            for (int index = 0; index < arguments.Length; index++)
+            if (!LocalNetworkCommandLine.TryParse(
+                    Environment.GetCommandLineArgs(),
+                    dedicatedServerBuild,
+                    out LocalNetworkLaunchOptions options,
+                    out string failure))
             {
-                if (string.Equals(arguments[index], flag, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
+                Fail($"Invalid local-network command line: {failure}");
+                return;
             }
 
-            return false;
+            if (options.Mode != LocalNetworkLaunchMode.Server)
+            {
+                return;
+            }
+
+            Configure(networkManager, options.ListenAddress, options.Port, options.MaximumPlayers);
+            StartServer();
         }
     }
 }
