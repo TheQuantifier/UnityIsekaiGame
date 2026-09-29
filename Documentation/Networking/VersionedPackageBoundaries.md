@@ -1,6 +1,6 @@
 # Versioned Package Boundaries
 
-Phase 5 Group 10 promotes the reusable vertical-slice code and shared data into four embedded Unity Package Manager packages. Each package currently uses version `0.1.0`; releases must change package versions deliberately and keep local inter-package dependency versions aligned.
+Phase 5 Groups 10 and 11 promote the reusable vertical-slice code, adapters, and shared data into local Unity Package Manager packages. Each Isekai package currently uses version `0.1.0`; releases must change package versions deliberately and keep local inter-package dependency versions aligned.
 
 ## Ownership matrix
 
@@ -8,8 +8,11 @@ Phase 5 Group 10 promotes the reusable vertical-slice code and shared data into 
 | --- | --- | --- |
 | Protocol | transport-neutral DTOs, command results, session and save wire contracts | MonoBehaviours, Netcode, gameplay implementations, UI |
 | Simulation | definitions, runtime domains, deterministic gameplay, persistence participants | client UI, transport adapters, server admission |
-| Networking | shared replication plus Client and Server adapters | authored game definitions, large visual content |
+| Networking | shared replication used by both processes | client adapters, server adapters, authored definitions |
+| Client | connection lifecycle, input/presentation bridges, UI | server authority, server persistence |
+| Server | admission, commands, authoritative adapters, persistence | client input, cameras, UI |
 | Content | shared definitions, configuration, generated records, network prefabs | C# source, client-only world art |
+| Project Tools | editor-only extraction and repository tooling | runtime behavior |
 
 ## Versioning rules
 
@@ -22,8 +25,8 @@ Phase 5 Group 10 promotes the reusable vertical-slice code and shared data into 
 
 ## Content split
 
-The Content package contains assets required by both executables, including authoritative definitions and network prefabs. The `Assets/_Project/Prototype` visual library and Prototype Scene remain client-project inputs. Group 11 will give the server a small headless scene/configuration set rather than importing that visual library.
+The Content package contains assets required by both executables, including authoritative definitions and network prefabs. `Projects/Client/Assets/_Project/Prototype` and the Prototype Scene remain client-only inputs. `Projects/Server` contains a stripped headless scene and does not import the client visual library.
 
 ## Validation
 
-`Tools > Project Maintenance > Validate Project Structure` checks package existence, coordinated version, required dependencies, code/content separation, assembly placement, dependency direction, GUID uniqueness, and the absence of legacy runtime/content roots. EditMode tests independently enforce the same high-risk contracts.
+`Tools > Project Maintenance > Validate Project Structure` in the Client project checks package existence, coordinated versions, required dependencies, code/content separation, assembly placement, dependency direction, GUID uniqueness, and the absence of legacy runtime/content roots. Client and Server EditMode suites independently enforce their project manifests and high-risk execution boundaries.

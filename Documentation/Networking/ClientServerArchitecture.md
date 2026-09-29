@@ -2,29 +2,38 @@
 
 ## Current decision
 
-Phase 5 Group 10 completed the shared package extraction. The repository is still opened as one Unity project for the final compatibility pass, but reusable code and server-relevant content no longer live inside the project `Assets` tree. Group 11 can therefore create two thin Unity projects without copying gameplay code, protocol types, networking adapters, or shared definitions.
+Phase 5 Group 11 completed the physical project split. The repository contains separate Client and Server Unity projects that consume one shared set of versioned local packages. Gameplay code, protocol types, network replication, authority adapters, and server-relevant definitions are not copied between projects.
 
 ## Current repository layout
 
 ```text
 UnityIsekaiGame/
-|-- Assets/_Project/
-|   |-- Prototype/                 client-only vertical-slice art and authoring
-|   |-- Scenes/Prototype/          current vertical-slice world
-|   |-- Editor/                    project bake/build automation
-|   `-- Tests/                     shared regression suite
+|-- Projects/
+|   |-- Client/
+|   |   |-- Assets/_Project/       client art, presentation, scenes, editor tools, tests
+|   |   |-- Packages/              client manifest; includes Client, excludes Server
+|   |   `-- ProjectSettings/
+|   `-- Server/
+|       |-- Assets/Scenes/         stripped headless vertical-slice scene
+|       |-- Assets/Editor/         server build automation and boundary tests
+|       |-- Packages/              server manifest; includes Server, excludes Client
+|       `-- ProjectSettings/
 |-- Packages/
 |   |-- com.thequantifier.isekai.protocol/
 |   |-- com.thequantifier.isekai.simulation/
 |   |-- com.thequantifier.isekai.networking/
-|   `-- com.thequantifier.isekai.content/
+|   |-- com.thequantifier.isekai.client/
+|   |-- com.thequantifier.isekai.server/
+|   |-- com.thequantifier.isekai.content/
+|   |-- com.thequantifier.isekai.project-tools/
+|   `-- com.thequantifier.scene-zone-tool/
 |-- Documentation/
 `-- Builds/
     |-- LocalClient/
     `-- LocalServer/
 ```
 
-All four local packages use semantic version `0.1.0`. The root project consumes them through local UPM references, so Unity and IDE project generation treat package ownership explicitly.
+The Isekai packages use semantic version `0.1.0`; Scene Zone Tool retains its released `1.0.3` version. Each Unity project consumes only its permitted adapters through relative local UPM references.
 
 ## Package responsibilities
 
@@ -38,7 +47,15 @@ Reusable game definitions and gameplay domains: characters, inventory, equipment
 
 ### `com.thequantifier.isekai.networking`
 
-Shared Netcode replication plus physically separate Client and Server adapter roots. Shared replication may depend on Protocol and Simulation. Client cannot reference Server; Server cannot reference Client or UI.
+Shared Netcode replication used by both executables. It may depend on Protocol and Simulation, but contains neither client nor server adapters.
+
+### `com.thequantifier.isekai.client`
+
+Client connection lifecycle, input and presentation bridges, and the user interface. It is installed only in `Projects/Client` and cannot reference Server.
+
+### `com.thequantifier.isekai.server`
+
+Dedicated-server startup, admission, authoritative command handling, world/session adapters, and server-owned persistence. It is installed only in `Projects/Server` and cannot reference Client or UI.
 
 ### `com.thequantifier.isekai.content`
 
@@ -53,8 +70,8 @@ Protocol        Simulation
           |
         Content
 
-Networking/Client --> client executable and presentation
-Networking/Server --> dedicated-server executable and persistence
+Networking --> Client package --> Client project
+Networking --> Server package --> Server project
 ```
 
 The Content package depends on Simulation and Networking because its Unity assets serialize components and definition types from those packages. That is an asset serialization dependency, not an authority inversion.
@@ -79,11 +96,9 @@ The Content package depends on Simulation and Networking because its Unity asset
 4. Quest, party, and interaction command boundaries - complete in Group 8.
 5. Server-only persistence ownership and player-session restore - complete in Group 9.
 6. Versioned packages and explicit content boundaries - complete in Group 10.
-7. Thin `Projects/Client` and `Projects/Server` Unity projects - Group 11.
+7. Thin `Projects/Client` and `Projects/Server` Unity projects - complete in Group 11.
 
-Only Group 11 remains before the repository has physically separate client and server Unity projects.
-
-## Group 11 target
+## Physical project result
 
 ```text
 UnityIsekaiGame/
@@ -95,7 +110,14 @@ UnityIsekaiGame/
 `-- Tools/
 ```
 
-Both projects will reference the same packages by relative path. The Client project will own presentation assets and the vertical-slice scene. The Server project will own only headless bootstrap/configuration assets plus the shared server-relevant content it needs.
+Both projects reference the same repository packages by relative path. The Client owns presentation assets and the Prototype Scene. The Server owns only its headless bootstrap scene/configuration and imports shared server-relevant content. The server scene is extracted from the vertical slice with cameras, renderers, UI, client adapters, development tools, and visual collision removed.
+
+Open these folders separately in Unity Hub:
+
+- `Projects/Client`
+- `Projects/Server`
+
+Do not open the repository root as a Unity project.
 
 ## Build outputs
 

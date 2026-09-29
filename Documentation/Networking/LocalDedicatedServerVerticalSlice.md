@@ -2,7 +2,7 @@
 
 ## Goal
 
-Use `Assets/_Project/Scenes/Prototype/PrototypeScene.unity` as the first playable client/server vertical slice. The server runs as a separate local process and owns mutable game state. The client owns input, camera, presentation, and menus, and requests state changes from the server.
+Use `Projects/Client/Assets/_Project/Scenes/Prototype/PrototypeScene.unity` as the first playable client/server vertical slice. The server runs from the independent `Projects/Server` Unity project as a separate local process and owns mutable game state. The client owns input, camera, presentation, and menus, and requests state changes from the server.
 
 No internet service is required. The initial transport is direct UDP over loopback (`127.0.0.1:7777`) using Netcode for GameObjects and Unity Transport.
 
@@ -55,10 +55,10 @@ Opening a menu may block local input, but it must never pause the server or rese
 
 Windows Dedicated Server Build Support for Unity `6000.5.4f1` must be installed in Unity Hub. Visual Studio is not required to run either executable.
 
-Build from the Unity Editor menus:
+Add and open `Projects/Client` and `Projects/Server` as separate projects in Unity Hub. Build from the corresponding Unity Editor menu:
 
-- `Tools > Unity Isekai Game > Networking > Build Windows Local Server`
-- `Tools > Unity Isekai Game > Networking > Build Windows Local Client`
+- Server project: `Tools > Unity Isekai Game > Build Windows Dedicated Server`
+- Client project: `Tools > Unity Isekai Game > Networking > Build Windows Local Client`
 
 The outputs are intentionally ignored by Git:
 
@@ -111,6 +111,6 @@ Verified on September 28, 2026 with Unity `6000.5.4f1`:
 5. **Inventory slice:** replace direct UI mutations with commands and snapshots.
 6. **Combat and quests:** move validation and outcomes behind server command handlers.
 7. **Persistence:** make the server the only save/load writer.
-8. **Physical project split:** extract shared packages and create thin Client and Server Unity project folders after the first end-to-end slice is stable.
+8. **Physical project split:** complete; shared packages now feed independent Client and Server Unity projects.
 
-The physical split is deliberately after the first working handshake. Copying the project first would duplicate the current coupled assembly and make every boundary change twice. Once the shared protocol and authoritative adapters are stable, both projects can consume the same versioned local packages without duplicating gameplay code.
+The physical split followed the first working handshake. Both projects now consume the same versioned local packages without duplicating gameplay code.

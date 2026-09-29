@@ -11,13 +11,13 @@
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
 .utmp/
-/[Ll]ibrary/
-/[Tt]emp/
-/[Oo]bj/
-/[Bb]uild/
+**/[Ll]ibrary/
+**/[Tt]emp/
+**/[Oo]bj/
+**/[Bb]uild/
 /[Bb]uilds/
-/[Ll]ogs/
-/[Uu]ser[Ss]ettings/
+**/[Ll]ogs/
+**/[Uu]ser[Ss]ettings/
 *.log
 
 # By default unity supports Blender asset imports, *.blend1 blender files do not need to be committed to version control.
@@ -26,10 +26,10 @@
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
-/[Mm]emoryCaptures/
+**/[Mm]emoryCaptures/
 
 # Recordings can get excessive in size
-/[Rr]ecordings/
+**/[Rr]ecordings/
 
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
@@ -89,39 +89,39 @@ crashlytics-build.properties
 
 # TestRunner generated files
 InitTestScene*.unity*
-/[Tt]est[Rr]esults/
+**/[Tt]est[Rr]esults/
 /.local-backups/
 
 # Local visual world terrain data can become very large. Keep the lightweight
 # terrain layers/materials tracked, but do not push hand-painted TerrainData.
-/[Aa]ssets/_Project/Prototype/Environment/Terrain/Data/
+/Projects/Client/[Aa]ssets/_Project/Prototype/Environment/Terrain/Data/
 
 # Addressables default ignores, before user customizations
-/ServerData
-/[Aa]ssets/StreamingAssets/aa*
-/[Aa]ssets/AddressableAssetsData/link.xml*
-/[Aa]ssets/Addressables_Temp*
+**/ServerData
+**/[Aa]ssets/StreamingAssets/aa*
+**/[Aa]ssets/AddressableAssetsData/link.xml*
+**/[Aa]ssets/Addressables_Temp*
 # By default, Addressables content builds will generate addressables_content_state.bin
 # files in platform-specific subfolders, for example:
 # /Assets/AddressableAssetsData/OSX/addressables_content_state.bin
-/[Aa]ssets/AddressableAssetsData/*/*.bin*
+**/[Aa]ssets/AddressableAssetsData/*/*.bin*
 
 # Visual Scripting auto-generated files
-/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db
-/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db.meta
-/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
-/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
+**/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db
+**/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db.meta
+**/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
+**/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
 
 # Auto-generated scenes by play mode tests
-/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+**/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
 # Unity AI Assistant local/user package state
-/ProjectSettings/Packages/com.unity.ai.assistant/
+**/ProjectSettings/Packages/com.unity.ai.assistant/
 
 # Imported Asset Store package bulk/demo content that is not part of the
 # committed prototype slice. Files already tracked inside these folders remain
 # versioned; this only hides unused local import leftovers.
-/Assets/ThirdParty/
-/Assets/ThirdParty/Handpainted_Grass_and_Ground_Textures/Demo/
-/Assets/ThirdParty/Handpainted_Grass_and_Ground_Textures/Textures/
-/Assets/ThirdParty/polygonTrees/polygonTrees/
+/Projects/Client/Assets/ThirdParty/
+/Projects/Client/Assets/ThirdParty/Handpainted_Grass_and_Ground_Textures/Demo/
+/Projects/Client/Assets/ThirdParty/Handpainted_Grass_and_Ground_Textures/Textures/
+/Projects/Client/Assets/ThirdParty/polygonTrees/polygonTrees/

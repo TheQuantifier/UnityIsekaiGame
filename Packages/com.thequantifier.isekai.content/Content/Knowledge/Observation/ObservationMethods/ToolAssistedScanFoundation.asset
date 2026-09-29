@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -16,16 +16,8 @@ MonoBehaviour:
   displayName: Tool-Assisted Scan Foundation
   description: Foundation for later scanning tools and devices.
   category: 8
-  sensoryChannels:
-  - 10
-  targetTypes:
-  - 3
-  - 6
-  - 8
-  - 9
-  - 10
-  - 11
-  - 13
+  sensoryChannels: 0a000000
+  targetTypes: 030000000600000008000000090000000a0000000b0000000d000000
   active: 0
   maximumRange: 12
   requiresLineOfSight: 1

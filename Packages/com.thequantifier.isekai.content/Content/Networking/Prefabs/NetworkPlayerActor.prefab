@@ -50,7 +50,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
   GlobalObjectIdHash: 1524235677
   InScenePlacedSourceGlobalObjectIdHash: 0
@@ -77,7 +77,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3dbd784a5b2f1694fb8b19cf09344a64, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Networking.Shared::UnityIsekaiGame.Networking.NetworkPlayerActor
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &8036150254913847055
@@ -90,7 +90,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkTransformExpanded: 0
@@ -161,7 +161,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b9ec507c58844cf5bb8ce51d5ce27145, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Networking.Shared::UnityIsekaiGame.Networking.NetworkPlayerMovement
   ShowTopMostFoldoutHeaderGroup: 1
   walkSpeed: 3
@@ -181,7 +181,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f34aaf4991c49d5b2c9e809128f5d25, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Networking.Shared::UnityIsekaiGame.Networking.NetworkPlayerVitals
   ShowTopMostFoldoutHeaderGroup: 1
   maximumHealth: 100
@@ -204,7 +204,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66df41dc6e844fd0a59e31676d4f0c13, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Networking.Shared::UnityIsekaiGame.Networking.NetworkPlayerInventory
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &7504603409603154294
@@ -217,7 +217,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c43257d627593924295f4b71cdf2e679, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Networking.Shared::UnityIsekaiGame.Networking.NetworkPlayerCombat
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &7769131882612423090
@@ -230,6 +230,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e2e2d801e1584265afadf0d7c69c9ab7, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityIsekaiGame.Networking.Shared::UnityIsekaiGame.Networking.NetworkPlayerNarrative
   ShowTopMostFoldoutHeaderGroup: 1

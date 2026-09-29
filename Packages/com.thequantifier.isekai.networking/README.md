@@ -1,3 +1,3 @@
-# Isekai Networking
+# Isekai Shared Networking
 
-Shared Netcode replication, client presentation bridges, UI, server admission, persistence, and authoritative gameplay adapters. Assembly boundaries prevent client code from referencing server code and prevent server code from referencing client UI.
+Netcode replication components shared by client and dedicated-server adapters. Client and Server implementations live in separate packages and never reference each other.

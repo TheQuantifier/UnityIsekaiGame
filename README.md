@@ -78,7 +78,7 @@ The codebase should favor modular systems and expansion points rather than hard-
 
 ## Current Prototype Status
 
-The current focus is building reusable core systems in `Assets/_Project/Scenes/Prototype/PrototypeScene.unity` before creating the first full town.
+The current focus is building reusable core systems in `Projects/Client/Assets/_Project/Scenes/Prototype/PrototypeScene.unity` before creating the first full town. The playable client and authoritative dedicated server are separate Unity projects under `Projects/Client` and `Projects/Server`; both consume the shared source under `Packages`.
 
 Current foundations include:
 
@@ -163,6 +163,10 @@ The first major playable goal is not the entire envisioned world. It is one comp
 - Git and GitHub for source control.
 
 The current package manifest includes Unity Input System, Universal Render Pipeline, Unity UI, AI Navigation, Timeline, the Unity Test Framework, and standard Unity modules. Package choices may change as the project matures.
+
+## Opening the Unity Projects
+
+Add `Projects/Client` and `Projects/Server` to Unity Hub as separate Unity projects. Do not open the repository root as a Unity project. Client/server layout, build commands, and package ownership are documented in `Documentation/Networking/PhysicalClientServerProjects.md`.
 
 ## Repository Status
 

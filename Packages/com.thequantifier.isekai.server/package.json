@@ -1,0 +1,17 @@
+{
+  "name": "com.thequantifier.isekai.server",
+  "version": "0.1.0",
+  "displayName": "Isekai Dedicated Server",
+  "description": "Authoritative admission, sessions, persistence, simulation adapters, and dedicated-server bootstrap for the Isekai game.",
+  "unity": "6000.5",
+  "author": {
+    "name": "TheQuantifier"
+  },
+  "dependencies": {
+    "com.thequantifier.isekai.networking": "0.1.0",
+    "com.thequantifier.isekai.protocol": "0.1.0",
+    "com.thequantifier.isekai.simulation": "0.1.0",
+    "com.unity.collections": "6.5.0",
+    "com.unity.netcode.gameobjects": "2.13.3"
+  }
+}

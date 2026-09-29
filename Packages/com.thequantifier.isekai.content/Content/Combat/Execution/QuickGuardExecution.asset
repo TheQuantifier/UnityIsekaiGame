@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnityIsekaiGame.Combat.Execution.CombatExecutionDefinition
   executionId: combat-execution.quick-guard
   displayName: Quick Guard Execution
-  description: Prototype defensive action commitment for testing zero-wind-up execution and short recovery.
+  description: Prototype defensive action commitment for testing zero-wind-up execution
+    and short recovery.
   primaryCategory: {fileID: 0}
   tags: []
   actionType: 3
@@ -23,7 +24,7 @@ MonoBehaviour:
   cooldownDuration: 0.5
   cooldownStartPoint: 1
   cooldownScope: 0
-  cooldownGroupKey:
+  cooldownGroupKey: 
   globalCooldownGroupKey: combat.global
   maximumCharges: 1
   chargeRecoveryDuration: 0
@@ -32,7 +33,7 @@ MonoBehaviour:
   beginCostRefundPolicy: 1
   interruptionPolicy: 3
   commitmentCategory: 3
-  allowedOverlaps: []
+  allowedOverlaps: 
   movementAllowed: 1
   defensiveActionsAllowed: 1
   anotherAttackAllowed: 0

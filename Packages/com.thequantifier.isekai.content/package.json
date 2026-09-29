@@ -8,6 +8,7 @@
     "name": "TheQuantifier"
   },
   "dependencies": {
+    "com.thequantifier.scene-zone-tool": "1.0.3",
     "com.thequantifier.isekai.networking": "0.1.0",
     "com.thequantifier.isekai.simulation": "0.1.0"
   }

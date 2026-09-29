@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -16,14 +16,8 @@ MonoBehaviour:
   displayName: Historical Record Review
   description: Foundation for learning from records, documents, journals, and archives.
   category: 11
-  sensoryChannels:
-  - 11
-  targetTypes:
-  - 1
-  - 3
-  - 4
-  - 15
-  - 16
+  sensoryChannels: 0b000000
+  targetTypes: 0100000003000000040000000f00000010000000
   active: 1
   maximumRange: 12
   requiresLineOfSight: 1

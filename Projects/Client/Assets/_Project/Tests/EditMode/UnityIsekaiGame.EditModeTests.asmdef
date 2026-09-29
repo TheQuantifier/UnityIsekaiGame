@@ -1,0 +1,31 @@
+{
+    "name": "UnityIsekaiGame.EditModeTests",
+    "rootNamespace": "UnityIsekaiGame.Tests",
+    "references": [
+        "UnityIsekaiGame.GameData",
+        "UnityIsekaiGame.Gameplay",
+        "UnityIsekaiGame.Networking.Client",
+        "UnityIsekaiGame.Networking.Protocol",
+        "UnityIsekaiGame.Networking.Shared",
+        "UnityIsekaiGame.UI",
+        "UnityIsekaiGame.Development",
+        "UnityIsekaiGame.Editor",
+        "SceneZoneTool.Runtime",
+        "Unity.Netcode.Runtime",
+        "Unity.Networking.Transport"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}
