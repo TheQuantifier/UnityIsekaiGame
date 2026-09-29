@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityIsekaiGame.Input;
 
@@ -25,6 +26,7 @@ namespace UnityIsekaiGame.Interaction
         public QueryTriggerInteraction TriggerInteraction => triggerInteraction;
         public GameObject Interactor => interactor;
         public Transform RayOrigin => rayOrigin;
+        public Func<IInteractable, InteractionContext, bool> ExternalInteractionHandler { get; set; }
 
         private void Reset()
         {
@@ -56,6 +58,11 @@ namespace UnityIsekaiGame.Interaction
             InteractionContext context = CreateContext();
             if (currentInteractable.CanInteract(context))
             {
+                if (ExternalInteractionHandler?.Invoke(currentInteractable, context) == true)
+                {
+                    return;
+                }
+
                 currentInteractable.Interact(context);
             }
         }

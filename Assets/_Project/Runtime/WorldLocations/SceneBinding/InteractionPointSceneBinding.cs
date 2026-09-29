@@ -35,6 +35,90 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
         public string PreferredServiceDefinitionId => serviceDefinitionId;
         public InteractionPointSnapshot LastPoint { get; private set; }
 
+        public bool IsWithinAuthoritativeRange(Vector3 actorPosition)
+        {
+            if (!requirePhysicalRange) return true;
+            return Vector3.Distance(actorPosition, BindingTransform.position)
+                <= Mathf.Max(0.01f, interactionRange) + 0.35f;
+        }
+
+        public bool TryInvokeAuthoritative(
+            PrototypePersistenceServiceBehaviour persistence,
+            Vector3 actorPosition,
+            string personId,
+            string bodyId,
+            double worldTime,
+            out InteractionPointSnapshot point,
+            out InteractionInvocationResult invocation,
+            out string failure)
+        {
+            point = null;
+            invocation = null;
+            if (persistence == null || string.IsNullOrWhiteSpace(personId))
+            {
+                failure = "Authoritative interaction identity is unavailable.";
+                return false;
+            }
+
+            if (Status != WorldSceneBindingStatus.Bound || !IsWithinAuthoritativeRange(actorPosition))
+            {
+                failure = Status != WorldSceneBindingStatus.Bound
+                    ? "The interaction point is not bound to an active world record."
+                    : "The authoritative player is outside the interaction range.";
+                return false;
+            }
+
+            if (!Runtime.TryGetInteractionPoint(LogicalId, out point) || point == null || !point.IsActive)
+            {
+                failure = "The authoritative interaction point is unavailable.";
+                return false;
+            }
+
+            string serviceId = ResolveServiceId(point);
+            if (string.IsNullOrWhiteSpace(serviceId))
+            {
+                failure = "The interaction point has no active service.";
+                return false;
+            }
+
+            EntityLocationReferenceData consumer = PrototypeEntityLocationFactory.Person(personId);
+            InteractionEligibilityResult eligibility = Runtime.EvaluateInteraction(LogicalId, serviceId, consumer, worldTime);
+            if (eligibility == null || !eligibility.Eligible)
+            {
+                failure = eligibility?.Message ?? "The interaction service rejected this player.";
+                return false;
+            }
+
+            invocation = Runtime.InvokeInteraction(LogicalId, serviceId, consumer, worldTime);
+            if (invocation == null || !invocation.Success)
+            {
+                failure = invocation?.Message ?? "The authoritative interaction failed.";
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(bodyId))
+            {
+                Runtime.SynchronizePhysicalPresence(
+                    PrototypeEntityLocationFactory.Body(bodyId),
+                    point.ActiveHostLocationId,
+                    worldTime);
+            }
+
+            LastPoint = point;
+            failure = string.Empty;
+            return true;
+        }
+
+        public bool PresentAuthorizedInteraction(GameObject interactor)
+        {
+            if (!Runtime.TryGetInteractionPoint(LogicalId, out InteractionPointSnapshot point) || point == null) return false;
+            LastPoint = point;
+            IInteractionPointDestinationHandler handler = ResolveDestinationHandler();
+            if (handler == null) return false;
+            handler.HandleInteraction(new InteractionContext(interactor, null, default), point);
+            return true;
+        }
+
         public void ConfigureInteraction(float range = 3f, bool enforcePhysicalRange = true, string preferredServiceDefinitionId = null)
         {
             interactionRange = Mathf.Max(0.1f, range);

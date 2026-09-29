@@ -131,7 +131,7 @@ namespace UnityIsekaiGame.Gameplay
             return result;
         }
 
-        public QuestSourceOperationResult AcceptListing(string questListingId, string interactionPointId)
+        public QuestSourceOperationResult AcceptListing(string questListingId, string interactionPointId, PlayerInventory authoritativeInventory = null)
         {
             ThrowIfDisposed();
             QuestSourceOperationResult accepted = Sources.AcceptFromSource(new QuestSourceAcceptRequest
@@ -148,13 +148,14 @@ namespace UnityIsekaiGame.Gameplay
 
             InitializeAssignment(accepted.Assignment);
             ReportObjective(QuestObjectiveCategory.UseInteractionPoint, interactionPointId, 1, "quest-source.accept");
+            PlayerInventory questInventory = authoritativeInventory ?? services.PlayerInventory;
             if (Quests.TryGetSnapshot(accepted.Assignment.QuestId, out QuestSnapshot acceptedQuest)
                 && acceptedQuest.QuestDefinitionId == PrototypeQuestDefinitionFactory.MerchantDeliveryDefinitionId
                 && registry.TryGet("item.prototype.merchant-parcel", out ItemDefinition parcel)
-                && services.PlayerInventory != null
-                && services.PlayerInventory.CountItem(parcel) == 0)
+                && questInventory != null
+                && questInventory.CountItem(parcel) == 0)
             {
-                InventoryAddResult parcelGrant = services.PlayerInventory.AddItemOrInstances(parcel, 1);
+                InventoryAddResult parcelGrant = questInventory.AddItemOrInstances(parcel, 1);
                 if (!parcelGrant.AddedAll)
                 {
                     GameHudMessageBus.Show("Make inventory space before accepting the merchant parcel.");
@@ -529,8 +530,9 @@ namespace UnityIsekaiGame.Gameplay
             });
         }
 
-        public void HandleInteractionPointUsed(string interactionPointId, string sourceEventId = "")
+        public void HandleInteractionPointUsed(string interactionPointId, string sourceEventId = "", PlayerInventory authoritativeInventory = null)
         {
+            PlayerInventory questInventory = authoritativeInventory ?? services.PlayerInventory;
             string pointId = string.IsNullOrWhiteSpace(interactionPointId) ? string.Empty : interactionPointId.Trim();
             ReportObjective(QuestObjectiveCategory.UseInteractionPoint, pointId, 1, "world.interaction-point");
             QuestObjectiveSnapshot delivery = Objectives.QueryObjectives(new QuestObjectiveQuery
@@ -547,7 +549,7 @@ namespace UnityIsekaiGame.Gameplay
 
             if (!TryGetObjectiveDefinition(delivery, out QuestObjectiveDefinitionData deliveryDefinition)) return;
             string itemId = deliveryDefinition.secondaryTarget?.subjectId ?? string.Empty;
-            if (!registry.TryGet(itemId, out ItemDefinition item) || services.PlayerInventory == null || services.PlayerInventory.CountItem(item) < 1)
+            if (!registry.TryGet(itemId, out ItemDefinition item) || questInventory == null || questInventory.CountItem(item) < 1)
             {
                 GameHudMessageBus.Show("The required delivery item is not in your inventory.");
                 return;
@@ -570,7 +572,7 @@ namespace UnityIsekaiGame.Gameplay
             });
             if (delivered.Succeeded && delivered.Objectives.Any(objective => objective.Satisfied))
             {
-                services.PlayerInventory.RemoveItem(item, 1);
+                questInventory.RemoveItem(item, 1);
                 GameHudMessageBus.Show($"Delivered {item.DisplayName}.");
             }
         }
@@ -696,10 +698,13 @@ namespace UnityIsekaiGame.Gameplay
         }
 
         private void HandleItemAdded(ItemDefinition item, int quantity)
+            => HandleAuthoritativeInventoryItemAdded(item, quantity, services.PlayerInventory);
+
+        public void HandleAuthoritativeInventoryItemAdded(ItemDefinition item, int quantity, PlayerInventory authoritativeInventory)
         {
             if (disposed || item == null || quantity <= 0) return;
             ReportObjective(QuestObjectiveCategory.ObtainItem, item.Id, quantity, "player.inventory.add");
-            int possessed = services.PlayerInventory?.CountItem(item) ?? quantity;
+            int possessed = authoritativeInventory?.CountItem(item) ?? quantity;
             ReportObjective(QuestObjectiveCategory.PossessItem, item.Id, Math.Max(1, possessed), "player.inventory.state");
         }
 

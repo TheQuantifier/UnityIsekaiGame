@@ -67,10 +67,12 @@ The extraction order is:
 1. Network protocol, replication, client, server, and UI physical roots — complete.
 2. Server-authoritative inventory commands and snapshots — complete in Phase 5 Group 6.
 3. Combat and ability command boundaries — complete in Phase 5 Group 7 for the Prototype Scene vertical slice.
-4. Quest, party, and interaction command boundaries.
+4. Quest, party, and interaction command boundaries — complete in Phase 5 Group 8 for the Prototype Scene vertical slice.
 5. Server-only persistence ownership and player-session restore.
 6. Split reusable gameplay domains into embedded versioned packages.
 7. Create thin `Projects/Client` and `Projects/Server` Unity projects consuming the same packages and content bundles.
+
+After Group 8, three groups remain to reach the physical project split: Group 9 persistence/session restoration, Group 10 reusable versioned packages and content boundaries, and Group 11 creation of the separate Client and Server Unity projects. In other words, there are two preparation groups before the split group itself.
 
 ## Target physical-project layout
 
@@ -107,3 +109,10 @@ Build output is generated and ignored by Git. Source authority comes from the as
 - Windows dedicated-server build: succeeded.
 - Windows client build: succeeded.
 - Separate-process loopback: connection approval, authoritative actor creation, server movement, stamina spending, and server recovery all observed.
+
+## Group 8 verification
+
+- Full EditMode suite: 1,414 passed, 0 failed.
+- Full PlayMode suite: 5 passed, 0 failed.
+- Windows dedicated-server and client builds: succeeded.
+- Separate-process narrative smoke: authoritative interaction, quest-source browse, and party creation all observed.

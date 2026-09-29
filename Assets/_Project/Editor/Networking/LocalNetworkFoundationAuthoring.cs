@@ -18,6 +18,7 @@ using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Magic;
+using UnityIsekaiGame.Interaction;
 
 namespace UnityIsekaiGame.Editor
 {
@@ -50,6 +51,7 @@ namespace UnityIsekaiGame.Editor
             LocalPlayerVitalsBridge vitalsBridge = GetOrAdd<LocalPlayerVitalsBridge>(root);
             LocalPlayerInventoryBridge inventoryBridge = GetOrAdd<LocalPlayerInventoryBridge>(root);
             LocalCombatAuthorityBridge combatBridge = GetOrAdd<LocalCombatAuthorityBridge>(root);
+            LocalNarrativeAuthorityBridge narrativeBridge = GetOrAdd<LocalNarrativeAuthorityBridge>(root);
             NetworkPrefabsList prefabList = AssetDatabase.LoadAssetAtPath<NetworkPrefabsList>(DefaultNetworkPrefabsPath);
             if (prefabList == null)
             {
@@ -66,9 +68,10 @@ namespace UnityIsekaiGame.Editor
             PlayerSpellcaster playerSpellcaster = playerMotor == null ? null : playerMotor.GetComponent<PlayerSpellcaster>();
             PlayerSpellLoadout playerSpellLoadout = playerMotor == null ? null : playerMotor.GetComponent<PlayerSpellLoadout>();
             PrototypePersistenceServiceBehaviour persistence = UnityEngine.Object.FindAnyObjectByType<PrototypePersistenceServiceBehaviour>();
+            CameraInteractionDetector interactionDetector = UnityEngine.Object.FindAnyObjectByType<CameraInteractionDetector>();
             if (playerInput == null || playerMotor == null || playerMotor.MovementSettings == null || playerResources == null || playerStamina == null
                 || playerInventory == null || playerEquipment == null || playerMeleeCombat == null || playerSpellcaster == null || playerSpellLoadout == null
-                || persistence == null || persistence.DefinitionCatalog == null)
+                || persistence == null || persistence.DefinitionCatalog == null || interactionDetector == null)
             {
                 throw new InvalidOperationException("The Prototype Scene requires player input, movement, vitals, inventory, equipment, persistence, and a definition catalog for the network bridges.");
             }
@@ -108,10 +111,12 @@ namespace UnityIsekaiGame.Editor
             server.ConfigurePrototypePlayerVitals(playerResources);
             server.ConfigurePrototypePlayerInventory(playerInventory, playerEquipment, persistence.DefinitionCatalog);
             server.ConfigurePrototypeCombat(playerMeleeCombat, playerSpellLoadout);
+            server.ConfigurePrototypeNarrative(persistence);
             movementBridge.Configure(client, playerInput, playerMotor, playerMotor.transform);
             vitalsBridge.Configure(client, playerResources, playerInput);
             inventoryBridge.Configure(client, playerInventory, playerEquipment, persistence.DefinitionCatalog);
             combatBridge.Configure(client, playerInput, playerMeleeCombat, playerSpellcaster, playerSpellLoadout, Camera.main == null ? null : Camera.main.transform);
+            narrativeBridge.Configure(client, interactionDetector, persistence);
 
             EditorUtility.SetDirty(manager);
             EditorUtility.SetDirty(transport);
@@ -121,6 +126,7 @@ namespace UnityIsekaiGame.Editor
             EditorUtility.SetDirty(vitalsBridge);
             EditorUtility.SetDirty(inventoryBridge);
             EditorUtility.SetDirty(combatBridge);
+            EditorUtility.SetDirty(narrativeBridge);
             EditorUtility.SetDirty(prefabList);
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene))
@@ -160,6 +166,7 @@ namespace UnityIsekaiGame.Editor
                 NetworkPlayerVitals vitals = GetOrAdd<NetworkPlayerVitals>(contents);
                 GetOrAdd<NetworkPlayerInventory>(contents);
                 GetOrAdd<NetworkPlayerCombat>(contents);
+                GetOrAdd<NetworkPlayerNarrative>(contents);
                 NetworkTransform networkTransform = GetOrAdd<NetworkTransform>(contents);
                 CharacterController controller = GetOrAdd<CharacterController>(contents);
                 controller.height = 2f;

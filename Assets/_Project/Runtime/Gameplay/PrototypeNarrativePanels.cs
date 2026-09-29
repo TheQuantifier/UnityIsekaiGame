@@ -73,6 +73,20 @@ namespace UnityIsekaiGame.Gameplay
 
         private void Refresh()
         {
+            INarrativeAuthorityClientBridge bridge = NarrativeAuthorityBridgeRegistry.Active;
+            if (bridge != null && bridge.IsServerAuthorityActive && !bridge.IsApplyingReplica)
+            {
+                status = bridge.RequestBrowseQuestSource(sourceId)
+                    ? "Requesting authoritative quest listings..."
+                    : "The server did not accept the browse request.";
+                return;
+            }
+
+            ApplyAuthorizedBrowse();
+        }
+
+        public void ApplyAuthorizedBrowse()
+        {
             browseResult = Services?.NarrativeCoordinator?.BrowseSource(sourceId, interactionPointId);
             status = browseResult?.Message ?? "Quest source is unavailable.";
         }
@@ -141,6 +155,18 @@ namespace UnityIsekaiGame.Gameplay
             GUI.enabled = canAccept;
             if (GUILayout.Button("Accept Quest", GameUiTheme.PrimaryButtonStyle, GUILayout.Height(36f)))
             {
+                INarrativeAuthorityClientBridge bridge = NarrativeAuthorityBridgeRegistry.Active;
+                if (bridge != null && bridge.IsServerAuthorityActive)
+                {
+                    status = bridge.RequestAcceptQuest(visible.Listing.QuestListingId, sourceId)
+                        ? "Requesting authoritative quest acceptance..."
+                        : "The server did not accept the quest request.";
+                    GameHudMessageBus.Show(status);
+                    GUILayout.EndVertical();
+                    GUI.enabled = true;
+                    return;
+                }
+
                 QuestSourceOperationResult result = Services.NarrativeCoordinator.AcceptListing(visible.Listing.QuestListingId, interactionPointId);
                 status = result.Message;
                 GameHudMessageBus.Show(status);
@@ -184,8 +210,34 @@ namespace UnityIsekaiGame.Gameplay
 
         public override void Close()
         {
+            INarrativeAuthorityClientBridge bridge = NarrativeAuthorityBridgeRegistry.Active;
+            if (IsOpen && bridge != null && bridge.IsServerAuthorityActive && !bridge.IsApplyingReplica)
+            {
+                bridge.RequestEndDialogue();
+                flow = null;
+                base.Close();
+                return;
+            }
+
             if (IsOpen && flow != null)
                 Services?.NarrativeCoordinator?.EndDialogue(flow.FlowId);
+            flow = null;
+            base.Close();
+        }
+
+        public void ApplyAuthorizedChoice(string choiceId)
+        {
+            if (flow == null || Services?.NarrativeCoordinator == null) return;
+            DialogueFlowOperationResult result = Services.NarrativeCoordinator.SelectDialogueChoice(flow.FlowId, choiceId);
+            status = result.Message;
+            if (!result.Succeeded) return;
+            flow = result.Snapshot;
+            if (flow == null || flow.State == DialogueFlowState.Ended) ApplyAuthorizedEnd();
+        }
+
+        public void ApplyAuthorizedEnd()
+        {
+            if (flow != null) Services?.NarrativeCoordinator?.EndDialogue(flow.FlowId);
             flow = null;
             base.Close();
         }
@@ -225,6 +277,15 @@ namespace UnityIsekaiGame.Gameplay
                     GUILayout.Label(string.Join(" ", choice.Evaluation.VisibleFailureReasons), GameUiTheme.MutedStyle);
                 }
                 if (!selected || !selectable) continue;
+                INarrativeAuthorityClientBridge bridge = NarrativeAuthorityBridgeRegistry.Active;
+                if (bridge != null && bridge.IsServerAuthorityActive)
+                {
+                    status = bridge.RequestDialogueChoice(choice.ChoiceId)
+                        ? "Waiting for the authoritative conversation..."
+                        : "The server did not accept the dialogue choice.";
+                    continue;
+                }
+
                 DialogueFlowOperationResult result = Services.NarrativeCoordinator.SelectDialogueChoice(flow.FlowId, choice.ChoiceId);
                 status = result.Message;
                 if (!result.Succeeded)

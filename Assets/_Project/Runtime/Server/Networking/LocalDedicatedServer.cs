@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
@@ -9,6 +10,9 @@ using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.ResourceSystem;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Magic;
+using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.PrototypeIntegration;
+using UnityIsekaiGame.WorldLocations.SceneBinding;
 
 namespace UnityIsekaiGame.Networking.Server
 {
@@ -18,6 +22,7 @@ namespace UnityIsekaiGame.Networking.Server
     {
         public const string InventorySmokeSeedFlag = "--inventory-smoke-seed";
         public const string CombatSmokeSeedFlag = "--combat-smoke-seed";
+        public const string NarrativeSmokeSeedFlag = "--narrative-smoke-seed";
         [SerializeField] private NetworkManager networkManager;
         [SerializeField] private string listenAddress = LocalServerEndpoint.DefaultListenAddress;
         [SerializeField] private int serverPort = LocalServerEndpoint.DefaultPort;
@@ -35,6 +40,7 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField] private DefinitionCatalog definitionCatalog;
         [SerializeField] private PlayerMeleeCombat prototypePlayerMeleeCombat;
         [SerializeField] private PlayerSpellLoadout prototypePlayerSpellLoadout;
+        [SerializeField] private PrototypePersistenceServiceBehaviour prototypePersistence;
 
         private readonly Dictionary<ulong, string> connectedPlayerIds = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, ConnectionRequestPayload> pendingConnections = new Dictionary<ulong, ConnectionRequestPayload>();
@@ -131,6 +137,11 @@ namespace UnityIsekaiGame.Networking.Server
         {
             prototypePlayerMeleeCombat = meleeCombat;
             prototypePlayerSpellLoadout = spellLoadout;
+        }
+
+        public void ConfigurePrototypeNarrative(PrototypePersistenceServiceBehaviour persistence)
+        {
+            prototypePersistence = persistence;
         }
 
         public bool StartServer()
@@ -322,20 +333,42 @@ namespace UnityIsekaiGame.Networking.Server
             NetworkPlayerVitals prefabVitals = playerActorPrefab.GetComponent<NetworkPlayerVitals>();
             NetworkPlayerInventory prefabInventory = playerActorPrefab.GetComponent<NetworkPlayerInventory>();
             NetworkPlayerCombat prefabCombat = playerActorPrefab.GetComponent<NetworkPlayerCombat>();
-            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null || prefabVitals == null || prefabInventory == null || prefabCombat == null)
+            NetworkPlayerNarrative prefabNarrative = playerActorPrefab.GetComponent<NetworkPlayerNarrative>();
+            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null || prefabVitals == null || prefabInventory == null || prefabCombat == null || prefabNarrative == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject and all player identity, movement, vitals, inventory, and combat replication components.";
+                failure = "The server player actor prefab must contain NetworkObject and all player identity, movement, vitals, inventory, combat, and narrative replication components.";
                 return false;
             }
 
             if (prototypePlayerInventory == null || prototypePlayerEquipment == null || definitionCatalog == null
-                || prototypePlayerMeleeCombat == null || prototypePlayerSpellLoadout == null)
+                || prototypePlayerMeleeCombat == null || prototypePlayerSpellLoadout == null
+                || prototypePersistence == null || prototypePersistence.NarrativeCoordinator == null)
             {
-                failure = "The server requires prototype inventory, equipment, combat, spell-loadout, and definition-catalog state for session initialization.";
+                failure = "The server requires prototype inventory, equipment, combat, narrative, spell-loadout, and definition-catalog state for session initialization.";
                 return false;
             }
 
-            GameObject instance = Instantiate(playerActorPrefab, playerSpawnPosition, Quaternion.Euler(0f, playerSpawnYaw, 0f));
+            Vector3 effectiveSpawnPosition = playerSpawnPosition;
+            float effectiveSpawnYaw = playerSpawnYaw;
+            if (HasCommandLineFlag(NarrativeSmokeSeedFlag))
+            {
+                InteractionPointSceneBinding smokeBinding = FindObjectsByType<InteractionPointSceneBinding>(FindObjectsInactive.Exclude)
+                    .FirstOrDefault(value =>
+                    {
+                        QuestSourceSceneBinding destination = value == null ? null : value.GetComponent<QuestSourceSceneBinding>();
+                        return destination != null && !destination.OpensConversation && !destination.IsGuildDeskSurface;
+                    });
+                if (smokeBinding != null)
+                {
+                    Vector3 away = Vector3.ProjectOnPlane(smokeBinding.BindingTransform.forward, Vector3.up).normalized;
+                    if (away.sqrMagnitude <= 0.0001f) away = Vector3.forward;
+                    effectiveSpawnPosition = smokeBinding.BindingTransform.position - away * 1.25f;
+                    Vector3 toward = smokeBinding.BindingTransform.position - effectiveSpawnPosition;
+                    effectiveSpawnYaw = Quaternion.LookRotation(Vector3.ProjectOnPlane(toward, Vector3.up), Vector3.up).eulerAngles.y;
+                }
+            }
+
+            GameObject instance = Instantiate(playerActorPrefab, effectiveSpawnPosition, Quaternion.Euler(0f, effectiveSpawnYaw, 0f));
             instance.name = $"Network Player Actor ({session.PlayerId})";
             NetworkObject networkObject = instance.GetComponent<NetworkObject>();
             actor = instance.GetComponent<NetworkPlayerActor>();
@@ -343,10 +376,11 @@ namespace UnityIsekaiGame.Networking.Server
             NetworkPlayerVitals vitals = instance.GetComponent<NetworkPlayerVitals>();
             NetworkPlayerInventory replicatedInventory = instance.GetComponent<NetworkPlayerInventory>();
             NetworkPlayerCombat replicatedCombat = instance.GetComponent<NetworkPlayerCombat>();
+            NetworkPlayerNarrative replicatedNarrative = instance.GetComponent<NetworkPlayerNarrative>();
             try
             {
                 actor.ConfigureServer(session);
-                movement.ConfigureSpawnServer(playerSpawnPosition, playerSpawnYaw);
+                movement.ConfigureSpawnServer(effectiveSpawnPosition, effectiveSpawnYaw);
                 if (TryCreateInitialVitalsState(out NetworkVitalsState initialVitals))
                 {
                     vitals.ConfigureInitialStateServer(initialVitals);
@@ -379,6 +413,9 @@ namespace UnityIsekaiGame.Networking.Server
                     prototypePlayerSpellLoadout.KnownSpells,
                     CombatStatUtility.GetAttackPower(prototypePlayerMeleeCombat.gameObject));
 
+                ServerPlayerNarrativeAuthority narrativeAuthority = instance.AddComponent<ServerPlayerNarrativeAuthority>();
+                narrativeAuthority.Configure(actor, replicatedNarrative, prototypePersistence, inventoryAuthority);
+
                 networkObject.SpawnAsPlayerObject(session.ClientId, true);
                 combatWorldAuthority.RegisterPlayerTarget(session.ClientId, instance.transform);
                 failure = string.Empty;
@@ -406,9 +443,10 @@ namespace UnityIsekaiGame.Networking.Server
                 || playerActorPrefab.GetComponent<NetworkPlayerMovement>() == null
                 || playerActorPrefab.GetComponent<NetworkPlayerVitals>() == null
                 || playerActorPrefab.GetComponent<NetworkPlayerInventory>() == null
-                || playerActorPrefab.GetComponent<NetworkPlayerCombat>() == null)
+                || playerActorPrefab.GetComponent<NetworkPlayerCombat>() == null
+                || playerActorPrefab.GetComponent<NetworkPlayerNarrative>() == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject and all player identity, movement, vitals, inventory, and combat replication components.";
+                failure = "The server player actor prefab must contain NetworkObject and all player identity, movement, vitals, inventory, combat, and narrative replication components.";
                 return false;
             }
 

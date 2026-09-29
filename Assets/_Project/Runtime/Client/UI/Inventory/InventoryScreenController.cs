@@ -867,6 +867,15 @@ namespace UnityIsekaiGame.UI.Inventory
         private void AbandonSelectedQuest()
         {
             PrototypeQuestJournalEntry quest = GetSelectedQuest();
+            LocalNarrativeAuthorityBridge bridge = LocalNarrativeAuthorityBridge.Active;
+            if (quest != null && bridge != null && bridge.IsServerAuthorityActive)
+            {
+                questJournalView?.SetFeedback(bridge.RequestAbandonQuest(quest.AssignmentId)
+                    ? "Requesting authoritative quest abandonment..."
+                    : "The server did not accept the abandonment request.");
+                return;
+            }
+
             QuestParticipationOperationResult result = quest == null || ResolveNarrativeCoordinator() == null
                 ? QuestParticipationOperationResult.Failure(QuestParticipationOperationStatus.InvalidRequest, "No quest assignment is selected.", 0L)
                 : ResolveNarrativeCoordinator().AbandonAssignment(quest.AssignmentId);
@@ -877,6 +886,15 @@ namespace UnityIsekaiGame.UI.Inventory
         private void ClaimSelectedQuestReward()
         {
             PrototypeQuestJournalEntry quest = GetSelectedQuest();
+            LocalNarrativeAuthorityBridge bridge = LocalNarrativeAuthorityBridge.Active;
+            if (quest?.ClaimableReward != null && bridge != null && bridge.IsServerAuthorityActive)
+            {
+                questJournalView?.SetFeedback(bridge.RequestClaimQuestReward(quest.ClaimableReward.EntitlementId)
+                    ? "Requesting authoritative reward claim..."
+                    : "The server did not accept the reward request.");
+                return;
+            }
+
             QuestOutcomeOperationResult result = quest?.ClaimableReward == null || ResolveNarrativeCoordinator() == null
                 ? QuestOutcomeOperationResult.Failure(QuestOutcomeOperationStatus.InvalidRequest, "No claimable quest reward is selected.", 0L)
                 : ResolveNarrativeCoordinator().ClaimReward(quest.ClaimableReward.EntitlementId);

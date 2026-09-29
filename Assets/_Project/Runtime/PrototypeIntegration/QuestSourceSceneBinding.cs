@@ -34,6 +34,7 @@ namespace UnityIsekaiGame.PrototypeIntegration
         public string ConversationDefinitionId => conversationDefinitionId ?? string.Empty;
         public string ProviderPersonId => providerPersonId ?? string.Empty;
         public bool OpensConversation => !string.IsNullOrWhiteSpace(conversationDefinitionId);
+        public bool IsGuildDeskSurface => IsGuildDesk;
         public bool Required => required;
         public string InteractionPrompt
         {

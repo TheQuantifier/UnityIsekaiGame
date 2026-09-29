@@ -8,6 +8,7 @@ using UnityIsekaiGame.Parties;
 using UnityIsekaiGame.People;
 using UnityIsekaiGame.Presentation;
 using UnityIsekaiGame.UI.Inventory;
+using UnityIsekaiGame.Networking.Client;
 
 namespace UnityIsekaiGame.UI.Parties
 {
@@ -103,7 +104,17 @@ namespace UnityIsekaiGame.UI.Parties
             {
                 Label("NO ACTIVE PARTY", 16, FontStyle.Bold, GameUiTextRole.Heading);
                 Label("Create a party to coordinate companions, share quest progress, configure formation and loot rules, and travel together.", 14, FontStyle.Normal, GameUiTextRole.Muted);
-                Button("Create Party", () => { string id = $"party.{Safe(playerId)}.{DateTime.UtcNow.Ticks}"; persistence.AdventuringParties.CreateParty(id, "Adventuring Party", playerId, Time.timeAsDouble, id + ".create"); Rebuild(); });
+                Button("Create Party", () =>
+                {
+                    LocalNarrativeAuthorityBridge bridge = LocalNarrativeAuthorityBridge.Active;
+                    if (bridge != null && bridge.IsServerAuthorityActive) bridge.RequestCreateParty();
+                    else
+                    {
+                        string id = $"party.{Safe(playerId)}.{DateTime.UtcNow.Ticks}";
+                        persistence.AdventuringParties.CreateParty(id, "Adventuring Party", playerId, Time.timeAsDouble, id + ".create");
+                        Rebuild();
+                    }
+                });
                 Invitations(playerId);
                 return;
             }
@@ -130,8 +141,12 @@ namespace UnityIsekaiGame.UI.Parties
                 if (party.LeaderPersonId == playerId && !member.IsLeader)
                 {
                     Horizontal(string.Empty,
-                        ("Promote", (Action)(() => persistence.AdventuringParties.TransferLeadership(party.PartyId, playerId, member.PersonId, Time.timeAsDouble, Transaction("promote", member.PersonId)))),
-                        ("Remove", (Action)(() => persistence.AdventuringParties.RemoveMember(party.PartyId, playerId, member.PersonId, Time.timeAsDouble, Transaction("remove", member.PersonId)))));
+                        ("Promote", (Action)(() => ExecuteOnlineOrLocal(
+                            bridge => bridge.RequestTransferPartyLeadership(member.PersonId),
+                            () => persistence.AdventuringParties.TransferLeadership(party.PartyId, playerId, member.PersonId, Time.timeAsDouble, Transaction("promote", member.PersonId))))),
+                        ("Remove", (Action)(() => ExecuteOnlineOrLocal(
+                            bridge => bridge.RequestRemovePartyMember(member.PersonId),
+                            () => persistence.AdventuringParties.RemoveMember(party.PartyId, playerId, member.PersonId, Time.timeAsDouble, Transaction("remove", member.PersonId))))));
                 }
             }
 
@@ -139,10 +154,24 @@ namespace UnityIsekaiGame.UI.Parties
             PartyRecruitable[] candidates = FindObjectsByType<PartyRecruitable>(FindObjectsInactive.Exclude)
                 .Where(x => x != null && !string.IsNullOrWhiteSpace(x.PersonId) && !party.MemberPersonIds.Contains(x.PersonId, StringComparer.Ordinal)).ToArray();
             if (candidates.Length == 0) Label("No recruitable companions are present in this scene.", 13, FontStyle.Italic, GameUiTextRole.Muted);
-            foreach (PartyRecruitable candidate in candidates) Button($"Invite {DisplayName(candidate.PersonId)}", () => { candidate.Invite(persistence, playerId, out string message); Debug.Log(message, candidate); Rebuild(); });
+            foreach (PartyRecruitable candidate in candidates) Button($"Invite {DisplayName(candidate.PersonId)}", () =>
+            {
+                LocalNarrativeAuthorityBridge bridge = LocalNarrativeAuthorityBridge.Active;
+                if (bridge != null && bridge.IsServerAuthorityActive) bridge.RequestInvitePartyMember(candidate.PersonId);
+                else
+                {
+                    candidate.Invite(persistence, playerId, out string message);
+                    Debug.Log(message, candidate);
+                    Rebuild();
+                }
+            });
             Invitations(playerId);
-            if (party.LeaderPersonId == playerId) Button("Dissolve Party", () => { persistence.AdventuringParties.DissolveParty(party.PartyId, playerId, Time.timeAsDouble, Transaction("dissolve", party.PartyId)); Rebuild(); });
-            else Button("Leave Party", () => { persistence.AdventuringParties.RemoveMember(party.PartyId, playerId, playerId, Time.timeAsDouble, Transaction("leave", playerId)); Rebuild(); });
+            if (party.LeaderPersonId == playerId) Button("Dissolve Party", () => ExecuteOnlineOrLocal(
+                bridge => bridge.RequestDissolveParty(),
+                () => persistence.AdventuringParties.DissolveParty(party.PartyId, playerId, Time.timeAsDouble, Transaction("dissolve", party.PartyId))));
+            else Button("Leave Party", () => ExecuteOnlineOrLocal(
+                bridge => bridge.RequestLeaveParty(),
+                () => persistence.AdventuringParties.RemoveMember(party.PartyId, playerId, playerId, Time.timeAsDouble, Transaction("leave", playerId))));
         }
 
         private void Invitations(string playerId)
@@ -153,11 +182,31 @@ namespace UnityIsekaiGame.UI.Parties
             foreach (PartyInvitationData invitation in invitations)
             {
                 Horizontal($"From {DisplayName(invitation.inviterPersonId)}",
-                    ("Accept", (Action)(() => { persistence.PartyOperations.AcceptInvitation(invitation.invitationId, playerId, Time.timeAsDouble, Transaction("accept", invitation.invitationId)); Rebuild(); })),
-                    ("Decline", (Action)(() => { persistence.PartyOperations.ResolveInvitation(invitation.invitationId, playerId, PartyInvitationStatus.Declined, Time.timeAsDouble, out _); Rebuild(); })));
+                    ("Accept", (Action)(() => ExecuteOnlineOrLocal(
+                        bridge => bridge.RequestAcceptPartyInvitation(invitation.invitationId),
+                        () => persistence.PartyOperations.AcceptInvitation(invitation.invitationId, playerId, Time.timeAsDouble, Transaction("accept", invitation.invitationId))))),
+                    ("Decline", (Action)(() => ExecuteOnlineOrLocal(
+                        bridge => bridge.RequestDeclinePartyInvitation(invitation.invitationId),
+                        () => { persistence.PartyOperations.ResolveInvitation(invitation.invitationId, playerId, PartyInvitationStatus.Declined, Time.timeAsDouble, out _); }))));
             }
         }
-        private void UpdateSettings(PartySnapshot party, PartyFormation formation, PartyLootPolicy loot, PartyFriendlyFirePolicy friendly, PartyCommand command) { persistence.PartyOperations.SetSettings(party.PartyId, persistence.PlayerPersonId, formation, loot, friendly, command, out _); Rebuild(); }
+        private void UpdateSettings(PartySnapshot party, PartyFormation formation, PartyLootPolicy loot, PartyFriendlyFirePolicy friendly, PartyCommand command)
+        {
+            ExecuteOnlineOrLocal(
+                bridge => bridge.RequestPartySettings(formation, loot, friendly, command),
+                () => { persistence.PartyOperations.SetSettings(party.PartyId, persistence.PlayerPersonId, formation, loot, friendly, command, out _); });
+        }
+
+        private void ExecuteOnlineOrLocal(Func<LocalNarrativeAuthorityBridge, bool> online, Action local)
+        {
+            LocalNarrativeAuthorityBridge bridge = LocalNarrativeAuthorityBridge.Active;
+            if (bridge != null && bridge.IsServerAuthorityActive) online?.Invoke(bridge);
+            else
+            {
+                local?.Invoke();
+                Rebuild();
+            }
+        }
         private void EnsureStructure()
         {
             if (content != null && scrollRect != null) return;
