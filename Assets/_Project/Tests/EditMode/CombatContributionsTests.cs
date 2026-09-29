@@ -324,7 +324,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void RuntimeGameplayAssemblyDoesNotReferenceDevelopmentForContribution()
         {
-            string asmdef = System.IO.File.ReadAllText("Assets/_Project/Runtime/UnityIsekaiGame.Gameplay.asmdef");
+            string asmdef = System.IO.File.ReadAllText("Packages/com.thequantifier.isekai.simulation/Runtime/UnityIsekaiGame.Gameplay.asmdef");
 
             Assert.That(asmdef, Does.Not.Contain("Development"));
             Assert.That(asmdef, Does.Not.Contain("Tests"));

@@ -1,0 +1,14 @@
+{
+  "name": "com.thequantifier.isekai.simulation",
+  "version": "0.1.0",
+  "displayName": "Isekai Simulation",
+  "description": "Reusable deterministic gameplay definitions, runtimes, persistence participants, and prototype integration boundaries.",
+  "unity": "6000.5",
+  "author": {
+    "name": "TheQuantifier"
+  },
+  "dependencies": {
+    "com.unity.inputsystem": "1.19.0",
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  }
+}

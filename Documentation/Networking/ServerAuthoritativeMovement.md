@@ -20,10 +20,10 @@ The legacy prototype controller is disabled while the dedicated server is hostin
 
 ## Authored assets
 
-- Player actor prefab: `Assets/_Project/Content/Networking/Prefabs/NetworkPlayerActor.prefab`
-- Client bridge: `Assets/_Project/Runtime/Client/Networking/LocalPlayerMovementBridge.cs`
-- Authoritative movement: `Assets/_Project/Runtime/Shared/Networking/Replication/NetworkPlayerMovement.cs`
-- Input contract and validation: `Assets/_Project/Runtime/Shared/Networking/Replication/NetworkMovementInput.cs`
+- Player actor prefab: `Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkPlayerActor.prefab`
+- Client bridge: `Packages/com.thequantifier.isekai.networking/Runtime/Client/Networking/LocalPlayerMovementBridge.cs`
+- Authoritative movement: `Packages/com.thequantifier.isekai.networking/Runtime/Shared/Networking/Replication/NetworkPlayerMovement.cs`
+- Input contract and validation: `Packages/com.thequantifier.isekai.networking/Runtime/Shared/Networking/Replication/NetworkMovementInput.cs`
 - Prototype Scene network host: `Assets/_Project/Scenes/Prototype/PrototypeScene.unity`
 
 Run `Tools > Unity Isekai Game > Networking > Bake Local Network Foundation` after changing the player prefab or Prototype Scene player references. The bake adds and configures the movement components, registers the prefab, captures the authored spawn, and wires the presentation bridge.

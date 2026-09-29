@@ -177,7 +177,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void RuntimeHazardCode_HasNoDevelopmentPrototypeUiOrEditorDependency()
         {
-            string runtimeFolder = "Assets/_Project/Runtime/Actors/Beings/Biology/Hazards";
+            string runtimeFolder = "Packages/com.thequantifier.isekai.simulation/Runtime/Actors/Beings/Biology/Hazards";
             foreach (string file in Directory.GetFiles(runtimeFolder, "*.cs"))
             {
                 string text = File.ReadAllText(file);

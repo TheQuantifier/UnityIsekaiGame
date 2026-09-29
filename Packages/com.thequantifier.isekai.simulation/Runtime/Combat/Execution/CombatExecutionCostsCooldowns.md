@@ -66,7 +66,7 @@ New production combat actions should enter through `CombatExecutionService`. Exi
 
 ## Prototype Definitions
 
-Prototype execution definitions are under `Assets/_Project/Content/Combat/Execution/` and registered in the prototype catalog:
+Prototype execution definitions are under `Packages/com.thequantifier.isekai.content/Content/Combat/Execution/` and registered in the prototype catalog:
 
 - `combat-execution.basic-attack`
 - `combat-execution.arcane-spell`

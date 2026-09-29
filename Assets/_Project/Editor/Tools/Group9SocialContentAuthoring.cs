@@ -21,13 +21,13 @@ namespace UnityIsekaiGame.Editor
 {
     public static class Group9SocialContentAuthoring
     {
-        private const string Root = "Assets/_Project/Content/Generated/Social";
+        private const string Root = "Packages/com.thequantifier.isekai.content/Content/Generated/Social";
 
         [MenuItem("Tools/Unity Isekai Game/Phase 3/Author Group 9 Social Content")]
         public static void Generate()
         {
-            EnsureFolder("Assets/_Project/Content", "Generated");
-            EnsureFolder("Assets/_Project/Content/Generated", "Social");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content", "Generated");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Generated", "Social");
 
             List<ScriptableObject> definitions = new List<ScriptableObject>();
             definitions.AddRange(PrototypeRelationshipDefinitionFactory.CreateDefinitions());

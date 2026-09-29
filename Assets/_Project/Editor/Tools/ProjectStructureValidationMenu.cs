@@ -18,6 +18,30 @@ namespace UnityIsekaiGame.Editor
             "Assets/StreamingAssets"
         };
 
+        private const string ProtocolPackageRoot = "Packages/com.thequantifier.isekai.protocol";
+        private const string SimulationPackageRoot = "Packages/com.thequantifier.isekai.simulation";
+        private const string NetworkingPackageRoot = "Packages/com.thequantifier.isekai.networking";
+        private const string ContentPackageRoot = "Packages/com.thequantifier.isekai.content";
+        private const string PackageVersion = "0.1.0";
+
+        private static readonly string[] UnityAssetRoots =
+        {
+            "Assets",
+            ProtocolPackageRoot,
+            SimulationPackageRoot,
+            NetworkingPackageRoot,
+            ContentPackageRoot
+        };
+
+        private static readonly string[] CodeRoots =
+        {
+            "Assets/_Project",
+            ProtocolPackageRoot + "/Runtime",
+            SimulationPackageRoot + "/Runtime",
+            NetworkingPackageRoot + "/Runtime",
+            ContentPackageRoot + "/Content"
+        };
+
         private static readonly string[] ObsoletePathFragments =
         {
             "Assets/Scripts/",
@@ -36,7 +60,9 @@ namespace UnityIsekaiGame.Editor
             "Assets/Prefabs/",
             "Assets/Quests/",
             "Assets/Settings/",
-            "Assets/Spells/"
+            "Assets/Spells/",
+            "Assets/_Project/Runtime/",
+            "Assets/_Project/Content/"
         };
 
         private static readonly string[] CanonicalDefinitionNames =
@@ -84,6 +110,7 @@ namespace UnityIsekaiGame.Editor
             ProjectStructureValidationReport report = new ProjectStructureValidationReport();
 
             ValidateAssetsRoot(report);
+            ValidatePackageContracts(report);
             ValidateMetaFiles(report);
             ValidateDuplicateGuids(report);
             ValidateCodePlacement(report);
@@ -128,32 +155,126 @@ namespace UnityIsekaiGame.Editor
 
         private static void ValidateMetaFiles(ProjectStructureValidationReport report)
         {
-            foreach (string path in Directory.EnumerateFileSystemEntries("Assets", "*", SearchOption.AllDirectories))
+            foreach (string root in UnityAssetRoots)
             {
-                string normalized = NormalizePath(path);
-                if (normalized.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                if (!Directory.Exists(root))
                 {
-                    string assetPath = normalized.Substring(0, normalized.Length - ".meta".Length);
-                    if (!File.Exists(assetPath) && !Directory.Exists(assetPath))
-                    {
-                        report.AddWarning($"Orphan meta file '{normalized}' has no matching asset or folder.");
-                    }
-
                     continue;
                 }
 
-                if (!File.Exists(normalized + ".meta"))
+                foreach (string path in Directory.EnumerateFileSystemEntries(root, "*", SearchOption.AllDirectories))
                 {
-                    report.AddError($"Missing meta file for '{normalized}'.");
+                    string normalized = NormalizePath(path);
+                    if (normalized.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string assetPath = normalized.Substring(0, normalized.Length - ".meta".Length);
+                        if (!File.Exists(assetPath) && !Directory.Exists(assetPath))
+                        {
+                            report.AddWarning($"Orphan meta file '{normalized}' has no matching asset or folder.");
+                        }
+
+                        continue;
+                    }
+
+                    if (!File.Exists(normalized + ".meta"))
+                    {
+                        report.AddError($"Missing meta file for '{normalized}'.");
+                    }
                 }
             }
+        }
+
+        private static void ValidatePackageContracts(ProjectStructureValidationReport report)
+        {
+            ValidatePackageManifest(
+                report,
+                ProtocolPackageRoot,
+                "com.thequantifier.isekai.protocol",
+                Array.Empty<string>());
+            ValidatePackageManifest(
+                report,
+                SimulationPackageRoot,
+                "com.thequantifier.isekai.simulation",
+                Array.Empty<string>());
+            ValidatePackageManifest(
+                report,
+                NetworkingPackageRoot,
+                "com.thequantifier.isekai.networking",
+                new[] { "com.thequantifier.isekai.protocol", "com.thequantifier.isekai.simulation" });
+            ValidatePackageManifest(
+                report,
+                ContentPackageRoot,
+                "com.thequantifier.isekai.content",
+                new[] { "com.thequantifier.isekai.networking", "com.thequantifier.isekai.simulation" });
+
+            if (Directory.Exists(ContentPackageRoot + "/Content"))
+            {
+                foreach (string scriptPath in Directory.EnumerateFiles(ContentPackageRoot + "/Content", "*.cs", SearchOption.AllDirectories))
+                {
+                    report.AddError($"Shared content package contains runtime code '{NormalizePath(scriptPath)}'. Code belongs in protocol, simulation, or networking.");
+                }
+            }
+
+            if (Directory.Exists("Assets/_Project/Runtime") &&
+                Directory.EnumerateFiles("Assets/_Project/Runtime", "*.cs", SearchOption.AllDirectories).GetEnumerator().MoveNext())
+            {
+                report.AddError("Legacy Assets/_Project/Runtime still contains C# source after package extraction.");
+            }
+
+            if (Directory.Exists("Assets/_Project/Content") &&
+                Directory.EnumerateFileSystemEntries("Assets/_Project/Content", "*", SearchOption.AllDirectories).GetEnumerator().MoveNext())
+            {
+                report.AddError("Legacy Assets/_Project/Content still contains authored assets after package extraction.");
+            }
+        }
+
+        private static void ValidatePackageManifest(
+            ProjectStructureValidationReport report,
+            string packageRoot,
+            string expectedName,
+            string[] requiredDependencies)
+        {
+            string manifestPath = packageRoot + "/package.json";
+            if (!File.Exists(manifestPath))
+            {
+                report.AddError($"Required package manifest is missing at '{manifestPath}'.");
+                return;
+            }
+
+            string contents = File.ReadAllText(manifestPath);
+            string packageName = ReadJsonString(contents, "name");
+            string version = ReadJsonString(contents, "version");
+            if (!string.Equals(packageName, expectedName, StringComparison.Ordinal))
+            {
+                report.AddError($"Package at '{packageRoot}' must be named '{expectedName}', not '{packageName}'.");
+            }
+
+            if (!string.Equals(version, PackageVersion, StringComparison.Ordinal))
+            {
+                report.AddError($"Package '{expectedName}' must use coordinated version '{PackageVersion}', not '{version}'.");
+            }
+
+            for (int i = 0; i < requiredDependencies.Length; i++)
+            {
+                string dependency = requiredDependencies[i];
+                if (!Regex.IsMatch(contents, $@"""{Regex.Escape(dependency)}""\s*:\s*""{Regex.Escape(PackageVersion)}"""))
+                {
+                    report.AddError($"Package '{expectedName}' must depend on '{dependency}' version '{PackageVersion}'.");
+                }
+            }
+        }
+
+        private static string ReadJsonString(string contents, string propertyName)
+        {
+            Match match = Regex.Match(contents, $@"""{Regex.Escape(propertyName)}""\s*:\s*""([^""]*)""");
+            return match.Success ? match.Groups[1].Value : string.Empty;
         }
 
         private static void ValidateDuplicateGuids(ProjectStructureValidationReport report)
         {
             Dictionary<string, string> seen = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (string metaPath in Directory.EnumerateFiles("Assets", "*.meta", SearchOption.AllDirectories))
+            foreach (string metaPath in EnumerateFilesUnderRoots(UnityAssetRoots, "*.meta"))
             {
                 string guid = ReadGuid(metaPath);
                 if (string.IsNullOrWhiteSpace(guid))
@@ -174,7 +295,7 @@ namespace UnityIsekaiGame.Editor
 
         private static void ValidateCodePlacement(ProjectStructureValidationReport report)
         {
-            foreach (string scriptPath in Directory.EnumerateFiles("Assets/_Project", "*.cs", SearchOption.AllDirectories))
+            foreach (string scriptPath in EnumerateFilesUnderRoots(CodeRoots, "*.cs"))
             {
                 string normalized = NormalizePath(scriptPath);
                 string contents = null;
@@ -189,7 +310,7 @@ namespace UnityIsekaiGame.Editor
                     report.AddError($"Editor code '{normalized}' is inside a runtime-owned folder.");
                 }
 
-                if (normalized.StartsWith("Assets/_Project/Content/", StringComparison.Ordinal) ||
+                if (normalized.StartsWith("Packages/com.thequantifier.isekai.content/Content/", StringComparison.Ordinal) ||
                     normalized.StartsWith("Assets/_Project/Presentation/", StringComparison.Ordinal) ||
                     normalized.StartsWith("Assets/_Project/Configuration/", StringComparison.Ordinal) ||
                     normalized.StartsWith("Assets/_Project/Prototype/Content/", StringComparison.Ordinal))
@@ -197,7 +318,10 @@ namespace UnityIsekaiGame.Editor
                     report.AddError($"Code file '{normalized}' is in an authored-content, presentation, configuration, or prototype-content folder.");
                 }
 
-                if (normalized.StartsWith("Assets/_Project/Runtime/", StringComparison.Ordinal))
+                bool isPackagedRuntime = normalized.StartsWith(ProtocolPackageRoot + "/Runtime/", StringComparison.Ordinal) ||
+                    normalized.StartsWith(SimulationPackageRoot + "/Runtime/", StringComparison.Ordinal) ||
+                    normalized.StartsWith(NetworkingPackageRoot + "/Runtime/", StringComparison.Ordinal);
+                if (isPackagedRuntime)
                 {
                     contents ??= File.ReadAllText(normalized);
                     if (contents.Contains("UnityEditor", StringComparison.Ordinal))
@@ -210,10 +334,10 @@ namespace UnityIsekaiGame.Editor
                         report.AddError($"Runtime script '{normalized}' imports Development. Runtime assemblies must not depend on development tooling.");
                     }
 
-                    bool isUiRuntime = normalized.StartsWith("Assets/_Project/Runtime/Client/UI/", StringComparison.Ordinal);
-                    if (!isUiRuntime && Regex.IsMatch(contents, @"using\s+UnityIsekaiGame\.UI(?:\.|\s*;)"))
+                    bool isSimulationRuntime = normalized.StartsWith(SimulationPackageRoot + "/Runtime/", StringComparison.Ordinal);
+                    if (isSimulationRuntime && Regex.IsMatch(contents, @"using\s+UnityIsekaiGame\.UI(?:\.|\s*;)"))
                     {
-                        report.AddError($"Runtime script '{normalized}' imports UI. Gameplay/Core runtime code must communicate through gameplay-owned contracts.");
+                        report.AddError($"Simulation script '{normalized}' imports UI. Simulation code must communicate through simulation-owned contracts.");
                     }
                 }
 
@@ -230,7 +354,9 @@ namespace UnityIsekaiGame.Editor
 
         private static void ValidateContentPlacement(ProjectStructureValidationReport report)
         {
-            foreach (string assetPath in Directory.EnumerateFiles("Assets/_Project/Runtime", "*.asset", SearchOption.AllDirectories))
+            foreach (string assetPath in EnumerateFilesUnderRoots(
+                new[] { ProtocolPackageRoot + "/Runtime", SimulationPackageRoot + "/Runtime", NetworkingPackageRoot + "/Runtime" },
+                "*.asset"))
             {
                 report.AddError($"ScriptableObject asset '{NormalizePath(assetPath)}' is under Runtime code.");
             }
@@ -288,7 +414,7 @@ namespace UnityIsekaiGame.Editor
 
         private static void ValidateMissingScripts(ProjectStructureValidationReport report)
         {
-            foreach (string path in Directory.EnumerateFiles("Assets/_Project", "*.*", SearchOption.AllDirectories))
+            foreach (string path in EnumerateFilesUnderRoots(new[] { "Assets/_Project", ContentPackageRoot + "/Content" }, "*.*"))
             {
                 string normalized = NormalizePath(path);
                 if (!normalized.EndsWith(".unity", StringComparison.OrdinalIgnoreCase) &&
@@ -309,7 +435,7 @@ namespace UnityIsekaiGame.Editor
         {
             Dictionary<string, AsmdefInfo> asmdefs = new Dictionary<string, AsmdefInfo>(StringComparer.Ordinal);
 
-            foreach (string asmdefPath in Directory.EnumerateFiles("Assets/_Project", "*.asmdef", SearchOption.AllDirectories))
+            foreach (string asmdefPath in EnumerateFilesUnderRoots(CodeRoots, "*.asmdef"))
             {
                 string normalized = NormalizePath(asmdefPath);
                 string contents = File.ReadAllText(normalized);
@@ -346,11 +472,11 @@ namespace UnityIsekaiGame.Editor
             RequireAsmdef(report, asmdefs, "UnityIsekaiGame.Development");
             RequireAsmdef(report, asmdefs, "UnityIsekaiGame.Editor");
             RequireAsmdef(report, asmdefs, "UnityIsekaiGame.EditModeTests");
-            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.UI", "Assets/_Project/Runtime/Client/UI/UnityIsekaiGame.UI.asmdef");
-            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Protocol", "Assets/_Project/Runtime/Shared/Networking/Protocol/UnityIsekaiGame.Networking.Protocol.asmdef");
-            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Shared", "Assets/_Project/Runtime/Shared/Networking/Replication/UnityIsekaiGame.Networking.Shared.asmdef");
-            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Client", "Assets/_Project/Runtime/Client/Networking/UnityIsekaiGame.Networking.Client.asmdef");
-            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Server", "Assets/_Project/Runtime/Server/Networking/UnityIsekaiGame.Networking.Server.asmdef");
+            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.UI", "Packages/com.thequantifier.isekai.networking/Runtime/Client/UI/UnityIsekaiGame.UI.asmdef");
+            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Protocol", "Packages/com.thequantifier.isekai.protocol/Runtime/Protocol/UnityIsekaiGame.Networking.Protocol.asmdef");
+            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Shared", "Packages/com.thequantifier.isekai.networking/Runtime/Shared/Networking/Replication/UnityIsekaiGame.Networking.Shared.asmdef");
+            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Client", "Packages/com.thequantifier.isekai.networking/Runtime/Client/Networking/UnityIsekaiGame.Networking.Client.asmdef");
+            RequireAsmdefAtPath(report, asmdefs, "UnityIsekaiGame.Networking.Server", "Packages/com.thequantifier.isekai.networking/Runtime/Server/Networking/UnityIsekaiGame.Networking.Server.asmdef");
 
             ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.GameData", "UnityIsekaiGame.Gameplay");
             ValidateForbiddenAsmdefReference(report, asmdefs, "UnityIsekaiGame.GameData", "UnityIsekaiGame.UI");
@@ -405,7 +531,8 @@ namespace UnityIsekaiGame.Editor
             // in vertical-slice development, so only the Prototype/Content boundary is enforced here.
             HashSet<string> prototypeAssetGuids = ReadGuidsUnder("Assets/_Project/Prototype/Content", ".meta");
 
-            foreach (string prefabPath in Directory.EnumerateFiles("Assets/_Project", "*.prefab", SearchOption.AllDirectories))
+            string[] productionRoots = { "Assets/_Project", ContentPackageRoot + "/Content" };
+            foreach (string prefabPath in EnumerateFilesUnderRoots(productionRoots, "*.prefab"))
             {
                 string normalized = NormalizePath(prefabPath);
                 if (!IsProductionAssetPath(normalized))
@@ -435,7 +562,7 @@ namespace UnityIsekaiGame.Editor
                 }
             }
 
-            foreach (string assetPath in Directory.EnumerateFiles("Assets/_Project", "*.asset", SearchOption.AllDirectories))
+            foreach (string assetPath in EnumerateFilesUnderRoots(productionRoots, "*.asset"))
             {
                 string normalized = NormalizePath(assetPath);
                 if (!IsProductionAssetPath(normalized))
@@ -492,6 +619,11 @@ namespace UnityIsekaiGame.Editor
 
         private static bool IsProductionAssetPath(string normalizedPath)
         {
+            if (normalizedPath.StartsWith(ContentPackageRoot + "/Content/", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
             return normalizedPath.StartsWith("Assets/_Project/", StringComparison.Ordinal) &&
                 !normalizedPath.StartsWith("Assets/_Project/Prototype/", StringComparison.Ordinal) &&
                 !normalizedPath.StartsWith("Assets/_Project/Development/", StringComparison.Ordinal) &&
@@ -630,14 +762,30 @@ namespace UnityIsekaiGame.Editor
             return values;
         }
 
+        private static IEnumerable<string> EnumerateFilesUnderRoots(IEnumerable<string> roots, string searchPattern)
+        {
+            foreach (string root in roots)
+            {
+                if (!Directory.Exists(root))
+                {
+                    continue;
+                }
+
+                foreach (string path in Directory.EnumerateFiles(root, searchPattern, SearchOption.AllDirectories))
+                {
+                    yield return path;
+                }
+            }
+        }
+
         private static void ValidateKnownMovedAssets(ProjectStructureValidationReport report)
         {
             RequireAsset(report, "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset");
             RequireAsset(report, "Assets/_Project/Scenes/Prototype/PrototypeScene.unity");
-            RequireAsset(report, "Assets/_Project/Content/Characters/Attributes/StrengthAttribute.asset");
-            RequireAsset(report, "Assets/_Project/Content/Characters/CalculatedStats/Definitions/MaximumHealthCalculatedStat.asset");
-            RequireAsset(report, "Assets/_Project/Content/Characters/Resources/HealthResource.asset");
-            RequireAsset(report, "Assets/_Project/Content/Items/Definitions/HealthPotion.asset");
+            RequireAsset(report, "Packages/com.thequantifier.isekai.content/Content/Characters/Attributes/StrengthAttribute.asset");
+            RequireAsset(report, "Packages/com.thequantifier.isekai.content/Content/Characters/CalculatedStats/Definitions/MaximumHealthCalculatedStat.asset");
+            RequireAsset(report, "Packages/com.thequantifier.isekai.content/Content/Characters/Resources/HealthResource.asset");
+            RequireAsset(report, "Packages/com.thequantifier.isekai.content/Content/Items/Definitions/HealthPotion.asset");
         }
 
         private static void RequireAsset(ProjectStructureValidationReport report, string path)

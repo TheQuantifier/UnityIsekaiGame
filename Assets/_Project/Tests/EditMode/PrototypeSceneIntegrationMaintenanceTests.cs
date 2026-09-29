@@ -277,7 +277,11 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Phase2LegacyCleanup_DoesNotUseNameBasedRuntimeLookupInPrototypeIntegration()
         {
-            string root = Path.Combine("Assets", "_Project", "Runtime", "PrototypeIntegration");
+            string root = Path.Combine(
+                "Packages",
+                "com.thequantifier.isekai.simulation",
+                "Runtime",
+                "PrototypeIntegration");
             string[] files = Directory.Exists(root) ? Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories) : Array.Empty<string>();
             string[] banned =
             {

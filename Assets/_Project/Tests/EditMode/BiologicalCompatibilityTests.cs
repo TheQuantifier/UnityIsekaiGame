@@ -305,7 +305,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void RuntimeCompatibilityCode_HasNoDevelopmentPrototypeUiOrEditorDependency()
         {
-            string runtimeFolder = "Assets/_Project/Runtime/Actors/Beings/Biology/Compatibility";
+            string runtimeFolder = "Packages/com.thequantifier.isekai.simulation/Runtime/Actors/Beings/Biology/Compatibility";
             foreach (string file in Directory.GetFiles(runtimeFolder, "*.cs"))
             {
                 string text = File.ReadAllText(file);

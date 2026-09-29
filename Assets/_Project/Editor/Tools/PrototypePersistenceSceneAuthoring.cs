@@ -31,7 +31,7 @@ namespace UnityIsekaiGame.Editor
     {
         private const string PrototypeScenePath = "Assets/_Project/Scenes/Prototype/PrototypeScene.unity";
         private const string PrototypeCatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
-        private const string HumanSpeciesPath = "Assets/_Project/Content/Actors/Beings/Species/HumanSpecies.asset";
+        private const string HumanSpeciesPath = "Packages/com.thequantifier.isekai.content/Content/Actors/Beings/Species/HumanSpecies.asset";
 
         [MenuItem("Tools/Persistence/Author Prototype Persistence Dependencies")]
         public static void AuthorPrototypePersistenceDependencies()

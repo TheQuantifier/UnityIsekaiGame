@@ -2,14 +2,14 @@
 
 ## Directory Structure
 
-- `Assets/_Project/Runtime/Combat/` keeps the production combat surface.
-- `Assets/_Project/Runtime/Combat/CombatState/` owns engagement, encounter, merge, split, and combat activity tracking.
-- `Assets/_Project/Runtime/Combat/Contributions/` owns contribution ledgers, credit resolution, reward eligibility hooks, and event bridges.
-- `Assets/_Project/Runtime/Combat/Defense/` owns Guard, Dodge, Parry, Block definitions, runtime state, equipment checks, and defense resolution.
-- `Assets/_Project/Runtime/Combat/Execution/` owns committed combat actions, costs, cooldowns, charges, and execution persistence.
-- `Assets/_Project/Runtime/Combat/OngoingEffects/` owns timed damage, healing, resource effects, ticking, and transient ongoing runtime state.
-- `Assets/_Project/Runtime/Combat/Reactions/` owns trigger source registration and reaction chain execution.
-- `Assets/_Project/Runtime/Combat/Integration/` owns the Step 6 facade, readiness/snapshot models, transaction validation, and integrity validation.
+- `Packages/com.thequantifier.isekai.simulation/Runtime/Combat/` keeps the production combat surface.
+- `Packages/com.thequantifier.isekai.simulation/Runtime/Combat/CombatState/` owns engagement, encounter, merge, split, and combat activity tracking.
+- `Packages/com.thequantifier.isekai.simulation/Runtime/Combat/Contributions/` owns contribution ledgers, credit resolution, reward eligibility hooks, and event bridges.
+- `Packages/com.thequantifier.isekai.simulation/Runtime/Combat/Defense/` owns Guard, Dodge, Parry, Block definitions, runtime state, equipment checks, and defense resolution.
+- `Packages/com.thequantifier.isekai.simulation/Runtime/Combat/Execution/` owns committed combat actions, costs, cooldowns, charges, and execution persistence.
+- `Packages/com.thequantifier.isekai.simulation/Runtime/Combat/OngoingEffects/` owns timed damage, healing, resource effects, ticking, and transient ongoing runtime state.
+- `Packages/com.thequantifier.isekai.simulation/Runtime/Combat/Reactions/` owns trigger source registration and reaction chain execution.
+- `Packages/com.thequantifier.isekai.simulation/Runtime/Combat/Integration/` owns the Step 6 facade, readiness/snapshot models, transaction validation, and integrity validation.
 
 No broad file moves or serialized asset renames were performed during Feature 6.10. Existing root-level combat files remain in place to avoid breaking serialized script references and asset GUIDs.
 

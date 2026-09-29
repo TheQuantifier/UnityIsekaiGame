@@ -15,19 +15,19 @@ namespace UnityIsekaiGame.Editor
     public static class DefinitionCatalogBuilder
     {
         private const string CatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
-        private const string GeneratedRoot = "Assets/_Project/Content/Generated/GameData";
+        private const string GeneratedRoot = "Packages/com.thequantifier.isekai.content/Content/Generated/GameData";
 
         [MenuItem("Tools/Unity Isekai Game/Game Data/Rebuild Prototype Catalog")]
         public static void RebuildPrototypeCatalog()
         {
-            EnsureFolder("Assets/_Project/Content", "Generated");
-            EnsureFolder("Assets/_Project/Content/Generated", "GameData");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content", "Generated");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Generated", "GameData");
 
             QualityTierDefinition[] tiers = CreateQualityTiers();
             ItemConditionScaleDefinition scale = CreateConditionScale();
             CreateItemDegradationPolicy();
             GameDataDefaultsDefinition defaults = CreateDefaults(tiers, scale);
-            foreach (string guid in AssetDatabase.FindAssets("t:ItemDefinition", new[] { "Assets/_Project/Content", "Assets/_Project/Prototype/Content" }))
+            foreach (string guid in AssetDatabase.FindAssets("t:ItemDefinition", new[] { "Packages/com.thequantifier.isekai.content/Content", "Assets/_Project/Prototype/Content" }))
             {
                 ItemDefinition item = AssetDatabase.LoadAssetAtPath<ItemDefinition>(AssetDatabase.GUIDToAssetPath(guid));
                 item?.PruneInactiveCapabilities();
@@ -36,7 +36,7 @@ namespace UnityIsekaiGame.Editor
             DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(CatalogPath);
             if (catalog == null) throw new InvalidOperationException($"Definition catalog not found at {CatalogPath}.");
 
-            string[] roots = { "Assets/_Project/Content", "Assets/_Project/Prototype/Content" };
+            string[] roots = { "Packages/com.thequantifier.isekai.content/Content", "Assets/_Project/Prototype/Content" };
             List<ScriptableObject> assets = AssetDatabase.FindAssets("t:ScriptableObject", roots)
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .Where(path => !string.Equals(path, CatalogPath, StringComparison.Ordinal))
@@ -159,7 +159,7 @@ namespace UnityIsekaiGame.Editor
             string path = $"{GeneratedRoot}/GameDataDefaults.asset";
             GameDataDefaultsDefinition asset = AssetDatabase.LoadAssetAtPath<GameDataDefaultsDefinition>(path);
             if (asset == null) { asset = ScriptableObject.CreateInstance<GameDataDefaultsDefinition>(); AssetDatabase.CreateAsset(asset, path); }
-            RarityDefinition rarity = AssetDatabase.LoadAssetAtPath<RarityDefinition>("Assets/_Project/Content/Items/Rarities/CommonRarity.asset");
+            RarityDefinition rarity = AssetDatabase.LoadAssetAtPath<RarityDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Rarities/CommonRarity.asset");
             SerializedObject serialized = new SerializedObject(asset);
             serialized.FindProperty("defaultRarity").objectReferenceValue = rarity;
             serialized.FindProperty("defaultQualityTier").objectReferenceValue = tiers.First(value => value.Id == "quality.common");

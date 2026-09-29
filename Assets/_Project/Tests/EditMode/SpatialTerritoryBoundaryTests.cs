@@ -13,8 +13,8 @@ namespace UnityIsekaiGame.Tests
     public sealed class SpatialTerritoryBoundaryTests
     {
         private const string CatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
-        private const string RegionalLayerPath = "Assets/_Project/Content/World/SpatialBoundaries/Layers/RegionalBoundaries.asset";
-        private const string SettlementLayerPath = "Assets/_Project/Content/World/SpatialBoundaries/Layers/SettlementBoundaries.asset";
+        private const string RegionalLayerPath = "Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Layers/RegionalBoundaries.asset";
+        private const string SettlementLayerPath = "Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Layers/SettlementBoundaries.asset";
         private readonly List<Object> transients = new List<Object>();
 
         [TearDown]
@@ -227,8 +227,8 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Runtime_UsesSpecificPriorityAndFallsBackThroughExclusionHole()
         {
-            PlaceDefinition town = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Assets/_Project/Content/Places/PrototypeTownPlace.asset");
-            PlaceDefinition outskirts = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Assets/_Project/Content/Places/PrototypeOutskirtsPlace.asset");
+            PlaceDefinition town = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Packages/com.thequantifier.isekai.content/Content/Places/PrototypeTownPlace.asset");
+            PlaceDefinition outskirts = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Packages/com.thequantifier.isekai.content/Content/Places/PrototypeOutskirtsPlace.asset");
             Assert.That(town, Is.Not.Null);
             Assert.That(outskirts, Is.Not.Null);
 
@@ -252,8 +252,8 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Tracker_FeedsExistingCurrentPlaceTrackerWithoutSceneVolumes()
         {
-            PlaceDefinition town = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Assets/_Project/Content/Places/PrototypeTownPlace.asset");
-            PlaceDefinition outskirts = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Assets/_Project/Content/Places/PrototypeOutskirtsPlace.asset");
+            PlaceDefinition town = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Packages/com.thequantifier.isekai.content/Content/Places/PrototypeTownPlace.asset");
+            PlaceDefinition outskirts = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Packages/com.thequantifier.isekai.content/Content/Places/PrototypeOutskirtsPlace.asset");
             SceneZoneAsset outer = Geometry("test.tracker.outer", Square(-100f, 100f));
             SceneZoneAsset inner = Geometry("test.tracker.inner", Square(-10f, 10f));
             SpatialTerritoryBoundaryDefinition outerBinding = Binding("spatial-boundary.test.tracker.outer", outer, outskirts, "location.prototype.wilderness-ring", SpatialBoundaryOperation.Include, 0);
@@ -334,8 +334,8 @@ namespace UnityIsekaiGame.Tests
             {
                 Assert.That(AssetDatabase.GetAssetPath(zone), Is.EqualTo(SettlementLayerPath));
             }
-            Assert.That(AssetDatabase.LoadAssetAtPath<SceneZoneAsset>("Assets/_Project/Content/World/SpatialBoundaries/Geometry/PrototypeOutskirtsBoundary.asset"), Is.Null);
-            Assert.That(AssetDatabase.LoadAssetAtPath<SceneZoneAsset>("Assets/_Project/Content/World/SpatialBoundaries/Geometry/PrototypeTownBoundary.asset"), Is.Null);
+            Assert.That(AssetDatabase.LoadAssetAtPath<SceneZoneAsset>("Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Geometry/PrototypeOutskirtsBoundary.asset"), Is.Null);
+            Assert.That(AssetDatabase.LoadAssetAtPath<SceneZoneAsset>("Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Geometry/PrototypeTownBoundary.asset"), Is.Null);
         }
 
         private SceneZoneAsset Geometry(string id, Vector3[] points, SceneZoneLayerAsset layer = null)

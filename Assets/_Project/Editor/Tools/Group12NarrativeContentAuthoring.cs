@@ -18,7 +18,7 @@ namespace UnityIsekaiGame.Editor
 {
     public static class Group12NarrativeContentAuthoring
     {
-        private const string Root = "Assets/_Project/Content/Generated/Narrative";
+        private const string Root = "Packages/com.thequantifier.isekai.content/Content/Generated/Narrative";
         private const string AdventurerGuildPrefab = "Assets/_Project/Prototype/Prefabs/Buildings/PrototypeAdventurerGuild/AdventurerGuild.prefab";
 
         [MenuItem("Tools/Unity Isekai Game/Phase 3/Author Group 12 Narrative Content")]
@@ -49,8 +49,8 @@ namespace UnityIsekaiGame.Editor
 
         private static void GenerateInternal(bool overwriteExisting)
         {
-            EnsureFolder("Assets/_Project/Content", "Generated");
-            EnsureFolder("Assets/_Project/Content/Generated", "Narrative");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content", "Generated");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Generated", "Narrative");
             DefinitionRegistry registry = new DefinitionRegistry(Array.Empty<IGameDefinition>());
             registry = PrototypeQuestDefinitionFactory.AddMissingPrototypeQuestDefinitions(registry);
             registry = PrototypeQuestSourceDefinitionFactory.AddMissingPrototypeQuestSourceDefinitions(registry);
@@ -128,8 +128,8 @@ namespace UnityIsekaiGame.Editor
             serialized.FindProperty("itemId").stringValue = id;
             serialized.FindProperty("displayName").stringValue = "Sealed Merchant Parcel";
             serialized.FindProperty("description").stringValue = "A sealed parcel entrusted to the carrier for delivery at the merchant counter.";
-            serialized.FindProperty("primaryCategory").objectReferenceValue = AssetDatabase.LoadAssetAtPath<CategoryDefinition>("Assets/_Project/Content/Core/Categories/ItemQuestItemCategory.asset");
-            serialized.FindProperty("rarity").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RarityDefinition>("Assets/_Project/Content/Items/Rarities/CommonRarity.asset");
+            serialized.FindProperty("primaryCategory").objectReferenceValue = AssetDatabase.LoadAssetAtPath<CategoryDefinition>("Packages/com.thequantifier.isekai.content/Content/Core/Categories/ItemQuestItemCategory.asset");
+            serialized.FindProperty("rarity").objectReferenceValue = AssetDatabase.LoadAssetAtPath<RarityDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Rarities/CommonRarity.asset");
             serialized.FindProperty("instanceMode").enumValueIndex = (int)ItemInstanceMode.DefinitionOnly;
             serialized.FindProperty("stackable").boolValue = false;
             serialized.FindProperty("maximumStackSize").intValue = 1;

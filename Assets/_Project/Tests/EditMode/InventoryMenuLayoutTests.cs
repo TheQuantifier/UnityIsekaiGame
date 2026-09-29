@@ -235,7 +235,7 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(dropAllAction.gameObject.activeSelf, Is.True);
                 primaryAction.onClick.Invoke();
 
-                ItemDefinition healthPotion = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Assets/_Project/Content/Items/Definitions/HealthPotion.asset");
+                ItemDefinition healthPotion = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/HealthPotion.asset");
                 Assert.That(healthPotion, Is.Not.Null);
                 Assert.That(healthPotion.ConsumablePresentation, Is.EqualTo(ConsumablePresentationType.Potion));
                 InventorySlot potionSlot = CreateOccupiedSlot(healthPotion, 2);
@@ -299,7 +299,9 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void EquippedItemsRemainInTheirCanonicalInventorySlots()
         {
-            ItemDefinition item = AssetDatabase.FindAssets("t:ItemDefinition", new[] { "Assets/_Project" })
+            ItemDefinition item = AssetDatabase.FindAssets(
+                    "t:ItemDefinition",
+                    new[] { "Packages/com.thequantifier.isekai.content/Content" })
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .Select(AssetDatabase.LoadAssetAtPath<ItemDefinition>)
                 .First(candidate => candidate != null && candidate.IsEquippable);
@@ -369,8 +371,8 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void EquipmentComparisonIncludesOnlyWeaponPropertiesPresentOnEitherItem()
         {
-            ItemDefinition sword = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Assets/_Project/Content/Items/Definitions/PrototypeSword.asset");
-            ItemDefinition bow = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Assets/_Project/Content/Items/Definitions/PrototypeBow.asset");
+            ItemDefinition sword = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/PrototypeSword.asset");
+            ItemDefinition bow = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/PrototypeBow.asset");
 
             Assert.That(sword, Is.Not.Null);
             Assert.That(bow, Is.Not.Null);
@@ -387,8 +389,8 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void SelectedItemDetailsContainOnlyPlayerFacingStatsAndEffects()
         {
-            ItemDefinition sword = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Assets/_Project/Content/Items/Definitions/PrototypeSword.asset");
-            ItemDefinition potion = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Assets/_Project/Content/Items/Definitions/HealthPotion.asset");
+            ItemDefinition sword = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/PrototypeSword.asset");
+            ItemDefinition potion = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/HealthPotion.asset");
 
             Assert.That(sword, Is.Not.Null);
             Assert.That(potion, Is.Not.Null);

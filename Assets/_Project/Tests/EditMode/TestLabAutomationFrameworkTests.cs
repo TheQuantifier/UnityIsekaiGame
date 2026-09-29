@@ -1447,7 +1447,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void RuntimeGameplayAssembly_DoesNotReferenceAutomationTypes()
         {
-            string gameplayAsmdef = File.ReadAllText("Assets/_Project/Runtime/UnityIsekaiGame.Gameplay.asmdef");
+            string gameplayAsmdef = File.ReadAllText("Packages/com.thequantifier.isekai.simulation/Runtime/UnityIsekaiGame.Gameplay.asmdef");
 
             Assert.That(gameplayAsmdef, Does.Not.Contain("Development"));
             Assert.That(gameplayAsmdef, Does.Not.Contain("Automation"));

@@ -43,4 +43,4 @@ The connected quest journal, quest tracker, and party menu consume this projecti
 - 5 PlayMode tests passed.
 - Fresh Windows dedicated-server and client builds completed successfully.
 
-The remaining Phase 5 work before the physical project split is Group 10 package/content extraction followed by Group 11 creation of the separate Client and Server Unity projects.
+Group 10 subsequently completed package/content extraction. Only Group 11, creation of the physically separate Client and Server Unity projects, remains.

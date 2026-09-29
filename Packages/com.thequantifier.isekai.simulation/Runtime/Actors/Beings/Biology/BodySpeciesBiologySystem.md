@@ -50,7 +50,7 @@ Restore validates the saved Actor/body ID, optional Person ID, and Species defin
 
 ## Canonical Alpha Content
 
-Canonical 7.1 content lives outside Prototype-only folders under `Assets/_Project/Content/Actors/Beings/` and is registered by the prototype catalog for current testing.
+Canonical 7.1 content lives outside Prototype-only folders under `Packages/com.thequantifier.isekai.content/Content/Actors/Beings/` and is registered by the prototype catalog for current testing.
 
 Required alpha definitions:
 

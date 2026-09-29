@@ -100,10 +100,8 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void PlayerMenuSourceCannotBootstrapOrRetargetAuthoritativeServices()
         {
-            string sourcePath = Path.Combine(
-                Application.dataPath,
-                "_Project/Runtime/Client/UI/Inventory/InventoryScreenController.cs");
-            string source = File.ReadAllText(sourcePath);
+            string source = ReadRepositoryFile(
+                "Packages/com.thequantifier.isekai.networking/Runtime/Client/UI/Inventory/InventoryScreenController.cs");
 
             StringAssert.DoesNotContain(".InitializeFromRegistry(", source);
             StringAssert.DoesNotContain(".ConfigurePlayerPersistence(", source);
@@ -116,14 +114,14 @@ namespace UnityIsekaiGame.Tests
         {
             string[] relativePaths =
             {
-                "_Project/Runtime/Dialogue/NpcDialogueInteractable.cs",
-                "_Project/Runtime/PrototypeIntegration/ConversationSceneBinding.cs",
-                "_Project/Runtime/PrototypeIntegration/QuestSourceSceneBinding.cs"
+                "Packages/com.thequantifier.isekai.simulation/Runtime/Dialogue/NpcDialogueInteractable.cs",
+                "Packages/com.thequantifier.isekai.simulation/Runtime/PrototypeIntegration/ConversationSceneBinding.cs",
+                "Packages/com.thequantifier.isekai.simulation/Runtime/PrototypeIntegration/QuestSourceSceneBinding.cs"
             };
 
             foreach (string relativePath in relativePaths)
             {
-                string source = File.ReadAllText(Path.Combine(Application.dataPath, relativePath));
+                string source = ReadRepositoryFile(relativePath);
                 StringAssert.DoesNotContain("GameUiModalState.IsModalActive", source, relativePath);
                 StringAssert.Contains("OwnsPlayerInteractor", source, relativePath);
             }
@@ -132,9 +130,8 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void QuestSignalRoutingDoesNotInventOrMutateCharacterAttribution()
         {
-            string source = File.ReadAllText(Path.Combine(
-                Application.dataPath,
-                "_Project/Runtime/Gameplay/PrototypeNarrativeCoordinator.cs"));
+            string source = ReadRepositoryFile(
+                "Packages/com.thequantifier.isekai.simulation/Runtime/Gameplay/PrototypeNarrativeCoordinator.cs");
 
             StringAssert.Contains("QuestObjectiveSignal routedSignal = signal.Clone()", source);
             StringAssert.Contains("IsObjectiveContributorRelevant(contributor)", source);
@@ -148,14 +145,14 @@ namespace UnityIsekaiGame.Tests
         {
             string[] relativePaths =
             {
-                "_Project/Runtime/Combat/PlayerMeleeCombat.cs",
-                "_Project/Runtime/Magic/PlayerSpellcaster.cs",
-                "_Project/Runtime/Combat/EnemyMeleeAttack.cs"
+                "Packages/com.thequantifier.isekai.simulation/Runtime/Combat/PlayerMeleeCombat.cs",
+                "Packages/com.thequantifier.isekai.simulation/Runtime/Magic/PlayerSpellcaster.cs",
+                "Packages/com.thequantifier.isekai.simulation/Runtime/Combat/EnemyMeleeAttack.cs"
             };
 
             foreach (string relativePath in relativePaths)
             {
-                string source = File.ReadAllText(Path.Combine(Application.dataPath, relativePath));
+                string source = ReadRepositoryFile(relativePath);
                 StringAssert.DoesNotContain("FindAnyObjectByType<PrototypePersistenceServiceBehaviour>", source, relativePath);
                 StringAssert.Contains("FindForInteractor", source, relativePath);
             }
@@ -204,17 +201,17 @@ namespace UnityIsekaiGame.Tests
         {
             string[] relativePaths =
             {
-                "_Project/Runtime/Client/UI/Inventory/InventoryScreenController.cs",
-                "_Project/Runtime/Client/UI/Inventory/InventoryScreenView.cs",
-                "_Project/Runtime/Client/UI/Parties/PartyMenuExtension.cs",
-                "_Project/Runtime/Client/UI/QuestTrackerHudView.cs",
-                "_Project/Runtime/Gameplay/PrototypeProfessionPanel.cs",
-                "_Project/Runtime/Parties/PartyRuntimeComponents.cs"
+                "Packages/com.thequantifier.isekai.networking/Runtime/Client/UI/Inventory/InventoryScreenController.cs",
+                "Packages/com.thequantifier.isekai.networking/Runtime/Client/UI/Inventory/InventoryScreenView.cs",
+                "Packages/com.thequantifier.isekai.networking/Runtime/Client/UI/Parties/PartyMenuExtension.cs",
+                "Packages/com.thequantifier.isekai.networking/Runtime/Client/UI/QuestTrackerHudView.cs",
+                "Packages/com.thequantifier.isekai.simulation/Runtime/Gameplay/PrototypeProfessionPanel.cs",
+                "Packages/com.thequantifier.isekai.simulation/Runtime/Parties/PartyRuntimeComponents.cs"
             };
 
             foreach (string relativePath in relativePaths)
             {
-                string source = File.ReadAllText(Path.Combine(Application.dataPath, relativePath));
+                string source = ReadRepositoryFile(relativePath);
                 StringAssert.DoesNotContain("FindAnyObjectByType<PrototypePersistenceServiceBehaviour>", source, relativePath);
             }
         }
@@ -235,6 +232,12 @@ namespace UnityIsekaiGame.Tests
             operations.Configure(parties);
             operations.SetSettings(party.PartyId, leaderId, PartyFormation.Wedge, PartyLootPolicy.Individual, friendlyFire, PartyCommand.Follow, out _);
             return (parties, operations);
+        }
+
+        private static string ReadRepositoryFile(string repositoryRelativePath)
+        {
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            return File.ReadAllText(Path.Combine(projectRoot, repositoryRelativePath));
         }
     }
 }

@@ -69,7 +69,7 @@ Active defenses are cleared when the exact subscribed actor lifecycle reports De
 
 ## Prototype Definitions
 
-Canonical prototype definitions are under `Assets/_Project/Content/Combat/Defense/`:
+Canonical prototype definitions are under `Packages/com.thequantifier.isekai.content/Content/Combat/Defense/`:
 
 - `defense-action.basic-guard`
 - `defense-action.shield-block`

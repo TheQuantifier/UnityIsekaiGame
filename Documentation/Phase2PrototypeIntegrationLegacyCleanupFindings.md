@@ -311,7 +311,7 @@ Validation checks for missing required bindings, duplicate primary bindings, and
 Created/used `PrototypeScene/Gameplay/Phase 2 Production Bindings` with subfolders for Locations, Interaction Points, Connections, Entities, and Quest Sources.
 
 ## 103. Production Assembly Boundary Audit
-Runtime integration code lives under `Assets/_Project/Runtime/PrototypeIntegration` and does not depend on Editor, Development, UI, or Test Lab assemblies.
+Runtime integration code lives under `Packages/com.thequantifier.isekai.simulation/Runtime/PrototypeIntegration` and does not depend on Editor, Development, UI, or Test Lab assemblies.
 
 ## 104. Editor/Development Boundary Audit
 Scene mutation tooling lives under `Assets/_Project/Editor/PrototypeIntegration`; automation lives under Development/TestLab.

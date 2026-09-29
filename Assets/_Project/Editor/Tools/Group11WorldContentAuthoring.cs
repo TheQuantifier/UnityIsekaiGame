@@ -11,7 +11,7 @@ namespace UnityIsekaiGame.Editor
 {
     public static class Group11WorldContentAuthoring
     {
-        private const string Root = "Assets/_Project/Content/Generated/WorldLocations";
+        private const string Root = "Packages/com.thequantifier.isekai.content/Content/Generated/WorldLocations";
 
         [MenuItem("Tools/Unity Isekai Game/Phase 3/Author Group 11 World Content")]
         public static void Generate() => GenerateInternal(overwriteExisting: false);
@@ -53,8 +53,8 @@ namespace UnityIsekaiGame.Editor
 
         private static void GenerateInternal(bool overwriteExisting)
         {
-            EnsureFolder("Assets/_Project/Content", "Generated");
-            EnsureFolder("Assets/_Project/Content/Generated", "WorldLocations");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content", "Generated");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Generated", "WorldLocations");
 
             DefinitionRegistry registry = new DefinitionRegistry(Array.Empty<IGameDefinition>());
             registry = PrototypeLocationDefinitionFactory.AddMissingPrototypeLocationDefinitions(registry);

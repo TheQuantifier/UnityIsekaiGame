@@ -1,118 +1,105 @@
 # Client/Server Project Architecture
 
-## Decision
+## Current decision
 
-The repository remains one Unity project during the authority migration, but source code is physically divided into Shared, Client, and Server roots. This is an intentional monorepo architecture, not a permanent requirement that both executables share one project.
-
-Creating two complete Unity projects before inventory, combat, quests, and persistence are server-owned would duplicate the coupled Prototype Scene and its content. Every boundary correction would then need to be made twice. The safer extraction point is after those mutable systems have server command/snapshot APIs.
+Phase 5 Group 10 completed the shared package extraction. The repository is still opened as one Unity project for the final compatibility pass, but reusable code and server-relevant content no longer live inside the project `Assets` tree. Group 11 can therefore create two thin Unity projects without copying gameplay code, protocol types, networking adapters, or shared definitions.
 
 ## Current repository layout
 
 ```text
 UnityIsekaiGame/
-├─ Assets/_Project/
-│  ├─ Runtime/
-│  │  ├─ Shared/
-│  │  │  └─ Networking/
-│  │  │     ├─ Protocol/       transport-independent contracts
-│  │  │     └─ Replication/    network actors and authoritative models
-│  │  ├─ Client/
-│  │  │  ├─ Networking/        connection and local presentation bridges
-│  │  │  └─ UI/                client-only user interface
-│  │  ├─ Server/
-│  │  │  └─ Networking/        admission, sessions, spawning, authority
-│  │  ├─ Characters/           reusable character simulation
-│  │  ├─ Inventory/            reusable inventory domain
-│  │  ├─ Quests/               reusable quest domain
-│  │  └─ ...                   other reusable game domains
-│  ├─ Editor/Networking/       project-specific bake/build automation
-│  ├─ Tests/EditMode/Networking/
-│  ├─ Content/Networking/      network prefabs and authored configuration
-│  └─ Scenes/Prototype/        current vertical-slice world
-├─ Documentation/Networking/
-└─ Builds/
-   ├─ LocalClient/
-   └─ LocalServer/
+|-- Assets/_Project/
+|   |-- Prototype/                 client-only vertical-slice art and authoring
+|   |-- Scenes/Prototype/          current vertical-slice world
+|   |-- Editor/                    project bake/build automation
+|   `-- Tests/                     shared regression suite
+|-- Packages/
+|   |-- com.thequantifier.isekai.protocol/
+|   |-- com.thequantifier.isekai.simulation/
+|   |-- com.thequantifier.isekai.networking/
+|   `-- com.thequantifier.isekai.content/
+|-- Documentation/
+`-- Builds/
+    |-- LocalClient/
+    `-- LocalServer/
 ```
+
+All four local packages use semantic version `0.1.0`. The root project consumes them through local UPM references, so Unity and IDE project generation treat package ownership explicitly.
+
+## Package responsibilities
+
+### `com.thequantifier.isekai.protocol`
+
+Transport-independent connection, identity, session, command, validation, and persistence wire contracts. It may depend on serialization support, but never on simulation, Netcode behaviours, UI, client adapters, or server adapters.
+
+### `com.thequantifier.isekai.simulation`
+
+Reusable game definitions and gameplay domains: characters, inventory, equipment, combat, abilities, quests, parties, dialogue, persistence models, and other deterministic runtime state. It never references client UI or networking adapter assemblies.
+
+### `com.thequantifier.isekai.networking`
+
+Shared Netcode replication plus physically separate Client and Server adapter roots. Shared replication may depend on Protocol and Simulation. Client cannot reference Server; Server cannot reference Client or UI.
+
+### `com.thequantifier.isekai.content`
+
+Server-relevant authored definitions, configuration, generated records, and network prefabs. It contains no C# source. Large presentation assets and the current world remain project-owned so the future dedicated-server project does not import client art.
 
 ## Dependency direction
 
 ```text
-Protocol
-   ↓
-Shared replication and deterministic authority models
-   ↓                         ↓
-Client adapters          Server adapters
-   ↓                         ↓
-Client executable        Dedicated-server executable
+Protocol        Simulation
+     \          /
+      Networking
+          |
+        Content
+
+Networking/Client --> client executable and presentation
+Networking/Server --> dedicated-server executable and persistence
 ```
 
-Additional rules:
+The Content package depends on Simulation and Networking because its Unity assets serialize components and definition types from those packages. That is an asset serialization dependency, not an authority inversion.
 
-- Protocol never references gameplay, Netcode behaviours, client, server, or UI.
-- Shared networking may reference Protocol and Netcode, but never Client, Server, gameplay presentation, or UI.
-- Client and Server may both reference Shared and reusable gameplay domains.
-- Client must never reference Server; Server must never reference Client or UI.
-- Reusable gameplay must not call upward into networking adapters. Adapters translate network commands and snapshots at the boundary.
-- Stable Unity GUIDs are preserved when source or assets move.
+## Enforced rules
 
-The project structure validator enforces assembly placement and these forbidden dependencies.
+- Protocol never references gameplay, Netcode behaviours, Client, Server, or UI.
+- Simulation never references Client, Server, shared replication, Protocol, or UI.
+- Shared networking never references Client, Server, gameplay presentation, or UI.
+- Client never references Server.
+- Server never references Client or UI.
+- Content contains no runtime code.
+- Legacy `Assets/_Project/Runtime` and `Assets/_Project/Content` cannot regain source or authored content.
+- Package versions and inter-package dependencies are checked by the project structure validator.
+- Known scene, definition, and network-prefab GUIDs are tested so serialized references survive extraction.
 
-## Why gameplay is not all under Shared yet
+## Extraction sequence
 
-The existing `UnityIsekaiGame.Gameplay` assembly still contains some prototype-local input and presentation coupling. Calling that entire folder “Shared” would make the tree misleading. Each domain should move into a Shared package only after local-player assumptions are removed and its mutation entry points can be invoked by server adapters.
+1. Physical protocol, shared replication, client, server, and UI roots - complete.
+2. Server-authoritative inventory commands and snapshots - complete in Group 6.
+3. Combat and ability command boundaries - complete in Group 7.
+4. Quest, party, and interaction command boundaries - complete in Group 8.
+5. Server-only persistence ownership and player-session restore - complete in Group 9.
+6. Versioned packages and explicit content boundaries - complete in Group 10.
+7. Thin `Projects/Client` and `Projects/Server` Unity projects - Group 11.
 
-The extraction order is:
+Only Group 11 remains before the repository has physically separate client and server Unity projects.
 
-1. Network protocol, replication, client, server, and UI physical roots — complete.
-2. Server-authoritative inventory commands and snapshots — complete in Phase 5 Group 6.
-3. Combat and ability command boundaries — complete in Phase 5 Group 7 for the Prototype Scene vertical slice.
-4. Quest, party, and interaction command boundaries — complete in Phase 5 Group 8 for the Prototype Scene vertical slice.
-5. Server-only persistence ownership and player-session restore — complete in Phase 5 Group 9.
-6. Split reusable gameplay domains into embedded versioned packages.
-7. Create thin `Projects/Client` and `Projects/Server` Unity projects consuming the same packages and content bundles.
-
-After Group 9, two groups remain to reach the physical project split: Group 10 creates reusable versioned packages and explicit content boundaries, then Group 11 creates the separate Client and Server Unity projects that consume them.
-
-## Target physical-project layout
-
-After the mutation boundary is complete, the repository can become:
+## Group 11 target
 
 ```text
 UnityIsekaiGame/
-├─ Projects/
-│  ├─ Client/                 thin Unity presentation project
-│  └─ Server/                 thin Unity dedicated-server project
-├─ Packages/
-│  ├─ com.thequantifier.isekai.protocol/
-│  ├─ com.thequantifier.isekai.simulation/
-│  ├─ com.thequantifier.isekai.networking/
-│  └─ com.thequantifier.isekai.content/
-├─ Documentation/
-└─ Tools/
+|-- Projects/
+|   |-- Client/                    thin Unity presentation project
+|   `-- Server/                    thin dedicated-server project
+|-- Packages/                      single shared source of truth
+|-- Documentation/
+`-- Tools/
 ```
 
-Both projects will reference the same packages by relative path. Shared code and schemas will not be copied. Client-only art/UI will not enter the server project, and server persistence/authority code will not enter the client project.
+Both projects will reference the same packages by relative path. The Client project will own presentation assets and the vertical-slice scene. The Server project will own only headless bootstrap/configuration assets plus the shared server-relevant content it needs.
 
 ## Build outputs
 
 - `Builds/LocalClient/UnityIsekaiClient.exe` is the player process.
 - `Builds/LocalServer/UnityIsekaiServer.exe` is the dedicated authoritative process.
 
-Build output is generated and ignored by Git. Source authority comes from the assembly roots above, not from generated executables or IDE project files.
-
-## Group 5 verification
-
-- Project structure validation: 8 passed, 0 failed.
-- Full EditMode suite: 1,396 passed, 0 failed.
-- Full PlayMode suite: 5 passed, 0 failed.
-- Windows dedicated-server build: succeeded.
-- Windows client build: succeeded.
-- Separate-process loopback: connection approval, authoritative actor creation, server movement, stamina spending, and server recovery all observed.
-
-## Group 8 verification
-
-- Full EditMode suite: 1,414 passed, 0 failed.
-- Full PlayMode suite: 5 passed, 0 failed.
-- Windows dedicated-server and client builds: succeeded.
-- Separate-process narrative smoke: authoritative interaction, quest-source browse, and party creation all observed.
+Build output is generated and ignored by Git. Source authority comes from package and project boundaries, not generated executables or IDE project files.

@@ -1,0 +1,17 @@
+{
+  "name": "com.thequantifier.isekai.networking",
+  "version": "0.1.0",
+  "displayName": "Isekai Networking",
+  "description": "Netcode replication components plus client and dedicated-server adapters for the Isekai vertical slice.",
+  "unity": "6000.5",
+  "author": {
+    "name": "TheQuantifier"
+  },
+  "dependencies": {
+    "com.thequantifier.isekai.protocol": "0.1.0",
+    "com.thequantifier.isekai.simulation": "0.1.0",
+    "com.unity.collections": "6.5.0",
+    "com.unity.inputsystem": "1.19.0",
+    "com.unity.netcode.gameobjects": "2.13.3"
+  }
+}

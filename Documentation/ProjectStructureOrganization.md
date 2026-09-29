@@ -4,8 +4,8 @@ Maintenance M1 reorganizes project-owned Unity assets under `Assets/_Project`.
 
 ## Top-Level Asset Ownership
 
-- `Assets/_Project/Runtime`: reusable runtime code owned by the game project.
-- `Assets/_Project/Content`: authored definitions intended to become permanent game content.
+- `Packages/com.thequantifier.isekai.simulation/Runtime`: reusable runtime code owned by the game project.
+- `Packages/com.thequantifier.isekai.content/Content`: authored definitions intended to become permanent game content.
 - `Assets/_Project/Prototype`: prototype-only authored content, prefabs, and test-lab scene support.
 - `Assets/_Project/Presentation`: materials and other user-facing presentation assets.
 - `Assets/_Project/Configuration`: input, rendering, and project-owned configuration assets.
@@ -54,7 +54,7 @@ Dependency direction should flow from player-specific systems toward reusable ch
 
 ## Content Placement
 
-Reusable character definitions such as attributes, calculated stats, resources, roles, social statuses, skills, and traits live under `Assets/_Project/Content`.
+Reusable character definitions such as attributes, calculated stats, resources, roles, social statuses, skills, and traits live under `Packages/com.thequantifier.isekai.content/Content`.
 
 Prototype-only gameplay definitions such as the current health potion, prototype abilities, prototype contracts, prototype quests, and the `PrototypeDefinitionCatalog` live under `Assets/_Project/Prototype/Content`.
 

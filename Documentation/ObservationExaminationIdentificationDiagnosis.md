@@ -16,7 +16,7 @@ The runtime flow is:
 
 Runtime code lives under:
 
-`Assets/_Project/Runtime/Knowledge/Observation/`
+`Packages/com.thequantifier.isekai.simulation/Runtime/Knowledge/Observation/`
 
 The main runtime types are:
 
@@ -32,7 +32,7 @@ The main runtime types are:
 
 Authored alpha content lives under:
 
-`Assets/_Project/Content/Knowledge/Observation/`
+`Packages/com.thequantifier.isekai.content/Content/Knowledge/Observation/`
 
 ## Tracking Policy
 

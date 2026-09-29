@@ -9,6 +9,11 @@ namespace UnityIsekaiGame.Tests
 {
     public sealed class ProjectStructureValidationTests
     {
+        private const string ProtocolPackageRoot = "Packages/com.thequantifier.isekai.protocol";
+        private const string SimulationPackageRoot = "Packages/com.thequantifier.isekai.simulation";
+        private const string NetworkingPackageRoot = "Packages/com.thequantifier.isekai.networking";
+        private const string ContentPackageRoot = "Packages/com.thequantifier.isekai.content";
+
         [Test]
         public void CompleteProjectStructureValidatorHasNoFindings()
         {
@@ -34,26 +39,67 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void KnownMovedAssetsExistAtCanonicalPaths()
         {
-            Assert.That(File.Exists("Assets/_Project/Runtime/Core/Definitions/UnityIsekaiGame.GameData.asmdef"), Is.True);
+            Assert.That(File.Exists("Packages/com.thequantifier.isekai.simulation/Runtime/Core/Definitions/UnityIsekaiGame.GameData.asmdef"), Is.True);
             Assert.That(File.Exists("Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset"), Is.True);
             Assert.That(File.Exists("Assets/_Project/Scenes/Prototype/PrototypeScene.unity"), Is.True);
-            Assert.That(File.Exists("Assets/_Project/Content/Characters/Attributes/StrengthAttribute.asset"), Is.True);
-            Assert.That(File.Exists("Assets/_Project/Content/Characters/CalculatedStats/Definitions/MaximumHealthCalculatedStat.asset"), Is.True);
-            Assert.That(File.Exists("Assets/_Project/Content/Characters/Resources/HealthResource.asset"), Is.True);
-            Assert.That(File.Exists("Assets/_Project/Content/Items/Definitions/HealthPotion.asset"), Is.True);
+            Assert.That(File.Exists("Packages/com.thequantifier.isekai.content/Content/Characters/Attributes/StrengthAttribute.asset"), Is.True);
+            Assert.That(File.Exists("Packages/com.thequantifier.isekai.content/Content/Characters/CalculatedStats/Definitions/MaximumHealthCalculatedStat.asset"), Is.True);
+            Assert.That(File.Exists("Packages/com.thequantifier.isekai.content/Content/Characters/Resources/HealthResource.asset"), Is.True);
+            Assert.That(File.Exists("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/HealthPotion.asset"), Is.True);
         }
 
         [Test]
         public void Client_server_and_shared_network_assemblies_use_physical_authority_roots()
         {
-            Assert.That(Directory.Exists("Assets/_Project/Runtime/Networking"), Is.False, "The former mixed networking root must not return.");
-            Assert.That(File.Exists("Assets/_Project/Runtime/Shared/Networking/Protocol/UnityIsekaiGame.Networking.Protocol.asmdef"), Is.True);
-            Assert.That(File.Exists("Assets/_Project/Runtime/Shared/Networking/Replication/UnityIsekaiGame.Networking.Shared.asmdef"), Is.True);
-            Assert.That(File.Exists("Assets/_Project/Runtime/Client/Networking/UnityIsekaiGame.Networking.Client.asmdef"), Is.True);
-            Assert.That(File.Exists("Assets/_Project/Runtime/Client/UI/UnityIsekaiGame.UI.asmdef"), Is.True);
-            Assert.That(File.Exists("Assets/_Project/Runtime/Server/Networking/UnityIsekaiGame.Networking.Server.asmdef"), Is.True);
+            Assert.That(Directory.Exists("Packages/com.thequantifier.isekai.simulation/Runtime/Networking"), Is.False, "The former mixed networking root must not return.");
+            Assert.That(File.Exists("Packages/com.thequantifier.isekai.protocol/Runtime/Protocol/UnityIsekaiGame.Networking.Protocol.asmdef"), Is.True);
+            Assert.That(File.Exists("Packages/com.thequantifier.isekai.networking/Runtime/Shared/Networking/Replication/UnityIsekaiGame.Networking.Shared.asmdef"), Is.True);
+            Assert.That(File.Exists("Packages/com.thequantifier.isekai.networking/Runtime/Client/Networking/UnityIsekaiGame.Networking.Client.asmdef"), Is.True);
+            Assert.That(File.Exists("Packages/com.thequantifier.isekai.networking/Runtime/Client/UI/UnityIsekaiGame.UI.asmdef"), Is.True);
+            Assert.That(File.Exists("Packages/com.thequantifier.isekai.networking/Runtime/Server/Networking/UnityIsekaiGame.Networking.Server.asmdef"), Is.True);
             Assert.That(File.Exists("Assets/_Project/Editor/Networking/LocalNetworkFoundationAuthoring.cs"), Is.True);
             Assert.That(File.Exists("Assets/_Project/Tests/EditMode/Networking/LocalNetworkFoundationTests.cs"), Is.True);
+        }
+
+        [Test]
+        public void Shared_packages_have_coordinated_names_versions_and_dependencies()
+        {
+            AssertPackageManifest(ProtocolPackageRoot, "com.thequantifier.isekai.protocol");
+            AssertPackageManifest(SimulationPackageRoot, "com.thequantifier.isekai.simulation");
+            AssertPackageManifest(
+                NetworkingPackageRoot,
+                "com.thequantifier.isekai.networking",
+                "com.thequantifier.isekai.protocol",
+                "com.thequantifier.isekai.simulation");
+            AssertPackageManifest(
+                ContentPackageRoot,
+                "com.thequantifier.isekai.content",
+                "com.thequantifier.isekai.networking",
+                "com.thequantifier.isekai.simulation");
+
+            string projectManifest = File.ReadAllText("Packages/manifest.json");
+            Assert.That(projectManifest, Does.Contain("\"com.thequantifier.isekai.protocol\""));
+            Assert.That(projectManifest, Does.Contain("\"com.thequantifier.isekai.simulation\""));
+            Assert.That(projectManifest, Does.Contain("\"com.thequantifier.isekai.networking\""));
+            Assert.That(projectManifest, Does.Contain("\"com.thequantifier.isekai.content\""));
+        }
+
+        [Test]
+        public void Package_boundaries_do_not_leave_legacy_code_or_mix_content_and_code()
+        {
+            Assert.That(Directory.GetFiles(ContentPackageRoot + "/Content", "*.cs", SearchOption.AllDirectories), Is.Empty);
+
+            if (Directory.Exists("Assets/_Project/Runtime"))
+            {
+                Assert.That(Directory.GetFiles("Assets/_Project/Runtime", "*.cs", SearchOption.AllDirectories), Is.Empty);
+            }
+
+            Assert.That(Directory.Exists(ProtocolPackageRoot + "/Runtime/Client"), Is.False);
+            Assert.That(Directory.Exists(ProtocolPackageRoot + "/Runtime/Server"), Is.False);
+            Assert.That(Directory.Exists(SimulationPackageRoot + "/Runtime/Client"), Is.False);
+            Assert.That(Directory.Exists(SimulationPackageRoot + "/Runtime/Server"), Is.False);
+            Assert.That(Directory.Exists(NetworkingPackageRoot + "/Runtime/Client"), Is.True);
+            Assert.That(Directory.Exists(NetworkingPackageRoot + "/Runtime/Server"), Is.True);
         }
 
         [Test]
@@ -82,6 +128,9 @@ namespace UnityIsekaiGame.Tests
         {
             AssertMetaGuid("Assets/_Project/Scenes/Prototype/PrototypeScene.unity.meta", "e05b77e4d2cc25845adb762e95d51873");
             AssertMetaGuid("Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset.meta", "357d3d18865946889262f9bf55802d62");
+            AssertMetaGuid(ContentPackageRoot + "/Content/Characters/Attributes/StrengthAttribute.asset.meta", "a1000000000000000000000000000052");
+            AssertMetaGuid(ContentPackageRoot + "/Content/Networking/Prefabs/NetworkPlayerActor.prefab.meta", "ffacee9f9a9cbb3409b0980ceb89fe69");
+            AssertMetaGuid(ContentPackageRoot + "/Content/Networking/Prefabs/NetworkCombatWorldState.prefab.meta", "d433e9cb8b04d544ba2d9e1bad797394");
         }
 
         [Test]
@@ -89,17 +138,21 @@ namespace UnityIsekaiGame.Tests
         {
             Dictionary<string, string> seen = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (string metaPath in Directory.GetFiles("Assets", "*.meta", SearchOption.AllDirectories))
+            string[] roots = { "Assets", ProtocolPackageRoot, SimulationPackageRoot, NetworkingPackageRoot, ContentPackageRoot };
+            foreach (string root in roots)
             {
-                string guid = ReadGuid(metaPath);
-                Assert.That(guid, Is.Not.Empty, $"Missing GUID in {metaPath}");
-
-                if (seen.TryGetValue(guid, out string existingPath))
+                foreach (string metaPath in Directory.GetFiles(root, "*.meta", SearchOption.AllDirectories))
                 {
-                    Assert.Fail($"Duplicate GUID {guid} in {existingPath} and {metaPath}");
-                }
+                    string guid = ReadGuid(metaPath);
+                    Assert.That(guid, Is.Not.Empty, $"Missing GUID in {metaPath}");
 
-                seen.Add(guid, metaPath);
+                    if (seen.TryGetValue(guid, out string existingPath))
+                    {
+                        Assert.Fail($"Duplicate GUID {guid} in {existingPath} and {metaPath}");
+                    }
+
+                    seen.Add(guid, metaPath);
+                }
             }
         }
 
@@ -178,6 +231,20 @@ namespace UnityIsekaiGame.Tests
         {
             Assert.That(File.Exists(metaPath), Is.True, $"Missing meta file: {metaPath}");
             Assert.That(ReadGuid(metaPath), Is.EqualTo(expectedGuid), metaPath);
+        }
+
+        private static void AssertPackageManifest(string packageRoot, string packageName, params string[] requiredDependencies)
+        {
+            string manifestPath = packageRoot + "/package.json";
+            Assert.That(File.Exists(manifestPath), Is.True, manifestPath);
+
+            string manifest = File.ReadAllText(manifestPath);
+            Assert.That(manifest, Does.Match($@"""name""\s*:\s*""{Regex.Escape(packageName)}"""));
+            Assert.That(manifest, Does.Match(@"""version""\s*:\s*""0\.1\.0"""));
+            for (int i = 0; i < requiredDependencies.Length; i++)
+            {
+                Assert.That(manifest, Does.Match($@"""{Regex.Escape(requiredDependencies[i])}""\s*:\s*""0\.1\.0"""));
+            }
         }
 
         private static string ReadGuid(string metaPath)

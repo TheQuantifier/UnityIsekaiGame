@@ -122,7 +122,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void RuntimeIntegrationCode_HasNoDevelopmentUiOrEditorDependency()
         {
-            foreach (string file in Directory.GetFiles("Assets/_Project/Runtime/Actors/Beings/Biology/Integration", "*.cs"))
+            foreach (string file in Directory.GetFiles("Packages/com.thequantifier.isekai.simulation/Runtime/Actors/Beings/Biology/Integration", "*.cs"))
             {
                 string text = File.ReadAllText(file);
                 Assert.That(text, Does.Not.Contain("UnityIsekaiGame.Development"), file);

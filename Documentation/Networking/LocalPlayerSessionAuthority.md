@@ -35,7 +35,7 @@ The actor prefab is intentionally presentation-free and has no movement or gamep
 
 ## Authored assets
 
-- Runtime prefab: `Assets/_Project/Content/Networking/Prefabs/NetworkPlayerActor.prefab`
+- Runtime prefab: `Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkPlayerActor.prefab`
 - Network prefab registry: `Assets/DefaultNetworkPrefabs.asset`
 - Scene host: `Assets/_Project/Scenes/Prototype/PrototypeScene.unity`, object `Local Network Runtime`
 

@@ -18,7 +18,7 @@ namespace UnityIsekaiGame.Editor
 {
     public static class Group10InstitutionalContentAuthoring
     {
-        private const string Root = "Assets/_Project/Content/Generated/Institutions";
+        private const string Root = "Packages/com.thequantifier.isekai.content/Content/Generated/Institutions";
 
         [MenuItem("Tools/Unity Isekai Game/Phase 3/Author Group 10 Institutional Content")]
         public static void Generate() => GenerateInternal(overwriteExisting: false);
@@ -28,8 +28,8 @@ namespace UnityIsekaiGame.Editor
 
         private static void GenerateInternal(bool overwriteExisting)
         {
-            EnsureFolder("Assets/_Project/Content", "Generated");
-            EnsureFolder("Assets/_Project/Content/Generated", "Institutions");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content", "Generated");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Generated", "Institutions");
 
             DefinitionRegistry registry = new DefinitionRegistry(Array.Empty<IGameDefinition>());
             registry = PrototypeOrganizationDefinitionFactory.AddMissingPrototypeOrganizationDefinitions(registry);

@@ -48,7 +48,7 @@ namespace UnityIsekaiGame.Editor
         private void CreateBinding()
         {
             string defaultName = $"{place.Id}.{zoneBoundary.ZoneId}".Replace('.', '_');
-            string path = EditorUtility.SaveFilePanelInProject("Create Spatial Territory Binding", defaultName, "asset", "Choose where to save the game-specific binding.", "Assets/_Project/Content/World/SpatialBoundaries");
+            string path = EditorUtility.SaveFilePanelInProject("Create Spatial Territory Binding", defaultName, "asset", "Choose where to save the game-specific binding.", "Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries");
             if (string.IsNullOrWhiteSpace(path)) return;
             SpatialTerritoryBoundaryDefinition binding = CreateInstance<SpatialTerritoryBoundaryDefinition>();
             string suffix = Sanitize(place.Id.Replace("place.", string.Empty, StringComparison.Ordinal));
@@ -80,10 +80,10 @@ namespace UnityIsekaiGame.Editor
 
     public static class SpatialTerritoryBoundaryPrototypeAuthoring
     {
-        private const string BindingFolder = "Assets/_Project/Content/World/SpatialBoundaries/Bindings";
-        private const string LayerFolder = "Assets/_Project/Content/World/SpatialBoundaries/Layers";
-        private const string LegacyOutskirtsGeometryPath = "Assets/_Project/Content/World/SpatialBoundaries/Geometry/PrototypeOutskirtsBoundary.asset";
-        private const string LegacyTownGeometryPath = "Assets/_Project/Content/World/SpatialBoundaries/Geometry/PrototypeTownBoundary.asset";
+        private const string BindingFolder = "Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Bindings";
+        private const string LayerFolder = "Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Layers";
+        private const string LegacyOutskirtsGeometryPath = "Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Geometry/PrototypeOutskirtsBoundary.asset";
+        private const string LegacyTownGeometryPath = "Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Geometry/PrototypeTownBoundary.asset";
         private const string PrototypeScenePath = "Assets/_Project/Scenes/Prototype/PrototypeScene.unity";
 
         [MenuItem("Tools/Unity Isekai Game/World/Create Prototype Boundary Defaults")]
@@ -91,8 +91,8 @@ namespace UnityIsekaiGame.Editor
         {
             EnsureFolder(BindingFolder);
             EnsureFolder(LayerFolder);
-            PlaceDefinition town = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Assets/_Project/Content/Places/PrototypeTownPlace.asset");
-            PlaceDefinition outskirts = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Assets/_Project/Content/Places/PrototypeOutskirtsPlace.asset");
+            PlaceDefinition town = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Packages/com.thequantifier.isekai.content/Content/Places/PrototypeTownPlace.asset");
+            PlaceDefinition outskirts = AssetDatabase.LoadAssetAtPath<PlaceDefinition>("Packages/com.thequantifier.isekai.content/Content/Places/PrototypeOutskirtsPlace.asset");
             if (town == null || outskirts == null) throw new InvalidOperationException("Prototype town/outskirts Place assets are missing.");
 
             SceneZoneLayerAsset regionalLayer = UpsertLayer($"{LayerFolder}/RegionalBoundaries.asset", "zone-layer.regions", "Regional Boundaries", new Color(0.35f, 0.8f, 0.4f, 0.85f));
@@ -125,10 +125,10 @@ namespace UnityIsekaiGame.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.DeleteAsset(LegacyOutskirtsGeometryPath);
             AssetDatabase.DeleteAsset(LegacyTownGeometryPath);
-            if (AssetDatabase.IsValidFolder("Assets/_Project/Content/World/SpatialBoundaries/Geometry"))
+            if (AssetDatabase.IsValidFolder("Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Geometry"))
             {
-                string[] remaining = AssetDatabase.FindAssets(string.Empty, new[] { "Assets/_Project/Content/World/SpatialBoundaries/Geometry" });
-                if (remaining.Length == 0) AssetDatabase.DeleteAsset("Assets/_Project/Content/World/SpatialBoundaries/Geometry");
+                string[] remaining = AssetDatabase.FindAssets(string.Empty, new[] { "Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Geometry" });
+                if (remaining.Length == 0) AssetDatabase.DeleteAsset("Packages/com.thequantifier.isekai.content/Content/World/SpatialBoundaries/Geometry");
             }
             AssetDatabase.Refresh();
             DefinitionCatalogBuilder.RebuildPrototypeCatalog();

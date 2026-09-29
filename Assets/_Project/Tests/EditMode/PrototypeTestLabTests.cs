@@ -12,8 +12,8 @@ namespace UnityIsekaiGame.Tests
     {
         private const int HistoryLimit = 40;
         private const string CatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
-        private const string PotionPath = "Assets/_Project/Content/Items/Definitions/HealthPotion.asset";
-        private const string StatusPath = "Assets/_Project/Content/Combat/StatusEffects/PrototypeMightStatus.asset";
+        private const string PotionPath = "Packages/com.thequantifier.isekai.content/Content/Items/Definitions/HealthPotion.asset";
+        private const string StatusPath = "Packages/com.thequantifier.isekai.content/Content/Combat/StatusEffects/PrototypeMightStatus.asset";
 
         [Test]
         public void SelectorsLoadDefinitionsFromPrototypeCatalog()

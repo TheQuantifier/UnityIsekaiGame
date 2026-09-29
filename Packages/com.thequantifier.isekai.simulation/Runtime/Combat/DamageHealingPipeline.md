@@ -29,7 +29,7 @@ Healing requests require a target object, resolved actor/body identity, and a fi
 
 ## Damage types
 
-Canonical alpha damage type assets live in `Assets/_Project/Content/Combat/DamageTypes`:
+Canonical alpha damage type assets live in `Packages/com.thequantifier.isekai.content/Content/Combat/DamageTypes`:
 
 - `damage.physical`
 - `damage.physical.slashing`

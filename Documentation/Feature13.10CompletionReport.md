@@ -259,7 +259,7 @@ Added six edit-mode tests covering definitions, legal applicability, no-partial-
 Added this completion report.
 
 ## 87. Files Created
-Created `Assets/_Project/Runtime/Crimes/*`, `CrimePersistenceParticipant.cs`, `CrimesReportingWarrantsWantedStatusTests.cs`, and this documentation file.
+Created `Packages/com.thequantifier.isekai.simulation/Runtime/Crimes/*`, `CrimePersistenceParticipant.cs`, `CrimesReportingWarrantsWantedStatusTests.cs`, and this documentation file.
 
 ## 88. Files Modified
 Modified persistence service wiring, Test Lab service definition registration, Test Lab runtime areas, fixture bundle/snapshots, automation validation/host support, Step 13 automation suite registration, and framework tests.

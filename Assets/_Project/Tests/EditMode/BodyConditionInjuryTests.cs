@@ -204,7 +204,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void RuntimeConditionCode_HasNoDevelopmentPrototypeUiOrEditorDependency()
         {
-            string runtimeFolder = "Assets/_Project/Runtime/Actors/Beings/Biology/Condition";
+            string runtimeFolder = "Packages/com.thequantifier.isekai.simulation/Runtime/Actors/Beings/Biology/Condition";
             foreach (string file in Directory.GetFiles(runtimeFolder, "*.cs"))
             {
                 string text = File.ReadAllText(file);

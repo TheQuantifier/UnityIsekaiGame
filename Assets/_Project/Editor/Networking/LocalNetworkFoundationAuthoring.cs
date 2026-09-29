@@ -27,8 +27,8 @@ namespace UnityIsekaiGame.Editor
         public const string PrototypeScenePath = "Assets/_Project/Scenes/Prototype/PrototypeScene.unity";
         public const string NetworkRootName = "Local Network Runtime";
         public const string DefaultNetworkPrefabsPath = "Assets/DefaultNetworkPrefabs.asset";
-        public const string PlayerActorPrefabPath = "Assets/_Project/Content/Networking/Prefabs/NetworkPlayerActor.prefab";
-        public const string CombatWorldStatePrefabPath = "Assets/_Project/Content/Networking/Prefabs/NetworkCombatWorldState.prefab";
+        public const string PlayerActorPrefabPath = "Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkPlayerActor.prefab";
+        public const string CombatWorldStatePrefabPath = "Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs/NetworkCombatWorldState.prefab";
 
         [MenuItem("Tools/Unity Isekai Game/Networking/Bake Local Network Foundation")]
         public static void BakePrototypeSceneMenu() => BakePrototypeScene();
@@ -140,8 +140,8 @@ namespace UnityIsekaiGame.Editor
 
         private static GameObject EnsurePlayerActorPrefab(UnityIsekaiGame.Configuration.PlayerMovementSettings settings, PlayerStamina playerStamina)
         {
-            EnsureFolder("Assets/_Project/Content/Networking");
-            EnsureFolder("Assets/_Project/Content/Networking/Prefabs");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Networking");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs");
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerActorPrefabPath);
             if (prefab == null)
             {
@@ -188,9 +188,9 @@ namespace UnityIsekaiGame.Editor
                     settings.JumpHeight,
                     settings.Gravity,
                     settings.GroundedStickForce);
-                ResourceDefinition healthDefinition = AssetDatabase.LoadAssetAtPath<ResourceDefinition>("Assets/_Project/Content/Characters/Resources/HealthResource.asset");
-                ResourceDefinition staminaDefinition = AssetDatabase.LoadAssetAtPath<ResourceDefinition>("Assets/_Project/Content/Characters/Resources/StaminaResource.asset");
-                ResourceDefinition manaDefinition = AssetDatabase.LoadAssetAtPath<ResourceDefinition>("Assets/_Project/Content/Characters/Resources/ManaResource.asset");
+                ResourceDefinition healthDefinition = AssetDatabase.LoadAssetAtPath<ResourceDefinition>("Packages/com.thequantifier.isekai.content/Content/Characters/Resources/HealthResource.asset");
+                ResourceDefinition staminaDefinition = AssetDatabase.LoadAssetAtPath<ResourceDefinition>("Packages/com.thequantifier.isekai.content/Content/Characters/Resources/StaminaResource.asset");
+                ResourceDefinition manaDefinition = AssetDatabase.LoadAssetAtPath<ResourceDefinition>("Packages/com.thequantifier.isekai.content/Content/Characters/Resources/ManaResource.asset");
                 if (healthDefinition == null || staminaDefinition == null || manaDefinition == null)
                 {
                     throw new InvalidOperationException("Health, Stamina, and Mana resource definitions are required to bake authoritative network vitals.");
@@ -218,8 +218,8 @@ namespace UnityIsekaiGame.Editor
 
         private static GameObject EnsureCombatWorldStatePrefab()
         {
-            EnsureFolder("Assets/_Project/Content/Networking");
-            EnsureFolder("Assets/_Project/Content/Networking/Prefabs");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Networking");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Networking/Prefabs");
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CombatWorldStatePrefabPath);
             if (prefab == null)
             {

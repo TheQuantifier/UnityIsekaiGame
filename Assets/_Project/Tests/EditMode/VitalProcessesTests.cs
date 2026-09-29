@@ -215,7 +215,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void RuntimeVitalProcessCode_HasNoDevelopmentPrototypeUiOrEditorDependency()
         {
-            string runtimeFolder = "Assets/_Project/Runtime/Actors/Beings/Biology/VitalProcesses";
+            string runtimeFolder = "Packages/com.thequantifier.isekai.simulation/Runtime/Actors/Beings/Biology/VitalProcesses";
             foreach (string file in Directory.GetFiles(runtimeFolder, "*.cs"))
             {
                 string text = File.ReadAllText(file);

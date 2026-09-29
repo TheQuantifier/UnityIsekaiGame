@@ -22,8 +22,8 @@ namespace UnityIsekaiGame.Editor
 {
     public static class Group6ItemCraftingAuthoring
     {
-        private const string Root = "Assets/_Project/Content/Items/Crafting";
-        private const string ItemDefinitionsRoot = "Assets/_Project/Content/Items/Definitions";
+        private const string Root = "Packages/com.thequantifier.isekai.content/Content/Items/Crafting";
+        private const string ItemDefinitionsRoot = "Packages/com.thequantifier.isekai.content/Content/Items/Definitions";
         private const string PickupRoot = "Assets/_Project/Prototype/Prefabs/Items/Pickup";
         private const string ScenePath = "Assets/_Project/Scenes/Prototype/PrototypeScene.unity";
         private const string CompositionPolicyId = "composition-policy.input-derived";
@@ -144,7 +144,7 @@ namespace UnityIsekaiGame.Editor
 
         private static void AuthorDisassemblySkill()
         {
-            SkillDefinition skill = Asset<SkillDefinition>("Assets/_Project/Content/Characters/Skills/DisassemblySkill.asset");
+            SkillDefinition skill = Asset<SkillDefinition>("Packages/com.thequantifier.isekai.content/Content/Characters/Skills/DisassemblySkill.asset");
             SkillNaturalLearningDefinition learning = new SkillNaturalLearningDefinition();
             Set(learning, "enabled", true);
             Set(learning, "qualifyingEventId", "action.item-recovery");
@@ -161,7 +161,7 @@ namespace UnityIsekaiGame.Editor
             Set(skill, "skillId", "skill.disassembly");
             Set(skill, "displayName", "Disassembly");
             Set(skill, "description", "Learned proficiency at dismantling crafted goods and salvaging broken items while preserving useful components.");
-            Set(skill, "primaryCategory", AssetDatabase.LoadAssetAtPath<CategoryDefinition>("Assets/_Project/Content/Core/Categories/SkillCategory.asset"));
+            Set(skill, "primaryCategory", AssetDatabase.LoadAssetAtPath<CategoryDefinition>("Packages/com.thequantifier.isekai.content/Content/Core/Categories/SkillCategory.asset"));
             Set(skill, "tags", Array.Empty<TagDefinition>());
             Set(skill, "alphaEnabled", true);
             Set(skill, "naturalLearning", learning);
@@ -175,7 +175,7 @@ namespace UnityIsekaiGame.Editor
 
         private static void AuthorSalvagingSkill()
         {
-            SkillDefinition skill = Asset<SkillDefinition>("Assets/_Project/Content/Characters/Skills/SalvagingSkill.asset");
+            SkillDefinition skill = Asset<SkillDefinition>("Packages/com.thequantifier.isekai.content/Content/Characters/Skills/SalvagingSkill.asset");
             SkillNaturalLearningDefinition learning = new SkillNaturalLearningDefinition();
             Set(learning, "enabled", true);
             Set(learning, "qualifyingEventId", "action.salvage-pickup");
@@ -192,7 +192,7 @@ namespace UnityIsekaiGame.Editor
             Set(skill, "skillId", "skill.salvaging");
             Set(skill, "displayName", "Salvaging");
             Set(skill, "description", "Learned proficiency at spotting and gathering extra usable pieces from fallen debris and resource drops.");
-            Set(skill, "primaryCategory", AssetDatabase.LoadAssetAtPath<CategoryDefinition>("Assets/_Project/Content/Core/Categories/SkillCategory.asset"));
+            Set(skill, "primaryCategory", AssetDatabase.LoadAssetAtPath<CategoryDefinition>("Packages/com.thequantifier.isekai.content/Content/Core/Categories/SkillCategory.asset"));
             Set(skill, "tags", Array.Empty<TagDefinition>());
             Set(skill, "alphaEnabled", true);
             Set(skill, "naturalLearning", learning);
@@ -251,9 +251,9 @@ namespace UnityIsekaiGame.Editor
             Set(item, "itemId", "item.wood-log");
             Set(item, "displayName", "Wood Log");
             Set(item, "description", "A basic wooden resource used for bows, shields, arrows, and future construction recipes.");
-            Set(item, "primaryCategory", AssetDatabase.LoadAssetAtPath<CategoryDefinition>("Assets/_Project/Content/Core/Categories/ItemMaterialCategory.asset"));
-            Set(item, "tags", new[] { AssetDatabase.LoadAssetAtPath<TagDefinition>("Assets/_Project/Content/Core/Tags/MaterialTag.asset") });
-            Set(item, "rarity", AssetDatabase.LoadAssetAtPath<RarityDefinition>("Assets/_Project/Content/Items/Rarities/CommonRarity.asset"));
+            Set(item, "primaryCategory", AssetDatabase.LoadAssetAtPath<CategoryDefinition>("Packages/com.thequantifier.isekai.content/Content/Core/Categories/ItemMaterialCategory.asset"));
+            Set(item, "tags", new[] { AssetDatabase.LoadAssetAtPath<TagDefinition>("Packages/com.thequantifier.isekai.content/Content/Core/Tags/MaterialTag.asset") });
+            Set(item, "rarity", AssetDatabase.LoadAssetAtPath<RarityDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Rarities/CommonRarity.asset"));
             Set(item, "instanceMode", ItemInstanceMode.DefinitionOnly);
             Set(item, "stackable", true);
             Set(item, "maximumStackSize", 20);
@@ -270,9 +270,9 @@ namespace UnityIsekaiGame.Editor
             Set(item, "itemId", "item.leather-strip");
             Set(item, "displayName", "Leather Strip");
             Set(item, "description", "A prepared leather resource used for grips, bindings, armor, and future crafting recipes.");
-            Set(item, "primaryCategory", AssetDatabase.LoadAssetAtPath<CategoryDefinition>("Assets/_Project/Content/Core/Categories/ItemMaterialCategory.asset"));
-            Set(item, "tags", new[] { AssetDatabase.LoadAssetAtPath<TagDefinition>("Assets/_Project/Content/Core/Tags/MaterialTag.asset") });
-            Set(item, "rarity", AssetDatabase.LoadAssetAtPath<RarityDefinition>("Assets/_Project/Content/Items/Rarities/CommonRarity.asset"));
+            Set(item, "primaryCategory", AssetDatabase.LoadAssetAtPath<CategoryDefinition>("Packages/com.thequantifier.isekai.content/Content/Core/Categories/ItemMaterialCategory.asset"));
+            Set(item, "tags", new[] { AssetDatabase.LoadAssetAtPath<TagDefinition>("Packages/com.thequantifier.isekai.content/Content/Core/Tags/MaterialTag.asset") });
+            Set(item, "rarity", AssetDatabase.LoadAssetAtPath<RarityDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Rarities/CommonRarity.asset"));
             Set(item, "instanceMode", ItemInstanceMode.DefinitionOnly);
             Set(item, "stackable", true);
             Set(item, "maximumStackSize", 20);
@@ -398,7 +398,7 @@ namespace UnityIsekaiGame.Editor
 
         private static CalculatedStatDefinition CalculatedStat(string file)
         {
-            CalculatedStatDefinition stat = AssetDatabase.LoadAssetAtPath<CalculatedStatDefinition>($"Assets/_Project/Content/Characters/CalculatedStats/Definitions/{file}");
+            CalculatedStatDefinition stat = AssetDatabase.LoadAssetAtPath<CalculatedStatDefinition>($"Packages/com.thequantifier.isekai.content/Content/Characters/CalculatedStats/Definitions/{file}");
             if (stat == null)
             {
                 throw new InvalidOperationException($"Calculated stat asset '{file}' was not found.");
@@ -880,7 +880,7 @@ namespace UnityIsekaiGame.Editor
 
         private static void EnsureFolders()
         {
-            EnsureFolder("Assets/_Project/Content/Items", "Crafting");
+            EnsureFolder("Packages/com.thequantifier.isekai.content/Content/Items", "Crafting");
             EnsureFolder(Root, "Materials");
             EnsureFolder(Root, "Affixes");
             EnsureFolder(Root, "Production");

@@ -25,19 +25,19 @@ namespace UnityIsekaiGame.Editor
 {
     public static class PrototypeEconomyContentAuthoringTool
     {
-        private const string Root = "Assets/_Project/Content/Economy";
+        private const string Root = "Packages/com.thequantifier.isekai.content/Content/Economy";
         private const string CatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
         private const string ScenePath = "Assets/_Project/Scenes/Prototype/PrototypeScene.unity";
 
         [MenuItem("Tools/Unity Isekai Game/Author Group 8 Economy Content")]
         public static void Generate()
         {
-            CurrencyDefinition gold = Load<CurrencyDefinition>("Assets/_Project/Content/Core/Currencies/GoldCurrency.asset");
-            ItemDefinition ironOre = Load<ItemDefinition>("Assets/_Project/Content/Items/Definitions/PrototypeIronOre.asset");
-            ItemDefinition woodLog = Load<ItemDefinition>("Assets/_Project/Content/Items/Definitions/WoodLog.asset");
-            ItemDefinition leatherStrip = Load<ItemDefinition>("Assets/_Project/Content/Items/Definitions/LeatherStrip.asset");
-            ItemDefinition sword = Load<ItemDefinition>("Assets/_Project/Content/Items/Definitions/PrototypeSword.asset");
-            ItemDefinition bow = Load<ItemDefinition>("Assets/_Project/Content/Items/Definitions/PrototypeBow.asset");
+            CurrencyDefinition gold = Load<CurrencyDefinition>("Packages/com.thequantifier.isekai.content/Content/Core/Currencies/GoldCurrency.asset");
+            ItemDefinition ironOre = Load<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/PrototypeIronOre.asset");
+            ItemDefinition woodLog = Load<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/WoodLog.asset");
+            ItemDefinition leatherStrip = Load<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/LeatherStrip.asset");
+            ItemDefinition sword = Load<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/PrototypeSword.asset");
+            ItemDefinition bow = Load<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/PrototypeBow.asset");
 
             MarketDefinition market = GetOrCreate<MarketDefinitionAsset>($"{Root}/Markets/PrototypeTownMarket.asset");
             market.Initialize(PrototypeEconomyContentIds.MarketTown, "Prototype Town Market", gold, MarketCategory.LocalSettlement, MarketScopeType.Settlement);

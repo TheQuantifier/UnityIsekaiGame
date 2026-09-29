@@ -17,7 +17,7 @@ namespace UnityIsekaiGame.Editor
 {
     public static class KnowledgeContentAuthoringTool
     {
-        private const string Root = "Assets/_Project/Content/Knowledge";
+        private const string Root = "Packages/com.thequantifier.isekai.content/Content/Knowledge";
         private const string CatalogPath = "Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset";
 
         [MenuItem("Tools/Unity Isekai Game/Author Group 5 Knowledge Content")]
