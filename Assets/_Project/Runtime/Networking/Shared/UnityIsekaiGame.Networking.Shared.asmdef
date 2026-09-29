@@ -1,11 +1,10 @@
 {
-    "name": "UnityIsekaiGame.Networking.Client",
-    "rootNamespace": "UnityIsekaiGame.Networking.Client",
+    "name": "UnityIsekaiGame.Networking.Shared",
+    "rootNamespace": "UnityIsekaiGame.Networking",
     "references": [
         "UnityIsekaiGame.Networking.Protocol",
-        "UnityIsekaiGame.Networking.Shared",
         "Unity.Netcode.Runtime",
-        "Unity.Networking.Transport"
+        "Unity.Collections"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

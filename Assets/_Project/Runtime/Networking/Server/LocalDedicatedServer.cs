@@ -15,15 +15,23 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField] private int serverPort = LocalServerEndpoint.DefaultPort;
         [SerializeField, Min(1)] private int maximumPlayers = 8;
         [SerializeField] private bool startAutomaticallyInServerBuild = true;
+        [SerializeField] private GameObject playerActorPrefab;
 
         private readonly Dictionary<ulong, string> connectedPlayerIds = new Dictionary<ulong, string>();
+        private readonly Dictionary<ulong, ConnectionRequestPayload> pendingConnections = new Dictionary<ulong, ConnectionRequestPayload>();
+        private readonly Dictionary<ulong, NetworkPlayerActor> playerActors = new Dictionary<ulong, NetworkPlayerActor>();
+        private readonly PlayerSessionRegistry playerSessions = new PlayerSessionRegistry();
         private bool ownsServerSession;
         private LocalConnectionStatus status = new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline.");
 
         public event Action<LocalConnectionStatus> StatusChanged;
+        public event Action<PlayerSessionSnapshot, NetworkPlayerActor> PlayerSessionStarted;
+        public event Action<PlayerSessionSnapshot> PlayerSessionEnded;
 
         public LocalConnectionStatus Status => status;
         public IReadOnlyDictionary<ulong, string> ConnectedPlayerIds => connectedPlayerIds;
+        public IReadOnlyList<PlayerSessionSnapshot> PlayerSessions => playerSessions.ActiveSessions;
+        public GameObject PlayerActorPrefab => playerActorPrefab;
         public bool StartAutomaticallyInServerBuild => startAutomaticallyInServerBuild;
 
         private void Awake()
@@ -56,6 +64,11 @@ namespace UnityIsekaiGame.Networking.Server
             maximumPlayers = Math.Max(1, maxPlayers);
         }
 
+        public void ConfigurePlayerActorPrefab(GameObject prefab)
+        {
+            playerActorPrefab = prefab;
+        }
+
         public bool StartServer()
         {
             ResolveReferences();
@@ -79,11 +92,20 @@ namespace UnityIsekaiGame.Networking.Server
                 return Fail("The NetworkManager must use Unity Transport.");
             }
 
+            if (!ValidatePlayerActorPrefab(out string prefabFailure))
+            {
+                return Fail(prefabFailure);
+            }
+
             listenAddress = endpoint.Address;
             serverPort = endpoint.Port;
             connectedPlayerIds.Clear();
+            pendingConnections.Clear();
+            playerActors.Clear();
+            playerSessions.Clear();
             networkManager.NetworkConfig.ConnectionApproval = true;
             networkManager.ConnectionApprovalCallback = ApproveConnection;
+            networkManager.OnClientConnectedCallback += OnClientConnected;
             networkManager.OnClientDisconnectCallback += OnClientDisconnected;
             transport.SetConnectionData(LocalServerEndpoint.DefaultClientAddress, endpoint.Port, endpoint.Address);
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.StartingServer, $"Starting local server on {endpoint}.", endpoint));
@@ -104,6 +126,9 @@ namespace UnityIsekaiGame.Networking.Server
             if (!ownsServerSession || networkManager == null)
             {
                 connectedPlayerIds.Clear();
+                pendingConnections.Clear();
+                playerActors.Clear();
+                playerSessions.Clear();
                 SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline."));
                 return;
             }
@@ -113,6 +138,9 @@ namespace UnityIsekaiGame.Networking.Server
             networkManager.Shutdown();
             ownsServerSession = false;
             connectedPlayerIds.Clear();
+            pendingConnections.Clear();
+            playerActors.Clear();
+            playerSessions.Clear();
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server stopped.", status.Endpoint));
         }
 
@@ -132,6 +160,7 @@ namespace UnityIsekaiGame.Networking.Server
             if (admission.Approved)
             {
                 connectedPlayerIds[request.ClientNetworkId] = admission.Request.PlayerId;
+                pendingConnections[request.ClientNetworkId] = admission.Request;
                 Debug.Log($"[Local Server] Approved client {request.ClientNetworkId} as player '{admission.Request.PlayerId}'.", this);
             }
             else
@@ -140,12 +169,124 @@ namespace UnityIsekaiGame.Networking.Server
             }
         }
 
+        private void OnClientConnected(ulong clientId)
+        {
+            if (networkManager == null || !networkManager.IsServer || clientId == NetworkManager.ServerClientId)
+            {
+                return;
+            }
+
+            if (!pendingConnections.TryGetValue(clientId, out ConnectionRequestPayload request))
+            {
+                DisconnectClient(clientId, "The approved connection request could not be resolved.");
+                return;
+            }
+
+            pendingConnections.Remove(clientId);
+            if (!playerSessions.TryOpen(clientId, request, out PlayerSessionSnapshot session, out string failure))
+            {
+                DisconnectClient(clientId, failure);
+                return;
+            }
+
+            if (!TrySpawnPlayerActor(session, out NetworkPlayerActor actor, out failure))
+            {
+                playerSessions.TryClose(clientId, out _);
+                DisconnectClient(clientId, failure);
+                return;
+            }
+
+            playerActors[clientId] = actor;
+            Debug.Log($"[Local Server] Started session '{session.SessionId}' with actor '{session.ActorId}' for player '{session.PlayerId}'.", this);
+            PlayerSessionStarted?.Invoke(session, actor);
+        }
+
         private void OnClientDisconnected(ulong clientId)
         {
+            pendingConnections.Remove(clientId);
+            playerActors.Remove(clientId);
             if (connectedPlayerIds.Remove(clientId))
             {
                 Debug.Log($"[Local Server] Client {clientId} disconnected.", this);
             }
+
+            if (playerSessions.TryClose(clientId, out PlayerSessionSnapshot closedSession))
+            {
+                Debug.Log($"[Local Server] Ended session '{closedSession.SessionId}' for player '{closedSession.PlayerId}'.", this);
+                PlayerSessionEnded?.Invoke(closedSession);
+            }
+        }
+
+        private bool TrySpawnPlayerActor(PlayerSessionSnapshot session, out NetworkPlayerActor actor, out string failure)
+        {
+            actor = null;
+            if (playerActorPrefab == null)
+            {
+                failure = "The server player actor prefab is not configured.";
+                return false;
+            }
+
+            NetworkObject prefabNetworkObject = playerActorPrefab.GetComponent<NetworkObject>();
+            NetworkPlayerActor prefabActor = playerActorPrefab.GetComponent<NetworkPlayerActor>();
+            if (prefabNetworkObject == null || prefabActor == null)
+            {
+                failure = "The server player actor prefab must contain NetworkObject and NetworkPlayerActor components.";
+                return false;
+            }
+
+            GameObject instance = Instantiate(playerActorPrefab);
+            instance.name = $"Network Player Actor ({session.PlayerId})";
+            NetworkObject networkObject = instance.GetComponent<NetworkObject>();
+            actor = instance.GetComponent<NetworkPlayerActor>();
+            try
+            {
+                actor.ConfigureServer(session);
+                networkObject.SpawnAsPlayerObject(session.ClientId, true);
+                failure = string.Empty;
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Destroy(instance);
+                actor = null;
+                failure = $"The server could not spawn the player actor: {exception.Message}";
+                return false;
+            }
+        }
+
+        private bool ValidatePlayerActorPrefab(out string failure)
+        {
+            if (playerActorPrefab == null)
+            {
+                failure = "The server player actor prefab is not configured.";
+                return false;
+            }
+
+            if (playerActorPrefab.GetComponent<NetworkObject>() == null || playerActorPrefab.GetComponent<NetworkPlayerActor>() == null)
+            {
+                failure = "The server player actor prefab must contain NetworkObject and NetworkPlayerActor components.";
+                return false;
+            }
+
+            foreach (NetworkPrefabsList list in networkManager.NetworkConfig.Prefabs.NetworkPrefabsLists)
+            {
+                if (list != null && list.Contains(playerActorPrefab))
+                {
+                    failure = string.Empty;
+                    return true;
+                }
+            }
+
+            failure = "The server player actor prefab is not registered in the NetworkManager prefab lists.";
+            return false;
+        }
+
+        private void DisconnectClient(ulong clientId, string reason)
+        {
+            connectedPlayerIds.Remove(clientId);
+            pendingConnections.Remove(clientId);
+            Debug.LogError($"[Local Server] Disconnecting client {clientId}: {reason}", this);
+            networkManager?.DisconnectClient(clientId, reason);
         }
 
         private void ResolveReferences()
@@ -161,6 +302,7 @@ namespace UnityIsekaiGame.Networking.Server
             }
 
             networkManager.OnClientDisconnectCallback -= OnClientDisconnected;
+            networkManager.OnClientConnectedCallback -= OnClientConnected;
             networkManager.ConnectionApprovalCallback = null;
         }
 

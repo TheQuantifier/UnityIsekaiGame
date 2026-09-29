@@ -13524,6 +13524,7 @@ MonoBehaviour:
   serverPort: 7777
   maximumPlayers: 8
   startAutomaticallyInServerBuild: 1
+  playerActorPrefab: {fileID: 6860670019684611436, guid: ffacee9f9a9cbb3409b0980ceb89fe69, type: 3}
 --- !u!114 &850340035
 MonoBehaviour:
   m_ObjectHideFlags: 0

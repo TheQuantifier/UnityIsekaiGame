@@ -3,6 +3,7 @@
     "rootNamespace": "UnityIsekaiGame.Networking.Server",
     "references": [
         "UnityIsekaiGame.Networking.Protocol",
+        "UnityIsekaiGame.Networking.Shared",
         "Unity.Netcode.Runtime",
         "Unity.Networking.Transport"
     ],

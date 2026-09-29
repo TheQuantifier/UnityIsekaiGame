@@ -6,6 +6,7 @@
         "UnityIsekaiGame.Gameplay",
         "UnityIsekaiGame.Networking.Client",
         "UnityIsekaiGame.Networking.Server",
+        "UnityIsekaiGame.Networking.Shared",
         "UnityIsekaiGame.UI",
         "UnityIsekaiGame.Development",
         "SceneZoneTool.Runtime",

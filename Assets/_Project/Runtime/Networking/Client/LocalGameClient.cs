@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
@@ -17,12 +18,16 @@ namespace UnityIsekaiGame.Networking.Client
 
         private string clientInstanceId;
         private bool ownsClientSession;
+        private Coroutine playerActorResolution;
+        private NetworkPlayerActor localPlayerActor;
         private LocalConnectionStatus status = new LocalConnectionStatus(LocalConnectionPhase.Offline, "Client is offline.");
 
         public event Action<LocalConnectionStatus> StatusChanged;
+        public event Action<NetworkPlayerActor> LocalPlayerActorChanged;
 
         public LocalConnectionStatus Status => status;
         public bool IsConnected => ownsClientSession && networkManager != null && networkManager.IsConnectedClient;
+        public NetworkPlayerActor LocalPlayerActor => localPlayerActor;
 
         private void Awake()
         {
@@ -68,6 +73,8 @@ namespace UnityIsekaiGame.Networking.Client
 
         private void OnDisable()
         {
+            StopPlayerActorResolution();
+            SetLocalPlayerActor(null);
             if (networkManager == null)
             {
                 return;
@@ -147,6 +154,8 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Disconnecting, "Disconnecting from the local server.", status.Endpoint));
+            StopPlayerActorResolution();
+            SetLocalPlayerActor(null);
             networkManager.Shutdown();
             ownsClientSession = false;
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Client disconnected.", status.Endpoint));
@@ -160,6 +169,8 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Connected, $"Connected to {status.Endpoint}.", status.Endpoint));
+            StopPlayerActorResolution();
+            playerActorResolution = StartCoroutine(ResolveLocalPlayerActor());
         }
 
         private void OnClientDisconnected(ulong clientId)
@@ -171,9 +182,58 @@ namespace UnityIsekaiGame.Networking.Client
 
             string reason = networkManager.DisconnectReason;
             ownsClientSession = false;
+            StopPlayerActorResolution();
+            SetLocalPlayerActor(null);
             SetStatus(string.IsNullOrWhiteSpace(reason)
                 ? new LocalConnectionStatus(LocalConnectionPhase.Offline, "Client disconnected.", status.Endpoint)
                 : new LocalConnectionStatus(LocalConnectionPhase.Failed, reason, status.Endpoint));
+        }
+
+        private IEnumerator ResolveLocalPlayerActor()
+        {
+            float deadline = Time.realtimeSinceStartup + 10f;
+            while (ownsClientSession && networkManager != null && Time.realtimeSinceStartup < deadline)
+            {
+                NetworkObject playerObject = networkManager.LocalClient?.PlayerObject;
+                NetworkPlayerActor actor = playerObject == null ? null : playerObject.GetComponent<NetworkPlayerActor>();
+                if (actor != null && actor.IsSpawned && actor.HasIdentity)
+                {
+                    SetLocalPlayerActor(actor);
+                    Debug.Log($"[Local Client] Local player actor '{actor.ActorId}' is ready for player '{actor.PlayerId}'.", this);
+                    playerActorResolution = null;
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            playerActorResolution = null;
+            if (ownsClientSession)
+            {
+                Debug.LogError("[Local Client] Connected, but the server did not provide a local player actor within 10 seconds.", this);
+            }
+        }
+
+        private void StopPlayerActorResolution()
+        {
+            if (playerActorResolution == null)
+            {
+                return;
+            }
+
+            StopCoroutine(playerActorResolution);
+            playerActorResolution = null;
+        }
+
+        private void SetLocalPlayerActor(NetworkPlayerActor actor)
+        {
+            if (ReferenceEquals(localPlayerActor, actor))
+            {
+                return;
+            }
+
+            localPlayerActor = actor;
+            LocalPlayerActorChanged?.Invoke(localPlayerActor);
         }
 
         private void ResolveReferences()

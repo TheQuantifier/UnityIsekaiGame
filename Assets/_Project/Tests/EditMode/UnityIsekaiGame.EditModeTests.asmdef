@@ -7,6 +7,7 @@
         "UnityIsekaiGame.Networking.Client",
         "UnityIsekaiGame.Networking.Protocol",
         "UnityIsekaiGame.Networking.Server",
+        "UnityIsekaiGame.Networking.Shared",
         "UnityIsekaiGame.UI",
         "UnityIsekaiGame.Development",
         "UnityIsekaiGame.Editor",
