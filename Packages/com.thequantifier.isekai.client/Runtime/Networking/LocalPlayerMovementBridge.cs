@@ -1,4 +1,5 @@
 using System;
+using Unity.Netcode;
 using UnityEngine;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Player;
@@ -15,13 +16,22 @@ namespace UnityIsekaiGame.Networking.Client
         [SerializeField] private FirstPersonCharacterMotor localMotor;
         [SerializeField] private Transform presentationRoot;
         [SerializeField, Range(10f, 60f)] private float inputSendRate = 60f;
-        [SerializeField, Min(1f)] private float reconciliationSharpness = 14f;
+        [SerializeField, Min(1f)] private float reconciliationSharpness = 10f;
+        [SerializeField, Min(0f)] private float reconciliationDeadZone = 0.12f;
+        [SerializeField, Min(0f)] private float maximumPredictionLead = 1.25f;
+        [SerializeField, Min(0f)] private float groundedVerticalTolerance = 0.08f;
+        [SerializeField, Min(0f)] private float airborneVerticalTolerance = 0.45f;
+        [SerializeField, Min(0f)] private float jumpPredictionGraceSeconds = 0.3f;
         [SerializeField, Min(0.5f)] private float hardSnapDistance = 4f;
 
         private NetworkPlayerMovement networkMovement;
         private bool localMotorWasEnabled;
         private bool controlsOverridden;
-        private double nextInputSendAt;
+        private double inputSendAccumulator;
+        private double lastInputSampleAt;
+        private double jumpPredictionGraceUntil;
+        private Vector2 lastSubmittedMove;
+        private bool lastSubmittedSprint;
         private bool smokeInputEnabled;
         private bool vitalsSmokeEnabled;
         private bool vitalsSmokeStarted;
@@ -72,7 +82,11 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             double now = Time.realtimeSinceStartupAsDouble;
-            if (input != null && input.JumpPressedThisFrame) jumpPending = true;
+            if (input != null && input.JumpPressedThisFrame)
+            {
+                jumpPending = true;
+                jumpPredictionGraceUntil = now + jumpPredictionGraceSeconds;
+            }
             if (vitalsSmokeEnabled && !vitalsSmokeStarted)
             {
                 NetworkPlayerVitals networkVitals = networkMovement.GetComponent<NetworkPlayerVitals>();
@@ -86,18 +100,26 @@ namespace UnityIsekaiGame.Networking.Client
                 smokeInputEndsAt = now + 1.5d;
             }
 
-            if (now < nextInputSendAt)
+            double sampleDelta = lastInputSampleAt <= 0d
+                ? 1d / Mathf.Max(10f, inputSendRate)
+                : Math.Min(0.25d, Math.Max(0d, now - lastInputSampleAt));
+            lastInputSampleAt = now;
+            if (!AdvanceInputSendAccumulator(
+                    ref inputSendAccumulator,
+                    sampleDelta,
+                    1d / Mathf.Max(10f, inputSendRate)))
             {
                 return;
             }
 
-            nextInputSendAt = now + 1d / Mathf.Max(10f, inputSendRate);
             bool smokeMoving = (smokeInputEnabled || vitalsSmokeStarted) && now < smokeInputEndsAt;
             Vector2 move = smokeMoving ? Vector2.up : input == null ? Vector2.zero : input.Move;
             bool sprint = smokeMoving ? vitalsSmokeEnabled : input != null && input.SprintHeld;
             bool jump = !smokeMoving && jumpPending;
             if (jump) jumpPending = false;
             float yaw = presentationRoot == null ? networkMovement.transform.eulerAngles.y : presentationRoot.eulerAngles.y;
+            lastSubmittedMove = move;
+            lastSubmittedSprint = sprint;
             networkMovement.SubmitLocalInput(move, sprint, jump, yaw);
         }
 
@@ -120,7 +142,25 @@ namespace UnityIsekaiGame.Networking.Client
                 else
                 {
                     CharacterController controller = presentationRoot.GetComponent<CharacterController>();
-                    Vector3 correction = error * (1f - Mathf.Exp(-reconciliationSharpness * Time.unscaledDeltaTime));
+                    float predictionSpeed = lastSubmittedMove.sqrMagnitude > 0.0001f
+                        ? lastSubmittedSprint ? networkMovement.SprintSpeed : networkMovement.WalkSpeed
+                        : 0f;
+                    float horizontalTolerance = CalculateHorizontalPredictionTolerance(
+                        reconciliationDeadZone,
+                        maximumPredictionLead,
+                        predictionSpeed,
+                        GetRoundTripTimeMilliseconds(),
+                        inputSendRate);
+                    bool suppressVertical = Time.realtimeSinceStartupAsDouble < jumpPredictionGraceUntil;
+                    float verticalTolerance = controller != null && controller.isGrounded
+                        ? groundedVerticalTolerance
+                        : airborneVerticalTolerance;
+                    Vector3 correctionError = CalculateCorrectionError(
+                        error,
+                        horizontalTolerance,
+                        verticalTolerance,
+                        suppressVertical);
+                    Vector3 correction = correctionError * (1f - Mathf.Exp(-reconciliationSharpness * Time.unscaledDeltaTime));
                     if (controller != null && controller.enabled) controller.Move(correction);
                     else presentationRoot.position += correction;
                 }
@@ -182,7 +222,11 @@ namespace UnityIsekaiGame.Networking.Client
                 controlsOverridden = true;
             }
 
-            nextInputSendAt = 0d;
+            inputSendAccumulator = 0d;
+            lastInputSampleAt = 0d;
+            jumpPredictionGraceUntil = 0d;
+            lastSubmittedMove = Vector2.zero;
+            lastSubmittedSprint = false;
             smokeStartPosition = networkMovement.transform.position;
             smokeInputEndsAt = Time.realtimeSinceStartupAsDouble + 1.5d;
             smokeResultLogged = false;
@@ -202,6 +246,77 @@ namespace UnityIsekaiGame.Networking.Client
             if (wasEnabled) controller.enabled = false;
             presentationRoot.position = position;
             if (wasEnabled) controller.enabled = true;
+        }
+
+        public static bool AdvanceInputSendAccumulator(ref double accumulator, double elapsed, double interval)
+        {
+            if (double.IsNaN(elapsed) || double.IsInfinity(elapsed) || elapsed < 0d
+                || double.IsNaN(interval) || double.IsInfinity(interval) || interval <= 0d)
+            {
+                return false;
+            }
+
+            accumulator = Math.Max(0d, accumulator) + elapsed;
+            if (accumulator + 0.0000001d < interval)
+            {
+                return false;
+            }
+
+            // Only the newest input matters. Preserve the fractional remainder so a
+            // 60 FPS render loop averages 60 sends instead of drifting toward 30.
+            accumulator %= interval;
+            return true;
+        }
+
+        public static float CalculateHorizontalPredictionTolerance(
+            float baseTolerance,
+            float maximumTolerance,
+            float maximumSpeed,
+            ulong roundTripTimeMilliseconds,
+            float sendRate)
+        {
+            float minimum = Mathf.Max(0f, baseTolerance);
+            float maximum = Mathf.Max(minimum, maximumTolerance);
+            float roundTripSeconds = Mathf.Min(roundTripTimeMilliseconds / 1000f, 0.5f);
+            float commandInterval = 1f / Mathf.Max(1f, sendRate);
+            float expectedLead = Mathf.Max(0f, maximumSpeed) * (roundTripSeconds + commandInterval * 2f);
+            return Mathf.Clamp(minimum + expectedLead, minimum, maximum);
+        }
+
+        public static Vector3 CalculateCorrectionError(
+            Vector3 error,
+            float horizontalTolerance,
+            float verticalTolerance,
+            bool suppressVertical)
+        {
+            Vector2 horizontal = new Vector2(error.x, error.z);
+            float horizontalMagnitude = horizontal.magnitude;
+            float allowedHorizontal = Mathf.Max(0f, horizontalTolerance);
+            Vector2 correctedHorizontal = horizontalMagnitude > allowedHorizontal && horizontalMagnitude > 0.000001f
+                ? horizontal * ((horizontalMagnitude - allowedHorizontal) / horizontalMagnitude)
+                : Vector2.zero;
+
+            float correctedVertical = 0f;
+            if (!suppressVertical)
+            {
+                float allowedVertical = Mathf.Max(0f, verticalTolerance);
+                float verticalMagnitude = Mathf.Abs(error.y);
+                if (verticalMagnitude > allowedVertical)
+                {
+                    correctedVertical = Mathf.Sign(error.y) * (verticalMagnitude - allowedVertical);
+                }
+            }
+
+            return new Vector3(correctedHorizontal.x, correctedVertical, correctedHorizontal.y);
+        }
+
+        private ulong GetRoundTripTimeMilliseconds()
+        {
+            NetworkManager manager = networkMovement == null ? null : networkMovement.NetworkManager;
+            NetworkTransport transport = manager == null || manager.NetworkConfig == null
+                ? null
+                : manager.NetworkConfig.NetworkTransport;
+            return transport == null ? 0ul : transport.GetCurrentRtt(NetworkManager.ServerClientId);
         }
 
         private void ResolveReferences()

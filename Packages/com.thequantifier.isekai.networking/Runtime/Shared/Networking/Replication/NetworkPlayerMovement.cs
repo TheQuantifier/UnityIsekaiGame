@@ -38,7 +38,9 @@ namespace UnityIsekaiGame.Networking
         private bool movementLogged;
         private bool originalInterpolation;
         private Vector3 spawnPosition;
-        private readonly TokenBucketRateLimiter movementRateLimiter = new TokenBucketRateLimiter(30d, 90d);
+        // The owner intentionally publishes its latest input at 60 Hz. Keep a little
+        // timing headroom so normal render-frame jitter is not mistaken for flooding.
+        private readonly TokenBucketRateLimiter movementRateLimiter = new TokenBucketRateLimiter(120d, 90d);
         private readonly TokenBucketRateLimiter jumpRateLimiter = new TokenBucketRateLimiter(3d, 3d);
 
         public uint LastAcceptedSequence => lastAcceptedSequence.Value;
