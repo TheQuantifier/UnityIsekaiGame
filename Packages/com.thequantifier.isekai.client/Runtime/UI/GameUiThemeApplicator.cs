@@ -180,6 +180,11 @@ namespace UnityIsekaiGame.UI
                 if (button != null && styledButtons.Add(button))
                 {
                     GameUiTheme.StyleButton(button, GameUiTheme.InferButtonTone(button.name));
+                    if (button.name.IndexOf("pill", System.StringComparison.OrdinalIgnoreCase) >= 0
+                        && button.targetGraphic is Image pillImage)
+                    {
+                        GameUiTheme.StylePillSurface(pillImage);
+                    }
                 }
             }
         }
@@ -228,6 +233,10 @@ namespace UnityIsekaiGame.UI
                 if (inputField != null && styledInputFields.Add(inputField))
                 {
                     GameUiTheme.StyleInputField(inputField);
+                    if (inputField.name.IndexOf("pill", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        GameUiTheme.StylePillSurface(inputField.targetGraphic as Image ?? inputField.GetComponent<Image>());
+                    }
                 }
             }
         }

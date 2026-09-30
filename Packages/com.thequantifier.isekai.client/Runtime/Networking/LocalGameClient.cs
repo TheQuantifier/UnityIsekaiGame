@@ -33,6 +33,9 @@ namespace UnityIsekaiGame.Networking.Client
         public LocalConnectionStatus Status => status;
         public bool IsConnected => ownsClientSession && networkManager != null && networkManager.IsConnectedClient;
         public NetworkPlayerActor LocalPlayerActor => localPlayerActor;
+        public string SuggestedUsername => localPlayerId;
+        public string ServerAddress => serverAddress;
+        public int ServerPort => serverPort;
 
         private void Awake()
         {
@@ -47,6 +50,9 @@ namespace UnityIsekaiGame.Networking.Client
 #endif
             ResolveReferences();
             clientInstanceId = Guid.NewGuid().ToString("N");
+#if !UNITY_SERVER
+            PrepareLoginFromCommandLine();
+#endif
         }
 
         private void OnEnable()
@@ -61,9 +67,9 @@ namespace UnityIsekaiGame.Networking.Client
             networkManager.OnClientDisconnectCallback += OnClientDisconnected;
         }
 
-        private void Start()
+        private void PrepareLoginFromCommandLine()
         {
-#if !UNITY_SERVER
+            SetSimulationRole(SimulationRuntimeRole.NetworkClientReplica);
             if (!LocalNetworkCommandLine.TryParse(
                     Environment.GetCommandLineArgs(),
                     false,
@@ -76,13 +82,15 @@ namespace UnityIsekaiGame.Networking.Client
 
             if (options.Mode == LocalNetworkLaunchMode.Client)
             {
-                Connect(options.ServerAddress, options.Port, options.PlayerId, options.AuthenticationToken);
+                ConfigureLoginEndpoint(options.ServerAddress, options.Port, options.PlayerId, options.AuthenticationToken);
             }
-            else if (connectAutomatically && options.Mode == LocalNetworkLaunchMode.None)
+            else
             {
-                Connect();
+                SetStatus(new LocalConnectionStatus(
+                    LocalConnectionPhase.Offline,
+                    "Enter account credentials to connect.",
+                    new LocalServerEndpoint(serverAddress, (ushort)serverPort)));
             }
-#endif
         }
 
         private void OnDisable()
@@ -116,10 +124,51 @@ namespace UnityIsekaiGame.Networking.Client
 
         public bool Connect()
         {
-            return Connect(serverAddress, serverPort, localPlayerId, authenticationToken);
+            return Fail("A username and password are required before connecting.");
         }
 
         public bool Connect(string address, int port, string playerId, string token = "")
+        {
+            return Fail("Use ConnectWithCredentials to establish an authenticated player session.");
+        }
+
+        public void ConfigureLoginEndpoint(string address, int port, string suggestedUsername, string token = "")
+        {
+            if (!LocalServerEndpoint.TryCreate(address, port, out LocalServerEndpoint endpoint, out string endpointFailure))
+            {
+                Fail(endpointFailure);
+                return;
+            }
+
+            serverAddress = endpoint.Address;
+            serverPort = endpoint.Port;
+            localPlayerId = string.IsNullOrWhiteSpace(suggestedUsername) ? "local-player" : suggestedUsername.Trim();
+            authenticationToken = token ?? string.Empty;
+            SetSimulationRole(SimulationRuntimeRole.NetworkClientReplica);
+            SetStatus(new LocalConnectionStatus(
+                LocalConnectionPhase.Offline,
+                "Enter account credentials to connect.",
+                endpoint));
+        }
+
+        public bool ConnectWithCredentials(string username, string password, bool createAccount)
+        {
+            return ConnectAuthenticated(
+                serverAddress,
+                serverPort,
+                username,
+                authenticationToken,
+                password,
+                createAccount ? AccountAuthenticationMode.CreateAccount : AccountAuthenticationMode.Login);
+        }
+
+        private bool ConnectAuthenticated(
+            string address,
+            int port,
+            string playerId,
+            string token,
+            string password,
+            AccountAuthenticationMode authenticationMode)
         {
             ResolveReferences();
             if (networkManager == null)
@@ -139,13 +188,17 @@ namespace UnityIsekaiGame.Networking.Client
 
             ConnectionRequestPayload request = new ConnectionRequestPayload(
                 string.IsNullOrWhiteSpace(clientInstanceId) ? Guid.NewGuid().ToString("N") : clientInstanceId,
-                playerId,
+                playerId?.Trim().ToLowerInvariant(),
                 Application.version,
-                token);
+                token,
+                authenticationMode,
+                password);
             if (!LocalConnectionProtocol.TryEncode(request, out byte[] payload, out string payloadFailure))
             {
+                request.ClearPassword();
                 return Fail(payloadFailure);
             }
+            request.ClearPassword();
 
             if (!(networkManager.NetworkConfig.NetworkTransport is UnityTransport transport))
             {
@@ -165,7 +218,8 @@ namespace UnityIsekaiGame.Networking.Client
             ownsClientSession = networkManager.StartClient();
             if (!ownsClientSession)
             {
-                SetSimulationRole(SimulationRuntimeRole.StandaloneAuthoritative);
+                ClearConnectionPayload();
+                SetSimulationRole(SimulationRuntimeRole.NetworkClientReplica);
                 return Fail($"Could not start a client connection to {endpoint}.", endpoint);
             }
 
@@ -177,7 +231,7 @@ namespace UnityIsekaiGame.Networking.Client
             if (!ownsClientSession || networkManager == null)
             {
                 SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Client is offline."));
-                SetSimulationRole(SimulationRuntimeRole.StandaloneAuthoritative);
+                SetSimulationRole(SimulationRuntimeRole.NetworkClientReplica);
                 return;
             }
 
@@ -185,8 +239,9 @@ namespace UnityIsekaiGame.Networking.Client
             StopPlayerActorResolution();
             SetLocalPlayerActor(null);
             networkManager.Shutdown();
+            ClearConnectionPayload();
             ownsClientSession = false;
-            SetSimulationRole(SimulationRuntimeRole.StandaloneAuthoritative);
+            SetSimulationRole(SimulationRuntimeRole.NetworkClientReplica);
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Client disconnected.", status.Endpoint));
         }
 
@@ -198,6 +253,7 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Connected, $"Connected to {status.Endpoint}.", status.Endpoint));
+            ClearConnectionPayload();
             StopPlayerActorResolution();
             playerActorResolution = StartCoroutine(ResolveLocalPlayerActor());
         }
@@ -211,7 +267,8 @@ namespace UnityIsekaiGame.Networking.Client
 
             string reason = networkManager.DisconnectReason;
             ownsClientSession = false;
-            SetSimulationRole(SimulationRuntimeRole.StandaloneAuthoritative);
+            ClearConnectionPayload();
+            SetSimulationRole(SimulationRuntimeRole.NetworkClientReplica);
             StopPlayerActorResolution();
             SetLocalPlayerActor(null);
             SetStatus(string.IsNullOrWhiteSpace(reason)
@@ -272,6 +329,14 @@ namespace UnityIsekaiGame.Networking.Client
             simulation = simulation == null
                 ? FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include)
                 : simulation;
+        }
+
+        private void ClearConnectionPayload()
+        {
+            if (networkManager?.NetworkConfig != null)
+            {
+                networkManager.NetworkConfig.ConnectionData = Array.Empty<byte>();
+            }
         }
 
         private void SetSimulationRole(SimulationRuntimeRole role)

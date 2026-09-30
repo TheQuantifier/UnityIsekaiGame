@@ -61,6 +61,7 @@ namespace UnityIsekaiGame.Networking.Server
         private readonly Dictionary<string, ServerPlayerProfileData> playerProfiles = new Dictionary<string, ServerPlayerProfileData>(StringComparer.OrdinalIgnoreCase);
         private ServerPlayerProfileStore playerProfileStore;
         private ServerPlayerProfileWriteQueue playerProfileWriteQueue;
+        private ServerAccountStore accountStore;
         private float nextPlayerProfileAutosaveAt;
         private float nextWorldCheckpointAutosaveAt;
         private bool serverPersistenceReady;
@@ -201,6 +202,11 @@ namespace UnityIsekaiGame.Networking.Server
             playerProfileStore = store;
         }
 
+        public void ConfigureAccountStore(ServerAccountStore store)
+        {
+            accountStore = store;
+        }
+
         public bool StartServer()
         {
             ResolveReferences();
@@ -241,6 +247,7 @@ namespace UnityIsekaiGame.Networking.Server
             worldItemAuthority = null;
             inventorySmokeSeeded = false;
             playerProfileStore ??= new ServerPlayerProfileStore();
+            accountStore ??= new ServerAccountStore();
             playerProfileWriteQueue?.Dispose();
             playerProfileWriteQueue = new ServerPlayerProfileWriteQueue(playerProfileStore);
             serverPersistenceReady = TryLoadWorldCheckpoint();
@@ -381,24 +388,42 @@ namespace UnityIsekaiGame.Networking.Server
                 Application.version,
                 authenticationToken);
 
-            if (admission.Approved)
+            bool approved = admission.Approved;
+            string rejectionReason = admission.Reason;
+            if (approved)
+            {
+                accountStore ??= new ServerAccountStore();
+                ServerAccountAuthenticationResult accountResult = accountStore.Authenticate(admission.Request);
+                approved = accountResult.Succeeded;
+                rejectionReason = approved ? string.Empty : accountResult.Message;
+                if (approved)
+                {
+                    admission.Request.PlayerId = accountResult.PlayerId;
+                }
+            }
+
+            // Authentication is complete at this point. Session admission does not need the
+            // plaintext credential, so never retain it in either approved or rejected requests.
+            admission.Request?.ClearPassword();
+
+            if (approved)
             {
                 // Publish the admission record before completing the NGO response. Some transports can
                 // dispatch OnClientConnected as soon as the response is marked non-pending, including
                 // re-entrantly during this callback.
                 connectedPlayerIds[request.ClientNetworkId] = admission.Request.PlayerId;
                 pendingConnections[request.ClientNetworkId] = admission.Request;
-                Debug.Log($"[Local Server] Approved client {request.ClientNetworkId} as player '{admission.Request.PlayerId}'.", this);
+                Debug.Log($"[Local Server] Authenticated client {request.ClientNetworkId} as player '{admission.Request.PlayerId}'.", this);
             }
             else
             {
-                Debug.LogWarning($"[Local Server] Rejected client {request.ClientNetworkId}: {admission.Reason}", this);
+                Debug.LogWarning($"[Local Server] Rejected client {request.ClientNetworkId}: {rejectionReason}", this);
             }
 
             response.CreatePlayerObject = false;
             response.PlayerPrefabHash = null;
-            response.Reason = admission.Reason;
-            response.Approved = admission.Approved;
+            response.Reason = rejectionReason;
+            response.Approved = approved;
             response.Pending = false;
         }
 
@@ -416,7 +441,9 @@ namespace UnityIsekaiGame.Networking.Server
             }
 
             pendingConnections.Remove(clientId);
-            if (!playerSessions.TryOpen(clientId, request, out PlayerSessionSnapshot session, out string failure))
+            bool sessionOpened = playerSessions.TryOpen(clientId, request, out PlayerSessionSnapshot session, out string failure);
+            request.ClearPassword();
+            if (!sessionOpened)
             {
                 DisconnectClient(clientId, failure);
                 return;

@@ -109,6 +109,12 @@ namespace UnityIsekaiGame.Tests
         }
 
         private static ConnectionRequestPayload Request(string instanceId, string playerId) =>
-            new ConnectionRequestPayload(instanceId, playerId, "0.1.0");
+            new ConnectionRequestPayload(
+                instanceId,
+                playerId,
+                "0.1.0",
+                string.Empty,
+                AccountAuthenticationMode.Login,
+                "Test-password-123");
     }
 }

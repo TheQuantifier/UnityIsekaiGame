@@ -6,6 +6,7 @@
         "UnityIsekaiGame.Gameplay",
         "UnityIsekaiGame.Networking.Protocol",
         "UnityIsekaiGame.Networking.Shared",
+        "Unity.Newtonsoft.Json",
         "Unity.Collections",
         "Unity.Netcode.Runtime",
         "Unity.Networking.Transport"

@@ -30,7 +30,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Connection_request_round_trips()
         {
-            ConnectionRequestPayload source = new ConnectionRequestPayload(Guid.NewGuid().ToString("N"), "player.one", "0.1.0", "test-token");
+            ConnectionRequestPayload source = Request("player.one", "test-token");
 
             Assert.That(LocalConnectionProtocol.TryEncode(source, out byte[] payload, out string encodeFailure), Is.True, encodeFailure);
             Assert.That(LocalConnectionProtocol.TryDecode(payload, out ConnectionRequestPayload decoded, out string decodeFailure), Is.True, decodeFailure);
@@ -39,6 +39,8 @@ namespace UnityIsekaiGame.Tests
             Assert.That(decoded.PlayerId, Is.EqualTo(source.PlayerId));
             Assert.That(decoded.BuildVersion, Is.EqualTo(source.BuildVersion));
             Assert.That(decoded.AuthenticationToken, Is.EqualTo(source.AuthenticationToken));
+            Assert.That(decoded.AuthenticationMode, Is.EqualTo(AccountAuthenticationMode.Login));
+            Assert.That(decoded.Password, Is.EqualTo(source.Password));
         }
 
         [Test]
@@ -55,7 +57,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Admission_rejects_full_server_and_duplicate_player()
         {
-            ConnectionRequestPayload request = new ConnectionRequestPayload(Guid.NewGuid().ToString("N"), "player.one", "0.1.0");
+            ConnectionRequestPayload request = Request("player.one");
             Assert.That(LocalConnectionProtocol.TryEncode(request, out byte[] payload, out string failure), Is.True, failure);
 
             ConnectionAdmissionResult full = LocalConnectionAdmission.Evaluate(payload, 2, 2, Array.Empty<string>());
@@ -70,7 +72,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Admission_accepts_valid_unique_player()
         {
-            ConnectionRequestPayload request = new ConnectionRequestPayload(Guid.NewGuid().ToString("N"), "player.two", "0.1.0");
+            ConnectionRequestPayload request = Request("player.two");
             Assert.That(LocalConnectionProtocol.TryEncode(request, out byte[] payload, out string failure), Is.True, failure);
 
             ConnectionAdmissionResult result = LocalConnectionAdmission.Evaluate(payload, 1, 4, new[] { "player.one" });
@@ -86,7 +88,9 @@ namespace UnityIsekaiGame.Tests
                 Guid.NewGuid().ToString("N"),
                 "player.secure",
                 "0.1.0",
-                "correct-token");
+                "correct-token",
+                AccountAuthenticationMode.Login,
+                "Test-password-123");
             Assert.That(LocalConnectionProtocol.TryEncode(request, out byte[] payload, out string failure), Is.True, failure);
 
             ConnectionAdmissionResult wrongBuild = LocalConnectionAdmission.Evaluate(
@@ -181,5 +185,14 @@ namespace UnityIsekaiGame.Tests
                 out string failure), Is.False);
             Assert.That(failure, Does.Contain("both"));
         }
+
+        private static ConnectionRequestPayload Request(string playerId, string token = "") =>
+            new ConnectionRequestPayload(
+                Guid.NewGuid().ToString("N"),
+                playerId,
+                "0.1.0",
+                token,
+                AccountAuthenticationMode.Login,
+                "Test-password-123");
     }
 }

@@ -79,6 +79,7 @@ namespace UnityIsekaiGame.Presentation
         private static GUIStyle centeredStyle;
 #if !ISEKAI_SERVER_PROJECT
         private static Sprite roundedSprite;
+        private static Sprite pillSprite;
 #endif
 
         public static GUIStyle WindowStyle { get { EnsureGuiStyles(); return windowStyle; } }
@@ -301,6 +302,17 @@ namespace UnityIsekaiGame.Presentation
             }
         }
 
+        public static void StylePillSurface(Image image)
+        {
+            if (image == null)
+            {
+                return;
+            }
+
+            image.sprite = PillSprite;
+            image.type = Image.Type.Sliced;
+        }
+
         public static void StyleToggle(Toggle toggle)
         {
             if (toggle == null)
@@ -475,14 +487,30 @@ namespace UnityIsekaiGame.Presentation
             }
         }
 
+        private static Sprite PillSprite
+        {
+            get
+            {
+                if (pillSprite == null)
+                {
+                    pillSprite = CreateRoundedSpriteAsset(34, 15f, "Game UI Pill Surface");
+                }
+
+                return pillSprite;
+            }
+        }
+
         private static Sprite CreateRoundedSprite()
         {
-            const int size = 32;
-            const float radius = 8f;
+            return CreateRoundedSpriteAsset(32, 8f, "Game UI Rounded Surface");
+        }
+
+        private static Sprite CreateRoundedSpriteAsset(int size, float radius, string spriteName)
+        {
             const int samplesPerAxis = 4;
             Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false, true)
             {
-                name = "Game UI Rounded Surface",
+                name = spriteName,
                 filterMode = FilterMode.Bilinear,
                 wrapMode = TextureWrapMode.Clamp,
                 hideFlags = HideFlags.HideAndDontSave
@@ -522,7 +550,7 @@ namespace UnityIsekaiGame.Presentation
                 0u,
                 SpriteMeshType.FullRect,
                 new Vector4(radius, radius, radius, radius));
-            sprite.name = "Game UI Rounded Surface";
+            sprite.name = spriteName;
             sprite.hideFlags = HideFlags.HideAndDontSave;
             return sprite;
         }

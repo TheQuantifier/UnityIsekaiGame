@@ -12,3 +12,5 @@ This folder is reserved for repository-level automation that operates across bot
 - `uig doctor` and `uig paths` to diagnose the local setup
 
 `uig server start` returns only after the server log confirms that the authoritative world is loaded and the transport is listening. The launcher creates a shared local authentication token in the ignored `.uig` directory and passes it to both sides; do not copy that token into source control.
+
+`uig client <clientID> start` uses the client ID as the suggested username, then opens the in-game login screen. On a username's first run, enter a password and choose **Create Account**. On later runs, enter the same password and choose **Login**. Account verification and account files are owned only by the dedicated server; the launcher never accepts or stores account passwords.

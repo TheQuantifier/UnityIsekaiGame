@@ -125,7 +125,17 @@ namespace UnityIsekaiGame.Tests
         private static PlayerSessionSnapshot OpenSession(string playerId)
         {
             PlayerSessionRegistry registry = new PlayerSessionRegistry();
-            Assert.That(registry.TryOpen(1UL, new ConnectionRequestPayload("test-client", playerId, "test"), out PlayerSessionSnapshot session, out string failure), Is.True, failure);
+            Assert.That(registry.TryOpen(
+                1UL,
+                new ConnectionRequestPayload(
+                    "test-client",
+                    playerId,
+                    "test",
+                    string.Empty,
+                    AccountAuthenticationMode.Login,
+                    "Test-password-123"),
+                out PlayerSessionSnapshot session,
+                out string failure), Is.True, failure);
             return session;
         }
 

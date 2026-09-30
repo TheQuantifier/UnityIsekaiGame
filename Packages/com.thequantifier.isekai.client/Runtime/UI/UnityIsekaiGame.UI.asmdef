@@ -5,6 +5,9 @@
         "UnityIsekaiGame.GameData",
         "UnityIsekaiGame.Gameplay",
         "UnityIsekaiGame.Networking.Client",
+        "UnityIsekaiGame.Networking.Protocol",
+        "UnityIsekaiGame.Networking.Shared",
+        "Unity.Netcode.Runtime",
         "Unity.InputSystem"
     ],
     "includePlatforms": [],

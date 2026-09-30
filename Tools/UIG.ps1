@@ -256,7 +256,7 @@ function Start-UigClient {
     }
     $process = Start-Process @startOptions
     Set-Content -LiteralPath (Get-UigClientPidPath $ClientId) -Value $process.Id
-    Write-Host "Client '$ClientId' started (PID $($process.Id))." -ForegroundColor Green
+    Write-Host "Client '$ClientId' started (PID $($process.Id)). Complete Login or Create Account in the game window." -ForegroundColor Green
     Write-Host "Log: $logPath"
 }
 
