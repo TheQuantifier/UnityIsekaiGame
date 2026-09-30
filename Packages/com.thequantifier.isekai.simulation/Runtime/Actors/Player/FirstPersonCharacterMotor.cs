@@ -17,6 +17,7 @@ namespace UnityIsekaiGame.Player
         private CharacterController controller;
         private float currentHorizontalSpeed;
         private float verticalVelocity;
+        private bool simulationGrounded;
         private bool networkPredictionMode;
         private bool networkPredictionSprintAllowed = true;
         private bool hasNetworkPredictionTuning;
@@ -32,12 +33,14 @@ namespace UnityIsekaiGame.Player
         public PlayerMovementSettings MovementSettings => movementSettings;
         public float CurrentHorizontalSpeed => currentHorizontalSpeed;
         public float VerticalVelocity => verticalVelocity;
-        public bool IsGrounded => controller != null && controller.enabled && controller.isGrounded;
+        public bool IsGrounded => simulationGrounded;
+        public bool ControllerIsGrounded => controller != null && controller.enabled && controller.isGrounded;
         public uint PredictedJumpCount => predictedJumpCount;
 
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
+            simulationGrounded = controller != null && controller.isGrounded;
             if (stats == null)
             {
                 stats = GetComponent<ActorStats>();
@@ -77,12 +80,13 @@ namespace UnityIsekaiGame.Player
                 ? networkGroundedStickForce
                 : movementSettings.GroundedStickForce;
 
-            if (controller.isGrounded && verticalVelocity < 0f)
+            bool groundedBeforeMove = simulationGrounded || controller.isGrounded;
+            if (groundedBeforeMove && verticalVelocity < 0f)
             {
                 verticalVelocity = -groundedStickForce;
             }
 
-            if (controller.isGrounded && input.ConsumeJump())
+            if (groundedBeforeMove && input.ConsumeJump())
             {
                 verticalVelocity = Mathf.Sqrt(2f * gravity * jumpHeight);
                 predictedJumpCount++;
@@ -92,7 +96,8 @@ namespace UnityIsekaiGame.Player
 
             Vector3 horizontalVelocity = transform.TransformDirection(localMove) * currentHorizontalSpeed;
             Vector3 velocity = horizontalVelocity + Vector3.up * verticalVelocity;
-            controller.Move(velocity * Time.deltaTime);
+            CollisionFlags collisionFlags = controller.Move(velocity * Time.deltaTime);
+            simulationGrounded = (collisionFlags & CollisionFlags.Below) != 0;
         }
 
         private float ResolveHorizontalSpeed(bool sprinting)
@@ -119,6 +124,7 @@ namespace UnityIsekaiGame.Player
         {
             currentHorizontalSpeed = 0f;
             verticalVelocity = 0f;
+            simulationGrounded = controller != null && controller.enabled && controller.isGrounded;
         }
 
         public void SetNetworkPredictionMode(bool enabled)

@@ -23,6 +23,8 @@ namespace UnityIsekaiGame.Networking.Client
         [SerializeField, Min(0f)] private float groundedVerticalTolerance = 0.08f;
         [SerializeField, Min(0f)] private float airborneVerticalTolerance = 0.45f;
         [SerializeField, Min(0f)] private float jumpPredictionGraceSeconds = 0.3f;
+        [SerializeField, Min(0f)] private float minimumLandingGraceSeconds = 0.08f;
+        [SerializeField, Min(0f)] private float maximumLandingGraceSeconds = 0.25f;
         [SerializeField, Min(0.5f)] private float hardSnapDistance = 4f;
 
         private NetworkPlayerMovement networkMovement;
@@ -39,6 +41,8 @@ namespace UnityIsekaiGame.Networking.Client
         private uint clientJumpTraceId;
         private uint clientJumpTraceTick;
         private double clientJumpTraceUntil;
+        private bool wasPredictionAirborne;
+        private double landingPredictionGraceUntil;
         private bool smokeInputEnabled;
         private bool vitalsSmokeEnabled;
         private bool vitalsSmokeStarted;
@@ -176,15 +180,31 @@ namespace UnityIsekaiGame.Networking.Client
                     float predictionSpeed = lastSubmittedMove.sqrMagnitude > 0.0001f
                         ? lastSubmittedSprint ? networkMovement.SprintSpeed : networkMovement.WalkSpeed
                         : 0f;
+                    ulong roundTripTimeMilliseconds = GetRoundTripTimeMilliseconds();
                     float horizontalTolerance = CalculateHorizontalPredictionTolerance(
                         reconciliationDeadZone,
                         maximumPredictionLead,
                         predictionSpeed,
-                        GetRoundTripTimeMilliseconds(),
+                        roundTripTimeMilliseconds,
                         inputSendRate);
-                    airborne = controller != null && !controller.isGrounded;
-                    suppressVertical = airborne || Time.realtimeSinceStartupAsDouble < jumpPredictionGraceUntil;
-                    suppressHorizontal = airborne;
+                    airborne = localMotor != null && !localMotor.IsGrounded;
+                    double now = Time.realtimeSinceStartupAsDouble;
+                    if (airborne)
+                    {
+                        wasPredictionAirborne = true;
+                    }
+                    else if (wasPredictionAirborne)
+                    {
+                        wasPredictionAirborne = false;
+                        landingPredictionGraceUntil = now + CalculateLandingPredictionGrace(
+                            minimumLandingGraceSeconds,
+                            maximumLandingGraceSeconds,
+                            roundTripTimeMilliseconds);
+                    }
+
+                    bool landingGraceActive = now < landingPredictionGraceUntil;
+                    suppressVertical = airborne || landingGraceActive || now < jumpPredictionGraceUntil;
+                    suppressHorizontal = airborne || landingGraceActive;
                     float verticalTolerance = controller != null && controller.isGrounded
                         ? groundedVerticalTolerance
                         : airborneVerticalTolerance;
@@ -196,7 +216,13 @@ namespace UnityIsekaiGame.Networking.Client
                         suppressVertical);
                     Vector3 correction = correctionError * (1f - Mathf.Exp(-reconciliationSharpness * Time.unscaledDeltaTime));
                     appliedCorrection = correction;
-                    if (controller != null && controller.enabled) controller.Move(correction);
+                    if (controller != null && controller.enabled)
+                    {
+                        // CharacterController.isGrounded describes the most recent Move call.
+                        // A second zero-distance reconciliation Move would erase the grounded
+                        // result produced by the local motor and make the next jump miss locally.
+                        if (ShouldApplyControllerCorrection(correction)) controller.Move(correction);
+                    }
                     else presentationRoot.position += correction;
                 }
             }
@@ -209,7 +235,7 @@ namespace UnityIsekaiGame.Networking.Client
                 Vector3 localPosition = presentationRoot.position;
                 Debug.Log(
                     $"[Jump Trace][Client] action=tick trace={clientJumpTraceId} tick={clientJumpTraceTick++} frame={Time.frameCount} " +
-                    $"grounded={localMotor != null && localMotor.IsGrounded} airborne={airborne} " +
+                    $"grounded={localMotor != null && localMotor.IsGrounded} controllerGrounded={localMotor != null && localMotor.ControllerIsGrounded} airborne={airborne} " +
                     $"predictedJumpCount={localMotor?.PredictedJumpCount ?? 0u} horizontalSpeed={localMotor?.CurrentHorizontalSpeed ?? 0f:F4} " +
                     $"verticalVelocity={localMotor?.VerticalVelocity ?? 0f:F4} suppressHorizontal={suppressHorizontal} " +
                     $"suppressVertical={suppressVertical} hardSnap={hardSnapped} correction={appliedCorrection} " +
@@ -291,6 +317,8 @@ namespace UnityIsekaiGame.Networking.Client
             predictionSprintAllowed = true;
             clientJumpTraceTick = 0u;
             clientJumpTraceUntil = 0d;
+            wasPredictionAirborne = false;
+            landingPredictionGraceUntil = 0d;
             smokeStartPosition = networkMovement.transform.position;
             smokeInputEndsAt = Time.realtimeSinceStartupAsDouble + 1.5d;
             smokeResultLogged = false;
@@ -399,6 +427,21 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             return !state.IsDefeated && !exhausted && state.Stamina > epsilon;
+        }
+
+        public static float CalculateLandingPredictionGrace(
+            float minimumSeconds,
+            float maximumSeconds,
+            ulong roundTripTimeMilliseconds)
+        {
+            float minimum = Mathf.Max(0f, minimumSeconds);
+            float maximum = Mathf.Max(minimum, maximumSeconds);
+            return Mathf.Clamp(minimum + roundTripTimeMilliseconds / 1000f, minimum, maximum);
+        }
+
+        public static bool ShouldApplyControllerCorrection(Vector3 correction)
+        {
+            return correction.sqrMagnitude > 0.00000001f;
         }
 
         private void UpdatePredictionSprintAuthorization()

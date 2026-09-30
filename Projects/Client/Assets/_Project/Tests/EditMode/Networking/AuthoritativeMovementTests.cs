@@ -173,6 +173,17 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void Reconciliation_skips_zero_controller_moves_and_allows_server_landing_to_catch_up()
+        {
+            Assert.That(LocalPlayerMovementBridge.ShouldApplyControllerCorrection(Vector3.zero), Is.False);
+            Assert.That(LocalPlayerMovementBridge.ShouldApplyControllerCorrection(new Vector3(0.001f, 0f, 0f)), Is.True);
+            Assert.That(LocalPlayerMovementBridge.CalculateLandingPredictionGrace(0.08f, 0.25f, 17ul),
+                Is.EqualTo(0.097f).Within(0.0001f));
+            Assert.That(LocalPlayerMovementBridge.CalculateLandingPredictionGrace(0.08f, 0.25f, 1000ul),
+                Is.EqualTo(0.25f).Within(0.0001f));
+        }
+
+        [Test]
         public void Sprint_prediction_obeys_authoritative_exhaustion_and_restart_threshold()
         {
             bool exhausted = false;
