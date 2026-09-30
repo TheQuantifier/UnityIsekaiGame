@@ -17,7 +17,7 @@ namespace UnityIsekaiGame.Networking
             string serverAddress,
             string listenAddress,
             ushort port,
-            string playerId,
+            string accountHint,
             int maximumPlayers,
             string authenticationToken)
         {
@@ -25,7 +25,7 @@ namespace UnityIsekaiGame.Networking
             ServerAddress = serverAddress;
             ListenAddress = listenAddress;
             Port = port;
-            PlayerId = playerId;
+            AccountHint = accountHint;
             MaximumPlayers = maximumPlayers;
             AuthenticationToken = authenticationToken ?? string.Empty;
         }
@@ -34,7 +34,7 @@ namespace UnityIsekaiGame.Networking
         public string ServerAddress { get; }
         public string ListenAddress { get; }
         public ushort Port { get; }
-        public string PlayerId { get; }
+        public string AccountHint { get; }
         public int MaximumPlayers { get; }
         public string AuthenticationToken { get; }
     }
@@ -55,7 +55,7 @@ namespace UnityIsekaiGame.Networking
             string serverAddress = LocalServerEndpoint.DefaultClientAddress;
             string listenAddress = LocalServerEndpoint.DefaultListenAddress;
             int port = LocalServerEndpoint.DefaultPort;
-            string playerId = "local-player";
+            string accountHint = string.Empty;
             int maximumPlayers = 8;
             string authenticationToken = string.Empty;
 
@@ -116,7 +116,7 @@ namespace UnityIsekaiGame.Networking
                     continue;
                 }
 
-                if (!TryReadValue(arguments, ref index, "--player-id", out value, out matched, out failure))
+                if (!TryReadValue(arguments, ref index, "--account", out value, out matched, out failure))
                 {
                     options = default;
                     return false;
@@ -124,7 +124,7 @@ namespace UnityIsekaiGame.Networking
 
                 if (matched)
                 {
-                    playerId = value;
+                    accountHint = value;
                     continue;
                 }
 
@@ -177,10 +177,11 @@ namespace UnityIsekaiGame.Networking
                 return false;
             }
 
-            if (!LocalConnectionProtocol.IsValidIdentifier(playerId))
+            if (!string.IsNullOrWhiteSpace(accountHint)
+                && !LocalConnectionProtocol.IsValidIdentifier(accountHint))
             {
                 options = default;
-                failure = "The command-line player ID is invalid.";
+                failure = "The command-line account identifier is invalid.";
                 return false;
             }
 
@@ -189,7 +190,7 @@ namespace UnityIsekaiGame.Networking
                 serverAddress.Trim().ToLowerInvariant(),
                 listenAddress.Trim().ToLowerInvariant(),
                 (ushort)port,
-                playerId,
+                accountHint,
                 maximumPlayers,
                 authenticationToken);
             failure = string.Empty;

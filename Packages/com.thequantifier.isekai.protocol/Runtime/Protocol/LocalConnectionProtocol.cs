@@ -14,7 +14,7 @@ namespace UnityIsekaiGame.Networking
 
     public static class LocalConnectionProtocol
     {
-        public const int CurrentVersion = 3;
+        public const int CurrentVersion = 4;
         public const int MaximumPayloadBytes = 2048;
         public const int MaximumIdentifierLength = 64;
         public const int MaximumBuildVersionLength = 64;
@@ -108,19 +108,6 @@ namespace UnityIsekaiGame.Networking
                 return false;
             }
 
-            if (!IsValidIdentifier(request.PlayerId))
-            {
-                failure = "The player ID is invalid.";
-                return false;
-            }
-
-            if (request.PlayerId.Length < MinimumAccountNameLength
-                || request.PlayerId.Length > MaximumAccountNameLength)
-            {
-                failure = $"The username must be {MinimumAccountNameLength}-{MaximumAccountNameLength} characters.";
-                return false;
-            }
-
             if (string.IsNullOrWhiteSpace(request.BuildVersion)
                 || request.BuildVersion.Length > MaximumBuildVersionLength
                 || !string.Equals(request.BuildVersion, request.BuildVersion.Trim(), StringComparison.Ordinal))
@@ -134,21 +121,6 @@ namespace UnityIsekaiGame.Networking
                 || !string.Equals(request.AuthenticationToken, request.AuthenticationToken.Trim(), StringComparison.Ordinal))
             {
                 failure = "The client authentication token is invalid.";
-                return false;
-            }
-
-            if (!Enum.IsDefined(typeof(AccountAuthenticationMode), request.AuthenticationMode))
-            {
-                failure = "The requested account authentication mode is invalid.";
-                return false;
-            }
-
-            if (request.Password == null
-                || request.Password.Length < MinimumPasswordLength
-                || request.Password.Length > MaximumPasswordLength
-                || request.Password.Any(char.IsControl))
-            {
-                failure = $"The password must be {MinimumPasswordLength}-{MaximumPasswordLength} characters and cannot contain control characters.";
                 return false;
             }
 
@@ -174,19 +146,13 @@ namespace UnityIsekaiGame.Networking
 
         public ConnectionRequestPayload(
             string clientInstanceId,
-            string playerId,
             string buildVersion,
-            string authenticationToken,
-            AccountAuthenticationMode authenticationMode,
-            string password)
+            string authenticationToken)
         {
             ProtocolVersion = LocalConnectionProtocol.CurrentVersion;
             ClientInstanceId = clientInstanceId;
-            PlayerId = playerId;
             BuildVersion = buildVersion;
             AuthenticationToken = authenticationToken ?? string.Empty;
-            AuthenticationMode = authenticationMode;
-            Password = password ?? string.Empty;
         }
 
         [JsonProperty("protocolVersion", Required = Required.Always)]
@@ -195,25 +161,12 @@ namespace UnityIsekaiGame.Networking
         [JsonProperty("clientInstanceId", Required = Required.Always)]
         public string ClientInstanceId { get; set; } = string.Empty;
 
-        [JsonProperty("playerId", Required = Required.Always)]
-        public string PlayerId { get; set; } = string.Empty;
-
         [JsonProperty("buildVersion", Required = Required.Always)]
         public string BuildVersion { get; set; } = string.Empty;
 
         [JsonProperty("authenticationToken", Required = Required.Always)]
         public string AuthenticationToken { get; set; } = string.Empty;
 
-        [JsonProperty("authenticationMode", Required = Required.Always)]
-        public AccountAuthenticationMode AuthenticationMode { get; set; }
-
-        [JsonProperty("password", Required = Required.Always)]
-        public string Password { get; set; } = string.Empty;
-
-        public void ClearPassword()
-        {
-            Password = string.Empty;
-        }
     }
 
     public readonly struct ConnectionAdmissionResult
@@ -272,11 +225,6 @@ namespace UnityIsekaiGame.Networking
                 && !FixedTimeEquals(request.AuthenticationToken, expectedAuthenticationToken))
             {
                 return ConnectionAdmissionResult.Reject("Client authentication failed.");
-            }
-
-            if (connectedPlayerIds != null && connectedPlayerIds.Any(id => string.Equals(id, request.PlayerId, StringComparison.OrdinalIgnoreCase)))
-            {
-                return ConnectionAdmissionResult.Reject($"Player '{request.PlayerId}' is already connected.");
             }
 
             return ConnectionAdmissionResult.Approve(request);

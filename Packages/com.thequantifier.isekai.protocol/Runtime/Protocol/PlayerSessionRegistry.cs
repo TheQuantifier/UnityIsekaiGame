@@ -74,11 +74,23 @@ namespace UnityIsekaiGame.Networking
         public long Revision => revision;
         public IReadOnlyList<PlayerSessionSnapshot> ActiveSessions => sessionsByClientId.Values.OrderBy(session => session.ClientId).ToArray();
 
-        public bool TryOpen(ulong clientId, ConnectionRequestPayload request, out PlayerSessionSnapshot session, out string failure)
+        public bool TryOpen(
+            ulong clientId,
+            string clientInstanceId,
+            string playerId,
+            out PlayerSessionSnapshot session,
+            out string failure)
         {
             session = null;
-            if (!LocalConnectionProtocol.Validate(request, out failure))
+            if (!LocalConnectionProtocol.IsValidIdentifier(clientInstanceId))
             {
+                failure = "The client instance ID is invalid.";
+                return false;
+            }
+
+            if (!AccountAuthenticationProtocol.IsSecureUserId(playerId))
+            {
+                failure = "The authenticated user ID is invalid.";
                 return false;
             }
 
@@ -88,19 +100,19 @@ namespace UnityIsekaiGame.Networking
                 return false;
             }
 
-            if (clientIdsByPlayerId.ContainsKey(request.PlayerId))
+            if (clientIdsByPlayerId.ContainsKey(playerId))
             {
-                failure = $"Player '{request.PlayerId}' already owns an active player session.";
+                failure = "That account already owns an active player session.";
                 return false;
             }
 
             long nextRevision = checked(revision + 1L);
-            string canonicalPlayerId = request.PlayerId.ToLowerInvariant();
+            string canonicalPlayerId = playerId.ToLowerInvariant();
             session = new PlayerSessionSnapshot(
                 $"session.{clientId}.{nextRevision}",
                 clientId,
-                request.ClientInstanceId,
-                request.PlayerId,
+                clientInstanceId,
+                playerId,
                 $"person.player.{canonicalPlayerId}",
                 $"actor.player.{canonicalPlayerId}",
                 PlayerSessionPhase.Active,
@@ -108,7 +120,7 @@ namespace UnityIsekaiGame.Networking
                 0L,
                 nextRevision);
             sessionsByClientId.Add(clientId, session);
-            clientIdsByPlayerId.Add(request.PlayerId, clientId);
+            clientIdsByPlayerId.Add(playerId, clientId);
             revision = nextRevision;
             failure = string.Empty;
             return true;

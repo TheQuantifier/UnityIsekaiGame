@@ -82,7 +82,7 @@ Start a client in a second terminal. The `--local-client` flag is deliberately r
 
 ```powershell
 cd Builds/LocalClient
-.\UnityIsekaiClient.exe -batchmode -nographics --local-client --server-address 127.0.0.1 --server-port 7777 --player-id local-player -logFile client.log
+.\UnityIsekaiClient.exe -batchmode -nographics --local-client --server-address 127.0.0.1 --server-port 7777 -logFile client.log
 ```
 
 The server log reports `Local server is listening`, followed by the approved client ID and player ID. The client log reports `Connected`. Each build folder is a portable unit; keep its executable and generated data/dependency folders together.

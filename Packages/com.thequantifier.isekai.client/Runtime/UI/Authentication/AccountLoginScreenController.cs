@@ -66,7 +66,7 @@ namespace UnityIsekaiGame.UI.Authentication
             }
 
             LocalGameClient localClient = FindAnyObjectByType<LocalGameClient>(FindObjectsInactive.Include);
-            if (localClient == null || localClient.IsConnected)
+            if (localClient == null || localClient.LocalPlayerActor != null)
             {
                 return;
             }
@@ -103,6 +103,7 @@ namespace UnityIsekaiGame.UI.Authentication
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             client.StatusChanged += OnStatusChanged;
+            client.AccountAuthenticationCompleted += OnAccountAuthenticationCompleted;
             client.LocalPlayerActorChanged += OnLocalPlayerActorChanged;
             ApplyStatus(client.Status);
         }
@@ -111,7 +112,7 @@ namespace UnityIsekaiGame.UI.Authentication
         {
             if (usernameField != null)
             {
-                usernameField.text = client.SuggestedUsername == "local-player" ? string.Empty : client.SuggestedUsername;
+                usernameField.text = client.SuggestedAccountIdentifier;
                 usernameField.Select();
                 usernameField.ActivateInputField();
             }
@@ -151,6 +152,7 @@ namespace UnityIsekaiGame.UI.Authentication
             if (client != null)
             {
                 client.StatusChanged -= OnStatusChanged;
+                client.AccountAuthenticationCompleted -= OnAccountAuthenticationCompleted;
                 client.LocalPlayerActorChanged -= OnLocalPlayerActorChanged;
             }
 
@@ -237,9 +239,9 @@ namespace UnityIsekaiGame.UI.Authentication
             subtitle.alignment = TextAnchor.MiddleCenter;
             AddLayout(subtitle.gameObject, 28f);
 
-            usernameField = CreateInputField("Username Pill Input", form, "username...", false);
+            usernameField = CreateInputField("Username Pill Input", form, "username or user ID...", false);
             passwordField = CreateInputField("Password Pill Input", form, "password...", true);
-            usernameField.characterLimit = LocalConnectionProtocol.MaximumAccountNameLength;
+            usernameField.characterLimit = AccountAuthenticationProtocol.SecureUserIdLength;
             passwordField.characterLimit = LocalConnectionProtocol.MaximumPasswordLength;
             passwordField.onEndEdit.AddListener(value =>
             {
@@ -265,19 +267,23 @@ namespace UnityIsekaiGame.UI.Authentication
 
         private void Submit(bool createAccount)
         {
-            if (client == null || client.IsConnected || enteringWorld)
+            if (client == null || !client.IsConnected || enteringWorld)
             {
                 return;
             }
 
             string username = usernameField.text?.Trim() ?? string.Empty;
             string password = passwordField.text ?? string.Empty;
-            if (username.Length < LocalConnectionProtocol.MinimumAccountNameLength
-                || username.Length > LocalConnectionProtocol.MaximumAccountNameLength
-                || !LocalConnectionProtocol.IsValidIdentifier(username))
+            bool validUsername = username.Length >= LocalConnectionProtocol.MinimumAccountNameLength
+                && username.Length <= LocalConnectionProtocol.MaximumAccountNameLength
+                && LocalConnectionProtocol.IsValidIdentifier(username);
+            bool validUserId = AccountAuthenticationProtocol.IsSecureUserId(username);
+            if ((createAccount && !validUsername) || (!createAccount && !validUsername && !validUserId))
             {
                 SetFeedback(
-                    $"Use {LocalConnectionProtocol.MinimumAccountNameLength}-{LocalConnectionProtocol.MaximumAccountNameLength} letters, numbers, periods, underscores, or hyphens.",
+                    createAccount
+                        ? $"Use {LocalConnectionProtocol.MinimumAccountNameLength}-{LocalConnectionProtocol.MaximumAccountNameLength} letters, numbers, periods, underscores, or hyphens."
+                        : "Enter a valid username or user ID.",
                     GameUiTheme.Warning);
                 return;
             }
@@ -311,26 +317,44 @@ namespace UnityIsekaiGame.UI.Authentication
                     SetFeedback("Contacting the server...", GameUiTheme.TextMuted);
                     break;
                 case LocalConnectionPhase.Connected:
-                    enteringWorld = true;
-                    SetControlsInteractable(false);
-                    SetFeedback("Login accepted. Preparing your character...", GameUiTheme.Success);
+                    enteringWorld = false;
+                    SetControlsInteractable(true);
+                    SetFeedback("App connection accepted. Enter your account credentials.", GameUiTheme.TextMuted);
                     break;
                 case LocalConnectionPhase.Failed:
                     passwordField.text = string.Empty;
-                    SetControlsInteractable(true);
+                    SetControlsInteractable(client != null && client.IsConnected);
                     SetFeedback(status.Message, GameUiTheme.Danger);
                     enteringWorld = false;
                     passwordField.Select();
                     passwordField.ActivateInputField();
                     break;
                 case LocalConnectionPhase.Offline:
-                    SetControlsInteractable(true);
+                    SetControlsInteractable(false);
                     if (!string.IsNullOrWhiteSpace(status.Message) && !status.Message.Contains("credentials"))
                     {
                         SetFeedback(status.Message, GameUiTheme.TextMuted);
                     }
                     break;
             }
+        }
+
+        private void OnAccountAuthenticationCompleted(AccountAuthenticationResponse response)
+        {
+            if (response.Succeeded)
+            {
+                enteringWorld = true;
+                SetControlsInteractable(false);
+                SetFeedback($"Welcome, {response.Username}. Preparing your character...", GameUiTheme.Success);
+                return;
+            }
+
+            enteringWorld = false;
+            passwordField.text = string.Empty;
+            SetControlsInteractable(client != null && client.IsConnected);
+            SetFeedback(response.Message, GameUiTheme.Danger);
+            passwordField.Select();
+            passwordField.ActivateInputField();
         }
 
         private void OnLocalPlayerActorChanged(NetworkPlayerActor actor)

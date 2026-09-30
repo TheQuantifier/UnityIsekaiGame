@@ -6,11 +6,12 @@ This folder is reserved for repository-level automation that operates across bot
 
 - `uig server help` or `uig client help` to show only the commands for that side
 - `uig server start`, `stop`, `restart`, `status`, or `logs`
-- `uig client <clientID> start`, `end`, `restart`, `status`, or `logs`
+- `uig client start`, `end`, `restart`, `status`, or `logs` for the default client
+- `uig client <username-or-userID> start` to prefill an account identifier (a password is still required)
 - `uig clients status` or `uig clients end` to inspect or stop clients started through the launcher
 - `uig build <client|server|all>` to run the Unity command-line builds
 - `uig doctor` and `uig paths` to diagnose the local setup
 
 `uig server start` returns only after the server log confirms that the authoritative world is loaded and the transport is listening. The launcher creates a shared local authentication token in the ignored `.uig` directory and passes it to both sides; do not copy that token into source control.
 
-`uig client <clientID> start` uses the client ID as the suggested username, then opens the in-game login screen. On a username's first run, enter a password and choose **Create Account**. On later runs, enter the same password and choose **Login**. Account verification and account files are owned only by the dedicated server; the launcher never accepts or stores account passwords.
+`uig client start` first establishes an app-authenticated connection, then opens the in-game login screen. Enter a username and password and choose **Create Account** on first use; the server assigns an opaque random 256-bit user ID. Later, Login accepts either the username or that user ID plus the password. The optional launcher identifier only prefills the form—it never bypasses password verification. Account verification and account files are owned only by the dedicated server; the launcher never accepts or stores account passwords.

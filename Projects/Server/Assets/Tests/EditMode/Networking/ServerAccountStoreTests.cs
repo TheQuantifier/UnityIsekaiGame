@@ -35,8 +35,14 @@ namespace UnityIsekaiGame.ServerProject.Tests
 
             Assert.That(created.Status, Is.EqualTo(ServerAccountAuthenticationStatus.Created), created.Message);
             Assert.That(authenticated.Status, Is.EqualTo(ServerAccountAuthenticationStatus.Authenticated), authenticated.Message);
-            Assert.That(created.PlayerId, Is.EqualTo("test.player"));
-            Assert.That(authenticated.PlayerId, Is.EqualTo(created.PlayerId));
+            Assert.That(created.Username, Is.EqualTo("test.player"));
+            Assert.That(created.UserId, Has.Length.EqualTo(AccountAuthenticationProtocol.SecureUserIdLength));
+            Assert.That(created.UserId, Is.Not.EqualTo(created.Username));
+            Assert.That(authenticated.UserId, Is.EqualTo(created.UserId));
+
+            ServerAccountAuthenticationResult byId = store.Authenticate(Request(created.UserId, "Correct-horse-42", AccountAuthenticationMode.Login));
+            Assert.That(byId.Succeeded, Is.True, byId.Message);
+            Assert.That(byId.Username, Is.EqualTo("test.player"));
         }
 
         [Test]
@@ -69,16 +75,24 @@ namespace UnityIsekaiGame.ServerProject.Tests
             Assert.That(contents, Does.Contain("passwordHashBase64"));
         }
 
-        private static ConnectionRequestPayload Request(
+        [Test]
+        public void Distinct_accounts_receive_distinct_opaque_user_ids()
+        {
+            var store = new ServerAccountStore(temporaryRoot);
+            ServerAccountAuthenticationResult first = store.Authenticate(Request("first.player", "Correct-horse-42", AccountAuthenticationMode.CreateAccount));
+            ServerAccountAuthenticationResult second = store.Authenticate(Request("second.player", "Correct-horse-43", AccountAuthenticationMode.CreateAccount));
+
+            Assert.That(first.Succeeded, Is.True, first.Message);
+            Assert.That(second.Succeeded, Is.True, second.Message);
+            Assert.That(AccountAuthenticationProtocol.IsSecureUserId(first.UserId), Is.True);
+            Assert.That(AccountAuthenticationProtocol.IsSecureUserId(second.UserId), Is.True);
+            Assert.That(second.UserId, Is.Not.EqualTo(first.UserId));
+        }
+
+        private static AccountAuthenticationRequest Request(
             string playerId,
             string password,
             AccountAuthenticationMode mode) =>
-            new ConnectionRequestPayload(
-                Guid.NewGuid().ToString("N"),
-                playerId,
-                "0.1.0",
-                string.Empty,
-                mode,
-                password);
+            new AccountAuthenticationRequest(playerId, password, mode);
     }
 }

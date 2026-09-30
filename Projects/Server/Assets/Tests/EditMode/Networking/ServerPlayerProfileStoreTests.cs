@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using NUnit.Framework;
 using UnityEngine;
 using UnityIsekaiGame.Equipment;
@@ -125,15 +127,12 @@ namespace UnityIsekaiGame.Tests
         private static PlayerSessionSnapshot OpenSession(string playerId)
         {
             PlayerSessionRegistry registry = new PlayerSessionRegistry();
+            using SHA256 sha = SHA256.Create();
+            string secureUserId = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(playerId))).Replace("-", string.Empty).ToLowerInvariant();
             Assert.That(registry.TryOpen(
                 1UL,
-                new ConnectionRequestPayload(
-                    "test-client",
-                    playerId,
-                    "test",
-                    string.Empty,
-                    AccountAuthenticationMode.Login,
-                    "Test-password-123"),
+                "test-client",
+                secureUserId,
                 out PlayerSessionSnapshot session,
                 out string failure), Is.True, failure);
             return session;

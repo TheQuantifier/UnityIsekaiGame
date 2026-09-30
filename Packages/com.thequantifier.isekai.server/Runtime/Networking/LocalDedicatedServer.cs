@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading.Tasks;
+using Unity.Collections;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
@@ -56,6 +59,10 @@ namespace UnityIsekaiGame.Networking.Server
 
         private readonly Dictionary<ulong, string> connectedPlayerIds = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, ConnectionRequestPayload> pendingConnections = new Dictionary<ulong, ConnectionRequestPayload>();
+        private readonly Dictionary<ulong, int> failedAuthenticationCounts = new Dictionary<ulong, int>();
+        private readonly Dictionary<ulong, float> nextAuthenticationAt = new Dictionary<ulong, float>();
+        private readonly HashSet<ulong> authenticationInFlight = new HashSet<ulong>();
+        private readonly ConcurrentQueue<AccountAuthenticationWorkResult> authenticationResults = new ConcurrentQueue<AccountAuthenticationWorkResult>();
         private readonly Dictionary<ulong, NetworkPlayerActor> playerActors = new Dictionary<ulong, NetworkPlayerActor>();
         private readonly PlayerSessionRegistry playerSessions = new PlayerSessionRegistry();
         private readonly Dictionary<string, ServerPlayerProfileData> playerProfiles = new Dictionary<string, ServerPlayerProfileData>(StringComparer.OrdinalIgnoreCase);
@@ -71,6 +78,7 @@ namespace UnityIsekaiGame.Networking.Server
         private bool prototypeControllerWasEnabled;
         private bool prototypeMotorWasEnabled;
         private bool fixedSimulationRateOverridden;
+        private int serverGeneration;
         private float previousFixedDeltaTime;
         private NetworkCombatWorldState combatWorldState;
         private ServerCombatWorldAuthority combatWorldAuthority;
@@ -122,6 +130,7 @@ namespace UnityIsekaiGame.Networking.Server
         private void Update()
         {
             DrainProfileWriteResults();
+            DrainAuthenticationResults();
             if (!ownsServerSession || networkManager == null || !networkManager.IsServer || !serverPersistenceReady) return;
             float now = Time.unscaledTime;
             if (now >= nextPlayerProfileAutosaveAt)
@@ -239,6 +248,11 @@ namespace UnityIsekaiGame.Networking.Server
             serverPort = endpoint.Port;
             connectedPlayerIds.Clear();
             pendingConnections.Clear();
+            failedAuthenticationCounts.Clear();
+            nextAuthenticationAt.Clear();
+            authenticationInFlight.Clear();
+            while (authenticationResults.TryDequeue(out _)) { }
+            serverGeneration = checked(serverGeneration + 1);
             playerActors.Clear();
             playerSessions.Clear();
             playerProfiles.Clear();
@@ -271,6 +285,10 @@ namespace UnityIsekaiGame.Networking.Server
                 RestoreFixedSimulationRate();
                 return Fail($"Could not start the local server on {endpoint}.", endpoint);
             }
+
+            networkManager.CustomMessagingManager.RegisterNamedMessageHandler(
+                AccountAuthenticationProtocol.RequestMessageName,
+                OnAccountAuthenticationRequest);
 
             try
             {
@@ -322,6 +340,10 @@ namespace UnityIsekaiGame.Networking.Server
                 worldItemAuthority?.RestoreScenePickupSources();
                 connectedPlayerIds.Clear();
                 pendingConnections.Clear();
+                failedAuthenticationCounts.Clear();
+                nextAuthenticationAt.Clear();
+                authenticationInFlight.Clear();
+                serverGeneration = checked(serverGeneration + 1);
                 playerActors.Clear();
                 playerSessions.Clear();
                 playerProfiles.Clear();
@@ -346,6 +368,10 @@ namespace UnityIsekaiGame.Networking.Server
             ownsServerSession = false;
             connectedPlayerIds.Clear();
             pendingConnections.Clear();
+            failedAuthenticationCounts.Clear();
+            nextAuthenticationAt.Clear();
+            authenticationInFlight.Clear();
+            serverGeneration = checked(serverGeneration + 1);
             playerActors.Clear();
             playerSessions.Clear();
             playerProfiles.Clear();
@@ -382,7 +408,7 @@ namespace UnityIsekaiGame.Networking.Server
         {
             ConnectionAdmissionResult admission = LocalConnectionAdmission.Evaluate(
                 request.Payload,
-                connectedPlayerIds.Count,
+                connectedPlayerIds.Count + pendingConnections.Count,
                 maximumPlayers,
                 connectedPlayerIds.Values,
                 Application.version,
@@ -392,28 +418,11 @@ namespace UnityIsekaiGame.Networking.Server
             string rejectionReason = admission.Reason;
             if (approved)
             {
-                accountStore ??= new ServerAccountStore();
-                ServerAccountAuthenticationResult accountResult = accountStore.Authenticate(admission.Request);
-                approved = accountResult.Succeeded;
-                rejectionReason = approved ? string.Empty : accountResult.Message;
-                if (approved)
-                {
-                    admission.Request.PlayerId = accountResult.PlayerId;
-                }
-            }
-
-            // Authentication is complete at this point. Session admission does not need the
-            // plaintext credential, so never retain it in either approved or rejected requests.
-            admission.Request?.ClearPassword();
-
-            if (approved)
-            {
                 // Publish the admission record before completing the NGO response. Some transports can
                 // dispatch OnClientConnected as soon as the response is marked non-pending, including
                 // re-entrantly during this callback.
-                connectedPlayerIds[request.ClientNetworkId] = admission.Request.PlayerId;
                 pendingConnections[request.ClientNetworkId] = admission.Request;
-                Debug.Log($"[Local Server] Authenticated client {request.ClientNetworkId} as player '{admission.Request.PlayerId}'.", this);
+                Debug.Log($"[Local Server] App-authenticated client {request.ClientNetworkId}; awaiting account login.", this);
             }
             else
             {
@@ -440,25 +449,164 @@ namespace UnityIsekaiGame.Networking.Server
                 return;
             }
 
-            pendingConnections.Remove(clientId);
-            bool sessionOpened = playerSessions.TryOpen(clientId, request, out PlayerSessionSnapshot session, out string failure);
-            request.ClearPassword();
-            if (!sessionOpened)
+            Debug.Log($"[Local Server] Client app {clientId} connected and is awaiting account authentication.", this);
+        }
+
+        private void OnAccountAuthenticationRequest(ulong clientId, FastBufferReader reader)
+        {
+            if (!pendingConnections.ContainsKey(clientId)
+                || connectedPlayerIds.ContainsKey(clientId))
             {
-                DisconnectClient(clientId, failure);
+                SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty,
+                    "The client is not eligible to authenticate an account."));
                 return;
             }
 
-            if (!TrySpawnPlayerActor(session, out NetworkPlayerActor actor, out failure))
+            if (nextAuthenticationAt.TryGetValue(clientId, out float allowedAt) && Time.unscaledTime < allowedAt)
+            {
+                SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty,
+                    "Too many login attempts. Please wait a moment and try again."));
+                return;
+            }
+
+            if (!authenticationInFlight.Add(clientId))
+            {
+                SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty,
+                    "An account authentication request is already in progress."));
+                return;
+            }
+
+            if (!TryReadAuthenticationPayload(reader, out byte[] payload, out string failure)
+                || !AccountAuthenticationProtocol.TryDecodeRequest(payload, out AccountAuthenticationRequest request, out failure))
+            {
+                authenticationInFlight.Remove(clientId);
+                RegisterAuthenticationFailure(clientId);
+                SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty, failure));
+                return;
+            }
+
+            accountStore ??= new ServerAccountStore();
+            ServerAccountStore store = accountStore;
+            int generation = serverGeneration;
+            _ = Task.Run(() =>
+            {
+                ServerAccountAuthenticationResult result;
+                try { result = store.Authenticate(request); }
+                catch (Exception)
+                {
+                    request.ClearPassword();
+                    result = new ServerAccountAuthenticationResult(
+                        ServerAccountAuthenticationStatus.StorageFailure,
+                        string.Empty,
+                        string.Empty,
+                        "Account services are temporarily unavailable. Please try again.");
+                }
+                authenticationResults.Enqueue(new AccountAuthenticationWorkResult(generation, clientId, result));
+            });
+        }
+
+        private void DrainAuthenticationResults()
+        {
+            while (authenticationResults.TryDequeue(out AccountAuthenticationWorkResult work))
+            {
+                if (work.ServerGeneration != serverGeneration) continue;
+                authenticationInFlight.Remove(work.ClientId);
+                CompleteAccountAuthentication(work.ClientId, work.Result);
+            }
+        }
+
+        private void CompleteAccountAuthentication(ulong clientId, ServerAccountAuthenticationResult result)
+        {
+            if (!ownsServerSession
+                || !pendingConnections.TryGetValue(clientId, out ConnectionRequestPayload appRequest)
+                || connectedPlayerIds.ContainsKey(clientId)) return;
+
+            if (!result.Succeeded)
+            {
+                RegisterAuthenticationFailure(clientId);
+                SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty, result.Message));
+                return;
+            }
+
+            if (connectedPlayerIds.Values.Any(id => string.Equals(id, result.UserId, StringComparison.Ordinal)))
+            {
+                RegisterAuthenticationFailure(clientId);
+                SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty,
+                    "That account is already signed in."));
+                return;
+            }
+
+            string failure;
+            if (!playerSessions.TryOpen(clientId, appRequest.ClientInstanceId, result.UserId, out PlayerSessionSnapshot session, out failure)
+                || !TrySpawnPlayerActor(session, out NetworkPlayerActor actor, out failure))
             {
                 playerSessions.TryClose(clientId, out _);
-                DisconnectClient(clientId, failure);
+                SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty, failure));
                 return;
             }
 
+            failedAuthenticationCounts.Remove(clientId);
+            nextAuthenticationAt.Remove(clientId);
+            pendingConnections.Remove(clientId);
+            connectedPlayerIds[clientId] = result.UserId;
             playerActors[clientId] = actor;
-            Debug.Log($"[Local Server] Started session '{session.SessionId}' with actor '{session.ActorId}' for player '{session.PlayerId}'.", this);
+            SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(
+                true,
+                result.Status == ServerAccountAuthenticationStatus.Created,
+                result.UserId,
+                result.Username,
+                result.Message));
+            Debug.Log($"[Local Server] Started session '{session.SessionId}' for account '{result.Username}' ({result.UserId}).", this);
             PlayerSessionStarted?.Invoke(session, actor);
+        }
+
+        private void RegisterAuthenticationFailure(ulong clientId)
+        {
+            int failures = failedAuthenticationCounts.TryGetValue(clientId, out int count) ? count + 1 : 1;
+            failedAuthenticationCounts[clientId] = failures;
+            nextAuthenticationAt[clientId] = Time.unscaledTime + Mathf.Min(10f, 0.5f * Mathf.Pow(2f, Mathf.Min(failures - 1, 5)));
+        }
+
+        private void SendAuthenticationResponse(ulong clientId, AccountAuthenticationResponse response)
+        {
+            if (networkManager?.CustomMessagingManager == null) return;
+            if (!AccountAuthenticationProtocol.TryEncodeResponse(response, out byte[] payload, out string failure))
+            {
+                Debug.LogError($"[Local Server] Could not encode account response: {failure}", this);
+                return;
+            }
+
+            using var writer = new FastBufferWriter(sizeof(int) + payload.Length, Allocator.Temp);
+            writer.WriteValueSafe(payload.Length);
+            writer.WriteBytesSafe(payload);
+            networkManager.CustomMessagingManager.SendNamedMessage(
+                AccountAuthenticationProtocol.ResponseMessageName,
+                clientId,
+                writer,
+                NetworkDelivery.ReliableSequenced);
+        }
+
+        private static bool TryReadAuthenticationPayload(FastBufferReader reader, out byte[] payload, out string failure)
+        {
+            payload = Array.Empty<byte>();
+            try
+            {
+                reader.ReadValueSafe(out int length);
+                if (length < 1 || length > AccountAuthenticationProtocol.MaximumPayloadBytes)
+                {
+                    failure = "The account request has an invalid size.";
+                    return false;
+                }
+                payload = new byte[length];
+                reader.ReadBytesSafe(ref payload, length);
+                failure = string.Empty;
+                return true;
+            }
+            catch (Exception)
+            {
+                failure = "The account request is malformed.";
+                return false;
+            }
         }
 
         private void OnClientDisconnected(ulong clientId)
@@ -466,6 +614,9 @@ namespace UnityIsekaiGame.Networking.Server
             SavePlayerProfile(clientId, "Client disconnect");
             combatWorldAuthority?.UnregisterPlayerTarget(clientId);
             pendingConnections.Remove(clientId);
+            failedAuthenticationCounts.Remove(clientId);
+            nextAuthenticationAt.Remove(clientId);
+            authenticationInFlight.Remove(clientId);
             playerActors.Remove(clientId);
             if (connectedPlayerIds.Remove(clientId))
             {
@@ -743,6 +894,9 @@ namespace UnityIsekaiGame.Networking.Server
         {
             connectedPlayerIds.Remove(clientId);
             pendingConnections.Remove(clientId);
+            failedAuthenticationCounts.Remove(clientId);
+            nextAuthenticationAt.Remove(clientId);
+            authenticationInFlight.Remove(clientId);
             Debug.LogError($"[Local Server] Disconnecting client {clientId}: {reason}", this);
             networkManager?.DisconnectClient(clientId, reason);
         }
@@ -1026,6 +1180,7 @@ namespace UnityIsekaiGame.Networking.Server
 
             networkManager.OnClientDisconnectCallback -= OnClientDisconnected;
             networkManager.OnClientConnectedCallback -= OnClientConnected;
+            networkManager.CustomMessagingManager?.UnregisterNamedMessageHandler(AccountAuthenticationProtocol.RequestMessageName);
             networkManager.ConnectionApprovalCallback = null;
         }
 
@@ -1075,6 +1230,20 @@ namespace UnityIsekaiGame.Networking.Server
 
             Configure(networkManager, options.ListenAddress, options.Port, options.MaximumPlayers, options.AuthenticationToken);
             StartServer();
+        }
+
+        private readonly struct AccountAuthenticationWorkResult
+        {
+            public AccountAuthenticationWorkResult(int serverGeneration, ulong clientId, ServerAccountAuthenticationResult result)
+            {
+                ServerGeneration = serverGeneration;
+                ClientId = clientId;
+                Result = result;
+            }
+
+            public int ServerGeneration { get; }
+            public ulong ClientId { get; }
+            public ServerAccountAuthenticationResult Result { get; }
         }
 
     }

@@ -220,7 +220,7 @@ function Show-UigServerStatus {
 }
 
 function Start-UigClient {
-    param([Parameter(Mandatory)][string]$ClientId)
+    param([string]$ClientId = 'default')
 
     Assert-UigClientId $ClientId
     Assert-UigBuildExists $script:UigClientExecutable
@@ -244,10 +244,12 @@ function Start-UigClient {
         '--local-client',
         '--server-address', '127.0.0.1',
         '--server-port', $script:UigDefaultPort,
-        '--player-id', $ClientId,
         '--auth-token', $authenticationToken,
         '-logFile', $logPath
     )
+    if ($ClientId -ne 'default') {
+        $arguments += @('--account', $ClientId)
+    }
     $startOptions = @{
         FilePath = $script:UigClientExecutable
         ArgumentList = $arguments
@@ -256,12 +258,12 @@ function Start-UigClient {
     }
     $process = Start-Process @startOptions
     Set-Content -LiteralPath (Get-UigClientPidPath $ClientId) -Value $process.Id
-    Write-Host "Client '$ClientId' started (PID $($process.Id)). Complete Login or Create Account in the game window." -ForegroundColor Green
+    Write-Host "Client '$ClientId' started (PID $($process.Id)). The app connection is authenticated; complete account Login or Create Account in the game window." -ForegroundColor Green
     Write-Host "Log: $logPath"
 }
 
 function Stop-UigClient {
-    param([Parameter(Mandatory)][string]$ClientId)
+    param([string]$ClientId = 'default')
 
     Assert-UigClientId $ClientId
     $running = @(Get-UigTrackedClientProcess $ClientId)
@@ -276,7 +278,7 @@ function Stop-UigClient {
 }
 
 function Show-UigClientStatus {
-    param([Parameter(Mandatory)][string]$ClientId)
+    param([string]$ClientId = 'default')
 
     Assert-UigClientId $ClientId
     $running = @(Get-UigTrackedClientProcess $ClientId)
@@ -454,17 +456,18 @@ function Show-UigServerHelp {
 function Show-UigClientHelp {
     Write-Host 'Unity Isekai Game - client commands' -ForegroundColor Cyan
     Write-Host ''
-    Write-Host '  uig client <clientID> start'
-    Write-Host '  uig client <clientID> end'
-    Write-Host '  uig client <clientID> restart'
-    Write-Host '  uig client <clientID> status'
-    Write-Host '  uig client <clientID> logs [lines]'
+    Write-Host '  uig client start'
+    Write-Host '  uig client end'
+    Write-Host '  uig client restart'
+    Write-Host '  uig client status'
+    Write-Host '  uig client logs [lines]'
+    Write-Host '  uig client <username-or-userID> start'
     Write-Host '  uig client help'
     Write-Host ''
     Write-Host 'Examples:' -ForegroundColor Cyan
-    Write-Host '  uig client jhand start'
-    Write-Host '  uig client jhand-2 start'
-    Write-Host '  uig client jhand status'
+    Write-Host '  uig client start'
+    Write-Host '  uig client jhand start       # prefill username; password is still required'
+    Write-Host '  uig client <64-char-userID> start'
 }
 
 function Show-UigHelp {
@@ -479,11 +482,8 @@ function Show-UigHelp {
     Write-Host '  uig server help'
     Write-Host ''
     Write-Host 'Client:' -ForegroundColor Cyan
-    Write-Host '  uig client <clientID> start'
-    Write-Host '  uig client <clientID> end'
-    Write-Host '  uig client <clientID> restart'
-    Write-Host '  uig client <clientID> status'
-    Write-Host '  uig client <clientID> logs [lines]'
+    Write-Host '  uig client start|end|restart|status|logs [lines]'
+    Write-Host '  uig client <username-or-userID> start|end|restart|status|logs [lines]'
     Write-Host '  uig client help'
     Write-Host ''
     Write-Host 'Other:' -ForegroundColor Cyan
@@ -598,13 +598,19 @@ function uig {
             return
         }
 
-        if ($Command.Count -lt 3) {
-            Show-UigClientHelp
-            return
+        $directActions = @('start', 'stop', 'end', 'restart', 'status', 'log', 'logs')
+        if ($Command.Count -lt 2) { Show-UigClientHelp; return }
+        if ($Command[1].ToLowerInvariant() -in $directActions) {
+            $clientId = 'default'
+            $action = $Command[1].ToLowerInvariant()
+            $argumentOffset = 2
         }
-
-        $clientId = $Command[1]
-        $action = $Command[2].ToLowerInvariant()
+        elseif ($Command.Count -ge 3) {
+            $clientId = $Command[1]
+            $action = $Command[2].ToLowerInvariant()
+            $argumentOffset = 3
+        }
+        else { Show-UigClientHelp; return }
         switch ($action) {
             'start' { Start-UigClient $clientId; return }
             { $_ -in @('stop', 'end') } { Stop-UigClient $clientId; return }
@@ -613,8 +619,8 @@ function uig {
             { $_ -in @('log', 'logs') } {
                 Assert-UigClientId $clientId
                 $logPath = Join-Path $script:UigRuntimeLogDirectory "client-$clientId.log"
-                if ($Command.Count -gt 3) {
-                    [int]$lineCount = $Command[3]
+                if ($Command.Count -gt $argumentOffset) {
+                    [int]$lineCount = $Command[$argumentOffset]
                     Show-UigLog $logPath $lineCount
                 }
                 else {

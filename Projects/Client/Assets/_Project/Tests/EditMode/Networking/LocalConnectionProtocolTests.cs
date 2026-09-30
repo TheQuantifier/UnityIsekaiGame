@@ -36,11 +36,8 @@ namespace UnityIsekaiGame.Tests
             Assert.That(LocalConnectionProtocol.TryDecode(payload, out ConnectionRequestPayload decoded, out string decodeFailure), Is.True, decodeFailure);
             Assert.That(decoded.ProtocolVersion, Is.EqualTo(LocalConnectionProtocol.CurrentVersion));
             Assert.That(decoded.ClientInstanceId, Is.EqualTo(source.ClientInstanceId));
-            Assert.That(decoded.PlayerId, Is.EqualTo(source.PlayerId));
             Assert.That(decoded.BuildVersion, Is.EqualTo(source.BuildVersion));
             Assert.That(decoded.AuthenticationToken, Is.EqualTo(source.AuthenticationToken));
-            Assert.That(decoded.AuthenticationMode, Is.EqualTo(AccountAuthenticationMode.Login));
-            Assert.That(decoded.Password, Is.EqualTo(source.Password));
         }
 
         [Test]
@@ -55,7 +52,7 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void Admission_rejects_full_server_and_duplicate_player()
+        public void Admission_rejects_full_server_but_does_not_authenticate_an_account()
         {
             ConnectionRequestPayload request = Request("player.one");
             Assert.That(LocalConnectionProtocol.TryEncode(request, out byte[] payload, out string failure), Is.True, failure);
@@ -64,9 +61,8 @@ namespace UnityIsekaiGame.Tests
             Assert.That(full.Approved, Is.False);
             Assert.That(full.Reason, Does.Contain("full"));
 
-            ConnectionAdmissionResult duplicate = LocalConnectionAdmission.Evaluate(payload, 1, 2, new[] { "PLAYER.ONE" });
-            Assert.That(duplicate.Approved, Is.False);
-            Assert.That(duplicate.Reason, Does.Contain("already connected"));
+            ConnectionAdmissionResult accountAgnostic = LocalConnectionAdmission.Evaluate(payload, 1, 2, new[] { "ignored-at-app-stage" });
+            Assert.That(accountAgnostic.Approved, Is.True, accountAgnostic.Reason);
         }
 
         [Test]
@@ -78,7 +74,7 @@ namespace UnityIsekaiGame.Tests
             ConnectionAdmissionResult result = LocalConnectionAdmission.Evaluate(payload, 1, 4, new[] { "player.one" });
 
             Assert.That(result.Approved, Is.True, result.Reason);
-            Assert.That(result.Request.PlayerId, Is.EqualTo("player.two"));
+            Assert.That(result.Request.ClientInstanceId, Is.EqualTo(request.ClientInstanceId));
         }
 
         [Test]
@@ -86,11 +82,8 @@ namespace UnityIsekaiGame.Tests
         {
             ConnectionRequestPayload request = new ConnectionRequestPayload(
                 Guid.NewGuid().ToString("N"),
-                "player.secure",
                 "0.1.0",
-                "correct-token",
-                AccountAuthenticationMode.Login,
-                "Test-password-123");
+                "correct-token");
             Assert.That(LocalConnectionProtocol.TryEncode(request, out byte[] payload, out string failure), Is.True, failure);
 
             ConnectionAdmissionResult wrongBuild = LocalConnectionAdmission.Evaluate(
@@ -148,7 +141,7 @@ namespace UnityIsekaiGame.Tests
                     "--local-client",
                     "--server-address", "localhost",
                     "--server-port=7788",
-                    "--player-id", "player.command-line",
+                    "--account", "player.command-line",
                     "--auth-token", "test-token"
                 },
                 false,
@@ -158,13 +151,13 @@ namespace UnityIsekaiGame.Tests
             Assert.That(options.Mode, Is.EqualTo(LocalNetworkLaunchMode.Client));
             Assert.That(options.ServerAddress, Is.EqualTo("localhost"));
             Assert.That(options.Port, Is.EqualTo(7788));
-            Assert.That(options.PlayerId, Is.EqualTo("player.command-line"));
+            Assert.That(options.AccountHint, Is.EqualTo("player.command-line"));
             Assert.That(options.AuthenticationToken, Is.EqualTo("test-token"));
         }
 
         [TestCase("--server-port", "0")]
         [TestCase("--max-players", "0")]
-        [TestCase("--player-id", "bad player")]
+        [TestCase("--account", "bad player")]
         public void Command_line_rejects_invalid_network_values(string option, string value)
         {
             Assert.That(LocalNetworkCommandLine.TryParse(
@@ -186,13 +179,20 @@ namespace UnityIsekaiGame.Tests
             Assert.That(failure, Does.Contain("both"));
         }
 
+        [Test]
+        public void Account_authentication_round_trips_separately_from_app_admission()
+        {
+            var source = new AccountAuthenticationRequest("player.one", "Test-password-123", AccountAuthenticationMode.Login);
+            Assert.That(AccountAuthenticationProtocol.TryEncodeRequest(source, out byte[] payload, out string encodeFailure), Is.True, encodeFailure);
+            Assert.That(AccountAuthenticationProtocol.TryDecodeRequest(payload, out AccountAuthenticationRequest decoded, out string decodeFailure), Is.True, decodeFailure);
+            Assert.That(decoded.AccountIdentifier, Is.EqualTo("player.one"));
+            Assert.That(decoded.Password, Is.EqualTo("Test-password-123"));
+        }
+
         private static ConnectionRequestPayload Request(string playerId, string token = "") =>
             new ConnectionRequestPayload(
                 Guid.NewGuid().ToString("N"),
-                playerId,
                 "0.1.0",
-                token,
-                AccountAuthenticationMode.Login,
-                "Test-password-123");
+                token);
     }
 }
