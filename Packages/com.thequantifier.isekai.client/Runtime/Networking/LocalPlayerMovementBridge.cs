@@ -25,6 +25,8 @@ namespace UnityIsekaiGame.Networking.Client
         [SerializeField, Min(0f)] private float jumpPredictionGraceSeconds = 0.3f;
         [SerializeField, Min(0f)] private float minimumLandingGraceSeconds = 0.08f;
         [SerializeField, Min(0f)] private float maximumLandingGraceSeconds = 0.25f;
+        [SerializeField, Min(0f)] private float minimumMovementGraceSeconds = 0.05f;
+        [SerializeField, Min(0f)] private float maximumMovementGraceSeconds = 0.2f;
         [SerializeField, Min(0.5f)] private float hardSnapDistance = 4f;
 
         private NetworkPlayerMovement networkMovement;
@@ -38,11 +40,10 @@ namespace UnityIsekaiGame.Networking.Client
         private bool lastSubmittedSprint;
         private bool predictionSprintExhausted;
         private bool predictionSprintAllowed = true;
-        private uint clientJumpTraceId;
-        private uint clientJumpTraceTick;
-        private double clientJumpTraceUntil;
         private bool wasPredictionAirborne;
         private double landingPredictionGraceUntil;
+        private bool wasPredictionMoving;
+        private double movementPredictionGraceUntil;
         private bool smokeInputEnabled;
         private bool vitalsSmokeEnabled;
         private bool vitalsSmokeStarted;
@@ -96,17 +97,8 @@ namespace UnityIsekaiGame.Networking.Client
             UpdatePredictionSprintAuthorization();
             if (input != null && input.JumpPressedThisFrame)
             {
-                clientJumpTraceId = clientJumpTraceId == uint.MaxValue ? 1u : clientJumpTraceId + 1u;
-                clientJumpTraceTick = 0u;
-                clientJumpTraceUntil = now + 1.25d;
                 jumpPending = true;
                 jumpPredictionGraceUntil = now + jumpPredictionGraceSeconds;
-                Debug.Log(
-                    $"[Jump Trace][Client] action=pressed trace={clientJumpTraceId} frame={Time.frameCount} " +
-                    $"grounded={localMotor != null && localMotor.IsGrounded} predictedJumpCount={localMotor?.PredictedJumpCount ?? 0u} " +
-                    $"move={(input == null ? Vector2.zero : input.Move)} sprint={input != null && input.SprintHeld} " +
-                    $"position={(presentationRoot == null ? Vector3.zero : presentationRoot.position)} clientTime={now:F6}",
-                    this);
             }
             if (vitalsSmokeEnabled && !vitalsSmokeStarted)
             {
@@ -141,14 +133,7 @@ namespace UnityIsekaiGame.Networking.Client
             float yaw = presentationRoot == null ? networkMovement.transform.eulerAngles.y : presentationRoot.eulerAngles.y;
             lastSubmittedMove = move;
             lastSubmittedSprint = sprint && predictionSprintAllowed;
-            bool submitted = networkMovement.SubmitLocalInput(move, sprint, jump, yaw);
-            if (jump)
-            {
-                Debug.Log(
-                    $"[Jump Trace][Client] action=sent trace={clientJumpTraceId} frame={Time.frameCount} submitted={submitted} " +
-                    $"move={move} sprint={sprint} yaw={yaw:F3} clientTime={now:F6}",
-                    this);
-            }
+            networkMovement.SubmitLocalInput(move, sprint, jump, yaw);
         }
 
         private void LateUpdate()
@@ -159,26 +144,25 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             Vector3 authoritativePosition = networkMovement.transform.position;
-            bool traceJump = Time.realtimeSinceStartupAsDouble <= clientJumpTraceUntil;
-            bool hardSnapped = false;
             bool airborne = false;
             bool suppressVertical = false;
             bool suppressHorizontal = false;
-            Vector3 appliedCorrection = Vector3.zero;
             if (localMotor != null && localMotor.enabled)
             {
                 Vector3 error = authoritativePosition - presentationRoot.position;
                 if (error.sqrMagnitude >= hardSnapDistance * hardSnapDistance)
                 {
-                    hardSnapped = true;
                     SetPresentationPosition(authoritativePosition);
                     localMotor.ResetTransientMotionForPersistenceRestore();
                 }
                 else
                 {
                     CharacterController controller = presentationRoot.GetComponent<CharacterController>();
-                    float predictionSpeed = lastSubmittedMove.sqrMagnitude > 0.0001f
-                        ? lastSubmittedSprint ? networkMovement.SprintSpeed : networkMovement.WalkSpeed
+                    bool predictionMoving = localMotor.CurrentHorizontalSpeed > 0.01f;
+                    float predictionSpeed = predictionMoving
+                        ? Mathf.Max(
+                            localMotor.CurrentHorizontalSpeed,
+                            lastSubmittedSprint ? networkMovement.SprintSpeed : networkMovement.WalkSpeed)
                         : 0f;
                     ulong roundTripTimeMilliseconds = GetRoundTripTimeMilliseconds();
                     float horizontalTolerance = CalculateHorizontalPredictionTolerance(
@@ -203,8 +187,27 @@ namespace UnityIsekaiGame.Networking.Client
                     }
 
                     bool landingGraceActive = now < landingPredictionGraceUntil;
+                    if (predictionMoving)
+                    {
+                        wasPredictionMoving = true;
+                    }
+                    else if (wasPredictionMoving)
+                    {
+                        wasPredictionMoving = false;
+                        movementPredictionGraceUntil = now + CalculateMovementPredictionGrace(
+                            minimumMovementGraceSeconds,
+                            maximumMovementGraceSeconds,
+                            roundTripTimeMilliseconds);
+                    }
+
+                    bool movementGraceActive = now < movementPredictionGraceUntil;
                     suppressVertical = airborne || landingGraceActive || now < jumpPredictionGraceUntil;
-                    suppressHorizontal = airborne || landingGraceActive;
+                    // The locally predicted motor owns horizontal movement while input is in
+                    // flight. Correcting against a delayed server snapshot during walking,
+                    // sprinting, strafing, direction changes, or deceleration creates the same
+                    // double-simulation hitch that previously affected jumps. Let the server
+                    // catch up, then reconcile any residual error once local motion is settled.
+                    suppressHorizontal = airborne || landingGraceActive || predictionMoving || movementGraceActive;
                     float verticalTolerance = controller != null && controller.isGrounded
                         ? groundedVerticalTolerance
                         : airborneVerticalTolerance;
@@ -215,34 +218,18 @@ namespace UnityIsekaiGame.Networking.Client
                         suppressHorizontal,
                         suppressVertical);
                     Vector3 correction = correctionError * (1f - Mathf.Exp(-reconciliationSharpness * Time.unscaledDeltaTime));
-                    appliedCorrection = correction;
-                    if (controller != null && controller.enabled)
+                    if (ShouldApplyControllerCorrection(correction))
                     {
-                        // CharacterController.isGrounded describes the most recent Move call.
-                        // A second zero-distance reconciliation Move would erase the grounded
-                        // result produced by the local motor and make the next jump miss locally.
-                        if (ShouldApplyControllerCorrection(correction)) controller.Move(correction);
+                        // Reconciliation is a position correction, not a second simulation tick.
+                        // Calling CharacterController.Move here would alter collision/grounding
+                        // state and fight the local motor's acceleration and direction changes.
+                        SetPresentationPosition(presentationRoot.position + correction);
                     }
-                    else presentationRoot.position += correction;
                 }
             }
             else
             {
                 presentationRoot.position = authoritativePosition;
-            }
-            if (traceJump)
-            {
-                Vector3 localPosition = presentationRoot.position;
-                Debug.Log(
-                    $"[Jump Trace][Client] action=tick trace={clientJumpTraceId} tick={clientJumpTraceTick++} frame={Time.frameCount} " +
-                    $"grounded={localMotor != null && localMotor.IsGrounded} controllerGrounded={localMotor != null && localMotor.ControllerIsGrounded} airborne={airborne} " +
-                    $"predictedJumpCount={localMotor?.PredictedJumpCount ?? 0u} horizontalSpeed={localMotor?.CurrentHorizontalSpeed ?? 0f:F4} " +
-                    $"verticalVelocity={localMotor?.VerticalVelocity ?? 0f:F4} suppressHorizontal={suppressHorizontal} " +
-                    $"suppressVertical={suppressVertical} hardSnap={hardSnapped} correction={appliedCorrection} " +
-                    $"localPosition={localPosition} authorityPosition={authoritativePosition} " +
-                    $"error={authoritativePosition - localPosition} rttMs={GetRoundTripTimeMilliseconds()} " +
-                    $"clientTime={Time.realtimeSinceStartupAsDouble:F6}",
-                    this);
             }
             if ((smokeInputEnabled || vitalsSmokeStarted) && !smokeResultLogged && Time.realtimeSinceStartupAsDouble >= smokeInputEndsAt)
             {
@@ -315,10 +302,10 @@ namespace UnityIsekaiGame.Networking.Client
                 && networkVitals.HasState
                 && networkVitals.CurrentState.Stamina <= 0.0001f;
             predictionSprintAllowed = true;
-            clientJumpTraceTick = 0u;
-            clientJumpTraceUntil = 0d;
             wasPredictionAirborne = false;
             landingPredictionGraceUntil = 0d;
+            wasPredictionMoving = false;
+            movementPredictionGraceUntil = 0d;
             smokeStartPosition = networkMovement.transform.position;
             smokeInputEndsAt = Time.realtimeSinceStartupAsDouble + 1.5d;
             smokeResultLogged = false;
@@ -430,6 +417,16 @@ namespace UnityIsekaiGame.Networking.Client
         }
 
         public static float CalculateLandingPredictionGrace(
+            float minimumSeconds,
+            float maximumSeconds,
+            ulong roundTripTimeMilliseconds)
+        {
+            float minimum = Mathf.Max(0f, minimumSeconds);
+            float maximum = Mathf.Max(minimum, maximumSeconds);
+            return Mathf.Clamp(minimum + roundTripTimeMilliseconds / 1000f, minimum, maximum);
+        }
+
+        public static float CalculateMovementPredictionGrace(
             float minimumSeconds,
             float maximumSeconds,
             ulong roundTripTimeMilliseconds)

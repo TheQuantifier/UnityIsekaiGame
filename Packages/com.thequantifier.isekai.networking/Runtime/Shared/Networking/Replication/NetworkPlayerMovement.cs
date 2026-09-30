@@ -38,10 +38,6 @@ namespace UnityIsekaiGame.Networking
         private bool movementLogged;
         private bool originalInterpolation;
         private Vector3 spawnPosition;
-        private uint serverJumpTraceId;
-        private uint serverJumpTraceTick;
-        private uint authoritativeJumpCount;
-        private double serverJumpTraceUntil;
         // The owner intentionally publishes its latest input at 60 Hz. Keep a little
         // timing headroom so normal render-frame jitter is not mistaken for flooding.
         private readonly TokenBucketRateLimiter movementRateLimiter = new TokenBucketRateLimiter(120d, 90d);
@@ -115,8 +111,6 @@ namespace UnityIsekaiGame.Networking
             jumpRequested = false;
             horizontalSpeed = 0f;
             verticalVelocity = 0f;
-            serverJumpTraceTick = 0u;
-            serverJumpTraceUntil = 0d;
             if (networkTransform != null) networkTransform.Interpolate = originalInterpolation;
             movementRateLimiter.Reset();
             jumpRateLimiter.Reset();
@@ -193,16 +187,7 @@ namespace UnityIsekaiGame.Networking
                 return;
             }
 
-            serverJumpTraceId = serverJumpTraceId == uint.MaxValue ? 1u : serverJumpTraceId + 1u;
-            serverJumpTraceTick = 0u;
-            serverJumpTraceUntil = now + 1.25d;
             jumpRequested = true;
-            Debug.Log(
-                $"[Jump Trace][Server] action=received trace={serverJumpTraceId} client={OwnerClientId} " +
-                $"acceptedInput={lastAcceptedSequence.Value} grounded={controller != null && controller.isGrounded} " +
-                $"horizontalSpeed={horizontalSpeed:F4} verticalVelocity={verticalVelocity:F4} " +
-                $"position={transform.position} serverTime={now:F6}",
-                this);
         }
 
         private void FixedUpdate()
@@ -225,12 +210,6 @@ namespace UnityIsekaiGame.Networking
 
         private void Simulate(NetworkMovementInput input, float deltaTime)
         {
-            double now = Time.realtimeSinceStartupAsDouble;
-            bool traceJump = now <= serverJumpTraceUntil;
-            bool groundedBefore = controller.isGrounded;
-            bool jumpQueuedBefore = jumpRequested;
-            Vector3 positionBefore = transform.position;
-            float verticalVelocityBefore = verticalVelocity;
             Vector2 planarInput = Vector2.ClampMagnitude(input.Move, 1f);
             bool moving = planarInput.sqrMagnitude > 0.0001f;
             if (vitals != null && vitals.IsDefeated)
@@ -256,20 +235,6 @@ namespace UnityIsekaiGame.Networking
             if (jumpExecuted)
             {
                 verticalVelocity = Mathf.Sqrt(2f * gravity * jumpHeight);
-                authoritativeJumpCount++;
-                Debug.Log(
-                    $"[Jump Trace][Server] action=executed trace={serverJumpTraceId} tick={serverJumpTraceTick} " +
-                    $"jumpCount={authoritativeJumpCount} acceptedInput={lastAcceptedSequence.Value} " +
-                    $"position={transform.position} launchVelocity={verticalVelocity:F4} serverTime={now:F6}",
-                    this);
-            }
-            else if (jumpRequested)
-            {
-                Debug.LogWarning(
-                    $"[Jump Trace][Server] action=discarded-not-grounded trace={serverJumpTraceId} tick={serverJumpTraceTick} " +
-                    $"acceptedInput={lastAcceptedSequence.Value} position={transform.position} " +
-                    $"verticalVelocity={verticalVelocity:F4} serverTime={now:F6}",
-                    this);
             }
 
             jumpRequested = false;
@@ -279,17 +244,6 @@ namespace UnityIsekaiGame.Networking
             Vector3 direction = yaw * new Vector3(planarInput.x, 0f, planarInput.y);
             controller.Move((direction * horizontalSpeed + Vector3.up * verticalVelocity) * deltaTime);
             transform.rotation = yaw;
-
-            if (traceJump)
-            {
-                Debug.Log(
-                    $"[Jump Trace][Server] action=tick trace={serverJumpTraceId} tick={serverJumpTraceTick++} " +
-                    $"acceptedInput={lastAcceptedSequence.Value} jumpQueued={jumpQueuedBefore} jumpExecuted={jumpExecuted} " +
-                    $"groundedBefore={groundedBefore} groundedAfter={controller.isGrounded} move={planarInput} sprintRequested={input.Sprint} " +
-                    $"horizontalSpeed={horizontalSpeed:F4} verticalBefore={verticalVelocityBefore:F4} verticalAfter={verticalVelocity:F4} " +
-                    $"positionBefore={positionBefore} positionAfter={transform.position} delta={deltaTime:F6} serverTime={now:F6}",
-                    this);
-            }
 
             if (transform.position.y < spawnPosition.y - Mathf.Max(1f, fallRecoveryDistance))
             {

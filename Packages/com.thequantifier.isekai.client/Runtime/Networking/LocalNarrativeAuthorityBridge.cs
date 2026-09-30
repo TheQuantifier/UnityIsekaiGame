@@ -176,10 +176,39 @@ namespace UnityIsekaiGame.Networking.Client
             int secondaryValue = 0)
         {
             if (!IsServerAuthorityActive) return false;
+            foreach (NetworkNarrativeCommand command in pending.Values)
+            {
+                if (RepresentsSamePendingAction(
+                        command,
+                        commandType,
+                        primaryId,
+                        secondaryId,
+                        value,
+                        secondaryValue))
+                {
+                    return false;
+                }
+            }
+
             if (!networkNarrative.Request(commandType, primaryId, secondaryId, value, secondaryValue)) return false;
             uint sequence = networkNarrative.LastSubmittedCommandSequence;
             pending[sequence] = new NetworkNarrativeCommand(sequence, commandType, primaryId, secondaryId, value, secondaryValue);
             return true;
+        }
+
+        public static bool RepresentsSamePendingAction(
+            NetworkNarrativeCommand pendingCommand,
+            NarrativeAuthorityCommandType commandType,
+            string primaryId,
+            string secondaryId,
+            int value,
+            int secondaryValue)
+        {
+            return pendingCommand.CommandType == commandType
+                && string.Equals(pendingCommand.PrimaryIdText, primaryId ?? string.Empty, StringComparison.Ordinal)
+                && string.Equals(pendingCommand.SecondaryIdText, secondaryId ?? string.Empty, StringComparison.Ordinal)
+                && pendingCommand.Value == value
+                && pendingCommand.SecondaryValue == secondaryValue;
         }
 
         private void OnCommandResultChanged(NetworkNarrativeCommandResult result)

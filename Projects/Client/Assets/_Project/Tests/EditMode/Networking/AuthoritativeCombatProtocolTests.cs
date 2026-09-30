@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Magic;
 using UnityIsekaiGame.Networking;
+using UnityIsekaiGame.Networking.Client;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -106,6 +107,18 @@ namespace UnityIsekaiGame.Tests
             {
                 Object.DestroyImmediate(owner);
             }
+        }
+
+        [Test]
+        public void Replicated_entity_movement_uses_frame_rate_independent_smoothing()
+        {
+            float oneSixtieth = LocalCombatAuthorityBridge.CalculateReplicaInterpolationFactor(18f, 1f / 60f);
+            float twoSixtieths = LocalCombatAuthorityBridge.CalculateReplicaInterpolationFactor(18f, 2f / 60f);
+            float composed = 1f - (1f - oneSixtieth) * (1f - oneSixtieth);
+
+            Assert.That(oneSixtieth, Is.GreaterThan(0f).And.LessThan(1f));
+            Assert.That(twoSixtieths, Is.EqualTo(composed).Within(0.0001f));
+            Assert.That(LocalCombatAuthorityBridge.CalculateReplicaInterpolationFactor(18f, 0f), Is.Zero);
         }
     }
 }

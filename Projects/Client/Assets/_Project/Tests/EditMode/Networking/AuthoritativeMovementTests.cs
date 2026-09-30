@@ -63,6 +63,8 @@ namespace UnityIsekaiGame.Tests
             Assert.That(movement.FallRecoveryDistance, Is.GreaterThanOrEqualTo(1f));
             NetworkTransform networkTransform = prefab.GetComponent<NetworkTransform>();
             Assert.That(networkTransform, Is.Not.Null);
+            Assert.That(networkTransform.Interpolate, Is.True,
+                "Remote player replicas must interpolate server snapshots; only the owning client disables interpolation for local prediction.");
             Assert.That(networkTransform.UseUnreliableDeltas, Is.True,
                 "Frequent movement snapshots must not queue behind a dropped reliable transform packet.");
             Assert.That(prefab.GetComponent<CharacterController>(), Is.Not.Null);
@@ -181,6 +183,24 @@ namespace UnityIsekaiGame.Tests
                 Is.EqualTo(0.097f).Within(0.0001f));
             Assert.That(LocalPlayerMovementBridge.CalculateLandingPredictionGrace(0.08f, 0.25f, 1000ul),
                 Is.EqualTo(0.25f).Within(0.0001f));
+        }
+
+        [Test]
+        public void Reconciliation_allows_authority_to_catch_up_after_local_horizontal_movement()
+        {
+            Assert.That(LocalPlayerMovementBridge.CalculateMovementPredictionGrace(0.05f, 0.2f, 17ul),
+                Is.EqualTo(0.067f).Within(0.0001f));
+            Assert.That(LocalPlayerMovementBridge.CalculateMovementPredictionGrace(0.05f, 0.2f, 1000ul),
+                Is.EqualTo(0.2f).Within(0.0001f));
+
+            Vector3 delayedAuthorityError = new Vector3(-0.75f, 0f, 0.2f);
+            Assert.That(LocalPlayerMovementBridge.CalculateCorrectionError(
+                delayedAuthorityError,
+                0.12f,
+                0.08f,
+                true,
+                false), Is.EqualTo(Vector3.zero),
+                "An in-flight server snapshot must not fight active local walking or sprinting.");
         }
 
         [Test]

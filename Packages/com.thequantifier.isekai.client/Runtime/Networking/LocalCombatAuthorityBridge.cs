@@ -21,6 +21,9 @@ namespace UnityIsekaiGame.Networking.Client
         [SerializeField] private PlayerSpellcaster localSpellcaster;
         [SerializeField] private PlayerSpellLoadout spellLoadout;
         [SerializeField] private Transform aimOrigin;
+        [SerializeField, Min(1f)] private float replicaPositionSharpness = 18f;
+        [SerializeField, Min(1f)] private float replicaRotationSharpness = 18f;
+        [SerializeField, Min(0.5f)] private float replicaTeleportDistance = 6f;
 
         private readonly List<NetworkCombatantState> snapshot = new List<NetworkCombatantState>();
         private readonly Dictionary<string, ClientCombatantBinding> combatants = new Dictionary<string, ClientCombatantBinding>(StringComparer.Ordinal);
@@ -90,10 +93,22 @@ namespace UnityIsekaiGame.Networking.Client
 
         private void LateUpdate()
         {
-            if (pendingSnapshotRevision == 0u) return;
-            uint revision = pendingSnapshotRevision;
-            pendingSnapshotRevision = 0u;
-            ApplySnapshot(revision);
+            if (pendingSnapshotRevision != 0u)
+            {
+                uint revision = pendingSnapshotRevision;
+                pendingSnapshotRevision = 0u;
+                ApplySnapshot(revision);
+            }
+
+            float deltaTime = Time.unscaledDeltaTime;
+            foreach (ClientCombatantBinding binding in combatants.Values)
+            {
+                binding.AdvancePresentation(
+                    deltaTime,
+                    replicaPositionSharpness,
+                    replicaRotationSharpness,
+                    replicaTeleportDistance);
+            }
         }
 
         public void Configure(
@@ -281,6 +296,11 @@ namespace UnityIsekaiGame.Networking.Client
             return direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector3.forward;
         }
 
+        public static float CalculateReplicaInterpolationFactor(float sharpness, float deltaTime)
+        {
+            return 1f - Mathf.Exp(-Mathf.Max(0f, sharpness) * Mathf.Max(0f, deltaTime));
+        }
+
         private bool RequestSpell(SpellDefinition spell, Vector3 direction)
         {
             if (spell == null || networkCombat == null || !networkCombat.RequestAbility(spell.Id, direction))
@@ -368,6 +388,9 @@ namespace UnityIsekaiGame.Networking.Client
             private readonly bool patrolEnabled;
             private readonly bool attackEnabled;
             private readonly bool characterControllerEnabled;
+            private Vector3 targetPosition;
+            private Quaternion targetRotation;
+            private bool hasPresentationTarget;
 
             public ClientCombatantBinding(EnemyHealth targetHealth, CharacterResourceCollection targetResources)
             {
@@ -391,9 +414,38 @@ namespace UnityIsekaiGame.Networking.Client
             public void Apply(NetworkCombatantState state)
             {
                 if (health == null || resources == null) return;
-                health.transform.SetPositionAndRotation(state.Position, state.Rotation);
+                targetPosition = state.Position;
+                targetRotation = state.Rotation;
+                if (!hasPresentationTarget)
+                {
+                    health.transform.SetPositionAndRotation(targetPosition, targetRotation);
+                    hasPresentationTarget = true;
+                }
                 resources.ApplyExternalReplicaSnapshot(ResourceIds.Health, state.Health, state.MaximumHealth);
                 resources.CompleteExternalReplicaSnapshot();
+            }
+
+            public void AdvancePresentation(
+                float deltaTime,
+                float positionSharpness,
+                float rotationSharpness,
+                float teleportDistance)
+            {
+                if (!hasPresentationTarget || health == null) return;
+                Transform presentation = health.transform;
+                float maximumSmoothDistance = Mathf.Max(0.5f, teleportDistance);
+                if ((targetPosition - presentation.position).sqrMagnitude
+                    >= maximumSmoothDistance * maximumSmoothDistance)
+                {
+                    presentation.SetPositionAndRotation(targetPosition, targetRotation);
+                    return;
+                }
+
+                float positionFactor = CalculateReplicaInterpolationFactor(positionSharpness, deltaTime);
+                float rotationFactor = CalculateReplicaInterpolationFactor(rotationSharpness, deltaTime);
+                presentation.SetPositionAndRotation(
+                    Vector3.LerpUnclamped(presentation.position, targetPosition, positionFactor),
+                    Quaternion.SlerpUnclamped(presentation.rotation, targetRotation, rotationFactor));
             }
 
             public void Restore()

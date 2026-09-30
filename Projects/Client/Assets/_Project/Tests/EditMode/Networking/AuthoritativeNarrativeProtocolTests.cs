@@ -2,6 +2,7 @@ using System.Text;
 using NUnit.Framework;
 using UnityEngine;
 using UnityIsekaiGame.Networking;
+using UnityIsekaiGame.Networking.Client;
 using UnityIsekaiGame.WorldLocations.SceneBinding;
 
 namespace UnityIsekaiGame.Tests
@@ -78,6 +79,30 @@ namespace UnityIsekaiGame.Tests
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        [Test]
+        public void Identical_in_flight_interactions_are_deduplicated()
+        {
+            NetworkNarrativeCommand pending = new NetworkNarrativeCommand(
+                17u,
+                NarrativeAuthorityCommandType.Interact,
+                "interaction-point.guild-desk");
+
+            Assert.That(LocalNarrativeAuthorityBridge.RepresentsSamePendingAction(
+                pending,
+                NarrativeAuthorityCommandType.Interact,
+                "interaction-point.guild-desk",
+                string.Empty,
+                0,
+                0), Is.True);
+            Assert.That(LocalNarrativeAuthorityBridge.RepresentsSamePendingAction(
+                pending,
+                NarrativeAuthorityCommandType.Interact,
+                "interaction-point.mayor-desk",
+                string.Empty,
+                0,
+                0), Is.False);
         }
     }
 }
