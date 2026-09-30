@@ -2,6 +2,7 @@ using System.IO;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityIsekaiGame.Editor;
 using UnityIsekaiGame.UI.Authentication;
 
@@ -38,6 +39,31 @@ namespace UnityIsekaiGame.Tests
             finally
             {
                 Object.DestroyImmediate(landscape);
+            }
+        }
+
+        [Test]
+        public void Password_field_only_raises_submit_for_an_explicit_submit_event()
+        {
+            var eventSystemObject = new GameObject("Login Submit Event System", typeof(EventSystem));
+            var fieldObject = new GameObject("Password Field", typeof(RectTransform));
+            try
+            {
+                ExplicitSubmitInputField field = fieldObject.AddComponent<ExplicitSubmitInputField>();
+                int submitted = 0;
+                field.Submitted += () => submitted++;
+                var eventData = new BaseEventData(eventSystemObject.GetComponent<EventSystem>());
+
+                field.OnDeselect(eventData);
+                Assert.That(submitted, Is.Zero, "Moving focus to Create Account must not implicitly submit Login.");
+
+                field.OnSubmit(eventData);
+                Assert.That(submitted, Is.EqualTo(1));
+            }
+            finally
+            {
+                Object.DestroyImmediate(fieldObject);
+                Object.DestroyImmediate(eventSystemObject);
             }
         }
     }

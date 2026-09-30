@@ -243,13 +243,10 @@ namespace UnityIsekaiGame.UI.Authentication
             passwordField = CreateInputField("Password Pill Input", form, "password...", true);
             usernameField.characterLimit = AccountAuthenticationProtocol.SecureUserIdLength;
             passwordField.characterLimit = LocalConnectionProtocol.MaximumPasswordLength;
-            passwordField.onEndEdit.AddListener(value =>
+            if (passwordField is ExplicitSubmitInputField explicitSubmit)
             {
-                if (!string.IsNullOrEmpty(value))
-                {
-                    Submit(false);
-                }
-            });
+                explicitSubmit.Submitted += () => Submit(false);
+            }
 
             loginButton = CreateButton("Login Pill Button", form, "LOGIN", () => Submit(false), GameUiButtonTone.Neutral);
             createAccountButton = CreateButton("Register Account Pill Button", form, "CREATE ACCOUNT", () => Submit(true), GameUiButtonTone.Neutral);
@@ -524,7 +521,9 @@ namespace UnityIsekaiGame.UI.Authentication
             Image backgroundImage = CreateImage(name, parent, GameUiTheme.SurfaceInset);
             RectTransform root = backgroundImage.rectTransform;
             AddLayout(root.gameObject, 30f);
-            InputField field = root.gameObject.AddComponent<InputField>();
+            InputField field = password
+                ? root.gameObject.AddComponent<ExplicitSubmitInputField>()
+                : root.gameObject.AddComponent<InputField>();
             RectTransform textArea = CreateRect("Text Area", root);
             textArea.anchorMin = Vector2.zero;
             textArea.anchorMax = Vector2.one;
