@@ -36,6 +36,7 @@ namespace UnityIsekaiGame.Networking
         public NetworkVitalsState CurrentState => replicatedState.Value;
         public bool HasState => CurrentState.Revision != 0u;
         public bool IsDefeated => CurrentState.IsDefeated;
+        public float SprintRestartThreshold => sprintRestartThreshold;
         public bool IsAuthoritativeHealthAvailable => IsSpawned && IsServer && model != null;
         public float AuthoritativeCurrentHealth => CurrentState.Health;
         public bool AuthoritativeDefeated => CurrentState.IsDefeated;

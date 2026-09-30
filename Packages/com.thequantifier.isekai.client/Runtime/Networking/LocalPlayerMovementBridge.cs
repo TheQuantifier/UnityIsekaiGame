@@ -7,6 +7,7 @@ using UnityIsekaiGame.Player;
 namespace UnityIsekaiGame.Networking.Client
 {
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(-100)]
     public sealed class LocalPlayerMovementBridge : MonoBehaviour
     {
         public const string MovementSmokeFlag = "--movement-smoke-forward";
@@ -25,6 +26,7 @@ namespace UnityIsekaiGame.Networking.Client
         [SerializeField, Min(0.5f)] private float hardSnapDistance = 4f;
 
         private NetworkPlayerMovement networkMovement;
+        private NetworkPlayerVitals networkVitals;
         private bool localMotorWasEnabled;
         private bool controlsOverridden;
         private double inputSendAccumulator;
@@ -32,6 +34,8 @@ namespace UnityIsekaiGame.Networking.Client
         private double jumpPredictionGraceUntil;
         private Vector2 lastSubmittedMove;
         private bool lastSubmittedSprint;
+        private bool predictionSprintExhausted;
+        private bool predictionSprintAllowed = true;
         private bool smokeInputEnabled;
         private bool vitalsSmokeEnabled;
         private bool vitalsSmokeStarted;
@@ -82,6 +86,7 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             double now = Time.realtimeSinceStartupAsDouble;
+            UpdatePredictionSprintAuthorization();
             if (input != null && input.JumpPressedThisFrame)
             {
                 jumpPending = true;
@@ -119,7 +124,7 @@ namespace UnityIsekaiGame.Networking.Client
             if (jump) jumpPending = false;
             float yaw = presentationRoot == null ? networkMovement.transform.eulerAngles.y : presentationRoot.eulerAngles.y;
             lastSubmittedMove = move;
-            lastSubmittedSprint = sprint;
+            lastSubmittedSprint = sprint && predictionSprintAllowed;
             networkMovement.SubmitLocalInput(move, sprint, jump, yaw);
         }
 
@@ -151,7 +156,9 @@ namespace UnityIsekaiGame.Networking.Client
                         predictionSpeed,
                         GetRoundTripTimeMilliseconds(),
                         inputSendRate);
-                    bool suppressVertical = Time.realtimeSinceStartupAsDouble < jumpPredictionGraceUntil;
+                    bool airborne = controller != null && !controller.isGrounded;
+                    bool suppressVertical = airborne || Time.realtimeSinceStartupAsDouble < jumpPredictionGraceUntil;
+                    bool suppressHorizontal = airborne;
                     float verticalTolerance = controller != null && controller.isGrounded
                         ? groundedVerticalTolerance
                         : airborneVerticalTolerance;
@@ -159,6 +166,7 @@ namespace UnityIsekaiGame.Networking.Client
                         error,
                         horizontalTolerance,
                         verticalTolerance,
+                        suppressHorizontal,
                         suppressVertical);
                     Vector3 correction = correctionError * (1f - Mathf.Exp(-reconciliationSharpness * Time.unscaledDeltaTime));
                     if (controller != null && controller.enabled) controller.Move(correction);
@@ -210,6 +218,7 @@ namespace UnityIsekaiGame.Networking.Client
 
             controlsOverridden = false;
             networkMovement = movement;
+            networkVitals = movement == null ? null : movement.GetComponent<NetworkPlayerVitals>();
             if (networkMovement == null)
             {
                 return;
@@ -219,6 +228,14 @@ namespace UnityIsekaiGame.Networking.Client
             {
                 localMotorWasEnabled = localMotor.enabled;
                 localMotor.SetNetworkPredictionMode(true);
+                localMotor.ConfigureNetworkPredictionTuning(
+                    networkMovement.WalkSpeed,
+                    networkMovement.SprintMultiplier,
+                    networkMovement.Acceleration,
+                    networkMovement.Deceleration,
+                    networkMovement.JumpHeight,
+                    networkMovement.Gravity,
+                    networkMovement.GroundedStickForce);
                 controlsOverridden = true;
             }
 
@@ -227,6 +244,10 @@ namespace UnityIsekaiGame.Networking.Client
             jumpPredictionGraceUntil = 0d;
             lastSubmittedMove = Vector2.zero;
             lastSubmittedSprint = false;
+            predictionSprintExhausted = networkVitals != null
+                && networkVitals.HasState
+                && networkVitals.CurrentState.Stamina <= 0.0001f;
+            predictionSprintAllowed = true;
             smokeStartPosition = networkMovement.transform.position;
             smokeInputEndsAt = Time.realtimeSinceStartupAsDouble + 1.5d;
             smokeResultLogged = false;
@@ -287,12 +308,15 @@ namespace UnityIsekaiGame.Networking.Client
             Vector3 error,
             float horizontalTolerance,
             float verticalTolerance,
+            bool suppressHorizontal,
             bool suppressVertical)
         {
             Vector2 horizontal = new Vector2(error.x, error.z);
             float horizontalMagnitude = horizontal.magnitude;
             float allowedHorizontal = Mathf.Max(0f, horizontalTolerance);
-            Vector2 correctedHorizontal = horizontalMagnitude > allowedHorizontal && horizontalMagnitude > 0.000001f
+            Vector2 correctedHorizontal = !suppressHorizontal
+                && horizontalMagnitude > allowedHorizontal
+                && horizontalMagnitude > 0.000001f
                 ? horizontal * ((horizontalMagnitude - allowedHorizontal) / horizontalMagnitude)
                 : Vector2.zero;
 
@@ -308,6 +332,43 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             return new Vector3(correctedHorizontal.x, correctedVertical, correctedHorizontal.y);
+        }
+
+        public static bool EvaluatePredictedSprintAvailability(
+            NetworkVitalsState state,
+            float restartThreshold,
+            ref bool exhausted)
+        {
+            if (state.Revision == 0u)
+            {
+                return true;
+            }
+
+            const float epsilon = 0.0001f;
+            if (state.Stamina <= epsilon)
+            {
+                exhausted = true;
+            }
+            else if (exhausted
+                     && state.Stamina > Mathf.Min(state.MaximumStamina, Mathf.Max(0f, restartThreshold)) + epsilon)
+            {
+                exhausted = false;
+            }
+
+            return !state.IsDefeated && !exhausted && state.Stamina > epsilon;
+        }
+
+        private void UpdatePredictionSprintAuthorization()
+        {
+            predictionSprintAllowed = networkVitals == null
+                || EvaluatePredictedSprintAvailability(
+                    networkVitals.CurrentState,
+                    networkVitals.SprintRestartThreshold,
+                    ref predictionSprintExhausted);
+            if (localMotor != null)
+            {
+                localMotor.SetNetworkPredictionSprintAllowed(predictionSprintAllowed);
+            }
         }
 
         private ulong GetRoundTripTimeMilliseconds()

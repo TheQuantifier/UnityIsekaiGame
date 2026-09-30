@@ -46,6 +46,12 @@ namespace UnityIsekaiGame.Networking
         public uint LastAcceptedSequence => lastAcceptedSequence.Value;
         public float WalkSpeed => walkSpeed;
         public float SprintSpeed => walkSpeed * sprintMultiplier;
+        public float SprintMultiplier => sprintMultiplier;
+        public float Acceleration => acceleration;
+        public float Deceleration => deceleration;
+        public float JumpHeight => jumpHeight;
+        public float Gravity => gravity;
+        public float GroundedStickForce => groundedStickForce;
         public float FallRecoveryDistance => fallRecoveryDistance;
         public Vector3 AuthoritativePosition => transform.position;
 
