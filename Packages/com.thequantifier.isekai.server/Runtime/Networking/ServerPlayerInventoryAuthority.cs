@@ -87,6 +87,7 @@ namespace UnityIsekaiGame.Networking.Server
                     InventoryAuthorityCommandType.EquipSlot => Equip(command),
                     InventoryAuthorityCommandType.UnequipSlot => Unequip(command),
                     InventoryAuthorityCommandType.DropQuantity => Drop(command),
+                    InventoryAuthorityCommandType.MoveSlot => Move(command),
                     _ => NetworkInventoryCommandResult.Reject(command.Sequence, InventoryAuthorityFailure.InvalidCommand, "Unsupported inventory command.")
                 };
 
@@ -162,16 +163,30 @@ namespace UnityIsekaiGame.Networking.Server
                 return RejectNotAllowed(command, $"{item.DisplayName} would not change any resource.");
             }
 
-            bool changed = false;
-            if (health > 0f) changed |= networkVitals.TryHealServer(health);
-            if (stamina > 0f) changed |= networkVitals.TryRestoreStaminaServer(stamina);
-            if (mana > 0f) changed |= networkVitals.TryRestoreManaServer(mana);
-            if (!changed || !inventory.RemoveItemAt(command.InventorySlotIndex, 1))
+            InventorySaveData inventoryRollback = inventory.CreateSaveData();
+            NetworkVitalsState vitalsRollback = networkVitals.CurrentState;
+            try
             {
-                return NetworkInventoryCommandResult.Reject(command.Sequence, InventoryAuthorityFailure.ServerRejected, $"{item.DisplayName} could not be consumed.");
+                if (!inventory.RemoveItemAt(command.InventorySlotIndex, 1))
+                    throw new InvalidOperationException("The consumable could not be removed from inventory.");
+                bool changed = false;
+                if (health > 0f) changed |= networkVitals.TryHealServer(health);
+                if (stamina > 0f) changed |= networkVitals.TryRestoreStaminaServer(stamina);
+                if (mana > 0f) changed |= networkVitals.TryRestoreManaServer(mana);
+                if (!changed) throw new InvalidOperationException("The consumable did not change authoritative vitals.");
+                return NetworkInventoryCommandResult.Success(command.Sequence, $"Used {item.DisplayName}.");
             }
-
-            return NetworkInventoryCommandResult.Success(command.Sequence, $"Used {item.DisplayName}.");
+            catch (Exception exception)
+            {
+                RestoreInventoryRollback(inventoryRollback);
+                if (!networkVitals.RestoreStateServer(vitalsRollback))
+                    throw new InvalidOperationException("Authoritative vitals rollback failed.", exception);
+                Debug.LogException(exception, this);
+                return NetworkInventoryCommandResult.Reject(
+                    command.Sequence,
+                    InventoryAuthorityFailure.ServerRejected,
+                    $"{item.DisplayName} could not be consumed; the transaction was rolled back.");
+            }
         }
 
         private NetworkInventoryCommandResult Equip(NetworkInventoryCommand command)
@@ -261,6 +276,16 @@ namespace UnityIsekaiGame.Networking.Server
                     InventoryAuthorityFailure.ServerRejected,
                     "The server rolled back the drop because the world pickup transaction could not complete.");
             }
+        }
+
+        private NetworkInventoryCommandResult Move(NetworkInventoryCommand command)
+        {
+            InventoryInstanceOperationResult result = inventory.MoveOrMergeSlot(
+                command.InventorySlotIndex,
+                command.DestinationInventorySlotIndex);
+            return result.Succeeded
+                ? NetworkInventoryCommandResult.Success(command.Sequence, result.Message)
+                : RejectNotAllowed(command, result.Message);
         }
 
         public bool TryCollectWorldPickup(NetworkWorldItemState pickupState, out string message)

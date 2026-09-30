@@ -16,6 +16,7 @@
 **/[Oo]bj/
 **/[Bb]uild/
 /[Bb]uilds/
+/ProjectSettings/
 **/[Ll]ogs/
 **/[Uu]ser[Ss]ettings/
 *.log
@@ -91,10 +92,17 @@ crashlytics-build.properties
 InitTestScene*.unity*
 **/[Tt]est[Rr]esults/
 /.local-backups/
+/.uig/
 
 # Local visual world terrain data can become very large. Keep the lightweight
 # terrain layers/materials tracked, but do not push hand-painted TerrainData.
 /Projects/Client/[Aa]ssets/_Project/Prototype/Environment/Terrain/Data/
+
+# Generated intermediary used to synchronize the authoritative physical server scene.
+/Projects/Client/[Aa]ssets/_Project/Scenes/Server/
+/Projects/Client/[Aa]ssets/_Project/Scenes/Server.meta
+/Projects/Server/[Aa]ssets/Generated/
+/Projects/Server/[Aa]ssets/Generated.meta
 
 # Addressables default ignores, before user customizations
 **/ServerData

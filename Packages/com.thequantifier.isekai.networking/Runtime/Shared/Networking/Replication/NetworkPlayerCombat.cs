@@ -18,10 +18,12 @@ namespace UnityIsekaiGame.Networking
             NetworkVariableWritePermission.Server);
 
         private uint localCommandSequence;
+        private readonly TokenBucketRateLimiter commandRateLimiter = new TokenBucketRateLimiter(12d, 12d);
 
         public event Action<NetworkCombatCommandResult> CommandResultChanged;
         public Func<NetworkCombatCommand, NetworkCombatCommandResult> ServerCommandHandler { get; set; }
         public uint LastAcceptedCommandSequence => lastAcceptedCommandSequence.Value;
+        public uint LastSubmittedCommandSequence => localCommandSequence;
         public NetworkCombatCommandResult LatestCommandResult => latestCommandResult.Value;
 
         public override void OnNetworkSpawn()
@@ -34,6 +36,7 @@ namespace UnityIsekaiGame.Networking
             latestCommandResult.OnValueChanged -= OnCommandResultChanged;
             ServerCommandHandler = null;
             localCommandSequence = 0u;
+            commandRateLimiter.Reset();
         }
 
         public bool RequestPrimaryAttack(Vector3 aimDirection)
@@ -62,6 +65,15 @@ namespace UnityIsekaiGame.Networking
         private void SubmitCombatCommandRpc(NetworkCombatCommand command, RpcParams rpcParams = default)
         {
             if (!IsServer || rpcParams.Receive.SenderClientId != OwnerClientId) return;
+            if (!commandRateLimiter.TryConsume(Time.realtimeSinceStartupAsDouble))
+            {
+                latestCommandResult.Value = NetworkCombatCommandResult.Reject(
+                    command.Sequence,
+                    CombatAuthorityFailure.ServerRejected,
+                    "Combat commands are arriving too quickly.",
+                    command.ActionIdText);
+                return;
+            }
 
             CombatCommandValidationResult validation = NetworkCombatCommandValidator.Validate(command, lastAcceptedCommandSequence.Value);
             if (!validation.Succeeded)

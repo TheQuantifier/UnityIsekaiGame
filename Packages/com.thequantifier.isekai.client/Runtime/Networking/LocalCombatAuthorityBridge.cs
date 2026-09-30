@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityIsekaiGame.Abilities;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Input;
@@ -23,6 +24,7 @@ namespace UnityIsekaiGame.Networking.Client
 
         private readonly List<NetworkCombatantState> snapshot = new List<NetworkCombatantState>();
         private readonly Dictionary<string, ClientCombatantBinding> combatants = new Dictionary<string, ClientCombatantBinding>(StringComparer.Ordinal);
+        private readonly Dictionary<uint, SpellProjectile> predictedSpellProjectiles = new Dictionary<uint, SpellProjectile>();
         private NetworkPlayerCombat networkCombat;
         private NetworkCombatWorldState worldState;
         private uint pendingSnapshotRevision;
@@ -81,7 +83,7 @@ namespace UnityIsekaiGame.Networking.Client
                 }
                 else
                 {
-                    networkCombat.RequestAbility(spell.Id, aim);
+                    RequestSpell(spell, aim);
                 }
             }
         }
@@ -120,6 +122,7 @@ namespace UnityIsekaiGame.Networking.Client
             if (ReferenceEquals(networkCombat, combat)) return;
             if (networkCombat != null) networkCombat.CommandResultChanged -= OnCommandResultChanged;
             networkCombat = combat;
+            ClearPredictedSpellProjectiles();
             smokeRequested = false;
             smokeCompleted = false;
             smokeTargetId = string.Empty;
@@ -212,6 +215,13 @@ namespace UnityIsekaiGame.Networking.Client
 
         private void OnCommandResultChanged(NetworkCombatCommandResult result)
         {
+            if (!result.Succeeded && predictedSpellProjectiles.Remove(result.Sequence, out SpellProjectile rejectedProjectile)
+                && rejectedProjectile != null)
+            {
+                rejectedProjectile.Completed -= OnPredictedSpellProjectileCompleted;
+                Destroy(rejectedProjectile.gameObject);
+            }
+
             PublishFeedback(result.MessageText, !result.Succeeded);
             if (smokeEnabled && result.Succeeded && result.AppliedAmount > 0f)
             {
@@ -235,7 +245,7 @@ namespace UnityIsekaiGame.Networking.Client
                 smokeTargetId = snapshot[0].EntityIdText;
                 smokeInitialTargetHealth = snapshot[0].Health;
                 smokeInitialMana = vitals.CurrentState.Mana;
-                if (networkCombat.RequestAbility(spell.Id, networkCombat.transform.forward))
+                if (RequestSpell(spell, networkCombat.transform.forward))
                 {
                     smokeRequested = true;
                     Debug.Log($"[Network Combat] Client requested authoritative {spell.DisplayName} smoke cast at '{smokeTargetId}'.", this);
@@ -269,6 +279,71 @@ namespace UnityIsekaiGame.Networking.Client
             if (origin == null && Camera.main != null) origin = Camera.main.transform;
             Vector3 direction = origin == null ? transform.forward : origin.forward;
             return direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector3.forward;
+        }
+
+        private bool RequestSpell(SpellDefinition spell, Vector3 direction)
+        {
+            if (spell == null || networkCombat == null || !networkCombat.RequestAbility(spell.Id, direction))
+            {
+                return false;
+            }
+
+            SpawnPredictedSpellProjectile(networkCombat.LastSubmittedCommandSequence, spell, direction);
+            return true;
+        }
+
+        private void SpawnPredictedSpellProjectile(uint sequence, SpellDefinition spell, Vector3 direction)
+        {
+            AbilityProjectileDelivery delivery = spell?.Ability?.ProjectileDelivery;
+            if (sequence == 0u || spell?.Ability == null || spell.Ability.DeliveryMode != AbilityDeliveryMode.Projectile
+                || delivery?.ProjectilePrefab == null)
+            {
+                return;
+            }
+
+            Transform origin = aimOrigin == null && Camera.main != null ? Camera.main.transform : aimOrigin;
+            Vector3 spawnPosition = origin == null
+                ? transform.position + Vector3.up * 1.4f
+                : origin.TransformPoint(delivery.CastPointOffset);
+            Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);
+            SpellProjectile projectile = Instantiate(delivery.ProjectilePrefab, spawnPosition, rotation);
+            projectile.name = $"Predicted {spell.DisplayName} Projectile";
+            projectile.Initialize(
+                input == null ? gameObject : input.gameObject,
+                direction,
+                delivery.ProjectileSpeed,
+                delivery.MaximumLifetime,
+                (_, _) => { });
+            projectile.Completed += OnPredictedSpellProjectileCompleted;
+            predictedSpellProjectiles[sequence] = projectile;
+            Debug.Log($"[Network Combat] Spawned {spell.DisplayName} projectile presentation for command {sequence}.", this);
+        }
+
+        private void OnPredictedSpellProjectileCompleted(SpellProjectile projectile)
+        {
+            if (projectile == null) return;
+            projectile.Completed -= OnPredictedSpellProjectileCompleted;
+            uint sequence = 0u;
+            foreach (KeyValuePair<uint, SpellProjectile> entry in predictedSpellProjectiles)
+            {
+                if (!ReferenceEquals(entry.Value, projectile)) continue;
+                sequence = entry.Key;
+                break;
+            }
+
+            if (sequence != 0u) predictedSpellProjectiles.Remove(sequence);
+        }
+
+        private void ClearPredictedSpellProjectiles()
+        {
+            foreach (SpellProjectile projectile in predictedSpellProjectiles.Values)
+            {
+                if (projectile == null) continue;
+                projectile.Completed -= OnPredictedSpellProjectileCompleted;
+                Destroy(projectile.gameObject);
+            }
+
+            predictedSpellProjectiles.Clear();
         }
 
         private void ResolveReferences()

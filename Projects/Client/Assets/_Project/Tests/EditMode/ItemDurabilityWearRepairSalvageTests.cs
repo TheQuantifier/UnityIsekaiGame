@@ -4,12 +4,14 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
+using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Inventory.Composition;
 using UnityIsekaiGame.Inventory.Durability;
 using UnityIsekaiGame.Inventory.Identity;
 using UnityIsekaiGame.Inventory.Quality;
 using UnityIsekaiGame.Knowledge.Access;
+using UnityIsekaiGame.Persistence;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -30,6 +32,41 @@ namespace UnityIsekaiGame.Tests
             Assert.That(result.Snapshot.CurrentDurability, Is.GreaterThan(0f));
             Assert.That(fixture.Items.TryGetSnapshot(itemId, out ItemInstanceSnapshot identity), Is.True);
             Assert.That(identity.ItemInstanceId, Is.EqualTo(itemId));
+        }
+
+        [Test]
+        public void PersistenceSnapshotOmitsDurabilityWithoutAnItemIdentity()
+        {
+            Fixture fixture = CreateFixture();
+            ItemDurabilityRuntimeSaveData orphaned = new ItemDurabilityRuntimeSaveData
+            {
+                revision = 1L,
+                records = new List<ItemDurabilityRecordData>
+                {
+                    new ItemDurabilityRecordData
+                    {
+                        durabilityRecordId = "durability.orphaned",
+                        itemInstanceId = "item-instance.orphaned",
+                        itemDefinitionId = fixture.Sword.Id
+                    }
+                }
+            };
+            ItemInstanceIdentityRuntime emptyIdentities = new ItemInstanceIdentityRuntime();
+            ItemCompositionRuntime emptyCompositions = new ItemCompositionRuntime();
+            ItemDurabilityRuntime restored = new ItemDurabilityRuntime();
+            ItemDurabilityPersistenceParticipant participant = new ItemDurabilityPersistenceParticipant(
+                restored,
+                emptyIdentities,
+                emptyCompositions,
+                () => fixture.Registry);
+            PersistenceParticipantPrepareResult prepared = participant.PreparePayload(
+                JsonUtility.ToJson(orphaned),
+                ItemDurabilityPersistenceParticipant.CurrentParticipantSchemaVersion);
+            PersistenceParticipantCommitResult committed = participant.CommitPreparedPayload(prepared.PreparedPayload);
+
+            Assert.That(prepared.Succeeded, Is.True, prepared.Message);
+            Assert.That(committed.Succeeded, Is.True, committed.Message);
+            Assert.That(restored.Count, Is.EqualTo(0));
         }
 
         [Test]

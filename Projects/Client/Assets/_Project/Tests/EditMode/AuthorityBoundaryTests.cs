@@ -13,6 +13,22 @@ namespace UnityIsekaiGame.Tests
 {
     public sealed class AuthorityBoundaryTests
     {
+        [TestCase("person.player.jhand", true)]
+        [TestCase("person.player.audit-smoke", true)]
+        [TestCase("person.player.jhand|social-interaction.prototype.compliment", false)]
+        [TestCase("person.player.jhand.person.player.other", false)]
+        [TestCase("person.player.jhand.binding.merchant-delivery.quest", false)]
+        [TestCase("person.prototype.guard", false)]
+        public void RuntimePlayerIdentityRecoveryRejectsCompositeWorldRecordKeys(string candidate, bool expected)
+        {
+            MethodInfo validator = typeof(PrototypePersistenceServiceBehaviour).GetMethod(
+                "IsAuthoritativeRuntimePersonId",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.That(validator, Is.Not.Null);
+            Assert.That((bool)validator.Invoke(null, new object[] { candidate }), Is.EqualTo(expected));
+        }
+
         [Test]
         public void PersistenceServiceRecognizesOnlyItsConfiguredPlayerHierarchy()
         {

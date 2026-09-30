@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.IO.Compression;
 using System.Text;
 using Unity.Collections;
 using Unity.Netcode;
@@ -29,6 +31,8 @@ namespace UnityIsekaiGame.Networking
         private readonly NetworkList<FixedString4096Bytes> authoritativeSnapshotChunks;
 
         private uint localCommandSequence;
+        private readonly TokenBucketRateLimiter commandRateLimiter = new TokenBucketRateLimiter(6d, 6d);
+        private string lastPublishedSnapshotJson = string.Empty;
 
         public NetworkPlayerNarrative()
         {
@@ -60,6 +64,8 @@ namespace UnityIsekaiGame.Networking
             snapshotGeneration.OnValueChanged -= OnSnapshotGenerationChanged;
             ServerCommandHandler = null;
             localCommandSequence = 0u;
+            commandRateLimiter.Reset();
+            lastPublishedSnapshotJson = string.Empty;
         }
 
         public bool Request(
@@ -92,8 +98,10 @@ namespace UnityIsekaiGame.Networking
         public bool PublishServerSnapshot(string snapshotJson)
         {
             if (!IsSpawned || !IsServer || string.IsNullOrWhiteSpace(snapshotJson)) return false;
-            const int maximumChunks = 16;
-            string[] chunks = SplitSnapshot(snapshotJson);
+            if (string.Equals(snapshotJson, lastPublishedSnapshotJson, StringComparison.Ordinal)) return true;
+            const int maximumChunks = 32;
+            string encodedSnapshot = EncodeSnapshot(snapshotJson);
+            string[] chunks = SplitSnapshot(encodedSnapshot);
             if (chunks.Length > maximumChunks)
             {
                 Debug.LogError($"Authoritative narrative snapshot exceeds the {maximumChunks}-chunk replication budget.", this);
@@ -104,6 +112,7 @@ namespace UnityIsekaiGame.Networking
             for (int i = 0; i < chunks.Length; i++) authoritativeSnapshotChunks.Add(new FixedString4096Bytes(chunks[i]));
             snapshotGeneration.Value = NextSequence(snapshotGeneration.Value);
             authoritativeRevision.Value = NextSequence(authoritativeRevision.Value);
+            lastPublishedSnapshotJson = snapshotJson;
             return true;
         }
 
@@ -111,6 +120,14 @@ namespace UnityIsekaiGame.Networking
         private void SubmitNarrativeCommandRpc(NetworkNarrativeCommand command, RpcParams rpcParams = default)
         {
             if (!IsServer || rpcParams.Receive.SenderClientId != OwnerClientId) return;
+            if (!commandRateLimiter.TryConsume(Time.realtimeSinceStartupAsDouble))
+            {
+                latestCommandResult.Value = NetworkNarrativeCommandResult.Reject(
+                    command,
+                    NarrativeAuthorityFailure.ServerRejected,
+                    "Narrative commands are arriving too quickly.");
+                return;
+            }
 
             NarrativeCommandValidationResult validation = NetworkNarrativeCommandValidator.Validate(command, lastAcceptedCommandSequence.Value);
             if (!validation.Succeeded)
@@ -153,7 +170,38 @@ namespace UnityIsekaiGame.Networking
             if (authoritativeSnapshotChunks.Count == 0) return string.Empty;
             StringBuilder builder = new StringBuilder(authoritativeSnapshotChunks.Count * 2048);
             for (int i = 0; i < authoritativeSnapshotChunks.Count; i++) builder.Append(authoritativeSnapshotChunks[i].ToString());
-            return builder.ToString();
+            return DecodeSnapshot(builder.ToString());
+        }
+
+        private static string EncodeSnapshot(string value)
+        {
+            byte[] input = Encoding.UTF8.GetBytes(value);
+            using var output = new MemoryStream();
+            using (var gzip = new GZipStream(output, System.IO.Compression.CompressionLevel.Fastest, true))
+                gzip.Write(input, 0, input.Length);
+            string compressed = "gz:" + Convert.ToBase64String(output.ToArray());
+            string raw = "raw:" + value;
+            return compressed.Length < raw.Length ? compressed : raw;
+        }
+
+        private static string DecodeSnapshot(string value)
+        {
+            if (value.StartsWith("raw:", StringComparison.Ordinal)) return value.Substring(4);
+            if (!value.StartsWith("gz:", StringComparison.Ordinal)) return value;
+            try
+            {
+                byte[] compressed = Convert.FromBase64String(value.Substring(3));
+                using var input = new MemoryStream(compressed);
+                using var gzip = new GZipStream(input, CompressionMode.Decompress);
+                using var output = new MemoryStream();
+                gzip.CopyTo(output);
+                return Encoding.UTF8.GetString(output.ToArray());
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"Could not decode authoritative narrative snapshot: {exception.Message}");
+                return string.Empty;
+            }
         }
 
         private static string[] SplitSnapshot(string value)

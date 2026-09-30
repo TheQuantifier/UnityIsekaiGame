@@ -44,7 +44,9 @@ namespace UnityIsekaiGame.Tests.EditMode
                 CanvasScaler[] scalers = gameObject.GetComponents<CanvasScaler>();
                 Assert.That(scalers, Has.Length.EqualTo(1));
                 Assert.That(scalers[0].uiScaleMode, Is.EqualTo(CanvasScaler.ScaleMode.ScaleWithScreenSize));
-                Assert.That(scalers[0].referenceResolution, Is.EqualTo(GameUiTheme.ReferenceResolution));
+                Assert.That(
+                    scalers[0].referenceResolution,
+                    Is.EqualTo(GameUiTheme.CalculateResponsiveReferenceResolution(Screen.width, Screen.height)));
             }
             finally
             {
@@ -86,6 +88,21 @@ namespace UnityIsekaiGame.Tests.EditMode
             float match = GameUiTheme.CalculateCanvasMatch(1920, 1080);
             Assert.That(match, Is.GreaterThan(0f));
             Assert.That(match, Is.LessThan(1f));
+        }
+
+        [TestCase(1024, 768, 1600f, 900f)]
+        [TestCase(1600, 900, 1920f, 1080f)]
+        [TestCase(1920, 1080, 1920f, 1080f)]
+        [TestCase(2560, 1080, 1920f, 1080f)]
+        public void ReferenceResolutionKeepsLowResolutionTextReadable(
+            int width,
+            int height,
+            float expectedWidth,
+            float expectedHeight)
+        {
+            Vector2 resolution = GameUiTheme.CalculateResponsiveReferenceResolution(width, height);
+            Assert.That(resolution.x, Is.EqualTo(expectedWidth).Within(0.01f));
+            Assert.That(resolution.y, Is.EqualTo(expectedHeight).Within(0.01f));
         }
 
         [Test]

@@ -22,8 +22,6 @@ namespace UnityIsekaiGame.UI.Inventory
 {
     public sealed class InventoryScreenController : MonoBehaviour, IPlayerMenuController
     {
-        private const float QueuedRefreshIntervalSeconds = 0.1f;
-
         [SerializeField] private PlayerInputReader input;
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private PlayerEquipment equipment;
@@ -51,12 +49,12 @@ namespace UnityIsekaiGame.UI.Inventory
         private bool isOpen;
         private int selectedSlotIndex;
         private int hoveredSlotIndex = -1;
+        private bool primaryActionComparisonHovered;
         private EquipmentSlotType selectedEquipmentSlot;
         private int selectedKnownSpellIndex;
         private int selectedQuestIndex;
         private bool refreshing;
         private bool refreshPending;
-        private float nextQueuedRefreshAt;
         private readonly Dictionary<int, EquipmentSlotType> equippedDisplaySlots = new Dictionary<int, EquipmentSlotType>();
 
         private void Awake()
@@ -86,7 +84,17 @@ namespace UnityIsekaiGame.UI.Inventory
 
             if (view != null)
             {
-                view.Initialize(SelectSlot, UseSelectedItem, SelectEquipmentSlot, EquipSelectedItem, UnequipSelectedEquipment, HoverSlot, DropSelectedItem, DropAllSelectedItems, HoverPrimaryAction);
+                view.Initialize(
+                    SelectSlot,
+                    UseSelectedItem,
+                    SelectEquipmentSlot,
+                    EquipSelectedItem,
+                    UnequipSelectedEquipment,
+                    HoverSlot,
+                    DropSelectedItem,
+                    DropAllSelectedItems,
+                    HoverPrimaryAction,
+                    MoveInventorySlot);
                 view.ConfigureRuntimeServices(ResolveRuntimePersistence());
             }
 
@@ -144,7 +152,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 narrativeAuthority.ReplicaChanged += RefreshIfOpen;
             }
 
-            if (isOpen && refreshPending && Time.unscaledTime >= nextQueuedRefreshAt)
+            if (isOpen && refreshPending)
             {
                 Refresh();
             }
@@ -316,6 +324,7 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             isOpen = false;
+            primaryActionComparisonHovered = false;
             refreshPending = false;
         }
 
@@ -333,7 +342,6 @@ namespace UnityIsekaiGame.UI.Inventory
 
             refreshing = true;
             refreshPending = false;
-            nextQueuedRefreshAt = Time.unscaledTime + QueuedRefreshIntervalSeconds;
             try
             {
                 if (view != null && inventory != null)
@@ -349,6 +357,10 @@ namespace UnityIsekaiGame.UI.Inventory
                     view.SetSelectedEquipmentSlot(selectedEquipmentSlot);
                     RenderHoveredSlotDetails();
                     UpdateEquipmentActions();
+                    if (primaryActionComparisonHovered)
+                    {
+                        HoverPrimaryAction(true);
+                    }
                 }
 
                 if (spellManagementView != null)
@@ -538,6 +550,36 @@ namespace UnityIsekaiGame.UI.Inventory
             DropSelectedQuantity(dropEntireStack: true);
         }
 
+        public void MoveInventorySlot(int sourceSlotIndex, int destinationSlotIndex)
+        {
+            if (!isOpen || inventory == null || sourceSlotIndex == destinationSlotIndex)
+            {
+                return;
+            }
+
+            InventorySlot source = inventory.GetSlot(sourceSlotIndex);
+            if (source == null || source.IsEmpty || source.Item == null)
+            {
+                view?.SetFeedback("The dragged inventory slot is empty.");
+                return;
+            }
+
+            selectedSlotIndex = destinationSlotIndex;
+            hoveredSlotIndex = destinationSlotIndex;
+            if (inventoryAuthority != null && inventoryAuthority.IsServerAuthorityActive)
+            {
+                SetAuthorityRequestFeedback(
+                    inventoryAuthority.RequestMove(sourceSlotIndex, destinationSlotIndex),
+                    "Move request sent to server.");
+                view?.SetSelectedSlot(selectedSlotIndex);
+                return;
+            }
+
+            InventoryInstanceOperationResult result = inventory.MoveOrMergeSlot(sourceSlotIndex, destinationSlotIndex);
+            view?.SetFeedback(result.Message);
+            Refresh();
+        }
+
         private void DropSelectedQuantity(bool dropEntireStack)
         {
             if (!isOpen || inventory == null)
@@ -677,6 +719,7 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void HoverPrimaryAction(bool hovering)
         {
+            primaryActionComparisonHovered = hovering;
             if (view == null || inventory == null)
             {
                 return;

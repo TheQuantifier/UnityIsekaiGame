@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
@@ -17,6 +18,7 @@ namespace UnityIsekaiGame.Persistence
         private readonly ItemInstanceIdentityRuntime itemIdentityRuntime;
         private readonly Func<DefinitionRegistry> registryProvider;
         private readonly string worldId;
+        private bool orphanWarningLogged;
 
         public ItemCompositionPersistenceParticipant(
             ItemCompositionRuntime runtime,
@@ -53,6 +55,7 @@ namespace UnityIsekaiGame.Persistence
 
             DefinitionRegistry registry = registryProvider?.Invoke();
             ItemCompositionRuntimeSaveData saveData = runtime.CreateSaveData();
+            ReportOrphans(ItemPersistenceSnapshotSanitizer.RemoveOrphanedCompositions(saveData, itemIdentityRuntime));
             if (!ItemCompositionRuntime.ValidateSaveData(saveData, registry, itemIdentityRuntime, out string failure))
             {
                 return PersistenceParticipantSaveResult.Failure(failure);
@@ -95,6 +98,7 @@ namespace UnityIsekaiGame.Persistence
                 return PersistenceParticipantPrepareResult.Failure("Item composition payload did not parse.");
             }
 
+            ReportOrphans(ItemPersistenceSnapshotSanitizer.RemoveOrphanedCompositions(saveData, itemIdentityRuntime));
             DefinitionRegistry registry = registryProvider?.Invoke();
             if (!ItemCompositionRuntime.ValidateSaveData(saveData, registry, itemIdentityRuntime, out string failure))
             {
@@ -131,6 +135,13 @@ namespace UnityIsekaiGame.Persistence
         {
         }
 
+        private void ReportOrphans(int count)
+        {
+            if (count <= 0 || orphanWarningLogged) return;
+            orphanWarningLogged = true;
+            Debug.LogWarning($"[Persistence] Omitted {count} orphaned item-composition record(s) from the world checkpoint.");
+        }
+
         private sealed class PreparedPayload
         {
             public PreparedPayload(ItemCompositionRuntimeSaveData saveData)
@@ -140,5 +151,47 @@ namespace UnityIsekaiGame.Persistence
 
             public ItemCompositionRuntimeSaveData SaveData { get; }
         }
+    }
+
+    internal static class ItemPersistenceSnapshotSanitizer
+    {
+        public static int RemoveOrphanedCompositions(
+            ItemCompositionRuntimeSaveData saveData,
+            ItemInstanceIdentityRuntime identities)
+        {
+            if (saveData?.records == null || identities == null) return 0;
+            return saveData.records.RemoveAll(record =>
+                record != null
+                && (!Exists(identities, record.itemInstanceId)
+                    || (record.components ?? new List<UnityIsekaiGame.Inventory.Composition.ItemComponentEntryData>())
+                        .Any(component => component != null
+                            && !string.IsNullOrWhiteSpace(component.componentItemInstanceId)
+                            && !Exists(identities, component.componentItemInstanceId))));
+        }
+
+        public static int RemoveOrphanedQuality(
+            UnityIsekaiGame.Inventory.Quality.ItemQualityAffixRuntimeSaveData saveData,
+            ItemInstanceIdentityRuntime identities)
+        {
+            if (saveData == null || identities == null) return 0;
+            int removed = saveData.qualityRecords?.RemoveAll(record =>
+                record != null && !Exists(identities, record.itemInstanceId)) ?? 0;
+            removed += saveData.affixInstances?.RemoveAll(affix =>
+                affix != null && !Exists(identities, affix.itemInstanceId)) ?? 0;
+            return removed;
+        }
+
+        public static int RemoveOrphanedDurability(
+            UnityIsekaiGame.Inventory.Durability.ItemDurabilityRuntimeSaveData saveData,
+            ItemInstanceIdentityRuntime identities)
+        {
+            if (saveData?.records == null || identities == null) return 0;
+            return saveData.records.RemoveAll(record =>
+                record != null && !Exists(identities, record.itemInstanceId));
+        }
+
+        private static bool Exists(ItemInstanceIdentityRuntime identities, string itemInstanceId)
+            => !string.IsNullOrWhiteSpace(itemInstanceId)
+                && identities.TryGetSnapshot(itemInstanceId, out _);
     }
 }

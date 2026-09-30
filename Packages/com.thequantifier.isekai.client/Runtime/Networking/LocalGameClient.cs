@@ -3,6 +3,7 @@ using System.Collections;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
+using UnityIsekaiGame.Gameplay;
 
 namespace UnityIsekaiGame.Networking.Client
 {
@@ -10,11 +11,15 @@ namespace UnityIsekaiGame.Networking.Client
     [RequireComponent(typeof(NetworkManager), typeof(UnityTransport))]
     public sealed class LocalGameClient : MonoBehaviour
     {
+        private const int LocalClientTargetFrameRate = 60;
+
         [SerializeField] private NetworkManager networkManager;
         [SerializeField] private string serverAddress = LocalServerEndpoint.DefaultClientAddress;
         [SerializeField] private int serverPort = LocalServerEndpoint.DefaultPort;
         [SerializeField] private string localPlayerId = "local-player";
+        [SerializeField] private string authenticationToken = string.Empty;
         [SerializeField] private bool connectAutomatically;
+        [SerializeField] private PrototypePersistenceServiceBehaviour simulation;
 
         private string clientInstanceId;
         private bool ownsClientSession;
@@ -31,6 +36,15 @@ namespace UnityIsekaiGame.Networking.Client
 
         private void Awake()
         {
+#if !UNITY_SERVER && !UNITY_EDITOR
+            // Local multiplayer frequently runs several graphical clients on one machine. An
+            // uncapped background window can otherwise monopolize a CPU core/GPU queue long
+            // enough for its transport heartbeat to time out. Keep networking alive in the
+            // background and apply a predictable render budget to every standalone client.
+            Application.runInBackground = true;
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = LocalClientTargetFrameRate;
+#endif
             ResolveReferences();
             clientInstanceId = Guid.NewGuid().ToString("N");
         }
@@ -62,7 +76,7 @@ namespace UnityIsekaiGame.Networking.Client
 
             if (options.Mode == LocalNetworkLaunchMode.Client)
             {
-                Connect(options.ServerAddress, options.Port, options.PlayerId);
+                Connect(options.ServerAddress, options.Port, options.PlayerId, options.AuthenticationToken);
             }
             else if (connectAutomatically && options.Mode == LocalNetworkLaunchMode.None)
             {
@@ -84,6 +98,14 @@ namespace UnityIsekaiGame.Networking.Client
             networkManager.OnClientDisconnectCallback -= OnClientDisconnected;
         }
 
+        private void OnApplicationQuit()
+        {
+            if (ownsClientSession)
+            {
+                Disconnect();
+            }
+        }
+
         public void Configure(NetworkManager manager, string address = LocalServerEndpoint.DefaultClientAddress, int port = LocalServerEndpoint.DefaultPort, bool autoConnect = false)
         {
             networkManager = manager;
@@ -94,10 +116,10 @@ namespace UnityIsekaiGame.Networking.Client
 
         public bool Connect()
         {
-            return Connect(serverAddress, serverPort, localPlayerId);
+            return Connect(serverAddress, serverPort, localPlayerId, authenticationToken);
         }
 
-        public bool Connect(string address, int port, string playerId)
+        public bool Connect(string address, int port, string playerId, string token = "")
         {
             ResolveReferences();
             if (networkManager == null)
@@ -118,7 +140,8 @@ namespace UnityIsekaiGame.Networking.Client
             ConnectionRequestPayload request = new ConnectionRequestPayload(
                 string.IsNullOrWhiteSpace(clientInstanceId) ? Guid.NewGuid().ToString("N") : clientInstanceId,
                 playerId,
-                Application.version);
+                Application.version,
+                token);
             if (!LocalConnectionProtocol.TryEncode(request, out byte[] payload, out string payloadFailure))
             {
                 return Fail(payloadFailure);
@@ -132,13 +155,17 @@ namespace UnityIsekaiGame.Networking.Client
             serverAddress = endpoint.Address;
             serverPort = endpoint.Port;
             localPlayerId = playerId;
+            authenticationToken = token ?? string.Empty;
+            networkManager.NetworkConfig.TickRate = LocalServerEndpoint.DefaultTickRate;
             networkManager.NetworkConfig.ConnectionData = payload;
             transport.SetConnectionData(endpoint.Address, endpoint.Port);
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Connecting, $"Connecting to {endpoint}.", endpoint));
+            SetSimulationRole(SimulationRuntimeRole.NetworkClientReplica);
 
             ownsClientSession = networkManager.StartClient();
             if (!ownsClientSession)
             {
+                SetSimulationRole(SimulationRuntimeRole.StandaloneAuthoritative);
                 return Fail($"Could not start a client connection to {endpoint}.", endpoint);
             }
 
@@ -150,6 +177,7 @@ namespace UnityIsekaiGame.Networking.Client
             if (!ownsClientSession || networkManager == null)
             {
                 SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Client is offline."));
+                SetSimulationRole(SimulationRuntimeRole.StandaloneAuthoritative);
                 return;
             }
 
@@ -158,6 +186,7 @@ namespace UnityIsekaiGame.Networking.Client
             SetLocalPlayerActor(null);
             networkManager.Shutdown();
             ownsClientSession = false;
+            SetSimulationRole(SimulationRuntimeRole.StandaloneAuthoritative);
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Client disconnected.", status.Endpoint));
         }
 
@@ -182,6 +211,7 @@ namespace UnityIsekaiGame.Networking.Client
 
             string reason = networkManager.DisconnectReason;
             ownsClientSession = false;
+            SetSimulationRole(SimulationRuntimeRole.StandaloneAuthoritative);
             StopPlayerActorResolution();
             SetLocalPlayerActor(null);
             SetStatus(string.IsNullOrWhiteSpace(reason)
@@ -239,6 +269,15 @@ namespace UnityIsekaiGame.Networking.Client
         private void ResolveReferences()
         {
             networkManager = networkManager == null ? GetComponent<NetworkManager>() : networkManager;
+            simulation = simulation == null
+                ? FindAnyObjectByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include)
+                : simulation;
+        }
+
+        private void SetSimulationRole(SimulationRuntimeRole role)
+        {
+            if (simulation == null) ResolveReferences();
+            simulation?.SetRuntimeRole(role);
         }
 
         private bool Fail(string message, LocalServerEndpoint endpoint = default)

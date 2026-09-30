@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
+#if !ISEKAI_SERVER_PROJECT
 using UnityEngine.UI;
+#endif
 
 namespace UnityIsekaiGame.Presentation
 {
@@ -75,7 +77,9 @@ namespace UnityIsekaiGame.Presentation
         private static GUIStyle primaryButtonStyle;
         private static GUIStyle dangerButtonStyle;
         private static GUIStyle centeredStyle;
+#if !ISEKAI_SERVER_PROJECT
         private static Sprite roundedSprite;
+#endif
 
         public static GUIStyle WindowStyle { get { EnsureGuiStyles(); return windowStyle; } }
         public static GUIStyle CardStyle { get { EnsureGuiStyles(); return cardStyle; } }
@@ -118,6 +122,7 @@ namespace UnityIsekaiGame.Presentation
             GUI.Label(rect, label ?? string.Empty, CenteredStyle);
         }
 
+#if !ISEKAI_SERVER_PROJECT
         public static void ConfigureCanvas(Canvas canvas)
         {
             if (canvas == null || canvas.renderMode == RenderMode.WorldSpace)
@@ -132,9 +137,24 @@ namespace UnityIsekaiGame.Presentation
             }
 
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = ReferenceResolution;
+            scaler.referenceResolution = CalculateResponsiveReferenceResolution(Screen.width, Screen.height);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = CalculateCanvasMatch(Screen.width, Screen.height);
+        }
+
+        public static Vector2 CalculateResponsiveReferenceResolution(int width, int height)
+        {
+            if (width <= 0 || height <= 0 || width >= 1600)
+            {
+                return ReferenceResolution;
+            }
+
+            // Preserve the authored 1920x1080 scale on standard desktop viewports, but bound how
+            // small text and controls can become on supported low-resolution windows. The gradual
+            // interpolation avoids a visible scale jump while resizing through 1600 pixels wide.
+            Vector2 compactReference = new Vector2(1600f, 900f);
+            float desktopBlend = Mathf.InverseLerp(1024f, 1600f, width);
+            return Vector2.Lerp(compactReference, ReferenceResolution, desktopBlend);
         }
 
         public static float CalculateCanvasMatch(int width, int height)
@@ -168,10 +188,15 @@ namespace UnityIsekaiGame.Presentation
                     text.fontSize = Mathf.Max(text.fontSize, 16);
                     text.fontStyle = FontStyle.Bold;
                     break;
+                case GameUiTextRole.Body:
+                case GameUiTextRole.Muted:
+                    text.fontSize = Mathf.Max(text.fontSize, 14);
+                    break;
                 case GameUiTextRole.Feedback:
                 case GameUiTextRole.Success:
                 case GameUiTextRole.Warning:
                 case GameUiTextRole.Danger:
+                    text.fontSize = Mathf.Max(text.fontSize, 14);
                     text.fontStyle = FontStyle.Bold;
                     break;
             }
@@ -344,6 +369,7 @@ namespace UnityIsekaiGame.Presentation
             shadow.effectDistance = new Vector2(distance, -distance);
             shadow.useGraphicAlpha = true;
         }
+#endif
 
         public static GameUiTextRole InferTextRole(string objectName)
         {
@@ -400,6 +426,7 @@ namespace UnityIsekaiGame.Presentation
 
         private static Color WithAlpha(Color color, float alpha) => new Color(color.r, color.g, color.b, alpha);
 
+#if !ISEKAI_SERVER_PROJECT
         private static void EnsureGraphicOutline(Graphic graphic, Color color, float distance)
         {
             if (graphic == null) return;
@@ -409,6 +436,7 @@ namespace UnityIsekaiGame.Presentation
             outline.effectDistance = new Vector2(distance, -distance);
             outline.useGraphicAlpha = true;
         }
+#endif
 
         private static Color Hex(string rgb, float alpha)
         {
@@ -417,6 +445,7 @@ namespace UnityIsekaiGame.Presentation
                 : Color.magenta;
         }
 
+#if !ISEKAI_SERVER_PROJECT
         private static void ApplyRoundedSurface(Image image)
         {
             Sprite sprite = RoundedSprite;
@@ -506,6 +535,7 @@ namespace UnityIsekaiGame.Presentation
             float deltaY = y - nearestY;
             return deltaX * deltaX + deltaY * deltaY <= radius * radius;
         }
+#endif
 
         private static void DrawSolidRect(Rect rect, Color color)
         {

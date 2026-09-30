@@ -353,6 +353,26 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void PersistenceSnapshotOmitsCompositionWithoutAnItemIdentity()
+        {
+            RuntimeFixture source = CreateFixture();
+            string itemId = source.Items.CreateItem(source.Sword).Snapshot.ItemInstanceId;
+            Assert.That(source.Compositions.SetComposition(source.Items, source.Registry, SwordComposition(itemId, "material.prototype.iron")).Succeeded, Is.True);
+
+            ItemInstanceIdentityRuntime emptyIdentities = new ItemInstanceIdentityRuntime();
+            ItemCompositionRuntime restored = new ItemCompositionRuntime();
+            ItemCompositionPersistenceParticipant participant = new ItemCompositionPersistenceParticipant(restored, emptyIdentities, () => source.Registry);
+            PersistenceParticipantPrepareResult prepared = participant.PreparePayload(
+                JsonUtility.ToJson(source.Compositions.CreateSaveData()),
+                ItemCompositionPersistenceParticipant.CurrentParticipantSchemaVersion);
+            PersistenceParticipantCommitResult committed = participant.CommitPreparedPayload(prepared.PreparedPayload);
+
+            Assert.That(prepared.Succeeded, Is.True, prepared.Message);
+            Assert.That(committed.Succeeded, Is.True, committed.Message);
+            Assert.That(restored.CreateSaveData().records, Is.Empty);
+        }
+
+        [Test]
         public void RequiredHistoryCompositionMutationReferencesItemAndRollsBackWhenHistoryFails()
         {
             RuntimeFixture fixture = CreateFixture();

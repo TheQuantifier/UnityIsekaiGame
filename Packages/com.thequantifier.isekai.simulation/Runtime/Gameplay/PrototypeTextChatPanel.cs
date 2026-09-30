@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Presentation;
 
@@ -35,10 +34,7 @@ namespace UnityIsekaiGame.Gameplay
 
         private void Update()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard == null) return;
-
-            if (keyboard.slashKey.wasPressedThisFrame)
+            if (input != null && input.ChatTogglePressedThisFrame)
             {
                 SetOpen(!IsChatOpen);
                 return;

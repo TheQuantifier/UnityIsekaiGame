@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -85,6 +86,8 @@ namespace UnityIsekaiGame.Gameplay
 {
     public sealed partial class PrototypePersistenceServiceBehaviour : MonoBehaviour, IItemDurabilityRuntimeProvider
     {
+        [Header("Runtime Authority")]
+        [SerializeField] private SimulationRuntimeRole runtimeRole = SimulationRuntimeRole.Auto;
         [SerializeField] private DefinitionCatalog definitionCatalog;
         [SerializeField] private PlayerInventory playerInventory;
         [SerializeField] private PlayerEquipment playerEquipment;
@@ -273,6 +276,7 @@ namespace UnityIsekaiGame.Gameplay
         private AuthoritativeHistoryRuntime worldAuthoritativeHistory;
         private PersonMemoryRuntime playerMemory;
         private readonly HashSet<string> historicalPlayerPersonIds = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> authoritativeRuntimePersonIds = new HashSet<string>(StringComparer.Ordinal);
         private KnowledgeHistoryFacade knowledgeHistoryFacade;
         private ObservationService observationService;
         private GameplayObservationCoordinator gameplayObservationCoordinator;
@@ -356,6 +360,135 @@ namespace UnityIsekaiGame.Gameplay
         public AutosaveCoordinator Autosave => autosaveCoordinator;
         public DefinitionCatalog DefinitionCatalog => definitionCatalog;
         public string PlayerPersonId => ResolvePlayerPersonId();
+
+        public void RegisterAuthoritativeRuntimePerson(string personId)
+        {
+            personId = personId?.Trim();
+            if (string.IsNullOrWhiteSpace(personId) || !authoritativeRuntimePersonIds.Add(personId))
+            {
+                return;
+            }
+
+            RefreshAuthoritativeRuntimePersonRegistrations();
+        }
+
+        public int RegisterAuthoritativeRuntimePersonsFromWorldCheckpoint(string slotId)
+        {
+            if (worldService == null || string.IsNullOrWhiteSpace(slotId))
+            {
+                return 0;
+            }
+
+            PersistenceValidationResult inspection = worldService.InspectSlotEnvelope(slotId);
+            if (!inspection.Succeeded || inspection.Envelope?.participants == null)
+            {
+                return 0;
+            }
+
+            int added = 0;
+            foreach (SaveParticipantRecord participant in inspection.Envelope.participants)
+            {
+                if (string.IsNullOrWhiteSpace(participant?.payloadJson))
+                {
+                    continue;
+                }
+
+                JToken payload;
+                try
+                {
+                    payload = JToken.Parse(participant.payloadJson);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (JValue value in payload.SelectTokens("$..*").OfType<JValue>())
+                {
+                    if (value.Type != JTokenType.String || !IsPersonIdentityField(value))
+                    {
+                        continue;
+                    }
+
+                    string candidate = value.Value<string>()?.Trim();
+                    if (candidate != null
+                        && IsAuthoritativeRuntimePersonId(candidate)
+                        && authoritativeRuntimePersonIds.Add(candidate))
+                    {
+                        added++;
+                    }
+                }
+            }
+
+            if (added > 0)
+            {
+                RefreshAuthoritativeRuntimePersonRegistrations();
+            }
+
+            return added;
+        }
+
+        private static bool IsAuthoritativeRuntimePersonId(string personId)
+        {
+            const string prefix = "person.player.";
+            if (!personId.StartsWith(prefix, StringComparison.Ordinal) || personId.Length <= prefix.Length)
+            {
+                return false;
+            }
+
+            string playerId = personId.Substring(prefix.Length);
+            return playerId.Length <= 64
+                && char.IsLetterOrDigit(playerId[0])
+                && playerId.All(character => char.IsLetterOrDigit(character) || character == '-' || character == '_' || character == '.')
+                && playerId.IndexOf("person.", StringComparison.OrdinalIgnoreCase) < 0
+                && playerId.IndexOf("binding.", StringComparison.OrdinalIgnoreCase) < 0;
+        }
+
+        private static bool IsPersonIdentityField(JValue value)
+        {
+            JProperty property = value.Parent as JProperty
+                ?? value.Parent?.Parent as JProperty;
+            if (property == null)
+            {
+                return false;
+            }
+
+            return property.Name.EndsWith("PersonId", StringComparison.OrdinalIgnoreCase)
+                || property.Name.EndsWith("PersonIds", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void RefreshAuthoritativeRuntimePersonRegistrations()
+        {
+            DefinitionRegistry registry = GetDefinitionRegistry();
+            string[] knownPersons = GetPrototypeSocialPersonIds(ResolvePlayerPersonId());
+            worldRelationships?.Configure(registry, knownPersons);
+            worldInterpersonalAttitudes?.Configure(registry, knownPersons);
+            worldReputation?.Configure(registry, knownPersons);
+            worldRumors?.Configure(registry, knownPersons, ResolveKnowledgeRuntimeForPerson, ResolveMemoryRuntimeForPerson);
+            worldSocialInteractions?.Configure(registry, knownPersons, Relationships, InterpersonalAttitudes, Reputation, Rumors);
+            worldSocialNorms?.Configure(registry, knownPersons, Relationships, InterpersonalAttitudes, Reputation, Rumors, SocialInteractions);
+            worldSocialNetworks?.Configure(registry, knownPersons, Relationships, InterpersonalAttitudes, Reputation, Rumors, SocialInteractions, SocialNorms);
+            worldSocialDecisions?.Configure(registry, knownPersons, SocialInteractions, Relationships, InterpersonalAttitudes, Reputation, Rumors, SocialNorms, SocialNetworks, SocialDecisionModifierSourceCollection.Compose(SocialInfluence, SocialEmotions));
+            worldSocialInfluence?.Configure(registry, knownPersons, InterpersonalAttitudes, Reputation, SocialInteractions, new[] { playerKnowledge });
+            worldSocialEmotions?.Configure(registry, knownPersons, Relationships, InterpersonalAttitudes, Reputation, Rumors, SocialInteractions, SocialNorms, SocialNetworks, SocialInfluence);
+            worldFamilyRelationships?.Configure(
+                registry,
+                knownPersons,
+                Relationships,
+                InterpersonalAttitudes,
+                SocialInteractions,
+                playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId,
+                GetPrototypeAdultPersonIds(ResolvePlayerPersonId()));
+
+            if (worldAuthoritativeHistory != null)
+            {
+                worldAuthoritativeHistory.Configure(
+                    registry,
+                    playerService == null ? PersistenceService.LocalWorldId : playerService.WorldId,
+                    knownPersons,
+                    GetKnownBodyIds());
+            }
+        }
         public PlayerInventory PlayerInventory => playerInventory;
         public PlayerEquipment PlayerEquipment => playerEquipment;
         public PlayerInputReader PlayerInput => playerInput;
@@ -1020,10 +1153,43 @@ namespace UnityIsekaiGame.Gameplay
         public DefinitionRegistry ItemQualityDefinitionRegistry => GetDefinitionRegistry();
         public DefinitionRegistry ItemDurabilityDefinitionRegistry => GetDefinitionRegistry();
         public CharacterSkillCollection PlayerSkills => playerSkills;
+        public SimulationRuntimeRole RuntimeRole => ResolveRuntimeRole();
+        public bool IsAuthoritativeRuntime => RuntimeRole != SimulationRuntimeRole.NetworkClientReplica;
+
+        public void SetRuntimeRole(SimulationRuntimeRole role)
+        {
+            if (role == SimulationRuntimeRole.Auto)
+            {
+                throw new ArgumentException("Runtime role must be explicit when changed at runtime.", nameof(role));
+            }
+
+            runtimeRole = role;
+            if (autosaveCoordinator != null)
+            {
+                autosaveCoordinator.enabled = IsAuthoritativeRuntime;
+            }
+        }
+
+        private SimulationRuntimeRole ResolveRuntimeRole()
+        {
+            if (runtimeRole != SimulationRuntimeRole.Auto)
+            {
+                return runtimeRole;
+            }
+
+            return Application.isBatchMode
+                ? SimulationRuntimeRole.DedicatedServerAuthoritative
+                : SimulationRuntimeRole.StandaloneAuthoritative;
+        }
 
         private void Awake()
         {
             EnsureInitialized();
+            if (Application.isBatchMode || !IsAuthoritativeRuntime)
+            {
+                return;
+            }
+
             if (GetComponent<PrototypeTravelPanel>() == null) gameObject.AddComponent<PrototypeTravelPanel>();
             if (GetComponent<PrototypeQuestSourcePanel>() == null) gameObject.AddComponent<PrototypeQuestSourcePanel>();
             if (GetComponent<PrototypeDialoguePanel>() == null) gameObject.AddComponent<PrototypeDialoguePanel>();
@@ -1032,6 +1198,11 @@ namespace UnityIsekaiGame.Gameplay
         }
         private void Update()
         {
+            if (!IsAuthoritativeRuntime)
+            {
+                return;
+            }
+
             worldNarrativeCoordinator?.Advance();
             AdvanceGroup6Crafting();
 
@@ -1733,6 +1904,13 @@ namespace UnityIsekaiGame.Gameplay
         public SaveEligibilityResult CheckSaveEligibility(bool showDetailedPlayerMessage, bool allowOpenMenu = true)
         {
             EnsureInitialized();
+            if (!IsAuthoritativeRuntime)
+            {
+                return SaveEligibilityResult.Block(
+                    SaveEligibilityStatus.OperationInProgress,
+                    "Network clients cannot save authoritative state. Saving is owned by the server.");
+            }
+
             if (playerService.OperationInProgress)
             {
                 return SaveEligibilityResult.Block(SaveEligibilityStatus.OperationInProgress, "A persistence operation is already running.");
@@ -1800,6 +1978,15 @@ namespace UnityIsekaiGame.Gameplay
         public PersistenceSaveResult SaveWorldCheckpoint(string reason = "Scheduled")
         {
             EnsureInitialized();
+            if (!IsAuthoritativeRuntime)
+            {
+                return PersistenceSaveResult.Failure(
+                    PersistenceSaveStatus.DependencyValidationFailed,
+                    PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId,
+                    string.Empty,
+                    "Network clients cannot save the authoritative world checkpoint.");
+            }
+
             if (WorldReadiness == null || !WorldReadiness.succeeded)
             {
                 return PersistenceSaveResult.Failure(PersistenceSaveStatus.DependencyValidationFailed, PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId, string.Empty, WorldReadiness?.message ?? "World persistence has not initialized successfully.");
@@ -1815,6 +2002,15 @@ namespace UnityIsekaiGame.Gameplay
         public PersistenceLoadResult LoadWorldCheckpoint(bool loadBackup = false)
         {
             EnsureInitialized();
+            if (!IsAuthoritativeRuntime)
+            {
+                return PersistenceLoadResult.Failure(
+                    PersistenceLoadStatus.DependencyValidationFailed,
+                    PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId,
+                    string.Empty,
+                    "Network clients cannot load the authoritative world checkpoint.");
+            }
+
             PersistenceLoadResult result = worldService.Load(PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId, loadBackup);
             Report(result.Succeeded, result.Message);
             return result;
@@ -5430,6 +5626,7 @@ namespace UnityIsekaiGame.Gameplay
                 .Concat(itemOwners)
                 .Concat(institutionalObservedPersonIds)
                 .Concat(historicalPlayerPersonIds)
+                .Concat(authoritativeRuntimePersonIds)
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .Select(value => value.Trim())
                 .Distinct(StringComparer.Ordinal)

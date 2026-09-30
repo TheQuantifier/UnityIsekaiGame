@@ -68,6 +68,43 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void InventorySlotDropRoutesTheDraggedSourceAndDestinationIndexes()
+        {
+            GameObject root = new GameObject("Inventory Drag Test", typeof(Canvas));
+            GameObject sourceObject = new GameObject("Source", typeof(RectTransform), typeof(Image), typeof(InventorySlotView));
+            GameObject destinationObject = new GameObject("Destination", typeof(RectTransform), typeof(Image), typeof(InventorySlotView));
+            sourceObject.transform.SetParent(root.transform, false);
+            destinationObject.transform.SetParent(root.transform, false);
+            try
+            {
+                ItemDefinition arrows = AssetDatabase.LoadAssetAtPath<ItemDefinition>(
+                    "Packages/com.thequantifier.isekai.content/Content/Items/Definitions/PrototypeArrow.asset");
+                InventorySlotView source = sourceObject.GetComponent<InventorySlotView>();
+                InventorySlotView destination = destinationObject.GetComponent<InventorySlotView>();
+                int routedSource = -1;
+                int routedDestination = -1;
+                source.Initialize(2, null, null, (from, to) => { routedSource = from; routedDestination = to; });
+                destination.Initialize(7, null, null, (from, to) => { routedSource = from; routedDestination = to; });
+                source.Render(CreateOccupiedSlot(arrows, 2));
+                destination.RenderEmpty();
+
+                PointerEventData eventData = new PointerEventData(null) { pointerDrag = sourceObject };
+                destination.OnDrop(eventData);
+
+                Assert.That(source, Is.InstanceOf<IBeginDragHandler>());
+                Assert.That(source, Is.InstanceOf<IDragHandler>());
+                Assert.That(source, Is.InstanceOf<IEndDragHandler>());
+                Assert.That(destination, Is.InstanceOf<IDropHandler>());
+                Assert.That(routedSource, Is.EqualTo(2));
+                Assert.That(routedDestination, Is.EqualTo(7));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void PrototypeInventoryMenuUsesResponsiveNonClippingLayout()
         {
             string previousScenePath = SceneManager.GetActiveScene().path;

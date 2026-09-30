@@ -56,9 +56,29 @@ namespace UnityIsekaiGame.Tests
             Assert.That(prefab, Is.Not.Null);
             Assert.That(prefab.GetComponent<NetworkObject>(), Is.Not.Null);
             Assert.That(prefab.GetComponent<NetworkPlayerActor>(), Is.Not.Null);
-            Assert.That(prefab.GetComponent<NetworkPlayerMovement>(), Is.Not.Null);
+            NetworkPlayerMovement movement = prefab.GetComponent<NetworkPlayerMovement>();
+            Assert.That(movement, Is.Not.Null);
+            Assert.That(movement.FallRecoveryDistance, Is.GreaterThanOrEqualTo(1f));
             Assert.That(prefab.GetComponent<NetworkTransform>(), Is.Not.Null);
             Assert.That(prefab.GetComponent<CharacterController>(), Is.Not.Null);
+        }
+
+        [Test]
+        public void Local_network_timing_uses_sixty_hertz_authority_updates()
+        {
+            Assert.That(LocalServerEndpoint.DefaultTickRate, Is.EqualTo(60u));
+            Assert.That(1f / LocalServerEndpoint.DefaultTickRate, Is.EqualTo(1f / 60f).Within(0.000001f));
+        }
+
+        [Test]
+        public void Token_bucket_allows_a_bounded_burst_and_refills_over_time()
+        {
+            var limiter = new TokenBucketRateLimiter(2d, 1d);
+            Assert.That(limiter.TryConsume(10d), Is.True);
+            Assert.That(limiter.TryConsume(10d), Is.True);
+            Assert.That(limiter.TryConsume(10d), Is.False);
+            Assert.That(limiter.TryConsume(10.5d), Is.False);
+            Assert.That(limiter.TryConsume(11d), Is.True);
         }
     }
 }

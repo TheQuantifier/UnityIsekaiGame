@@ -882,7 +882,7 @@ PlayerSettings:
   webWasm2023: 1
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Standalone: 
+    Standalone: ISEKAI_SERVER_PROJECT
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

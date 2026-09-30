@@ -32,12 +32,11 @@ namespace UnityIsekaiGame.Editor
             string projectRoot = Path.GetDirectoryName(Application.dataPath)
                 ?? throw new InvalidOperationException("The Unity project root could not be resolved.");
             string outputPath = Path.GetFullPath(Path.Combine(projectRoot, relativeOutputPath));
-            Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? throw new InvalidOperationException("The build output directory is invalid."));
-
+            using var output = new BuildOutputTransaction(outputPath);
             BuildReport report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {
                 scenes = scenes,
-                locationPathName = outputPath,
+                locationPathName = output.StagingExecutablePath,
                 target = BuildTarget.StandaloneWindows64,
                 targetGroup = BuildTargetGroup.Standalone,
                 subtarget = (int)subtarget,
@@ -50,6 +49,8 @@ namespace UnityIsekaiGame.Editor
                     $"{subtarget} build failed with {report.summary.totalErrors} error(s). See the Unity Editor log for details.");
             }
 
+            output.ValidateManagedAssemblies(new[] { "UnityIsekaiGame.Networking.Server.dll" });
+            output.Commit();
             Debug.Log($"Built {subtarget} player at '{outputPath}' ({report.summary.totalSize:N0} bytes). ");
         }
     }

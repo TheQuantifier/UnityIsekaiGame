@@ -401,6 +401,11 @@ namespace UnityIsekaiGame.Parties
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AttachHud()
         {
+            if (Application.isBatchMode)
+            {
+                return;
+            }
+
             foreach (PrototypePersistenceServiceBehaviour persistence in UnityEngine.Object.FindObjectsByType<PrototypePersistenceServiceBehaviour>(FindObjectsInactive.Include))
                 if (persistence.GetComponent<PartyHudOverlay>() == null) persistence.gameObject.AddComponent<PartyHudOverlay>();
         }

@@ -108,7 +108,7 @@ namespace UnityIsekaiGame.Gameplay
                 socialOrganizationSubscribed = true;
             }
 
-            if (enableSocialDebugPanel && socialDebugPanel == null)
+            if (!Application.isBatchMode && enableSocialDebugPanel && socialDebugPanel == null)
             {
                 socialDebugPanel = GetComponent<PrototypeSocialDebugPanel>();
                 if (socialDebugPanel == null)

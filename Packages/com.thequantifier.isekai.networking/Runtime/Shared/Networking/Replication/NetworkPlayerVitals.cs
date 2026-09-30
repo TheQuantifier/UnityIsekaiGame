@@ -146,6 +146,14 @@ namespace UnityIsekaiGame.Networking
         public bool TryRestoreStaminaServer(float amount) => MutateServer(value => value.TryRestoreStamina(amount));
         public bool TryReviveServer() => MutateServer(value => value.ReviveToMaximum());
 
+        public bool RestoreStateServer(NetworkVitalsState state)
+        {
+            if (!IsSpawned || !IsServer || !NetworkVitalsStateValidator.TryValidate(state, out _)) return false;
+            model = new AuthoritativeVitalsModel(state, BuildTuning());
+            replicatedState.Value = model.State;
+            return true;
+        }
+
         private bool MutateServer(Func<AuthoritativeVitalsModel, bool> mutation)
         {
             if (!IsSpawned || !IsServer || model == null)

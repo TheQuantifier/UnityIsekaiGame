@@ -124,6 +124,31 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void ReplicatedResourceSnapshot_ValidatesAgainstItsAuthoritativeMaximum()
+        {
+            DefinitionRegistry registry = LoadCatalog().CreateRegistry();
+            GameObject owner = CreateConfiguredOwner(registry, out _, out Component stats, out Component resourcesComponent);
+            try
+            {
+                CharacterResourceCollection resources = (CharacterResourceCollection)resourcesComponent;
+                resources.SetExternalReplicaAuthority(true);
+                Assert.That(resources.ApplyExternalReplicaSnapshot(ResourceMana, 221f, 255f), Is.True);
+                PlayerResourcesSaveData saveData = resources.CreateSaveData("player.local", "person.prototype-player");
+
+                Assert.That(CharacterResourceCollection.ValidateSaveData(
+                    saveData,
+                    registry,
+                    (CalculatedStatCollection)stats,
+                    "player.local",
+                    out string failure), Is.True, failure);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
         public void ResourceCollection_ResetToDefinitionDefaultsRestoresAllResourcesAndClearsEventDedupe()
         {
             DefinitionRegistry registry = LoadCatalog().CreateRegistry();

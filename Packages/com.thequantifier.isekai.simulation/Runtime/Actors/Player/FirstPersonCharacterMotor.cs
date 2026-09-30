@@ -17,6 +17,7 @@ namespace UnityIsekaiGame.Player
         private CharacterController controller;
         private float currentHorizontalSpeed;
         private float verticalVelocity;
+        private bool networkPredictionMode;
 
         public PlayerMovementSettings MovementSettings => movementSettings;
 
@@ -39,7 +40,7 @@ namespace UnityIsekaiGame.Player
             Vector2 moveInput = Vector2.ClampMagnitude(input.Move, 1f);
             Vector3 localMove = new Vector3(moveInput.x, 0f, moveInput.y);
             bool isMoving = localMove.sqrMagnitude > 0.0001f;
-            bool sprinting = stamina != null
+            bool sprinting = !networkPredictionMode && stamina != null
                 ? stamina.EvaluateSprint(input.SprintHeld, isMoving, input.GameplayInputBlocked, Time.deltaTime)
                 : input.SprintHeld && isMoving;
             float targetSpeed = isMoving ? ResolveHorizontalSpeed(sprinting) : 0f;
@@ -82,6 +83,12 @@ namespace UnityIsekaiGame.Player
         {
             currentHorizontalSpeed = 0f;
             verticalVelocity = 0f;
+        }
+
+        public void SetNetworkPredictionMode(bool enabled)
+        {
+            networkPredictionMode = enabled;
+            if (!enabled) ResetTransientMotionForPersistenceRestore();
         }
     }
 }

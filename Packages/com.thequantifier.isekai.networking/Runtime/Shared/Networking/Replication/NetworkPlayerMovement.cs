@@ -12,13 +12,14 @@ namespace UnityIsekaiGame.Networking
     {
         private const float InputTimeoutSeconds = 0.35f;
 
-        [SerializeField, Min(0f)] private float walkSpeed = 3f;
+        [SerializeField, Min(0f)] private float walkSpeed = 4.5f;
         [SerializeField, Range(1f, 2f)] private float sprintMultiplier = 1.6666667f;
-        [SerializeField, Min(0f)] private float acceleration = 30f;
-        [SerializeField, Min(0f)] private float deceleration = 36f;
-        [SerializeField, Min(0f)] private float jumpHeight = 1.25f;
-        [SerializeField, Min(0f)] private float gravity = 24f;
+        [SerializeField, Min(0f)] private float acceleration = 60f;
+        [SerializeField, Min(0f)] private float deceleration = 72f;
+        [SerializeField, Min(0f)] private float jumpHeight = 1.5f;
+        [SerializeField, Min(0f)] private float gravity = 30f;
         [SerializeField, Min(0f)] private float groundedStickForce = 2f;
+        [SerializeField, Min(1f)] private float fallRecoveryDistance = 50f;
 
         private readonly NetworkVariable<uint> lastAcceptedSequence = new NetworkVariable<uint>(
             0,
@@ -26,6 +27,7 @@ namespace UnityIsekaiGame.Networking
             NetworkVariableWritePermission.Server);
 
         private CharacterController controller;
+        private NetworkTransform networkTransform;
         private NetworkPlayerVitals vitals;
         private NetworkMovementInput latestInput;
         private uint localSequence;
@@ -34,11 +36,15 @@ namespace UnityIsekaiGame.Networking
         private double lastInputReceivedAt;
         private bool jumpRequested;
         private bool movementLogged;
+        private bool originalInterpolation;
         private Vector3 spawnPosition;
+        private readonly TokenBucketRateLimiter movementRateLimiter = new TokenBucketRateLimiter(30d, 90d);
+        private readonly TokenBucketRateLimiter jumpRateLimiter = new TokenBucketRateLimiter(3d, 3d);
 
         public uint LastAcceptedSequence => lastAcceptedSequence.Value;
         public float WalkSpeed => walkSpeed;
         public float SprintSpeed => walkSpeed * sprintMultiplier;
+        public float FallRecoveryDistance => fallRecoveryDistance;
         public Vector3 AuthoritativePosition => transform.position;
 
         public void ConfigureTuning(
@@ -67,6 +73,8 @@ namespace UnityIsekaiGame.Networking
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
+            networkTransform = GetComponent<NetworkTransform>();
+            originalInterpolation = networkTransform != null && networkTransform.Interpolate;
             vitals = GetComponent<NetworkPlayerVitals>();
         }
 
@@ -76,6 +84,12 @@ namespace UnityIsekaiGame.Networking
             spawnPosition = transform.position;
             latestInput = new NetworkMovementInput(0, Vector2.zero, transform.eulerAngles.y, false);
             lastInputReceivedAt = Time.realtimeSinceStartupAsDouble;
+            if (networkTransform != null && IsClient && IsOwner && !IsServer)
+            {
+                // Remote actors benefit from interpolation, but interpolating the locally owned
+                // authoritative actor deliberately renders it behind the newest server state.
+                networkTransform.Interpolate = false;
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -89,6 +103,9 @@ namespace UnityIsekaiGame.Networking
             jumpRequested = false;
             horizontalSpeed = 0f;
             verticalVelocity = 0f;
+            if (networkTransform != null) networkTransform.Interpolate = originalInterpolation;
+            movementRateLimiter.Reset();
+            jumpRateLimiter.Reset();
         }
 
         public void ConfigureSpawnServer(Vector3 position, float yawDegrees)
@@ -131,6 +148,7 @@ namespace UnityIsekaiGame.Networking
             {
                 return;
             }
+            if (!movementRateLimiter.TryConsume(Time.realtimeSinceStartupAsDouble)) return;
 
             if (!NetworkMovementInputValidator.TryNormalize(requested, lastAcceptedSequence.Value, out NetworkMovementInput normalized, out _))
             {
@@ -145,7 +163,9 @@ namespace UnityIsekaiGame.Networking
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner, Delivery = RpcDelivery.Reliable)]
         private void RequestJumpRpc(RpcParams rpcParams = default)
         {
-            if (IsServer && rpcParams.Receive.SenderClientId == OwnerClientId)
+            if (IsServer
+                && rpcParams.Receive.SenderClientId == OwnerClientId
+                && jumpRateLimiter.TryConsume(Time.realtimeSinceStartupAsDouble))
             {
                 jumpRequested = true;
             }
@@ -205,12 +225,36 @@ namespace UnityIsekaiGame.Networking
             controller.Move((direction * horizontalSpeed + Vector3.up * verticalVelocity) * deltaTime);
             transform.rotation = yaw;
 
+            if (transform.position.y < spawnPosition.y - Mathf.Max(1f, fallRecoveryDistance))
+            {
+                RecoverFromInvalidFall();
+                return;
+            }
+
             if (!movementLogged && (transform.position - spawnPosition).sqrMagnitude >= 0.25f)
             {
                 movementLogged = true;
                 NetworkPlayerActor actor = GetComponent<NetworkPlayerActor>();
                 Debug.Log($"[Network Movement] Server moved actor '{actor?.ActorId ?? name}' to {transform.position} after accepting sequence {lastAcceptedSequence.Value}.", this);
             }
+        }
+
+        private void RecoverFromInvalidFall()
+        {
+            Vector3 invalidPosition = transform.position;
+            controller.enabled = false;
+            transform.SetPositionAndRotation(spawnPosition, transform.rotation);
+            controller.enabled = true;
+            latestInput.Move = Vector2.zero;
+            latestInput.Sprint = false;
+            horizontalSpeed = 0f;
+            verticalVelocity = 0f;
+            jumpRequested = false;
+            NetworkPlayerActor actor = GetComponent<NetworkPlayerActor>();
+            Debug.LogError(
+                $"[Network Movement] Recovered actor '{actor?.ActorId ?? name}' from invalid fall position {invalidPosition} " +
+                $"to authoritative spawn {spawnPosition}. Verify server collision if this repeats.",
+                this);
         }
     }
 }

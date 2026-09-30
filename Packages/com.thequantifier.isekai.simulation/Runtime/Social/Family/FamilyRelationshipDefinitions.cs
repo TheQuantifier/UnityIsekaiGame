@@ -130,8 +130,7 @@ namespace UnityIsekaiGame.Social.Family
         }
     }
 
-    [CreateAssetMenu(fileName = "HouseholdDefinition", menuName = "Unity Isekai Game/Social/Household Definition")]
-    public sealed class HouseholdDefinition : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
+    public abstract class HouseholdDefinitionBase : ScriptableObject, IGameDefinition, IDefinitionCatalogValidationParticipant
     {
         [SerializeField] private string householdDefinitionId;
         [SerializeField] private string displayName;

@@ -112,6 +112,7 @@ namespace UnityIsekaiGame.UI.Inventory
         private string inspectedItemKey = string.Empty;
         private Action<int> inventorySlotSelected;
         private Action<int, bool> inventorySlotHovered;
+        private Action<int, int> inventorySlotMoved;
         private Action<bool> primaryActionHovered;
         private bool primaryActionShowsComparison;
         private bool primaryActionIsHovered;
@@ -183,7 +184,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 clone.name = $"Inventory Slot {baseViews.Count + 1}";
                 clone.transform.SetSiblingIndex(baseViews.Count);
                 InventorySlotView slotView = clone.GetComponent<InventorySlotView>();
-                slotView.Initialize(baseViews.Count, inventorySlotSelected, inventorySlotHovered);
+                slotView.Initialize(baseViews.Count, inventorySlotSelected, inventorySlotHovered, inventorySlotMoved);
                 baseViews.Add(slotView);
             }
 
@@ -227,46 +228,45 @@ namespace UnityIsekaiGame.UI.Inventory
             UpdateResponsiveInventoryGrid(force: true);
         }
 
-        public void Initialize(Action<int> onSlotSelected, Action onUseSelected, Action<EquipmentSlotType> onEquipmentSlotSelected = null, Action onEquipSelected = null, Action onUnequipSelected = null, Action<int, bool> onSlotHovered = null, Action onDropSelected = null, Action onDropAllSelected = null, Action<bool> onPrimaryActionHovered = null)
+        public void Initialize(
+            Action<int> onSlotSelected,
+            Action onUseSelected,
+            Action<EquipmentSlotType> onEquipmentSlotSelected = null,
+            Action onEquipSelected = null,
+            Action onUnequipSelected = null,
+            Action<int, bool> onSlotHovered = null,
+            Action onDropSelected = null,
+            Action onDropAllSelected = null,
+            Action<bool> onPrimaryActionHovered = null,
+            Action<int, int> onSlotMoved = null)
         {
             inventorySlotSelected = onSlotSelected;
             inventorySlotHovered = onSlotHovered;
+            inventorySlotMoved = onSlotMoved;
             primaryActionHovered = onPrimaryActionHovered;
+            useSelected = onUseSelected;
+            dropSelected = onDropSelected;
+            dropAllSelected = onDropAllSelected;
+            equipSelected = onEquipSelected;
+            unequipSelected = onUnequipSelected;
+
+            // The production layout can create missing action buttons. Build it before binding
+            // listeners so initialization order can never leave visible buttons inert.
+            EnsureItemDetailsPanel();
+            ApplyProductionMenuLayout();
             if (slotViews != null)
             {
                 for (int i = 0; i < slotViews.Length; i++)
                 {
                     if (slotViews[i] != null)
                     {
-                        slotViews[i].Initialize(i, onSlotSelected, onSlotHovered);
+                        slotViews[i].Initialize(i, onSlotSelected, onSlotHovered, onSlotMoved);
                     }
                 }
             }
 
-            if (useButton != null)
-            {
-                useButton.onClick.RemoveListener(InvokePrimarySelected);
-                useButton.onClick.AddListener(InvokePrimarySelected);
-            }
-
-            useSelected = onUseSelected;
+            BindInventoryActionButtons();
             ConfigurePrimaryActionHover();
-
-            if (dropButton != null)
-            {
-                dropButton.onClick.RemoveListener(InvokeDropSelected);
-                dropButton.onClick.AddListener(InvokeDropSelected);
-            }
-
-            dropSelected = onDropSelected;
-
-            if (dropAllButton != null)
-            {
-                dropAllButton.onClick.RemoveListener(InvokeDropAllSelected);
-                dropAllButton.onClick.AddListener(InvokeDropAllSelected);
-            }
-
-            dropAllSelected = onDropAllSelected;
 
             if (equipmentSlotViews != null)
             {
@@ -316,14 +316,31 @@ namespace UnityIsekaiGame.UI.Inventory
                 saveLoadMenuButton.onClick.AddListener(ShowSaveLoadSection);
             }
 
-            equipSelected = onEquipSelected;
-            unequipSelected = onUnequipSelected;
-            EnsureItemDetailsPanel();
-            ApplyProductionMenuLayout();
             ApplyTheme();
             ApplyActiveSection(force: true);
             Canvas.ForceUpdateCanvases();
             UpdateResponsiveInventoryGrid(force: true);
+        }
+
+        private void BindInventoryActionButtons()
+        {
+            if (useButton != null)
+            {
+                useButton.onClick.RemoveListener(InvokePrimarySelected);
+                useButton.onClick.AddListener(InvokePrimarySelected);
+            }
+
+            if (dropButton != null)
+            {
+                dropButton.onClick.RemoveListener(InvokeDropSelected);
+                dropButton.onClick.AddListener(InvokeDropSelected);
+            }
+
+            if (dropAllButton != null)
+            {
+                dropAllButton.onClick.RemoveListener(InvokeDropAllSelected);
+                dropAllButton.onClick.AddListener(InvokeDropAllSelected);
+            }
         }
 
         public void InitializeSaveLoad(PrototypePersistenceServiceBehaviour persistence)
@@ -2097,6 +2114,18 @@ namespace UnityIsekaiGame.UI.Inventory
                 equipmentComparisonTooltipRoot.transform.SetParent(selectedItemDetailsRoot.transform, false);
             }
 
+            Canvas tooltipCanvas = equipmentComparisonTooltipRoot.GetComponent<Canvas>();
+            if (tooltipCanvas == null)
+            {
+                tooltipCanvas = equipmentComparisonTooltipRoot.AddComponent<Canvas>();
+            }
+            tooltipCanvas.overrideSorting = true;
+            tooltipCanvas.sortingOrder = 100;
+            if (equipmentComparisonTooltipRoot.GetComponent<GraphicRaycaster>() == null)
+            {
+                equipmentComparisonTooltipRoot.AddComponent<GraphicRaycaster>();
+            }
+
             RectTransform tooltipRect = equipmentComparisonTooltipRoot.GetComponent<RectTransform>();
             tooltipRect.anchorMin = new Vector2(0f, 0.19f);
             tooltipRect.anchorMax = new Vector2(0f, 0.19f);
@@ -2532,6 +2561,8 @@ namespace UnityIsekaiGame.UI.Inventory
                 statsTextRect.sizeDelta = Vector2.zero;
                 characterStatsText.horizontalOverflow = HorizontalWrapMode.Wrap;
                 characterStatsText.verticalOverflow = VerticalWrapMode.Overflow;
+                characterStatsText.fontSize = Mathf.Max(14, characterStatsText.fontSize);
+                characterStatsText.lineSpacing = Mathf.Max(1.05f, characterStatsText.lineSpacing);
                 ContentSizeFitter fitter = characterStatsText.GetComponent<ContentSizeFitter>();
                 if (fitter == null)
                 {
@@ -2554,6 +2585,7 @@ namespace UnityIsekaiGame.UI.Inventory
                 statusReadoutText = CreateDetailsText("Status Effects", characterStatsRoot.transform, font, 14, FontStyle.Normal, TextAnchor.UpperLeft);
             }
             RectTransform statusRect = statusReadoutText.rectTransform;
+            statusReadoutText.fontSize = Mathf.Max(14, statusReadoutText.fontSize);
             statusRect.anchorMin = new Vector2(0f, 0.02f);
             statusRect.anchorMax = new Vector2(1f, 0.23f);
             statusRect.offsetMin = new Vector2(18f, 10f);

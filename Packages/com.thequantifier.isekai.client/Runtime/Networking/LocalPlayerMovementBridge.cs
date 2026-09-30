@@ -14,7 +14,9 @@ namespace UnityIsekaiGame.Networking.Client
         [SerializeField] private PlayerInputReader input;
         [SerializeField] private FirstPersonCharacterMotor localMotor;
         [SerializeField] private Transform presentationRoot;
-        [SerializeField, Range(10f, 60f)] private float inputSendRate = 30f;
+        [SerializeField, Range(10f, 60f)] private float inputSendRate = 60f;
+        [SerializeField, Min(1f)] private float reconciliationSharpness = 14f;
+        [SerializeField, Min(0.5f)] private float hardSnapDistance = 4f;
 
         private NetworkPlayerMovement networkMovement;
         private bool localMotorWasEnabled;
@@ -26,6 +28,7 @@ namespace UnityIsekaiGame.Networking.Client
         private double smokeInputEndsAt;
         private Vector3 smokeStartPosition;
         private bool smokeResultLogged;
+        private bool jumpPending;
 
         public NetworkPlayerMovement BoundMovement => networkMovement;
         public bool IsServerAuthorityActive => networkMovement != null && networkMovement.IsSpawned;
@@ -69,6 +72,7 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             double now = Time.realtimeSinceStartupAsDouble;
+            if (input != null && input.JumpPressedThisFrame) jumpPending = true;
             if (vitalsSmokeEnabled && !vitalsSmokeStarted)
             {
                 NetworkPlayerVitals networkVitals = networkMovement.GetComponent<NetworkPlayerVitals>();
@@ -91,7 +95,8 @@ namespace UnityIsekaiGame.Networking.Client
             bool smokeMoving = (smokeInputEnabled || vitalsSmokeStarted) && now < smokeInputEndsAt;
             Vector2 move = smokeMoving ? Vector2.up : input == null ? Vector2.zero : input.Move;
             bool sprint = smokeMoving ? vitalsSmokeEnabled : input != null && input.SprintHeld;
-            bool jump = !smokeMoving && input != null && input.ConsumeJump();
+            bool jump = !smokeMoving && jumpPending;
+            if (jump) jumpPending = false;
             float yaw = presentationRoot == null ? networkMovement.transform.eulerAngles.y : presentationRoot.eulerAngles.y;
             networkMovement.SubmitLocalInput(move, sprint, jump, yaw);
         }
@@ -103,7 +108,27 @@ namespace UnityIsekaiGame.Networking.Client
                 return;
             }
 
-            presentationRoot.position = networkMovement.transform.position;
+            Vector3 authoritativePosition = networkMovement.transform.position;
+            if (localMotor != null && localMotor.enabled)
+            {
+                Vector3 error = authoritativePosition - presentationRoot.position;
+                if (error.sqrMagnitude >= hardSnapDistance * hardSnapDistance)
+                {
+                    SetPresentationPosition(authoritativePosition);
+                    localMotor.ResetTransientMotionForPersistenceRestore();
+                }
+                else
+                {
+                    CharacterController controller = presentationRoot.GetComponent<CharacterController>();
+                    Vector3 correction = error * (1f - Mathf.Exp(-reconciliationSharpness * Time.unscaledDeltaTime));
+                    if (controller != null && controller.enabled) controller.Move(correction);
+                    else presentationRoot.position += correction;
+                }
+            }
+            else
+            {
+                presentationRoot.position = authoritativePosition;
+            }
             if ((smokeInputEnabled || vitalsSmokeStarted) && !smokeResultLogged && Time.realtimeSinceStartupAsDouble >= smokeInputEndsAt)
             {
                 smokeResultLogged = true;
@@ -138,6 +163,7 @@ namespace UnityIsekaiGame.Networking.Client
 
             if (controlsOverridden && localMotor != null)
             {
+                localMotor.SetNetworkPredictionMode(false);
                 localMotor.ResetTransientMotionForPersistenceRestore();
                 localMotor.enabled = localMotorWasEnabled;
             }
@@ -152,7 +178,7 @@ namespace UnityIsekaiGame.Networking.Client
             if (localMotor != null)
             {
                 localMotorWasEnabled = localMotor.enabled;
-                localMotor.enabled = false;
+                localMotor.SetNetworkPredictionMode(true);
                 controlsOverridden = true;
             }
 
@@ -161,10 +187,21 @@ namespace UnityIsekaiGame.Networking.Client
             smokeInputEndsAt = Time.realtimeSinceStartupAsDouble + 1.5d;
             smokeResultLogged = false;
             vitalsSmokeStarted = false;
+            jumpPending = false;
             if (presentationRoot != null)
             {
-                presentationRoot.position = networkMovement.transform.position;
+                SetPresentationPosition(networkMovement.transform.position);
             }
+        }
+
+        private void SetPresentationPosition(Vector3 position)
+        {
+            if (presentationRoot == null) return;
+            CharacterController controller = presentationRoot.GetComponent<CharacterController>();
+            bool wasEnabled = controller != null && controller.enabled;
+            if (wasEnabled) controller.enabled = false;
+            presentationRoot.position = position;
+            if (wasEnabled) controller.enabled = true;
         }
 
         private void ResolveReferences()

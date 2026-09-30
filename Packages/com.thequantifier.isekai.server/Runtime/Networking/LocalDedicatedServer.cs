@@ -21,6 +21,13 @@ namespace UnityIsekaiGame.Networking.Server
     [RequireComponent(typeof(NetworkManager), typeof(UnityTransport))]
     public sealed class LocalDedicatedServer : MonoBehaviour
     {
+        private const int DedicatedServerTargetFrameRate = 60;
+        private const float DedicatedServerFixedDeltaTime = 1f / LocalServerEndpoint.DefaultTickRate;
+        private const float SpawnGroundProbeHeight = 25f;
+        private const float SpawnGroundProbeDistance = 100f;
+        private const float MaximumSpawnSurfaceRise = 2f;
+        private const float SpawnGroundClearance = 0.02f;
+
         public const string InventorySmokeSeedFlag = "--inventory-smoke-seed";
         public const string CombatSmokeSeedFlag = "--combat-smoke-seed";
         public const string NarrativeSmokeSeedFlag = "--narrative-smoke-seed";
@@ -28,6 +35,7 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField] private string listenAddress = LocalServerEndpoint.DefaultListenAddress;
         [SerializeField] private int serverPort = LocalServerEndpoint.DefaultPort;
         [SerializeField, Min(1)] private int maximumPlayers = 8;
+        [SerializeField] private string authenticationToken = string.Empty;
         [SerializeField] private bool startAutomaticallyInServerBuild = true;
         [SerializeField] private GameObject playerActorPrefab;
         [SerializeField] private GameObject combatWorldStatePrefab;
@@ -52,6 +60,7 @@ namespace UnityIsekaiGame.Networking.Server
         private readonly PlayerSessionRegistry playerSessions = new PlayerSessionRegistry();
         private readonly Dictionary<string, ServerPlayerProfileData> playerProfiles = new Dictionary<string, ServerPlayerProfileData>(StringComparer.OrdinalIgnoreCase);
         private ServerPlayerProfileStore playerProfileStore;
+        private ServerPlayerProfileWriteQueue playerProfileWriteQueue;
         private float nextPlayerProfileAutosaveAt;
         private float nextWorldCheckpointAutosaveAt;
         private bool serverPersistenceReady;
@@ -60,6 +69,8 @@ namespace UnityIsekaiGame.Networking.Server
         private bool inventorySmokeSeeded;
         private bool prototypeControllerWasEnabled;
         private bool prototypeMotorWasEnabled;
+        private bool fixedSimulationRateOverridden;
+        private float previousFixedDeltaTime;
         private NetworkCombatWorldState combatWorldState;
         private ServerCombatWorldAuthority combatWorldAuthority;
         private ServerWorldItemAuthority worldItemAuthority;
@@ -81,7 +92,13 @@ namespace UnityIsekaiGame.Networking.Server
 
         private void Awake()
         {
+#if UNITY_SERVER && !UNITY_EDITOR
+            Application.runInBackground = true;
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = DedicatedServerTargetFrameRate;
+#endif
             ResolveReferences();
+            prototypePersistence?.SetRuntimeRole(SimulationRuntimeRole.DedicatedServerAuthoritative);
         }
 
         private void Start()
@@ -103,6 +120,7 @@ namespace UnityIsekaiGame.Networking.Server
 
         private void Update()
         {
+            DrainProfileWriteResults();
             if (!ownsServerSession || networkManager == null || !networkManager.IsServer || !serverPersistenceReady) return;
             float now = Time.unscaledTime;
             if (now >= nextPlayerProfileAutosaveAt)
@@ -118,12 +136,13 @@ namespace UnityIsekaiGame.Networking.Server
             }
         }
 
-        public void Configure(NetworkManager manager, string address = LocalServerEndpoint.DefaultListenAddress, int port = LocalServerEndpoint.DefaultPort, int maxPlayers = 8)
+        public void Configure(NetworkManager manager, string address = LocalServerEndpoint.DefaultListenAddress, int port = LocalServerEndpoint.DefaultPort, int maxPlayers = 8, string token = "")
         {
             networkManager = manager;
             listenAddress = address;
             serverPort = port;
             maximumPlayers = Math.Max(1, maxPlayers);
+            authenticationToken = token ?? string.Empty;
         }
 
         public void ConfigurePlayerActorPrefab(GameObject prefab)
@@ -174,6 +193,7 @@ namespace UnityIsekaiGame.Networking.Server
         public void ConfigurePrototypeNarrative(PrototypePersistenceServiceBehaviour persistence)
         {
             prototypePersistence = persistence;
+            prototypePersistence?.SetRuntimeRole(SimulationRuntimeRole.DedicatedServerAuthoritative);
         }
 
         public void ConfigurePlayerProfileStore(ServerPlayerProfileStore store)
@@ -221,9 +241,13 @@ namespace UnityIsekaiGame.Networking.Server
             worldItemAuthority = null;
             inventorySmokeSeeded = false;
             playerProfileStore ??= new ServerPlayerProfileStore();
+            playerProfileWriteQueue?.Dispose();
+            playerProfileWriteQueue = new ServerPlayerProfileWriteQueue(playerProfileStore);
             serverPersistenceReady = TryLoadWorldCheckpoint();
             nextPlayerProfileAutosaveAt = Time.unscaledTime + Mathf.Max(1f, playerProfileAutosaveSeconds);
             nextWorldCheckpointAutosaveAt = Time.unscaledTime + Mathf.Max(5f, worldCheckpointAutosaveSeconds);
+            networkManager.NetworkConfig.TickRate = LocalServerEndpoint.DefaultTickRate;
+            OverrideFixedSimulationRate();
             networkManager.NetworkConfig.ConnectionApproval = true;
             networkManager.ConnectionApprovalCallback = ApproveConnection;
             networkManager.OnClientConnectedCallback += OnClientConnected;
@@ -237,6 +261,7 @@ namespace UnityIsekaiGame.Networking.Server
             {
                 Unsubscribe();
                 RestorePrototypeMovement();
+                RestoreFixedSimulationRate();
                 return Fail($"Could not start the local server on {endpoint}.", endpoint);
             }
 
@@ -252,6 +277,7 @@ namespace UnityIsekaiGame.Networking.Server
                 networkManager.Shutdown();
                 ownsServerSession = false;
                 RestorePrototypeMovement();
+                RestoreFixedSimulationRate();
                 return Fail($"The server could not initialize world item authority: {exception.Message}", endpoint);
             }
 
@@ -261,8 +287,21 @@ namespace UnityIsekaiGame.Networking.Server
                 networkManager.Shutdown();
                 ownsServerSession = false;
                 RestorePrototypeMovement();
+                RestoreFixedSimulationRate();
                 return Fail(combatWorldFailure, endpoint);
             }
+
+            if (!worldItemAuthority.TrySpawnScenePickups(out int scenePickupCount, out string scenePickupFailure))
+            {
+                Unsubscribe();
+                networkManager.Shutdown();
+                ownsServerSession = false;
+                RestorePrototypeMovement();
+                RestoreFixedSimulationRate();
+                return Fail($"The server could not publish scene pickups: {scenePickupFailure}", endpoint);
+            }
+
+            Debug.Log($"[World Items] Published {scenePickupCount} scene-authored pickup(s) through server authority.", this);
 
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Listening, $"Local server is listening on {endpoint}.", endpoint));
             return true;
@@ -272,6 +311,8 @@ namespace UnityIsekaiGame.Networking.Server
         {
             if (!ownsServerSession || networkManager == null)
             {
+                DisposeProfileWriteQueue();
+                worldItemAuthority?.RestoreScenePickupSources();
                 connectedPlayerIds.Clear();
                 pendingConnections.Clear();
                 playerActors.Clear();
@@ -283,6 +324,7 @@ namespace UnityIsekaiGame.Networking.Server
                 combatWorldAuthority = null;
                 worldItemAuthority = null;
                 RestorePrototypeMovement();
+                RestoreFixedSimulationRate();
                 SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline."));
                 return;
             }
@@ -290,8 +332,10 @@ namespace UnityIsekaiGame.Networking.Server
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Disconnecting, "Stopping the local server.", status.Endpoint));
             SaveAllConnectedPlayerProfiles("Server shutdown");
             SaveWorldCheckpoint("Server shutdown");
+            FlushProfileWrites("Server shutdown");
             Unsubscribe();
             networkManager.Shutdown();
+            worldItemAuthority?.RestoreScenePickupSources();
             ownsServerSession = false;
             connectedPlayerIds.Clear();
             pendingConnections.Clear();
@@ -303,8 +347,28 @@ namespace UnityIsekaiGame.Networking.Server
             combatWorldState = null;
             combatWorldAuthority = null;
             worldItemAuthority = null;
+            DisposeProfileWriteQueue();
             RestorePrototypeMovement();
+            RestoreFixedSimulationRate();
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server stopped.", status.Endpoint));
+        }
+
+        private void OverrideFixedSimulationRate()
+        {
+            if (!fixedSimulationRateOverridden)
+            {
+                previousFixedDeltaTime = Time.fixedDeltaTime;
+                fixedSimulationRateOverridden = true;
+            }
+
+            Time.fixedDeltaTime = DedicatedServerFixedDeltaTime;
+        }
+
+        private void RestoreFixedSimulationRate()
+        {
+            if (!fixedSimulationRateOverridden) return;
+            Time.fixedDeltaTime = previousFixedDeltaTime;
+            fixedSimulationRateOverridden = false;
         }
 
         private void ApproveConnection(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
@@ -313,15 +377,15 @@ namespace UnityIsekaiGame.Networking.Server
                 request.Payload,
                 connectedPlayerIds.Count,
                 maximumPlayers,
-                connectedPlayerIds.Values);
+                connectedPlayerIds.Values,
+                Application.version,
+                authenticationToken);
 
-            response.Approved = admission.Approved;
-            response.CreatePlayerObject = false;
-            response.PlayerPrefabHash = null;
-            response.Pending = false;
-            response.Reason = admission.Reason;
             if (admission.Approved)
             {
+                // Publish the admission record before completing the NGO response. Some transports can
+                // dispatch OnClientConnected as soon as the response is marked non-pending, including
+                // re-entrantly during this callback.
                 connectedPlayerIds[request.ClientNetworkId] = admission.Request.PlayerId;
                 pendingConnections[request.ClientNetworkId] = admission.Request;
                 Debug.Log($"[Local Server] Approved client {request.ClientNetworkId} as player '{admission.Request.PlayerId}'.", this);
@@ -330,6 +394,12 @@ namespace UnityIsekaiGame.Networking.Server
             {
                 Debug.LogWarning($"[Local Server] Rejected client {request.ClientNetworkId}: {admission.Reason}", this);
             }
+
+            response.CreatePlayerObject = false;
+            response.PlayerPrefabHash = null;
+            response.Reason = admission.Reason;
+            response.Approved = admission.Approved;
+            response.Pending = false;
         }
 
         private void OnClientConnected(ulong clientId)
@@ -398,9 +468,11 @@ namespace UnityIsekaiGame.Networking.Server
             NetworkPlayerInventory prefabInventory = playerActorPrefab.GetComponent<NetworkPlayerInventory>();
             NetworkPlayerCombat prefabCombat = playerActorPrefab.GetComponent<NetworkPlayerCombat>();
             NetworkPlayerNarrative prefabNarrative = playerActorPrefab.GetComponent<NetworkPlayerNarrative>();
-            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null || prefabVitals == null || prefabInventory == null || prefabCombat == null || prefabNarrative == null)
+            CharacterController prefabController = playerActorPrefab.GetComponent<CharacterController>();
+            if (prefabNetworkObject == null || prefabActor == null || prefabMovement == null || prefabVitals == null ||
+                prefabInventory == null || prefabCombat == null || prefabNarrative == null || prefabController == null)
             {
-                failure = "The server player actor prefab must contain NetworkObject and all player identity, movement, vitals, inventory, combat, and narrative replication components.";
+                failure = "The server player actor prefab must contain NetworkObject, CharacterController, and all player identity, movement, vitals, inventory, combat, and narrative replication components.";
                 return false;
             }
 
@@ -437,6 +509,25 @@ namespace UnityIsekaiGame.Networking.Server
                     Vector3 toward = smokeBinding.BindingTransform.position - effectiveSpawnPosition;
                     effectiveSpawnYaw = Quaternion.LookRotation(Vector3.ProjectOnPlane(toward, Vector3.up), Vector3.up).eulerAngles.y;
                 }
+            }
+
+            Physics.SyncTransforms();
+            Vector3 requestedSpawnPosition = effectiveSpawnPosition;
+            if (!TryResolveGroundedSpawn(effectiveSpawnPosition, prefabController, out effectiveSpawnPosition))
+            {
+                if (!TryResolveGroundedSpawn(playerSpawnPosition, prefabController, out effectiveSpawnPosition))
+                {
+                    failure =
+                        $"The server could not find authoritative ground below the saved position {requestedSpawnPosition} " +
+                        $"or fallback spawn {playerSpawnPosition}. Verify the server scene collision data.";
+                    return false;
+                }
+
+                effectiveSpawnYaw = playerSpawnYaw;
+                Debug.LogWarning(
+                    $"[Local Server] Player '{session.PlayerId}' had an unsupported saved position {requestedSpawnPosition}; " +
+                    $"using grounded fallback {effectiveSpawnPosition}.",
+                    this);
             }
 
             GameObject instance = Instantiate(playerActorPrefab, effectiveSpawnPosition, Quaternion.Euler(0f, effectiveSpawnYaw, 0f));
@@ -498,6 +589,41 @@ namespace UnityIsekaiGame.Networking.Server
                 failure = $"The server could not spawn the player actor: {exception.Message}";
                 return false;
             }
+        }
+
+        private bool TryResolveGroundedSpawn(
+            Vector3 requestedPosition,
+            CharacterController playerController,
+            out Vector3 groundedPosition)
+        {
+            groundedPosition = requestedPosition;
+            if (playerController == null)
+            {
+                return false;
+            }
+
+            Vector3 origin = requestedPosition + Vector3.up * SpawnGroundProbeHeight;
+            RaycastHit[] hits = Physics.RaycastAll(
+                origin,
+                Vector3.down,
+                SpawnGroundProbeDistance,
+                Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Ignore);
+            RaycastHit[] validHits = hits
+                .Where(hit => hit.collider != null &&
+                    !(hit.collider is CharacterController) &&
+                    hit.point.y <= requestedPosition.y + MaximumSpawnSurfaceRise)
+                .OrderByDescending(hit => hit.point.y)
+                .ToArray();
+            if (validHits.Length == 0)
+            {
+                return false;
+            }
+
+            float controllerBottomOffset = playerController.center.y - playerController.height * 0.5f;
+            groundedPosition.y = validHits[0].point.y - controllerBottomOffset +
+                Mathf.Max(SpawnGroundClearance, playerController.skinWidth);
+            return true;
         }
 
         private bool ValidatePlayerActorPrefab(out string failure)
@@ -685,15 +811,52 @@ namespace UnityIsekaiGame.Networking.Server
         private void PersistProfile(ServerPlayerProfileData profile, string reason)
         {
             playerProfileStore ??= new ServerPlayerProfileStore();
-            if (playerProfileStore.TrySave(profile, out string message))
+            playerProfileWriteQueue ??= new ServerPlayerProfileWriteQueue(playerProfileStore);
+            if (playerProfileWriteQueue.TryEnqueue(profile, out string message))
                 Debug.Log($"[Server Persistence] {message} Reason={reason}.", this);
             else
                 Debug.LogError($"[Server Persistence] {message} Reason={reason}.", this);
         }
 
+        private void DrainProfileWriteResults()
+        {
+            if (playerProfileWriteQueue == null) return;
+            while (playerProfileWriteQueue.TryDequeueResult(out ServerPlayerProfileWriteResult result))
+            {
+                if (result.Succeeded) Debug.Log($"[Server Persistence] {result.Message}", this);
+                else Debug.LogError($"[Server Persistence] {result.Message}", this);
+            }
+        }
+
+        private void FlushProfileWrites(string reason)
+        {
+            if (playerProfileWriteQueue == null) return;
+            if (!playerProfileWriteQueue.Flush(TimeSpan.FromSeconds(5)))
+            {
+                Debug.LogError($"[Server Persistence] Timed out flushing profile writes during {reason}.", this);
+            }
+
+            DrainProfileWriteResults();
+        }
+
+        private void DisposeProfileWriteQueue()
+        {
+            if (playerProfileWriteQueue == null) return;
+            playerProfileWriteQueue.Dispose();
+            DrainProfileWriteResults();
+            playerProfileWriteQueue = null;
+        }
+
         private bool TryLoadWorldCheckpoint()
         {
             if (prototypePersistence == null || !prototypePersistence.IsInitialized) return false;
+            int restoredRuntimePersonCount = prototypePersistence.RegisterAuthoritativeRuntimePersonsFromWorldCheckpoint(
+                PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId);
+            if (restoredRuntimePersonCount > 0)
+            {
+                Debug.Log($"[Server Persistence] Restored {restoredRuntimePersonCount} dynamic player identity registration(s) from the world checkpoint envelope.", this);
+            }
+
             PersistenceValidationResult validation = prototypePersistence.WorldService.ValidateSlot(PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId);
             if (validation.Status == PersistenceValidationStatus.FileMissing)
             {
@@ -883,7 +1046,7 @@ namespace UnityIsekaiGame.Networking.Server
                 return;
             }
 
-            Configure(networkManager, options.ListenAddress, options.Port, options.MaximumPlayers);
+            Configure(networkManager, options.ListenAddress, options.Port, options.MaximumPlayers, options.AuthenticationToken);
             StartServer();
         }
 

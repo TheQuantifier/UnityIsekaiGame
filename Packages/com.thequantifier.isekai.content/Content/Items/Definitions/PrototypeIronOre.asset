@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Prototype material item used to validate non-usable, non-equippable
     item taxonomy.
   icon: {fileID: 0}
-  worldPickupPrefab: {fileID: 0}
+  worldPickupPrefab: {fileID: 3068436476050490853, guid: 43b6f4daa63bd4f42a7c410d944f146c, type: 3}
   primaryCategory: {fileID: 11400000, guid: 64af3b87e219425d80d8ed087afeb9b1, type: 2}
   tags:
   - {fileID: 11400000, guid: e5be8b436490435e82ffad358874362c, type: 2}

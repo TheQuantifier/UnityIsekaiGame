@@ -30,7 +30,7 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Connection_request_round_trips()
         {
-            ConnectionRequestPayload source = new ConnectionRequestPayload(Guid.NewGuid().ToString("N"), "player.one", "0.1.0");
+            ConnectionRequestPayload source = new ConnectionRequestPayload(Guid.NewGuid().ToString("N"), "player.one", "0.1.0", "test-token");
 
             Assert.That(LocalConnectionProtocol.TryEncode(source, out byte[] payload, out string encodeFailure), Is.True, encodeFailure);
             Assert.That(LocalConnectionProtocol.TryDecode(payload, out ConnectionRequestPayload decoded, out string decodeFailure), Is.True, decodeFailure);
@@ -38,6 +38,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(decoded.ClientInstanceId, Is.EqualTo(source.ClientInstanceId));
             Assert.That(decoded.PlayerId, Is.EqualTo(source.PlayerId));
             Assert.That(decoded.BuildVersion, Is.EqualTo(source.BuildVersion));
+            Assert.That(decoded.AuthenticationToken, Is.EqualTo(source.AuthenticationToken));
         }
 
         [Test]
@@ -76,6 +77,27 @@ namespace UnityIsekaiGame.Tests
 
             Assert.That(result.Approved, Is.True, result.Reason);
             Assert.That(result.Request.PlayerId, Is.EqualTo("player.two"));
+        }
+
+        [Test]
+        public void Admission_rejects_incompatible_builds_and_invalid_authentication()
+        {
+            ConnectionRequestPayload request = new ConnectionRequestPayload(
+                Guid.NewGuid().ToString("N"),
+                "player.secure",
+                "0.1.0",
+                "correct-token");
+            Assert.That(LocalConnectionProtocol.TryEncode(request, out byte[] payload, out string failure), Is.True, failure);
+
+            ConnectionAdmissionResult wrongBuild = LocalConnectionAdmission.Evaluate(
+                payload, 0, 4, Array.Empty<string>(), "0.2.0", "correct-token");
+            Assert.That(wrongBuild.Approved, Is.False);
+            Assert.That(wrongBuild.Reason, Does.Contain("incompatible"));
+
+            ConnectionAdmissionResult wrongToken = LocalConnectionAdmission.Evaluate(
+                payload, 0, 4, Array.Empty<string>(), "0.1.0", "wrong-token");
+            Assert.That(wrongToken.Approved, Is.False);
+            Assert.That(wrongToken.Reason, Does.Contain("authentication"));
         }
 
         [Test]
@@ -122,7 +144,8 @@ namespace UnityIsekaiGame.Tests
                     "--local-client",
                     "--server-address", "localhost",
                     "--server-port=7788",
-                    "--player-id", "player.command-line"
+                    "--player-id", "player.command-line",
+                    "--auth-token", "test-token"
                 },
                 false,
                 out LocalNetworkLaunchOptions options,
@@ -132,6 +155,7 @@ namespace UnityIsekaiGame.Tests
             Assert.That(options.ServerAddress, Is.EqualTo("localhost"));
             Assert.That(options.Port, Is.EqualTo(7788));
             Assert.That(options.PlayerId, Is.EqualTo("player.command-line"));
+            Assert.That(options.AuthenticationToken, Is.EqualTo("test-token"));
         }
 
         [TestCase("--server-port", "0")]

@@ -65,6 +65,22 @@ namespace UnityIsekaiGame.Networking.Server
         public string sha256;
     }
 
+    public sealed class ServerPlayerProfileWriteRequest
+    {
+        internal ServerPlayerProfileWriteRequest(string playerId, long revision, SaveSlotPaths paths, string contents)
+        {
+            PlayerId = playerId;
+            Revision = revision;
+            Paths = paths;
+            Contents = contents;
+        }
+
+        public string PlayerId { get; }
+        public long Revision { get; }
+        internal SaveSlotPaths Paths { get; }
+        internal string Contents { get; }
+    }
+
     /// <summary>
     /// Durable server-owned player profile storage. Files are checksummed and replaced
     /// atomically while retaining the previous valid generation as a recovery backup.
@@ -107,6 +123,16 @@ namespace UnityIsekaiGame.Networking.Server
 
         public bool TrySave(ServerPlayerProfileData profile, out string message)
         {
+            if (!TryPrepareWrite(profile, out ServerPlayerProfileWriteRequest request, out message)) return false;
+            return TryWrite(request, out message);
+        }
+
+        public bool TryPrepareWrite(
+            ServerPlayerProfileData profile,
+            out ServerPlayerProfileWriteRequest request,
+            out string message)
+        {
+            request = null;
             if (!Validate(profile, null, out message)) return false;
             PlayerSessionSnapshot identity = new PlayerSessionSnapshot(
                 "profile-save", 0UL, "server", profile.playerId, profile.personId, profile.actorId,
@@ -115,7 +141,6 @@ namespace UnityIsekaiGame.Networking.Server
 
             try
             {
-                Directory.CreateDirectory(paths.RootDirectory);
                 profile.savedAtUnixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 string payload = JsonUtility.ToJson(profile, false);
                 ServerPlayerProfileEnvelope envelope = new ServerPlayerProfileEnvelope
@@ -123,7 +148,34 @@ namespace UnityIsekaiGame.Networking.Server
                     payloadJson = payload,
                     sha256 = ComputeSha256(payload)
                 };
-                File.WriteAllText(paths.TemporaryPath, JsonUtility.ToJson(envelope, true), Encoding.UTF8);
+                request = new ServerPlayerProfileWriteRequest(
+                    profile.playerId,
+                    profile.revision,
+                    paths,
+                    JsonUtility.ToJson(envelope, true));
+                message = $"Prepared server profile revision {profile.revision} for '{profile.playerId}'.";
+                return true;
+            }
+            catch (Exception exception)
+            {
+                message = $"Could not serialize server profile '{profile.playerId}': {exception.Message}";
+                return false;
+            }
+        }
+
+        public bool TryWrite(ServerPlayerProfileWriteRequest request, out string message)
+        {
+            if (request == null || request.Paths == null || string.IsNullOrWhiteSpace(request.Contents))
+            {
+                message = "A prepared server profile write is required.";
+                return false;
+            }
+
+            SaveSlotPaths paths = request.Paths;
+            try
+            {
+                Directory.CreateDirectory(paths.RootDirectory);
+                File.WriteAllText(paths.TemporaryPath, request.Contents, Encoding.UTF8);
                 if (File.Exists(paths.PrimaryPath))
                 {
                     File.Replace(paths.TemporaryPath, paths.PrimaryPath, paths.BackupPath, true);
@@ -133,13 +185,13 @@ namespace UnityIsekaiGame.Networking.Server
                     File.Move(paths.TemporaryPath, paths.PrimaryPath);
                 }
 
-                message = $"Saved server profile revision {profile.revision} for '{profile.playerId}'.";
+                message = $"Saved server profile revision {request.Revision} for '{request.PlayerId}'.";
                 return true;
             }
             catch (Exception exception)
             {
                 TryDeleteTemporary(paths.TemporaryPath);
-                message = $"Could not save server profile '{profile.playerId}': {exception.Message}";
+                message = $"Could not save server profile '{request.PlayerId}': {exception.Message}";
                 return false;
             }
         }

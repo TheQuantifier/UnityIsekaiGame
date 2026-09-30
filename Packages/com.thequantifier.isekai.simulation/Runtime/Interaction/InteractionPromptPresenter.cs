@@ -1,3 +1,4 @@
+#if !ISEKAI_SERVER_PROJECT
 using UnityEngine;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Input;
@@ -57,3 +58,4 @@ namespace UnityIsekaiGame.Interaction
         }
     }
 }
+#endif

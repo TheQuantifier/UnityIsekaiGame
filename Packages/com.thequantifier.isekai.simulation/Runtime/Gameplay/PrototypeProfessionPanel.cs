@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityIsekaiGame.Professions;
 using UnityIsekaiGame.Presentation;
@@ -53,7 +52,9 @@ namespace UnityIsekaiGame.Gameplay
 
         private static void InstallForPrototype(Scene scene)
         {
-            if (!scene.IsValid() || scene.name.IndexOf("Prototype", StringComparison.OrdinalIgnoreCase) < 0)
+            if (Application.isBatchMode
+                || !scene.IsValid()
+                || scene.name.IndexOf("Prototype", StringComparison.OrdinalIgnoreCase) < 0)
             {
                 return;
             }
@@ -84,7 +85,7 @@ namespace UnityIsekaiGame.Gameplay
 
         private void Update()
         {
-            if (Keyboard.current?.f7Key.wasPressedThisFrame == true)
+            if (input != null && input.ProfessionTogglePressedThisFrame)
             {
                 SetVisible(!visible);
             }

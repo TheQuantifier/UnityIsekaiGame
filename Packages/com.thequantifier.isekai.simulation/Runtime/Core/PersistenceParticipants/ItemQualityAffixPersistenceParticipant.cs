@@ -17,6 +17,7 @@ namespace UnityIsekaiGame.Persistence
         private readonly ItemInstanceIdentityRuntime itemIdentityRuntime;
         private readonly Func<DefinitionRegistry> registryProvider;
         private readonly string worldId;
+        private bool orphanWarningLogged;
 
         public ItemQualityAffixPersistenceParticipant(
             ItemQualityAffixRuntime runtime,
@@ -52,6 +53,7 @@ namespace UnityIsekaiGame.Persistence
             }
 
             ItemQualityAffixRuntimeSaveData saveData = runtime.CreateSaveData();
+            ReportOrphans(ItemPersistenceSnapshotSanitizer.RemoveOrphanedQuality(saveData, itemIdentityRuntime));
             if (!ItemQualityAffixRuntime.ValidateSaveData(saveData, registryProvider?.Invoke(), itemIdentityRuntime, out string failure))
             {
                 return PersistenceParticipantSaveResult.Failure(failure);
@@ -94,6 +96,7 @@ namespace UnityIsekaiGame.Persistence
                 return PersistenceParticipantPrepareResult.Failure("Item quality payload did not parse.");
             }
 
+            ReportOrphans(ItemPersistenceSnapshotSanitizer.RemoveOrphanedQuality(saveData, itemIdentityRuntime));
             if (!ItemQualityAffixRuntime.ValidateSaveData(saveData, registryProvider?.Invoke(), itemIdentityRuntime, out string failure))
             {
                 return PersistenceParticipantPrepareResult.Failure(failure);
@@ -127,6 +130,13 @@ namespace UnityIsekaiGame.Persistence
 
         public void DiscardPreparedPayload(object preparedPayload)
         {
+        }
+
+        private void ReportOrphans(int count)
+        {
+            if (count <= 0 || orphanWarningLogged) return;
+            orphanWarningLogged = true;
+            Debug.LogWarning($"[Persistence] Omitted {count} orphaned item-quality/affix record(s) from the world checkpoint.");
         }
 
         private sealed class PreparedPayload

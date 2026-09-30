@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Input;
 using UnityIsekaiGame.Presentation;
@@ -30,7 +29,7 @@ namespace UnityIsekaiGame.WorldLocations.SceneBinding
 
         private void Update()
         {
-            if (Keyboard.current?.tKey.wasPressedThisFrame == true) SetVisible(!visible);
+            if (input != null && input.TravelTogglePressedThisFrame) SetVisible(!visible);
 
             if (visible && Time.unscaledTime >= nextDestinationRefreshAt)
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.GameData;
@@ -22,7 +23,11 @@ namespace UnityIsekaiGame.Networking.Client
         private bool smokeEnabled;
         private InventorySmokePhase smokePhase;
         private int smokeDropInitialQuantity;
+        private int smokeDropInitialStackCount;
+        private string smokeDropInitialStackId = string.Empty;
+        private string smokeDroppedWorldId = string.Empty;
         private int smokeDropSlotIndex = -1;
+        private int smokeMoveDestinationSlotIndex = -1;
         private int smokeEquipSlotIndex = -1;
         private string smokeEquipInstanceId = string.Empty;
         private EquipmentSlotType smokeEquipmentSlot;
@@ -85,6 +90,8 @@ namespace UnityIsekaiGame.Networking.Client
         public bool RequestEquip(int slotIndex, EquipmentSlotType equipmentSlot) => networkInventory != null && networkInventory.RequestEquip(slotIndex, (int)equipmentSlot);
         public bool RequestUnequip(EquipmentSlotType equipmentSlot) => networkInventory != null && networkInventory.RequestUnequip((int)equipmentSlot);
         public bool RequestDrop(int slotIndex, int quantity) => networkInventory != null && networkInventory.RequestDrop(slotIndex, quantity);
+        public bool RequestMove(int sourceSlotIndex, int destinationSlotIndex) =>
+            networkInventory != null && networkInventory.RequestMove(sourceSlotIndex, destinationSlotIndex);
 
         private void OnLocalPlayerActorChanged(NetworkPlayerActor actor)
         {
@@ -285,6 +292,9 @@ namespace UnityIsekaiGame.Networking.Client
                 case InventorySmokePhase.WaitingForInitialSnapshot:
                     BeginSmoke();
                     break;
+                case InventorySmokePhase.WaitingForMove:
+                    ObserveMoveAndRequestDrop();
+                    break;
                 case InventorySmokePhase.WaitingForDrop:
                     ObserveDropAndRequestPickup();
                     break;
@@ -323,9 +333,39 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             smokeDropInitialQuantity = drop.Quantity;
+            smokeDropInitialStackCount = CountDefinitionStacks(drop.Item.ItemId);
+            smokeDropInitialStackId = drop.ItemInstanceId;
             smokeEquipInstanceId = equip.ItemInstanceId;
             smokeEquipmentSlot = equip.Item.Equipment.SlotType;
             smokeUseInitialQuantity = use.Quantity;
+            smokeMoveDestinationSlotIndex = FindEmptySlot();
+            if (smokeMoveDestinationSlotIndex < 0)
+            {
+                Debug.LogError("[Network Inventory] Smoke test requires one empty inventory slot for authoritative movement.", this);
+                smokePhase = InventorySmokePhase.Failed;
+                return;
+            }
+
+            if (RequestMove(smokeDropSlotIndex, smokeMoveDestinationSlotIndex))
+            {
+                smokePhase = InventorySmokePhase.WaitingForMove;
+                Debug.Log($"[Network Inventory] Client requested authoritative movement from slot {smokeDropSlotIndex} to slot {smokeMoveDestinationSlotIndex}.", this);
+            }
+        }
+
+        private void ObserveMoveAndRequestDrop()
+        {
+            InventorySlot source = localInventory.GetSlot(smokeDropSlotIndex);
+            InventorySlot destination = localInventory.GetSlot(smokeMoveDestinationSlotIndex);
+            if (source == null || !source.IsEmpty || destination == null || destination.IsEmpty
+                || destination.Quantity != smokeDropInitialQuantity
+                || !string.Equals(destination.ItemInstanceId, smokeDropInitialStackId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            smokeDropSlotIndex = smokeMoveDestinationSlotIndex;
+            Debug.Log($"[Network Inventory] Client observed authoritative inventory movement into slot {smokeDropSlotIndex}.", this);
             if (RequestDrop(smokeDropSlotIndex, 1))
             {
                 smokePhase = InventorySmokePhase.WaitingForDrop;
@@ -344,21 +384,31 @@ namespace UnityIsekaiGame.Networking.Client
 
         private void RequestSpawnedPickup()
         {
-            NetworkWorldItemPickup[] pickups = FindObjectsByType<NetworkWorldItemPickup>(FindObjectsInactive.Exclude);
-            for (int i = 0; i < pickups.Length; i++)
-            {
-                NetworkWorldItemPickup pickup = pickups[i];
-                if (pickup == null || !string.Equals(pickup.DefinitionId, "item.wood-log", StringComparison.Ordinal)) continue;
-                if (!pickup.RequestCollection()) return;
-                smokePhase = InventorySmokePhase.WaitingForPickup;
-                Debug.Log($"[Network Inventory] Client requested authoritative collection of replicated pickup {pickup.ItemInstanceId}.", this);
-                return;
-            }
+            NetworkWorldItemPickup pickup = FindObjectsByType<NetworkWorldItemPickup>(FindObjectsInactive.Exclude)
+                .Where(candidate => candidate != null
+                    && string.Equals(candidate.DefinitionId, "item.wood-log", StringComparison.Ordinal))
+                .OrderBy(candidate => (candidate.transform.position - networkInventory.transform.position).sqrMagnitude)
+                .FirstOrDefault();
+            if (pickup == null || !pickup.RequestCollection()) return;
+            smokeDroppedWorldId = pickup.ItemInstanceId;
+            smokePhase = InventorySmokePhase.WaitingForPickup;
+            Debug.Log($"[Network Inventory] Client requested authoritative collection of nearest replicated pickup {pickup.ItemInstanceId}.", this);
         }
 
         private void ObservePickupAndRequestEquip()
         {
             if (GetTotalQuantity("item.wood-log") < smokeDropInitialQuantity) return;
+            if (CountDefinitionStacks("item.wood-log") != smokeDropInitialStackCount
+                || !HasDefinitionStackIdentity("item.wood-log", smokeDropInitialStackId)
+                || HasDefinitionStackIdentity("item.wood-log", smokeDroppedWorldId))
+            {
+                Debug.LogError(
+                    "[Network Inventory] Recollected definition-stack item did not merge back into its original inventory stack.",
+                    this);
+                smokePhase = InventorySmokePhase.Failed;
+                return;
+            }
+
             Debug.Log("[Network Inventory] Client observed the exact replicated world pickup return to authoritative inventory.", this);
             if (RequestEquip(smokeEquipSlotIndex, smokeEquipmentSlot))
             {
@@ -408,6 +458,17 @@ namespace UnityIsekaiGame.Networking.Client
             return -1;
         }
 
+        private int FindEmptySlot()
+        {
+            for (int i = 0; i < localInventory.Slots.Count; i++)
+            {
+                InventorySlot slot = localInventory.Slots[i];
+                if (slot != null && slot.IsEmpty) return i;
+            }
+
+            return -1;
+        }
+
         private int GetQuantity(int slotIndex)
         {
             InventorySlot slot = localInventory.GetSlot(slotIndex);
@@ -427,11 +488,48 @@ namespace UnityIsekaiGame.Networking.Client
             return quantity;
         }
 
+        private int CountDefinitionStacks(string itemId)
+        {
+            int count = 0;
+            for (int i = 0; i < localInventory.Slots.Count; i++)
+            {
+                InventorySlot slot = localInventory.Slots[i];
+                if (slot != null && !slot.IsEmpty && !slot.IsStateful && slot.Item != null
+                    && string.Equals(slot.Item.ItemId, itemId, StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private bool HasDefinitionStackIdentity(string itemId, string itemInstanceId)
+        {
+            if (string.IsNullOrWhiteSpace(itemInstanceId)) return false;
+            for (int i = 0; i < localInventory.Slots.Count; i++)
+            {
+                InventorySlot slot = localInventory.Slots[i];
+                if (slot != null && !slot.IsEmpty && !slot.IsStateful && slot.Item != null
+                    && string.Equals(slot.Item.ItemId, itemId, StringComparison.Ordinal)
+                    && string.Equals(slot.ItemInstanceId, itemInstanceId, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void ResetSmoke()
         {
             smokePhase = smokeEnabled ? InventorySmokePhase.WaitingForInitialSnapshot : InventorySmokePhase.None;
             smokeDropInitialQuantity = 0;
+            smokeDropInitialStackCount = 0;
+            smokeDropInitialStackId = string.Empty;
+            smokeDroppedWorldId = string.Empty;
             smokeDropSlotIndex = -1;
+            smokeMoveDestinationSlotIndex = -1;
             smokeEquipSlotIndex = -1;
             smokeEquipInstanceId = string.Empty;
             smokeUseInitialQuantity = 0;
@@ -449,6 +547,7 @@ namespace UnityIsekaiGame.Networking.Client
         {
             None,
             WaitingForInitialSnapshot,
+            WaitingForMove,
             WaitingForDrop,
             WaitingForPickupSpawn,
             WaitingForPickup,

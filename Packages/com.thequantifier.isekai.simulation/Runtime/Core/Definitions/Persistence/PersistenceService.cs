@@ -328,6 +328,22 @@ namespace UnityIsekaiGame.GameData.Persistence
             return result;
         }
 
+        /// <summary>
+        /// Reads and validates the save envelope and checksum without preparing participant payloads.
+        /// This is intended for boot-time discovery of dynamic identities that participant validators
+        /// must know before the normal, strict validation and load transaction begins.
+        /// </summary>
+        public PersistenceValidationResult InspectSlotEnvelope(string slotId, bool inspectBackup = false)
+        {
+            if (!pathProvider.TryGetPaths(slotId, out SaveSlotPaths paths, out string pathFailure))
+            {
+                return PersistenceValidationResult.Failure(PersistenceValidationStatus.InvalidSlotId, slotId, string.Empty, pathFailure);
+            }
+
+            string path = inspectBackup ? paths.BackupPath : paths.PrimaryPath;
+            return ValidatePath(slotId, path, inspectBackup, validateParticipants: false);
+        }
+
         public PersistenceDeleteResult DeleteSlot(string slotId)
         {
             if (operationInProgress)

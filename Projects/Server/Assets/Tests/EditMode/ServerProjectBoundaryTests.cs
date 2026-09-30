@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.TestTools;
 using UnityIsekaiGame.Networking;
 using UnityIsekaiGame.Networking.Server;
 using UnityIsekaiGame.ServerProject.Editor;
@@ -40,12 +41,65 @@ namespace UnityIsekaiGame.ServerProject.Tests
         }
 
         [Test]
+        public void Server_project_resolves_all_shared_terrain_data()
+        {
+            const string terrainPath = "Packages/com.thequantifier.isekai.content/Content/World/Terrain/ServerCollision";
+            string[] terrainGuids = AssetDatabase.FindAssets("t:TerrainData", new[] { terrainPath });
+
+            Assert.That(terrainGuids, Has.Length.EqualTo(4));
+            LogAssert.ignoreFailingMessages = true;
+            try
+            {
+                TerrainData[] terrainData = terrainGuids
+                    .Select(AssetDatabase.GUIDToAssetPath)
+                    .Select(path => AssetDatabase.LoadAssetAtPath<TerrainData>(path))
+                    .ToArray();
+                Assert.That(terrainData, Has.None.Null);
+                Assert.That(terrainData.Sum(data => data.treeInstanceCount), Is.GreaterThan(0));
+                TreePrototype[] treePrototypes = terrainData.SelectMany(data => data.treePrototypes).ToArray();
+                Assert.That(treePrototypes, Is.Not.Empty);
+                Assert.That(treePrototypes.All(prototype =>
+                    prototype.prefab != null &&
+                    prototype.prefab.GetComponentInChildren<Collider>(true) != null &&
+                    prototype.prefab.GetComponentInChildren<MeshFilter>(true)?.sharedMesh != null &&
+                    prototype.prefab.GetComponentInChildren<Renderer>(true)?.sharedMaterial != null), Is.True);
+            }
+            finally
+            {
+                LogAssert.ignoreFailingMessages = false;
+            }
+        }
+
+        [Test]
+        public void Server_physics_and_layer_configuration_matches_the_client_project()
+        {
+            string serverRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, ".."));
+            string projectsRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(serverRoot, ".."));
+            string clientRoot = System.IO.Path.Combine(projectsRoot, "Client");
+            foreach (string settingsFile in new[] { "DynamicsManager.asset", "TagManager.asset" })
+            {
+                string serverSettings = System.IO.Path.Combine(serverRoot, "ProjectSettings", settingsFile);
+                string clientSettings = System.IO.Path.Combine(clientRoot, "ProjectSettings", settingsFile);
+                Assert.That(System.IO.File.Exists(serverSettings), Is.True, serverSettings);
+                Assert.That(System.IO.File.Exists(clientSettings), Is.True, clientSettings);
+                Assert.That(
+                    System.IO.File.ReadAllText(serverSettings),
+                    Is.EqualTo(System.IO.File.ReadAllText(clientSettings)),
+                    $"Client and server {settingsFile} must remain identical so collider layers behave authoritatively.");
+            }
+        }
+
+        [Test]
         public void Server_scene_contains_authority_without_client_or_presentation_components()
         {
             Scene previous = SceneManager.GetActiveScene();
             string previousPath = previous.path;
             try
             {
+                // Unity 6 warns that the deliberately invisible server tree marker does not use the legacy
+                // Nature/Soft Occlusion shader. That shader is unavailable in this project and is irrelevant
+                // to headless physics; the assertions below validate the collider data itself.
+                LogAssert.ignoreFailingMessages = true;
                 Scene scene = EditorSceneManager.OpenScene(ServerProjectBuildAutomation.ServerScenePath, OpenSceneMode.Single);
                 Component[] serializedComponents = scene.GetRootGameObjects()
                     .SelectMany(root => root.GetComponentsInChildren<Component>(true))
@@ -55,9 +109,27 @@ namespace UnityIsekaiGame.ServerProject.Tests
 
                 Assert.That(components.OfType<NetworkManager>().SingleOrDefault(), Is.Not.Null);
                 Assert.That(components.OfType<UnityTransport>().SingleOrDefault(), Is.Not.Null);
-                Assert.That(components.OfType<LocalDedicatedServer>().SingleOrDefault(), Is.Not.Null);
+                // The build pipeline adds LocalDedicatedServer to a generated staging copy so a
+                // build never mutates this tracked extracted source scene.
+                Assert.That(components.OfType<LocalDedicatedServer>(), Is.Empty);
                 Assert.That(components.OfType<Camera>(), Is.Empty);
                 Assert.That(components.OfType<Renderer>(), Is.Empty);
+                TerrainCollider[] terrainColliders = components.OfType<TerrainCollider>().ToArray();
+                Assert.That(terrainColliders, Has.Length.EqualTo(4), "The authoritative scene must retain all four terrain tiles.");
+                Assert.That(
+                    terrainColliders.All(collider => collider.terrainData != null),
+                    Is.True,
+                    "Every authoritative TerrainCollider must resolve its shared TerrainData asset.");
+                MeshCollider[] meshColliders = components.OfType<MeshCollider>().ToArray();
+                Assert.That(meshColliders, Is.Not.Empty, "Detailed source collision such as stairs must remain mesh-accurate.");
+                Assert.That(meshColliders.All(collider =>
+                    collider.sharedMesh != null &&
+                    AssetDatabase.GetAssetPath(collider.sharedMesh).StartsWith(
+                        "Packages/com.thequantifier.isekai.content/Content/World/CollisionMeshes/",
+                        StringComparison.Ordinal)), Is.True,
+                    "Every server MeshCollider must use a shared collision-only mesh asset rather than client presentation geometry.");
+                Collider[] colliders = components.OfType<Collider>().ToArray();
+                Assert.That(colliders.Any(collider => collider.enabled && !collider.isTrigger), Is.True);
                 Assert.That(components.Any(component => string.Equals(
                     component.GetType().Assembly.GetName().Name,
                     "UnityIsekaiGame.Networking.Client",
@@ -69,6 +141,7 @@ namespace UnityIsekaiGame.ServerProject.Tests
             }
             finally
             {
+                LogAssert.ignoreFailingMessages = false;
                 if (!string.IsNullOrWhiteSpace(previousPath))
                 {
                     EditorSceneManager.OpenScene(previousPath, OpenSceneMode.Single);

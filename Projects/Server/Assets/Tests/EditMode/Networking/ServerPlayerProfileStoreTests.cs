@@ -102,6 +102,26 @@ namespace UnityIsekaiGame.Tests
             Assert.That(vitalsFailure, Does.Contain("vitals"));
         }
 
+        [Test]
+        public void Background_write_queue_flushes_the_latest_profile_revision()
+        {
+            PlayerSessionSnapshot session = OpenSession("queued-player");
+            ServerPlayerProfileData profile = CreateProfile(session);
+            ServerPlayerProfileStore store = new ServerPlayerProfileStore(root);
+            using (var queue = new ServerPlayerProfileWriteQueue(store))
+            {
+                Assert.That(queue.TryEnqueue(profile, out string firstMessage), Is.True, firstMessage);
+                profile.revision = 2L;
+                profile.positionX = 42f;
+                Assert.That(queue.TryEnqueue(profile, out string secondMessage), Is.True, secondMessage);
+                Assert.That(queue.Flush(TimeSpan.FromSeconds(5)), Is.True);
+            }
+
+            Assert.That(store.TryLoad(session, out ServerPlayerProfileData loaded, out string loadMessage), Is.True, loadMessage);
+            Assert.That(loaded.revision, Is.EqualTo(2L));
+            Assert.That(loaded.positionX, Is.EqualTo(42f));
+        }
+
         private static PlayerSessionSnapshot OpenSession(string playerId)
         {
             PlayerSessionRegistry registry = new PlayerSessionRegistry();

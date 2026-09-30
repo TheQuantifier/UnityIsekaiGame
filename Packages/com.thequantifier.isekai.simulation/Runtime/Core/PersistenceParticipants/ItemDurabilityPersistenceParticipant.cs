@@ -19,6 +19,7 @@ namespace UnityIsekaiGame.Persistence
         private readonly ItemCompositionRuntime itemCompositionRuntime;
         private readonly Func<DefinitionRegistry> registryProvider;
         private readonly string worldId;
+        private bool orphanWarningLogged;
 
         public ItemDurabilityPersistenceParticipant(
             ItemDurabilityRuntime runtime,
@@ -56,6 +57,7 @@ namespace UnityIsekaiGame.Persistence
             }
 
             ItemDurabilityRuntimeSaveData saveData = runtime.CreateSaveData();
+            ReportOrphans(ItemPersistenceSnapshotSanitizer.RemoveOrphanedDurability(saveData, itemIdentityRuntime));
             if (!ItemDurabilityRuntime.ValidateSaveData(saveData, registryProvider?.Invoke(), itemIdentityRuntime, itemCompositionRuntime, out string failure))
             {
                 return PersistenceParticipantSaveResult.Failure(failure);
@@ -98,6 +100,7 @@ namespace UnityIsekaiGame.Persistence
                 return PersistenceParticipantPrepareResult.Failure("Item durability payload did not parse.");
             }
 
+            ReportOrphans(ItemPersistenceSnapshotSanitizer.RemoveOrphanedDurability(saveData, itemIdentityRuntime));
             if (!ItemDurabilityRuntime.ValidateSaveData(saveData, registryProvider?.Invoke(), itemIdentityRuntime, itemCompositionRuntime, out string failure))
             {
                 return PersistenceParticipantPrepareResult.Failure(failure);
@@ -131,6 +134,13 @@ namespace UnityIsekaiGame.Persistence
 
         public void DiscardPreparedPayload(object preparedPayload)
         {
+        }
+
+        private void ReportOrphans(int count)
+        {
+            if (count <= 0 || orphanWarningLogged) return;
+            orphanWarningLogged = true;
+            Debug.LogWarning($"[Persistence] Omitted {count} orphaned item-durability record(s) from the world checkpoint.");
         }
 
         private sealed class PreparedPayload

@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "com.thequantifier.scene-zone-tool": "1.0.3",
-    "com.unity.inputsystem": "1.19.0",
     "com.unity.nuget.newtonsoft-json": "3.2.1"
   }
 }

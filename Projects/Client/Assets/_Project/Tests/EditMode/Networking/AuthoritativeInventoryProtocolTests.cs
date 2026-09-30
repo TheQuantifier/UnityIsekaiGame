@@ -35,6 +35,27 @@ namespace UnityIsekaiGame.Tests
                 16);
             Assert.That(quantity.Succeeded, Is.False);
             Assert.That(quantity.Failure, Is.EqualTo(InventoryAuthorityFailure.InvalidQuantity));
+
+            InventoryCommandValidationResult move = NetworkInventoryCommandValidator.Validate(
+                new NetworkInventoryCommand(
+                    6u,
+                    InventoryAuthorityCommandType.MoveSlot,
+                    1,
+                    destinationInventorySlotIndex: 3),
+                5u,
+                16);
+            Assert.That(move.Succeeded, Is.True, move.Message);
+
+            InventoryCommandValidationResult sameSlotMove = NetworkInventoryCommandValidator.Validate(
+                new NetworkInventoryCommand(
+                    7u,
+                    InventoryAuthorityCommandType.MoveSlot,
+                    1,
+                    destinationInventorySlotIndex: 1),
+                6u,
+                16);
+            Assert.That(sameSlotMove.Succeeded, Is.False);
+            Assert.That(sameSlotMove.Failure, Is.EqualTo(InventoryAuthorityFailure.InvalidSlot));
         }
 
         [Test]
@@ -234,6 +255,165 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(roundTripped.Quantity, Is.EqualTo(2));
                 Assert.That(roundTripped.IsStateful, Is.False);
                 Assert.That(inventory.CreateSaveData().entries[restored.SlotIndex].mode, Is.EqualTo(InventoryEntrySaveMode.DefinitionStack));
+            }
+            finally
+            {
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void Individually_dropped_stack_items_merge_by_definition_when_recollected()
+        {
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(
+                "Packages/com.thequantifier.isekai.content/Content/Prototype/GameData/PrototypeDefinitionCatalog.asset");
+            ItemDefinition item = catalog.DefinitionAssets.OfType<ItemDefinition>()
+                .First(candidate => candidate.Stackable && candidate.MaximumStackSize >= 3
+                    && candidate.InstanceMode != ItemInstanceMode.AlwaysInstanced);
+            GameObject owner = new GameObject("Recollected Definition Stack Test");
+            try
+            {
+                PlayerInventory inventory = owner.AddComponent<PlayerInventory>();
+                Assert.That(inventory.AddItem(item, 3).AddedAll, Is.True);
+                InventorySlot original = inventory.Slots.First(slot => slot?.Item == item);
+                string originalStackId = original.ItemInstanceId;
+                int slotIndex = Enumerable.Range(0, inventory.Slots.Count)
+                    .First(index => ReferenceEquals(inventory.Slots[index], original));
+
+                string firstWorldPickupId = ItemInstanceId.Generate();
+                Assert.That(inventory.RemoveItemAt(slotIndex, 1), Is.True);
+                InventoryInstanceOperationResult firstCollection =
+                    inventory.AddExistingDefinitionStackIdentity(item, firstWorldPickupId, 1);
+                Assert.That(firstCollection.Succeeded, Is.True, firstCollection.Message);
+
+                string secondWorldPickupId = ItemInstanceId.Generate();
+                Assert.That(inventory.RemoveItemAt(slotIndex, 1), Is.True);
+                InventoryInstanceOperationResult secondCollection =
+                    inventory.AddExistingDefinitionStackIdentity(item, secondWorldPickupId, 1);
+                Assert.That(secondCollection.Succeeded, Is.True, secondCollection.Message);
+
+                InventorySlot merged = inventory.GetSlot(slotIndex);
+                Assert.That(merged.Quantity, Is.EqualTo(3));
+                Assert.That(merged.ItemInstanceId, Is.EqualTo(originalStackId));
+                Assert.That(merged.IsStateful, Is.False);
+                Assert.That(inventory.ContainsItemIdentity(firstWorldPickupId), Is.False);
+                Assert.That(inventory.ContainsItemIdentity(secondWorldPickupId), Is.False);
+                Assert.That(inventory.Slots.Count(slot => slot?.Item == item), Is.EqualTo(1));
+            }
+            finally
+            {
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void Recollected_definition_stack_keeps_world_identity_only_when_creating_a_new_stack()
+        {
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(
+                "Packages/com.thequantifier.isekai.content/Content/Prototype/GameData/PrototypeDefinitionCatalog.asset");
+            ItemDefinition item = catalog.DefinitionAssets.OfType<ItemDefinition>()
+                .First(candidate => candidate.Stackable && candidate.InstanceMode != ItemInstanceMode.AlwaysInstanced);
+            GameObject owner = new GameObject("New Recollected Stack Identity Test");
+            try
+            {
+                PlayerInventory inventory = owner.AddComponent<PlayerInventory>();
+                string worldPickupId = ItemInstanceId.Generate();
+
+                InventoryInstanceOperationResult collection =
+                    inventory.AddExistingDefinitionStackIdentity(item, worldPickupId, 1);
+
+                Assert.That(collection.Succeeded, Is.True, collection.Message);
+                InventorySlot created = inventory.GetSlot(collection.SlotIndex);
+                Assert.That(created.ItemInstanceId, Is.EqualTo(worldPickupId));
+                Assert.That(created.Quantity, Is.EqualTo(1));
+                Assert.That(created.IsStateful, Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void Separated_definition_stacks_merge_by_drag_destination_and_drop_remains_valid()
+        {
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(
+                "Packages/com.thequantifier.isekai.content/Content/Prototype/GameData/PrototypeDefinitionCatalog.asset");
+            ItemDefinition arrows = catalog.DefinitionAssets.OfType<ItemDefinition>()
+                .First(candidate => candidate.ItemId == "item.prototype-arrow");
+            GameObject owner = new GameObject("Separated Arrow Stack Test");
+            try
+            {
+                PlayerInventory inventory = owner.AddComponent<PlayerInventory>();
+                string firstIdentity = ItemInstanceId.Generate();
+                string secondIdentity = ItemInstanceId.Generate();
+                InventorySaveData separated = new InventorySaveData { slotCapacity = 4 };
+                separated.entries.Add(new InventoryEntrySaveData
+                {
+                    mode = InventoryEntrySaveMode.DefinitionStack,
+                    definitionId = arrows.ItemId,
+                    itemInstanceId = firstIdentity,
+                    quantity = 1
+                });
+                separated.entries.Add(new InventoryEntrySaveData
+                {
+                    mode = InventoryEntrySaveMode.DefinitionStack,
+                    definitionId = arrows.ItemId,
+                    itemInstanceId = secondIdentity,
+                    quantity = 1
+                });
+                separated.entries.Add(new InventoryEntrySaveData());
+                separated.entries.Add(new InventoryEntrySaveData());
+                Assert.That(inventory.TryRestoreFromSaveData(separated, catalog.CreateRegistry()).Succeeded, Is.True);
+
+                InventoryInstanceOperationResult merged = inventory.MoveOrMergeSlot(0, 1);
+
+                Assert.That(merged.Succeeded, Is.True, merged.Message);
+                Assert.That(inventory.GetSlot(0).IsEmpty, Is.True);
+                Assert.That(inventory.GetSlot(1).Quantity, Is.EqualTo(2));
+                Assert.That(inventory.GetSlot(1).ItemInstanceId, Is.EqualTo(secondIdentity));
+                Assert.That(inventory.ContainsItemIdentity(firstIdentity), Is.False);
+                Assert.That(inventory.RemoveItemAt(1, 1), Is.True,
+                    "A merged definition stack must remain quantity-droppable.");
+                Assert.That(inventory.GetSlot(1).Quantity, Is.EqualTo(1));
+            }
+            finally
+            {
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void Inventory_drag_moves_to_empty_slots_and_swaps_incompatible_contents_without_changing_identity()
+        {
+            DefinitionCatalog catalog = AssetDatabase.LoadAssetAtPath<DefinitionCatalog>(
+                "Packages/com.thequantifier.isekai.content/Content/Prototype/GameData/PrototypeDefinitionCatalog.asset");
+            ItemDefinition arrows = catalog.DefinitionAssets.OfType<ItemDefinition>()
+                .First(candidate => candidate.ItemId == "item.prototype-arrow");
+            ItemDefinition wood = catalog.DefinitionAssets.OfType<ItemDefinition>()
+                .First(candidate => candidate.ItemId == "item.wood-log");
+            GameObject owner = new GameObject("Inventory Move And Swap Test");
+            try
+            {
+                PlayerInventory inventory = owner.AddComponent<PlayerInventory>();
+                Assert.That(inventory.AddItem(arrows, 2).AddedAll, Is.True);
+                Assert.That(inventory.AddItem(wood, 3).AddedAll, Is.True);
+                int arrowSlot = Enumerable.Range(0, inventory.Slots.Count).First(index => inventory.GetSlot(index).Item == arrows);
+                int woodSlot = Enumerable.Range(0, inventory.Slots.Count).First(index => inventory.GetSlot(index).Item == wood);
+                int emptySlot = Enumerable.Range(0, inventory.Slots.Count).First(index => inventory.GetSlot(index).IsEmpty);
+                string arrowIdentity = inventory.GetSlot(arrowSlot).ItemInstanceId;
+                string woodIdentity = inventory.GetSlot(woodSlot).ItemInstanceId;
+
+                Assert.That(inventory.MoveOrMergeSlot(arrowSlot, emptySlot).Succeeded, Is.True);
+                Assert.That(inventory.GetSlot(arrowSlot).IsEmpty, Is.True);
+                Assert.That(inventory.GetSlot(emptySlot).Item, Is.SameAs(arrows));
+                Assert.That(inventory.GetSlot(emptySlot).ItemInstanceId, Is.EqualTo(arrowIdentity));
+
+                Assert.That(inventory.MoveOrMergeSlot(emptySlot, woodSlot).Succeeded, Is.True);
+                Assert.That(inventory.GetSlot(emptySlot).Item, Is.SameAs(wood));
+                Assert.That(inventory.GetSlot(emptySlot).ItemInstanceId, Is.EqualTo(woodIdentity));
+                Assert.That(inventory.GetSlot(woodSlot).Item, Is.SameAs(arrows));
+                Assert.That(inventory.GetSlot(woodSlot).ItemInstanceId, Is.EqualTo(arrowIdentity));
             }
             finally
             {

@@ -70,6 +70,28 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void PersistenceSnapshotOmitsQualityAndAffixesWithoutAnItemIdentity()
+        {
+            RuntimeFixture source = CreateFixture();
+            string item = CreateComposedItem(source, "orphaned-persistence");
+            source.Quality.SetQualityRecord(source.Items, source.Compositions, source.Registry, QualityRecord(item, 0.8f));
+            source.Quality.ApplyAffix(source.Items, source.Compositions, source.Registry, item, source.KeenAffix, seed: "orphaned-persistence");
+
+            ItemInstanceIdentityRuntime emptyIdentities = new ItemInstanceIdentityRuntime();
+            ItemQualityAffixRuntime restored = new ItemQualityAffixRuntime();
+            ItemQualityAffixPersistenceParticipant participant = new ItemQualityAffixPersistenceParticipant(restored, emptyIdentities, () => source.Registry);
+            PersistenceParticipantPrepareResult prepared = participant.PreparePayload(
+                JsonUtility.ToJson(source.Quality.CreateSaveData()),
+                ItemQualityAffixPersistenceParticipant.CurrentParticipantSchemaVersion);
+            PersistenceParticipantCommitResult committed = participant.CommitPreparedPayload(prepared.PreparedPayload);
+
+            Assert.That(prepared.Succeeded, Is.True, prepared.Message);
+            Assert.That(committed.Succeeded, Is.True, committed.Message);
+            Assert.That(restored.QualityRecordCount, Is.EqualTo(0));
+            Assert.That(restored.AffixCount, Is.EqualTo(0));
+        }
+
+        [Test]
         public void AffixGenerationIsDeterministicPreviewDoesNotMutateAndRestoreDoesNotReroll()
         {
             RuntimeFixture fixture = CreateFixture();

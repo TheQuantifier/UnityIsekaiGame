@@ -111,22 +111,60 @@ namespace UnityIsekaiGame.Inventory
                 return InventoryInstanceOperationResult.Failure($"{item.DisplayName} must be stored as a stateful item instance.");
             }
 
-            if (!CanAddItemIdentity(item, itemInstanceId, quantity, out string failureReason))
+            if (!ValidateItemIdentityForInventory(item, itemInstanceId, quantity, out string failureReason))
             {
                 return InventoryInstanceOperationResult.Failure(failureReason);
             }
 
-            int emptySlotIndex = FindEmptySlotIndex();
-            slots[emptySlotIndex].SetDefinitionStack(item, itemInstanceId, quantity);
+            if (!CanAddItem(item, quantity))
+            {
+                return InventoryInstanceOperationResult.Failure("Inventory full.");
+            }
+
+            int destinationSlotIndex = -1;
+            int remainingQuantity = quantity;
+            if (item.Stackable)
+            {
+                for (int i = 0; i < slots.Count && remainingQuantity > 0; i++)
+                {
+                    InventorySlot slot = slots[i];
+                    if (slot == null || !slot.CanStack(item)) continue;
+                    int added = slot.AddToStack(remainingQuantity);
+                    if (added <= 0) continue;
+                    if (destinationSlotIndex < 0) destinationSlotIndex = i;
+                    remainingQuantity -= added;
+                }
+            }
+
+            bool incomingIdentityUsed = false;
+            for (int i = 0; i < slots.Count && remainingQuantity > 0; i++)
+            {
+                InventorySlot slot = slots[i];
+                if (slot != null && !slot.IsEmpty) continue;
+                slots[i] ??= new InventorySlot();
+                int quantityForSlot = Mathf.Min(remainingQuantity, item.MaximumStackSize);
+                string stackIdentity = incomingIdentityUsed ? ItemInstanceId.Generate() : itemInstanceId;
+                slots[i].SetDefinitionStack(item, stackIdentity, quantityForSlot);
+                incomingIdentityUsed = true;
+                if (destinationSlotIndex < 0) destinationSlotIndex = i;
+                remainingQuantity -= quantityForSlot;
+            }
+
+            if (remainingQuantity != 0 || destinationSlotIndex < 0)
+            {
+                return InventoryInstanceOperationResult.Failure("Inventory capacity changed before the item stack could be collected.");
+            }
+
             NotifyInventoryChanged();
             ItemAdded?.Invoke(item, quantity);
-            return InventoryInstanceOperationResult.Success($"Added {item.DisplayName}.", emptySlotIndex);
+            return InventoryInstanceOperationResult.Success($"Added {item.DisplayName}.", destinationSlotIndex);
         }
 
         public bool CanAddExistingDefinitionStackIdentity(ItemDefinition item, string itemInstanceId, int quantity)
         {
             if (externalReplicaAuthorityActive || item == null || item.InstanceMode == ItemInstanceMode.AlwaysInstanced) return false;
-            return CanAddItemIdentity(item, itemInstanceId, quantity, out _);
+            return ValidateItemIdentityForInventory(item, itemInstanceId, quantity, out _)
+                && CanAddItem(item, quantity);
         }
 
         public InventorySlot GetSlot(int slotIndex)
@@ -416,6 +454,87 @@ namespace UnityIsekaiGame.Inventory
             return removed;
         }
 
+        /// <summary>
+        /// Moves one complete inventory slot. An empty destination receives the slot as-is,
+        /// compatible definition stacks merge up to their authored maximum, and incompatible
+        /// occupied slots swap. Item identities move with their contents so equipment references
+        /// and stateful item data remain valid.
+        /// </summary>
+        public InventoryInstanceOperationResult MoveOrMergeSlot(int sourceSlotIndex, int destinationSlotIndex)
+        {
+            if (externalReplicaAuthorityActive)
+            {
+                return InventoryInstanceOperationResult.Failure("Inventory is controlled by the server.");
+            }
+
+            EnsureSlotCapacity();
+            if (sourceSlotIndex < 0 || sourceSlotIndex >= slots.Count
+                || destinationSlotIndex < 0 || destinationSlotIndex >= slots.Count)
+            {
+                return InventoryInstanceOperationResult.Failure("Inventory slot is outside the container.");
+            }
+
+            if (sourceSlotIndex == destinationSlotIndex)
+            {
+                return InventoryInstanceOperationResult.Failure("The item is already in that slot.");
+            }
+
+            InventorySlot source = slots[sourceSlotIndex];
+            if (source == null || source.IsEmpty || source.Item == null)
+            {
+                return InventoryInstanceOperationResult.Failure("The source inventory slot is empty.");
+            }
+
+            slots[destinationSlotIndex] ??= new InventorySlot();
+            InventorySlot destination = slots[destinationSlotIndex];
+            string itemName = source.Item.DisplayName;
+
+            if (destination.IsEmpty)
+            {
+                CopySlotContents(source, destination);
+                source.Clear();
+                NotifyInventoryChanged();
+                return InventoryInstanceOperationResult.Success(
+                    $"Moved {itemName} to slot {destinationSlotIndex + 1}.",
+                    destinationSlotIndex);
+            }
+
+            if (!source.IsStateful
+                && !destination.IsStateful
+                && source.Item == destination.Item
+                && source.Item.Stackable)
+            {
+                int movedQuantity = destination.AddToStack(source.Quantity);
+                if (movedQuantity <= 0)
+                {
+                    return InventoryInstanceOperationResult.Failure($"The {itemName} stack is already full.");
+                }
+
+                source.Remove(movedQuantity);
+                NotifyInventoryChanged();
+                string mergeMessage = source.IsEmpty
+                    ? $"Combined {itemName} into one stack."
+                    : $"Moved {movedQuantity} {itemName} into the stack; {source.Quantity} remain in the original slot.";
+                return InventoryInstanceOperationResult.Success(mergeMessage, destinationSlotIndex);
+            }
+
+            ItemDefinition sourceItem = source.Item;
+            string sourceIdentity = source.ItemInstanceId;
+            int sourceQuantity = source.Quantity;
+            bool sourceStateful = source.IsStateful;
+            ItemDefinition destinationItem = destination.Item;
+            string destinationIdentity = destination.ItemInstanceId;
+            int destinationQuantity = destination.Quantity;
+            bool destinationStateful = destination.IsStateful;
+
+            SetSlotContents(source, destinationItem, destinationIdentity, destinationQuantity, destinationStateful);
+            SetSlotContents(destination, sourceItem, sourceIdentity, sourceQuantity, sourceStateful);
+            NotifyInventoryChanged();
+            return InventoryInstanceOperationResult.Success(
+                $"Swapped {itemName} with {destinationItem.DisplayName}.",
+                destinationSlotIndex);
+        }
+
         public int CountItem(ItemDefinition item)
         {
             if (item == null)
@@ -434,6 +553,27 @@ namespace UnityIsekaiGame.Inventory
             }
 
             return count;
+        }
+
+        private static void CopySlotContents(InventorySlot source, InventorySlot destination)
+        {
+            SetSlotContents(
+                destination,
+                source.Item,
+                source.ItemInstanceId,
+                source.Quantity,
+                source.IsStateful);
+        }
+
+        private static void SetSlotContents(
+            InventorySlot slot,
+            ItemDefinition item,
+            string itemInstanceId,
+            int quantity,
+            bool stateful)
+        {
+            if (stateful) slot.SetIdentity(item, itemInstanceId, quantity);
+            else slot.SetDefinitionStack(item, itemInstanceId, quantity);
         }
 
         public bool RemoveItem(ItemDefinition item, int quantity)

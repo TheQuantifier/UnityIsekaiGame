@@ -31,6 +31,8 @@ namespace UnityIsekaiGame.UI
         private GameUiSafeArea safeArea;
         private float nextRefreshAt;
         private bool refreshRequested;
+        private int lastScreenWidth;
+        private int lastScreenHeight;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetHooks()
@@ -94,6 +96,11 @@ namespace UnityIsekaiGame.UI
 
         private void LateUpdate()
         {
+            if (Screen.width != lastScreenWidth || Screen.height != lastScreenHeight)
+            {
+                refreshRequested = true;
+            }
+
             if (!refreshRequested && Time.unscaledTime < nextRefreshAt)
             {
                 return;
@@ -119,6 +126,8 @@ namespace UnityIsekaiGame.UI
             }
 
             GameUiTheme.ConfigureCanvas(targetCanvas);
+            lastScreenWidth = Screen.width;
+            lastScreenHeight = Screen.height;
             if (safeArea == null)
             {
                 safeArea = GetComponent<GameUiSafeArea>();

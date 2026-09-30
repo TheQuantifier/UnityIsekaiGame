@@ -18,7 +18,8 @@ namespace UnityIsekaiGame.Networking
             string listenAddress,
             ushort port,
             string playerId,
-            int maximumPlayers)
+            int maximumPlayers,
+            string authenticationToken)
         {
             Mode = mode;
             ServerAddress = serverAddress;
@@ -26,6 +27,7 @@ namespace UnityIsekaiGame.Networking
             Port = port;
             PlayerId = playerId;
             MaximumPlayers = maximumPlayers;
+            AuthenticationToken = authenticationToken ?? string.Empty;
         }
 
         public LocalNetworkLaunchMode Mode { get; }
@@ -34,6 +36,7 @@ namespace UnityIsekaiGame.Networking
         public ushort Port { get; }
         public string PlayerId { get; }
         public int MaximumPlayers { get; }
+        public string AuthenticationToken { get; }
     }
 
     public static class LocalNetworkCommandLine
@@ -54,6 +57,7 @@ namespace UnityIsekaiGame.Networking
             int port = LocalServerEndpoint.DefaultPort;
             string playerId = "local-player";
             int maximumPlayers = 8;
+            string authenticationToken = string.Empty;
 
             for (int index = 0; index < (arguments?.Count ?? 0); index++)
             {
@@ -136,6 +140,24 @@ namespace UnityIsekaiGame.Networking
                     failure = $"'{value}' is not a valid maximum player count.";
                     return false;
                 }
+
+                if (!TryReadValue(arguments, ref index, "--auth-token", out value, out matched, out failure))
+                {
+                    options = default;
+                    return false;
+                }
+
+                if (matched)
+                {
+                    if (value.Length > LocalConnectionProtocol.MaximumAuthenticationTokenLength)
+                    {
+                        options = default;
+                        failure = "The authentication token is too long.";
+                        return false;
+                    }
+
+                    authenticationToken = value;
+                }
             }
 
             if (serverRequested && clientRequested)
@@ -168,7 +190,8 @@ namespace UnityIsekaiGame.Networking
                 listenAddress.Trim().ToLowerInvariant(),
                 (ushort)port,
                 playerId,
-                maximumPlayers);
+                maximumPlayers,
+                authenticationToken);
             failure = string.Empty;
             return true;
         }

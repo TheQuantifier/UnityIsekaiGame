@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 043bdfb3fb1d45c49ffea19a4db7e16e, type: 3}
   m_Name: household_prototype_family
-  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay:UnityIsekaiGame.Social.Family:HouseholdDefinition
+  m_EditorClassIdentifier: UnityIsekaiGame.Gameplay::UnityIsekaiGame.Social.Family.HouseholdDefinition
   householdDefinitionId: household.prototype.family
   displayName: Prototype Family Household
   allowedRoles: 000000000100000002000000030000000400000005000000060000000700000008000000

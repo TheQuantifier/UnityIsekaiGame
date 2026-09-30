@@ -39,6 +39,7 @@ namespace UnityIsekaiGame.Networking
         private int configuredCapacity;
         private bool hasConfiguredInitialSnapshot;
         private uint localCommandSequence;
+        private readonly TokenBucketRateLimiter commandRateLimiter = new TokenBucketRateLimiter(8d, 8d);
 
         public event Action<uint> SnapshotChanged;
         public event Action<NetworkInventoryCommandResult> CommandResultChanged;
@@ -117,6 +118,7 @@ namespace UnityIsekaiGame.Networking
             latestCommandResult.OnValueChanged -= OnCommandResultChanged;
             ServerCommandHandler = null;
             localCommandSequence = 0u;
+            commandRateLimiter.Reset();
         }
 
         public bool PublishServerSnapshot(
@@ -153,8 +155,15 @@ namespace UnityIsekaiGame.Networking
         public bool RequestEquip(int slotIndex, int equipmentSlot) => SubmitLocalCommand(InventoryAuthorityCommandType.EquipSlot, slotIndex, 1, equipmentSlot);
         public bool RequestUnequip(int equipmentSlot) => SubmitLocalCommand(InventoryAuthorityCommandType.UnequipSlot, -1, 1, equipmentSlot);
         public bool RequestDrop(int slotIndex, int quantity) => SubmitLocalCommand(InventoryAuthorityCommandType.DropQuantity, slotIndex, quantity, -1);
+        public bool RequestMove(int sourceSlotIndex, int destinationSlotIndex) =>
+            SubmitLocalCommand(InventoryAuthorityCommandType.MoveSlot, sourceSlotIndex, 1, -1, destinationSlotIndex);
 
-        private bool SubmitLocalCommand(InventoryAuthorityCommandType type, int slotIndex, int quantity, int equipmentSlot)
+        private bool SubmitLocalCommand(
+            InventoryAuthorityCommandType type,
+            int slotIndex,
+            int quantity,
+            int equipmentSlot,
+            int destinationSlotIndex = -1)
         {
             if (!IsSpawned || !IsOwner || IsServer || !HasSnapshot)
             {
@@ -162,7 +171,13 @@ namespace UnityIsekaiGame.Networking
             }
 
             localCommandSequence = NextSequence(localCommandSequence);
-            SubmitInventoryCommandRpc(new NetworkInventoryCommand(localCommandSequence, type, slotIndex, quantity, equipmentSlot));
+            SubmitInventoryCommandRpc(new NetworkInventoryCommand(
+                localCommandSequence,
+                type,
+                slotIndex,
+                quantity,
+                equipmentSlot,
+                destinationSlotIndex));
             return true;
         }
 
@@ -171,6 +186,14 @@ namespace UnityIsekaiGame.Networking
         {
             if (!IsServer || rpcParams.Receive.SenderClientId != OwnerClientId)
             {
+                return;
+            }
+            if (!commandRateLimiter.TryConsume(Time.realtimeSinceStartupAsDouble))
+            {
+                latestCommandResult.Value = NetworkInventoryCommandResult.Reject(
+                    command.Sequence,
+                    InventoryAuthorityFailure.ServerRejected,
+                    "Inventory commands are arriving too quickly.");
                 return;
             }
 

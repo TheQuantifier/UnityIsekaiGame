@@ -664,10 +664,17 @@ namespace UnityIsekaiGame.ResourceSystem
                     return false;
                 }
 
-                float maximum = statCollection != null && statCollection.IsConfigured && statCollection.HasStat(definition.LinkedMaximumStatId)
+                float calculatedMaximum = statCollection != null && statCollection.IsConfigured && statCollection.HasStat(definition.LinkedMaximumStatId)
                     ? statCollection.GetValue(definition.LinkedMaximumStatId)
                     : definition.DefaultMaximum;
-                if (!IsFinite(record.currentValue) || record.currentValue < definition.MinimumValue - Epsilon || (!definition.OverfillAllowed && record.currentValue > maximum + Epsilon) || !IsFinite(record.lifetimeGained) || !IsFinite(record.lifetimeSpent) || !IsFinite(record.lifetimeDamaged) || !IsFinite(record.lifetimeHealed))
+                float maximum = IsFinite(record.lastKnownMaximum) && record.lastKnownMaximum >= definition.MinimumValue
+                    ? record.lastKnownMaximum
+                    : calculatedMaximum;
+                if (!IsFinite(record.currentValue) || !IsFinite(record.lastKnownMaximum)
+                    || record.currentValue < definition.MinimumValue - Epsilon
+                    || (!definition.OverfillAllowed && record.currentValue > maximum + Epsilon)
+                    || !IsFinite(record.lifetimeGained) || !IsFinite(record.lifetimeSpent)
+                    || !IsFinite(record.lifetimeDamaged) || !IsFinite(record.lifetimeHealed))
                 {
                     failureReason = $"Resource record '{record.resourceDefinitionId}' has invalid numeric values.";
                     return false;

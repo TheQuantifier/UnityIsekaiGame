@@ -43,6 +43,7 @@ namespace UnityIsekaiGame.Networking.Server
             services = persistence ?? throw new ArgumentNullException(nameof(persistence));
             personId = actor.PersonId;
             if (string.IsNullOrWhiteSpace(personId)) throw new InvalidOperationException("The authoritative player Person ID is unavailable.");
+            services.RegisterAuthoritativeRuntimePerson(personId);
             narrative = authoritativeNarrative ?? new PrototypeNarrativeCoordinator(
                 services,
                 services.DefinitionCatalog.CreateRegistry(),

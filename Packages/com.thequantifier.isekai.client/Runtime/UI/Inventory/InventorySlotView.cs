@@ -6,7 +6,14 @@ using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.UI.Inventory
 {
-    public sealed class InventorySlotView : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+    public sealed class InventorySlotView : MonoBehaviour,
+        IPointerClickHandler,
+        IPointerEnterHandler,
+        IPointerExitHandler,
+        IBeginDragHandler,
+        IDragHandler,
+        IEndDragHandler,
+        IDropHandler
     {
         [SerializeField] private Image backgroundImage;
         [SerializeField] private Image iconImage;
@@ -20,11 +27,13 @@ namespace UnityIsekaiGame.UI.Inventory
         private int slotIndex = -1;
         private System.Action<int> selected;
         private System.Action<int, bool> hovered;
+        private System.Action<int, int> moved;
         private bool isSelected;
         private bool isHovered;
         private bool hasItem;
         private bool isEquipped;
         private Color itemAccent;
+        private GameObject dragGhost;
 
         private void Awake()
         {
@@ -44,6 +53,7 @@ namespace UnityIsekaiGame.UI.Inventory
         private void OnDisable()
         {
             isHovered = false;
+            DestroyDragGhost();
         }
 
         public void Render(UnityIsekaiGame.Inventory.InventorySlot slot)
@@ -128,11 +138,16 @@ namespace UnityIsekaiGame.UI.Inventory
             RefreshBackground();
         }
 
-        public void Initialize(int index, System.Action<int> onSelected, System.Action<int, bool> onHovered = null)
+        public void Initialize(
+            int index,
+            System.Action<int> onSelected,
+            System.Action<int, bool> onHovered = null,
+            System.Action<int, int> onMoved = null)
         {
             slotIndex = index;
             selected = onSelected;
             hovered = onHovered;
+            moved = onMoved;
             ResolveBackgroundImage();
             RefreshPresentation();
         }
@@ -191,6 +206,72 @@ namespace UnityIsekaiGame.UI.Inventory
             isHovered = false;
             RefreshBackground();
             hovered?.Invoke(slotIndex, false);
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            if (!hasItem || slotIndex < 0 || eventData == null)
+            {
+                return;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            Canvas rootCanvas = canvas == null ? null : canvas.rootCanvas;
+            if (rootCanvas == null)
+            {
+                return;
+            }
+
+            DestroyDragGhost();
+            dragGhost = new GameObject("Inventory Drag Preview", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
+            dragGhost.transform.SetParent(rootCanvas.transform, false);
+            dragGhost.transform.SetAsLastSibling();
+            CanvasGroup ghostGroup = dragGhost.GetComponent<CanvasGroup>();
+            ghostGroup.alpha = 0.9f;
+            ghostGroup.interactable = false;
+            ghostGroup.blocksRaycasts = false;
+            Image ghostImage = dragGhost.GetComponent<Image>();
+            ghostImage.sprite = iconImage == null ? null : iconImage.sprite;
+            ghostImage.color = ghostImage.sprite == null ? itemAccent : Color.white;
+            ghostImage.preserveAspect = true;
+            ghostImage.raycastTarget = false;
+            RectTransform ghostRect = dragGhost.GetComponent<RectTransform>();
+            ghostRect.sizeDelta = new Vector2(64f, 64f);
+            ghostRect.position = eventData.position;
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            if (dragGhost != null && eventData != null)
+            {
+                dragGhost.transform.position = eventData.position;
+            }
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            DestroyDragGhost();
+        }
+
+        public void OnDrop(PointerEventData eventData)
+        {
+            InventorySlotView source = eventData?.pointerDrag == null
+                ? null
+                : eventData.pointerDrag.GetComponent<InventorySlotView>();
+            if (source == null || source == this || !source.hasItem || source.slotIndex < 0 || slotIndex < 0)
+            {
+                return;
+            }
+
+            selected?.Invoke(slotIndex);
+            moved?.Invoke(source.slotIndex, slotIndex);
+        }
+
+        private void DestroyDragGhost()
+        {
+            if (dragGhost == null) return;
+            Destroy(dragGhost);
+            dragGhost = null;
         }
 
         private void ApplyTextLayout()

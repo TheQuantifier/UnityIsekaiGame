@@ -22,13 +22,15 @@ namespace UnityIsekaiGame.Networking
             InventoryAuthorityCommandType commandType,
             int inventorySlotIndex,
             int quantity = 1,
-            int equipmentSlot = -1)
+            int equipmentSlot = -1,
+            int destinationInventorySlotIndex = -1)
         {
             Sequence = sequence;
             CommandType = commandType;
             InventorySlotIndex = inventorySlotIndex;
             Quantity = quantity;
             EquipmentSlot = equipmentSlot;
+            DestinationInventorySlotIndex = destinationInventorySlotIndex;
         }
 
         public uint Sequence;
@@ -36,6 +38,7 @@ namespace UnityIsekaiGame.Networking
         public int InventorySlotIndex;
         public int Quantity;
         public int EquipmentSlot;
+        public int DestinationInventorySlotIndex;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -44,6 +47,7 @@ namespace UnityIsekaiGame.Networking
             serializer.SerializeValue(ref InventorySlotIndex);
             serializer.SerializeValue(ref Quantity);
             serializer.SerializeValue(ref EquipmentSlot);
+            serializer.SerializeValue(ref DestinationInventorySlotIndex);
         }
 
         public bool Equals(NetworkInventoryCommand other)
@@ -52,11 +56,12 @@ namespace UnityIsekaiGame.Networking
                 && CommandType == other.CommandType
                 && InventorySlotIndex == other.InventorySlotIndex
                 && Quantity == other.Quantity
-                && EquipmentSlot == other.EquipmentSlot;
+                && EquipmentSlot == other.EquipmentSlot
+                && DestinationInventorySlotIndex == other.DestinationInventorySlotIndex;
         }
 
         public override bool Equals(object obj) => obj is NetworkInventoryCommand other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(Sequence, (byte)CommandType, InventorySlotIndex, Quantity, EquipmentSlot);
+        public override int GetHashCode() => HashCode.Combine(Sequence, (byte)CommandType, InventorySlotIndex, Quantity, EquipmentSlot, DestinationInventorySlotIndex);
     }
 
     public readonly struct InventoryCommandValidationResult
@@ -158,6 +163,24 @@ namespace UnityIsekaiGame.Networking
             if (needsInventorySlot && (command.InventorySlotIndex < 0 || command.InventorySlotIndex >= clampedCapacity))
             {
                 return InventoryCommandValidationResult.Reject(InventoryAuthorityFailure.InvalidSlot, "Inventory slot is outside the authoritative container.");
+            }
+
+            bool needsDestinationSlot = command.CommandType == InventoryAuthorityCommandType.MoveSlot;
+            if (needsDestinationSlot
+                && (command.DestinationInventorySlotIndex < 0
+                    || command.DestinationInventorySlotIndex >= clampedCapacity
+                    || command.DestinationInventorySlotIndex == command.InventorySlotIndex))
+            {
+                return InventoryCommandValidationResult.Reject(
+                    InventoryAuthorityFailure.InvalidSlot,
+                    "Inventory move destination is invalid or matches its source.");
+            }
+
+            if (!needsDestinationSlot && command.DestinationInventorySlotIndex != -1)
+            {
+                return InventoryCommandValidationResult.Reject(
+                    InventoryAuthorityFailure.InvalidSlot,
+                    "This inventory command must not specify a destination slot.");
             }
 
             if (command.CommandType == InventoryAuthorityCommandType.DropQuantity)

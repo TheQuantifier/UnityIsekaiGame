@@ -159,12 +159,13 @@ namespace UnityIsekaiGame.Networking.Client
             if (interactable is InteractionPointSceneBinding binding && !string.IsNullOrWhiteSpace(binding.LogicalId))
             {
                 Request(NarrativeAuthorityCommandType.Interact, binding.LogicalId);
+                return true;
             }
-            else
-            {
-                PublishFeedback("That interaction is not available until it has a server-authoritative scene binding.", true);
-            }
-            return true;
+
+            // Narrative authority owns authored interaction-point bindings only. Other replicated
+            // interactables (for example NetworkWorldItemPickupInteractable) route through their
+            // own server RPC and must be allowed to handle the interaction themselves.
+            return false;
         }
 
         private bool Request(

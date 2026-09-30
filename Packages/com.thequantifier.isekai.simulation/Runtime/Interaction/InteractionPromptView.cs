@@ -1,3 +1,4 @@
+#if !ISEKAI_SERVER_PROJECT
 using UnityEngine;
 using UnityEngine.UI;
 using UnityIsekaiGame.Presentation;
@@ -113,3 +114,4 @@ namespace UnityIsekaiGame.Interaction
         }
     }
 }
+#endif

@@ -6,7 +6,8 @@ namespace UnityIsekaiGame.Networking
         UseSlot = 10,
         EquipSlot = 20,
         UnequipSlot = 30,
-        DropQuantity = 40
+        DropQuantity = 40,
+        MoveSlot = 50
     }
 
     public enum InventoryAuthorityFailure : byte

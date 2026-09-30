@@ -1,9 +1,6 @@
 using UnityEngine;
 using UnityIsekaiGame.Presentation;
 using UnityIsekaiGame.Input;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 namespace UnityIsekaiGame.Gameplay
 {
@@ -30,12 +27,10 @@ namespace UnityIsekaiGame.Gameplay
 
         private void Update()
         {
-#if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current != null && Keyboard.current.f8Key.wasPressedThisFrame)
+            if (input != null && input.SocialDebugTogglePressedThisFrame)
             {
                 SetVisible(!visible);
             }
-#endif
         }
 
         private void OnDisable() => SetVisible(false);

@@ -9,13 +9,13 @@ namespace UnityIsekaiGame.Configuration
         private const float MaximumSprintSpeedMultiplier = 2f;
 
         [Header("Movement")]
-        [SerializeField, Min(0f)] private float walkSpeed = 3f;
+        [SerializeField, Min(0f)] private float walkSpeed = 4.5f;
         [SerializeField, Range(MinimumSprintSpeedMultiplier, MaximumSprintSpeedMultiplier)] private float sprintSpeedMultiplier = 1.6666667f;
-        [SerializeField, HideInInspector, Min(0f)] private float sprintSpeed = 5f;
-        [SerializeField, Min(0f)] private float acceleration = 30f;
-        [SerializeField, Min(0f)] private float deceleration = 36f;
-        [SerializeField, Min(0f)] private float jumpHeight = 1.25f;
-        [SerializeField, Min(0f)] private float gravity = 24f;
+        [SerializeField, HideInInspector, Min(0f)] private float sprintSpeed = 7.5f;
+        [SerializeField, Min(0f)] private float acceleration = 60f;
+        [SerializeField, Min(0f)] private float deceleration = 72f;
+        [SerializeField, Min(0f)] private float jumpHeight = 1.5f;
+        [SerializeField, Min(0f)] private float gravity = 30f;
         [SerializeField, Min(0f)] private float groundedStickForce = 2f;
 
         [Header("Look")]

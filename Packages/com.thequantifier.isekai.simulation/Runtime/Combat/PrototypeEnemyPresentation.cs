@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
+#if !ISEKAI_SERVER_PROJECT
 using UnityEngine.UI;
+#endif
 using UnityIsekaiGame.Presentation;
 
 namespace UnityIsekaiGame.Combat
@@ -8,7 +10,9 @@ namespace UnityIsekaiGame.Combat
     public class PrototypeEnemyPresentation : MonoBehaviour
     {
         [SerializeField] private EnemyHealth health;
+#if !ISEKAI_SERVER_PROJECT
         [SerializeField] private Text healthLabel;
+#endif
         [SerializeField] private Renderer targetRenderer;
         [SerializeField] private Color normalColor = new Color(0.7f, 0.7f, 0.7f);
         [SerializeField] private Color hitColor = new Color(1f, 0.35f, 0.25f);
@@ -30,8 +34,10 @@ namespace UnityIsekaiGame.Combat
                 targetRenderer = GetComponentInChildren<Renderer>();
             }
 
+#if !ISEKAI_SERVER_PROJECT
             GameUiTheme.StyleText(healthLabel, GameUiTextRole.Body);
             GameUiTheme.EnsureTextShadow(healthLabel, 2f);
+#endif
 
             SetColor(normalColor);
             previousHealth = health == null ? -1f : health.CurrentHealth;
@@ -119,6 +125,9 @@ namespace UnityIsekaiGame.Combat
 
         private void Refresh()
         {
+#if ISEKAI_SERVER_PROJECT
+            return;
+#else
             if (healthLabel == null || health == null)
             {
                 return;
@@ -132,6 +141,7 @@ namespace UnityIsekaiGame.Combat
                 : ratio <= 0.25f
                     ? GameUiTheme.Danger
                     : GameUiTheme.TextPrimary;
+#endif
         }
 
         private void SetColor(Color color)

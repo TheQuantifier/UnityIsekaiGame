@@ -10,6 +10,7 @@ namespace UnityIsekaiGame.Networking
         public const string DefaultClientAddress = "127.0.0.1";
         public const string DefaultListenAddress = "0.0.0.0";
         public const ushort DefaultPort = 7777;
+        public const uint DefaultTickRate = 60;
 
         public LocalServerEndpoint(string address, ushort port)
         {

@@ -8,10 +8,11 @@ namespace UnityIsekaiGame.Networking
 {
     public static class LocalConnectionProtocol
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
         public const int MaximumPayloadBytes = 1024;
         public const int MaximumIdentifierLength = 64;
         public const int MaximumBuildVersionLength = 64;
+        public const int MaximumAuthenticationTokenLength = 128;
 
         private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings
         {
@@ -111,6 +112,14 @@ namespace UnityIsekaiGame.Networking
                 return false;
             }
 
+            if (request.AuthenticationToken == null
+                || request.AuthenticationToken.Length > MaximumAuthenticationTokenLength
+                || !string.Equals(request.AuthenticationToken, request.AuthenticationToken.Trim(), StringComparison.Ordinal))
+            {
+                failure = "The client authentication token is invalid.";
+                return false;
+            }
+
             failure = string.Empty;
             return true;
         }
@@ -131,12 +140,13 @@ namespace UnityIsekaiGame.Networking
         {
         }
 
-        public ConnectionRequestPayload(string clientInstanceId, string playerId, string buildVersion)
+        public ConnectionRequestPayload(string clientInstanceId, string playerId, string buildVersion, string authenticationToken = "")
         {
             ProtocolVersion = LocalConnectionProtocol.CurrentVersion;
             ClientInstanceId = clientInstanceId;
             PlayerId = playerId;
             BuildVersion = buildVersion;
+            AuthenticationToken = authenticationToken ?? string.Empty;
         }
 
         [JsonProperty("protocolVersion", Required = Required.Always)]
@@ -150,6 +160,9 @@ namespace UnityIsekaiGame.Networking
 
         [JsonProperty("buildVersion", Required = Required.Always)]
         public string BuildVersion { get; set; } = string.Empty;
+
+        [JsonProperty("authenticationToken", Required = Required.Always)]
+        public string AuthenticationToken { get; set; } = string.Empty;
     }
 
     public readonly struct ConnectionAdmissionResult
@@ -174,7 +187,13 @@ namespace UnityIsekaiGame.Networking
 
     public static class LocalConnectionAdmission
     {
-        public static ConnectionAdmissionResult Evaluate(byte[] payload, int connectedPlayerCount, int maximumPlayers, IEnumerable<string> connectedPlayerIds)
+        public static ConnectionAdmissionResult Evaluate(
+            byte[] payload,
+            int connectedPlayerCount,
+            int maximumPlayers,
+            IEnumerable<string> connectedPlayerIds,
+            string expectedBuildVersion = null,
+            string expectedAuthenticationToken = null)
         {
             if (maximumPlayers < 1)
             {
@@ -191,12 +210,41 @@ namespace UnityIsekaiGame.Networking
                 return ConnectionAdmissionResult.Reject(failure);
             }
 
+            if (!string.IsNullOrWhiteSpace(expectedBuildVersion)
+                && !string.Equals(request.BuildVersion, expectedBuildVersion, StringComparison.Ordinal))
+            {
+                return ConnectionAdmissionResult.Reject(
+                    $"Client build '{request.BuildVersion}' is incompatible with server build '{expectedBuildVersion}'.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(expectedAuthenticationToken)
+                && !FixedTimeEquals(request.AuthenticationToken, expectedAuthenticationToken))
+            {
+                return ConnectionAdmissionResult.Reject("Client authentication failed.");
+            }
+
             if (connectedPlayerIds != null && connectedPlayerIds.Any(id => string.Equals(id, request.PlayerId, StringComparison.OrdinalIgnoreCase)))
             {
                 return ConnectionAdmissionResult.Reject($"Player '{request.PlayerId}' is already connected.");
             }
 
             return ConnectionAdmissionResult.Approve(request);
+        }
+
+        private static bool FixedTimeEquals(string left, string right)
+        {
+            byte[] leftBytes = Encoding.UTF8.GetBytes(left ?? string.Empty);
+            byte[] rightBytes = Encoding.UTF8.GetBytes(right ?? string.Empty);
+            int difference = leftBytes.Length ^ rightBytes.Length;
+            int length = Math.Max(leftBytes.Length, rightBytes.Length);
+            for (int i = 0; i < length; i++)
+            {
+                byte a = i < leftBytes.Length ? leftBytes[i] : (byte)0;
+                byte b = i < rightBytes.Length ? rightBytes[i] : (byte)0;
+                difference |= a ^ b;
+            }
+
+            return difference == 0;
         }
     }
 }

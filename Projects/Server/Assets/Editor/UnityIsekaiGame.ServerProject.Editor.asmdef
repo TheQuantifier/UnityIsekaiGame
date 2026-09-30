@@ -1,7 +1,13 @@
 {
   "name": "UnityIsekaiGame.ServerProject.Editor",
   "rootNamespace": "UnityIsekaiGame.ServerProject.Editor",
-  "references": [],
+  "references": [
+    "UnityIsekaiGame.GameData",
+    "UnityIsekaiGame.Gameplay",
+    "UnityIsekaiGame.Networking.Server",
+    "UnityIsekaiGame.Networking.Shared",
+    "Unity.Netcode.Runtime"
+  ],
   "includePlatforms": [
     "Editor"
   ],
