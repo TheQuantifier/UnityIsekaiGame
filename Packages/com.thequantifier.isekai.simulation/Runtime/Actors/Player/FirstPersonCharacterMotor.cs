@@ -27,8 +27,13 @@ namespace UnityIsekaiGame.Player
         private float networkJumpHeight;
         private float networkGravity;
         private float networkGroundedStickForce;
+        private uint predictedJumpCount;
 
         public PlayerMovementSettings MovementSettings => movementSettings;
+        public float CurrentHorizontalSpeed => currentHorizontalSpeed;
+        public float VerticalVelocity => verticalVelocity;
+        public bool IsGrounded => controller != null && controller.enabled && controller.isGrounded;
+        public uint PredictedJumpCount => predictedJumpCount;
 
         private void Awake()
         {
@@ -80,6 +85,7 @@ namespace UnityIsekaiGame.Player
             if (controller.isGrounded && input.ConsumeJump())
             {
                 verticalVelocity = Mathf.Sqrt(2f * gravity * jumpHeight);
+                predictedJumpCount++;
             }
 
             verticalVelocity -= gravity * Time.deltaTime;

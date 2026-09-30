@@ -36,6 +36,9 @@ namespace UnityIsekaiGame.Networking.Client
         private bool lastSubmittedSprint;
         private bool predictionSprintExhausted;
         private bool predictionSprintAllowed = true;
+        private uint clientJumpTraceId;
+        private uint clientJumpTraceTick;
+        private double clientJumpTraceUntil;
         private bool smokeInputEnabled;
         private bool vitalsSmokeEnabled;
         private bool vitalsSmokeStarted;
@@ -89,8 +92,17 @@ namespace UnityIsekaiGame.Networking.Client
             UpdatePredictionSprintAuthorization();
             if (input != null && input.JumpPressedThisFrame)
             {
+                clientJumpTraceId = clientJumpTraceId == uint.MaxValue ? 1u : clientJumpTraceId + 1u;
+                clientJumpTraceTick = 0u;
+                clientJumpTraceUntil = now + 1.25d;
                 jumpPending = true;
                 jumpPredictionGraceUntil = now + jumpPredictionGraceSeconds;
+                Debug.Log(
+                    $"[Jump Trace][Client] action=pressed trace={clientJumpTraceId} frame={Time.frameCount} " +
+                    $"grounded={localMotor != null && localMotor.IsGrounded} predictedJumpCount={localMotor?.PredictedJumpCount ?? 0u} " +
+                    $"move={(input == null ? Vector2.zero : input.Move)} sprint={input != null && input.SprintHeld} " +
+                    $"position={(presentationRoot == null ? Vector3.zero : presentationRoot.position)} clientTime={now:F6}",
+                    this);
             }
             if (vitalsSmokeEnabled && !vitalsSmokeStarted)
             {
@@ -125,7 +137,14 @@ namespace UnityIsekaiGame.Networking.Client
             float yaw = presentationRoot == null ? networkMovement.transform.eulerAngles.y : presentationRoot.eulerAngles.y;
             lastSubmittedMove = move;
             lastSubmittedSprint = sprint && predictionSprintAllowed;
-            networkMovement.SubmitLocalInput(move, sprint, jump, yaw);
+            bool submitted = networkMovement.SubmitLocalInput(move, sprint, jump, yaw);
+            if (jump)
+            {
+                Debug.Log(
+                    $"[Jump Trace][Client] action=sent trace={clientJumpTraceId} frame={Time.frameCount} submitted={submitted} " +
+                    $"move={move} sprint={sprint} yaw={yaw:F3} clientTime={now:F6}",
+                    this);
+            }
         }
 
         private void LateUpdate()
@@ -136,11 +155,18 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             Vector3 authoritativePosition = networkMovement.transform.position;
+            bool traceJump = Time.realtimeSinceStartupAsDouble <= clientJumpTraceUntil;
+            bool hardSnapped = false;
+            bool airborne = false;
+            bool suppressVertical = false;
+            bool suppressHorizontal = false;
+            Vector3 appliedCorrection = Vector3.zero;
             if (localMotor != null && localMotor.enabled)
             {
                 Vector3 error = authoritativePosition - presentationRoot.position;
                 if (error.sqrMagnitude >= hardSnapDistance * hardSnapDistance)
                 {
+                    hardSnapped = true;
                     SetPresentationPosition(authoritativePosition);
                     localMotor.ResetTransientMotionForPersistenceRestore();
                 }
@@ -156,9 +182,9 @@ namespace UnityIsekaiGame.Networking.Client
                         predictionSpeed,
                         GetRoundTripTimeMilliseconds(),
                         inputSendRate);
-                    bool airborne = controller != null && !controller.isGrounded;
-                    bool suppressVertical = airborne || Time.realtimeSinceStartupAsDouble < jumpPredictionGraceUntil;
-                    bool suppressHorizontal = airborne;
+                    airborne = controller != null && !controller.isGrounded;
+                    suppressVertical = airborne || Time.realtimeSinceStartupAsDouble < jumpPredictionGraceUntil;
+                    suppressHorizontal = airborne;
                     float verticalTolerance = controller != null && controller.isGrounded
                         ? groundedVerticalTolerance
                         : airborneVerticalTolerance;
@@ -169,6 +195,7 @@ namespace UnityIsekaiGame.Networking.Client
                         suppressHorizontal,
                         suppressVertical);
                     Vector3 correction = correctionError * (1f - Mathf.Exp(-reconciliationSharpness * Time.unscaledDeltaTime));
+                    appliedCorrection = correction;
                     if (controller != null && controller.enabled) controller.Move(correction);
                     else presentationRoot.position += correction;
                 }
@@ -176,6 +203,20 @@ namespace UnityIsekaiGame.Networking.Client
             else
             {
                 presentationRoot.position = authoritativePosition;
+            }
+            if (traceJump)
+            {
+                Vector3 localPosition = presentationRoot.position;
+                Debug.Log(
+                    $"[Jump Trace][Client] action=tick trace={clientJumpTraceId} tick={clientJumpTraceTick++} frame={Time.frameCount} " +
+                    $"grounded={localMotor != null && localMotor.IsGrounded} airborne={airborne} " +
+                    $"predictedJumpCount={localMotor?.PredictedJumpCount ?? 0u} horizontalSpeed={localMotor?.CurrentHorizontalSpeed ?? 0f:F4} " +
+                    $"verticalVelocity={localMotor?.VerticalVelocity ?? 0f:F4} suppressHorizontal={suppressHorizontal} " +
+                    $"suppressVertical={suppressVertical} hardSnap={hardSnapped} correction={appliedCorrection} " +
+                    $"localPosition={localPosition} authorityPosition={authoritativePosition} " +
+                    $"error={authoritativePosition - localPosition} rttMs={GetRoundTripTimeMilliseconds()} " +
+                    $"clientTime={Time.realtimeSinceStartupAsDouble:F6}",
+                    this);
             }
             if ((smokeInputEnabled || vitalsSmokeStarted) && !smokeResultLogged && Time.realtimeSinceStartupAsDouble >= smokeInputEndsAt)
             {
@@ -248,6 +289,8 @@ namespace UnityIsekaiGame.Networking.Client
                 && networkVitals.HasState
                 && networkVitals.CurrentState.Stamina <= 0.0001f;
             predictionSprintAllowed = true;
+            clientJumpTraceTick = 0u;
+            clientJumpTraceUntil = 0d;
             smokeStartPosition = networkMovement.transform.position;
             smokeInputEndsAt = Time.realtimeSinceStartupAsDouble + 1.5d;
             smokeResultLogged = false;
