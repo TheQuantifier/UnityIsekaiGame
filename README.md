@@ -78,7 +78,7 @@ The codebase should favor modular systems and expansion points rather than hard-
 
 ## Current Prototype Status
 
-The current focus is building reusable core systems in `Assets/_Project/Scenes/Prototype/PrototypeScene.unity` before creating the first full town.
+The current focus is building reusable core systems in `Projects/Client/Assets/_Project/Scenes/Prototype/PrototypeScene.unity` before creating the first full town. The playable client and authoritative dedicated server are separate Unity projects under `Projects/Client` and `Projects/Server`; both consume the shared source under `Packages`.
 
 Current foundations include:
 
@@ -108,6 +108,7 @@ Current foundations include:
 - World locations, containment, routes, travel planning, territory, scene bindings, and persistent movement history.
 - Organizations, governments, law, social relationships, knowledge, history, professions, crafting, and regional economy foundations.
 - Rebuilt player menus, guild interfaces, dialogue presentation, text chat, mouse-lock controls, and contextual HUD feedback.
+- A separate-process local dedicated-server foundation with validated handshakes, authoritative player sessions, owned network player actors, server-simulated movement, and server-owned health/stamina/mana state.
 - A scene-independent automated Test Lab covering the integrated gameplay domains.
 
 Step 3 closeout documentation lives in `Documentation/Step3GameDataAndWorldTaxonomyArchitecture.md`, with regression coverage in `Documentation/Step3RegressionChecklist.md`.
@@ -127,6 +128,7 @@ Skill and Proficiency progression is documented in `Documentation/SkillsAndProgr
 Base Attributes, Calculated Stats, and Current Resources are documented in `Documentation/BaseAttributes.md`, `Documentation/CalculatedStatsRefinement.md`, `Documentation/CurrentResources.md`, `Documentation/ResourceDefinitions.md`, `Documentation/ResourceTransactions.md`, `Documentation/CharacterNumericalModel.md`, `Documentation/Feature5_4aPersistenceAndMigration.md`, and `Documentation/Feature5_4bPersistenceAndMigration.md`.
 Step 5 Character System closeout documentation lives in `Documentation/CharacterSystemOverview.md`, `Documentation/CharacterOwnershipAndIdentity.md`, `Documentation/CharacterInitializationAndRestore.md`, `Documentation/CharacterSnapshotsAndQueries.md`, `Documentation/CharacterMutationBoundaries.md`, `Documentation/CharacterSystemPersistence.md`, `Documentation/CharacterSystemIntegrationContract.md`, and `Documentation/Step5Completion.md`.
 Phase 3 systems through Group 12 are documented across the Step 7 through Step 15 integration and feature documents in `Documentation/`. The consolidated quest, dialogue, and narrative architecture is in `Documentation/Step15QuestDialogueNarrativeArchitecture.md`.
+The Phase 5 client/server architecture and implemented authority slices are documented under `Documentation/Networking/`, beginning with `ClientServerArchitecture.md`; the final verification record is `Phase5Group12FinalCodebaseAudit.md`.
 
 ### Inventory Item Instance Save Foundation
 
@@ -161,6 +163,10 @@ The first major playable goal is not the entire envisioned world. It is one comp
 - Git and GitHub for source control.
 
 The current package manifest includes Unity Input System, Universal Render Pipeline, Unity UI, AI Navigation, Timeline, the Unity Test Framework, and standard Unity modules. Package choices may change as the project matures.
+
+## Opening the Unity Projects
+
+Add `Projects/Client` and `Projects/Server` to Unity Hub as separate Unity projects. Do not open the repository root as a Unity project. Client/server layout, build commands, and package ownership are documented in `Documentation/Networking/PhysicalClientServerProjects.md`.
 
 ## Repository Status
 

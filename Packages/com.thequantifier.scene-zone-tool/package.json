@@ -1,0 +1,10 @@
+{
+  "name": "com.thequantifier.scene-zone-tool",
+  "version": "1.0.3",
+  "displayName": "Scene Zone Tool",
+  "description": "Pipeline-independent Scene view authoring and runtime queries for named circle and polygon zones.",
+  "unity": "6000.5",
+  "author": {
+    "name": "TheQuantifier"
+  }
+}

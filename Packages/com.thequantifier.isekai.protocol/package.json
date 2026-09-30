@@ -1,0 +1,13 @@
+{
+  "name": "com.thequantifier.isekai.protocol",
+  "version": "0.1.0",
+  "displayName": "Isekai Network Protocol",
+  "description": "Transport-independent connection, session, command, and validation contracts shared by Isekai clients and servers.",
+  "unity": "6000.5",
+  "author": {
+    "name": "TheQuantifier"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  }
+}

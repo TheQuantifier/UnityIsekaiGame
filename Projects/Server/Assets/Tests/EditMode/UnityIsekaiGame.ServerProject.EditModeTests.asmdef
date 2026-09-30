@@ -1,0 +1,28 @@
+{
+  "name": "UnityIsekaiGame.ServerProject.EditModeTests",
+  "rootNamespace": "UnityIsekaiGame.ServerProject.Tests",
+  "references": [
+    "UnityIsekaiGame.GameData",
+    "UnityIsekaiGame.Gameplay",
+    "UnityIsekaiGame.Networking.Protocol",
+    "UnityIsekaiGame.Networking.Server",
+    "UnityIsekaiGame.Networking.Shared",
+    "UnityIsekaiGame.ServerProject.Editor",
+    "Unity.Netcode.Runtime",
+    "Unity.Networking.Transport"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

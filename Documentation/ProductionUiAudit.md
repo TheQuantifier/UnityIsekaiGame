@@ -1,6 +1,6 @@
 # Production UI Surface Audit
 
-This audit is the Phase 4 baseline for the player interface. The prototype scene remains the development integration harness, while reusable UI behavior lives under `Assets/_Project/Runtime/UI`, shared styling under `Assets/_Project/Runtime/Presentation`, and production presentation assets under `Assets/_Project/Presentation`.
+This audit is the Phase 4 baseline for the player interface. The prototype scene remains the development integration harness, while reusable UI behavior lives under `Packages/com.thequantifier.isekai.client/Runtime/UI`, shared styling under `Packages/com.thequantifier.isekai.simulation/Runtime/Presentation`, and production presentation assets under `Projects/Client/Assets/_Project/Presentation`.
 
 ## Shared infrastructure
 

@@ -1,0 +1,14 @@
+{
+  "name": "com.thequantifier.isekai.project-tools",
+  "version": "0.1.0",
+  "displayName": "Isekai Project Tools",
+  "description": "Editor-only monorepo validation, migration, and dedicated-server scene extraction tools.",
+  "unity": "6000.5",
+  "author": {
+    "name": "TheQuantifier"
+  },
+  "dependencies": {
+    "com.thequantifier.isekai.simulation": "0.1.0",
+    "com.unity.ugui": "2.5.0"
+  }
+}

@@ -47,7 +47,7 @@ Each Fact definition declares a domain, proposition type, subject type, value ty
 Canonical Feature 8.1 Fact definitions are authored content assets under:
 
 ```text
-Assets/_Project/Content/Knowledge/FactDefinitions/
+Packages/com.thequantifier.isekai.content/Content/Knowledge/FactDefinitions/
 ```
 
 They are registered through `DefinitionCatalog` and resolved by `DefinitionRegistry`. Production runtime code does not synthesize missing canonical Fact definitions; missing facts fail clearly during observation, validation, or restore.

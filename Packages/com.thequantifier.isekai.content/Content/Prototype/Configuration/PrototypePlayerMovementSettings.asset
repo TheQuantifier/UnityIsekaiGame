@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c20f7d3691f147bcb5a598b6ea7c1c92, type: 3}
+  m_Name: PrototypePlayerMovementSettings
+  m_EditorClassIdentifier: 
+  walkSpeed: 4.5
+  sprintSpeedMultiplier: 1.6666667
+  sprintSpeed: 7.5
+  acceleration: 60
+  deceleration: 72
+  jumpHeight: 1.5
+  gravity: 30
+  groundedStickForce: 2
+  mouseSensitivity: 0.3
+  gamepadSensitivity: 320
+  pitchLimits: {x: -85, y: 85}

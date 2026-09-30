@@ -1,0 +1,17 @@
+{
+    "name": "UnityIsekaiGame.Gameplay",
+    "rootNamespace": "UnityIsekaiGame",
+    "references": [
+        "UnityIsekaiGame.GameData",
+        "SceneZoneTool.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

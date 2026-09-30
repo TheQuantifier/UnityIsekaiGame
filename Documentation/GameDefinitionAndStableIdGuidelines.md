@@ -1,4 +1,4 @@
-﻿# Game Definition And Stable ID Guidelines
+# Game Definition And Stable ID Guidelines
 
 This document defines the Step 3.1 foundation for static game definitions, stable IDs, validation, and lookup.
 
@@ -119,7 +119,7 @@ The lookup system does not use scene searches, `GameObject.Find`, `Resources.Fin
 
 The prototype catalog lives at:
 
-- `Assets/_Project/Prototype/Content/GameData/PrototypeDefinitionCatalog.asset`
+- `Packages/com.thequantifier.isekai.content/Content/Prototype/GameData/PrototypeDefinitionCatalog.asset`
 
 It includes representative top-level prototype definitions for items, spells, the prototype NPC, the staged quest, and prototype contracts.
 
