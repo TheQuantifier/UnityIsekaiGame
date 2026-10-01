@@ -243,13 +243,18 @@ namespace UnityIsekaiGame.UI.Authentication
             passwordField = CreateInputField("Password Pill Input", form, "password...", true);
             usernameField.characterLimit = AccountAuthenticationProtocol.SecureUserIdLength;
             passwordField.characterLimit = LocalConnectionProtocol.MaximumPasswordLength;
-            if (passwordField is ExplicitSubmitInputField explicitSubmit)
-            {
-                explicitSubmit.Submitted += () => Submit(false);
-            }
 
             loginButton = CreateButton("Login Pill Button", form, "LOGIN", () => Submit(false), GameUiButtonTone.Neutral);
             createAccountButton = CreateButton("Register Account Pill Button", form, "CREATE ACCOUNT", () => Submit(true), GameUiButtonTone.Neutral);
+            if (usernameField is ExplicitSubmitInputField usernameSubmit)
+            {
+                usernameSubmit.Submitted += InvokeLoginButton;
+            }
+            if (passwordField is ExplicitSubmitInputField passwordSubmit)
+            {
+                passwordSubmit.Submitted += InvokeLoginButton;
+            }
+
             statusText = CreateText("Login Feedback", form, string.Empty, 15, FontStyle.Bold, GameUiTheme.TextMuted);
             statusText.alignment = TextAnchor.UpperCenter;
             statusText.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -300,6 +305,14 @@ namespace UnityIsekaiGame.UI.Authentication
             {
                 passwordField.text = string.Empty;
                 SetControlsInteractable(true);
+            }
+        }
+
+        private void InvokeLoginButton()
+        {
+            if (loginButton != null && loginButton.IsActive() && loginButton.IsInteractable())
+            {
+                loginButton.onClick.Invoke();
             }
         }
 
@@ -467,10 +480,15 @@ namespace UnityIsekaiGame.UI.Authentication
             float viewportAspect = viewport.x / viewport.y;
             if (viewportAspect > textureAspect)
             {
+                // Keep the complete horizontal span. Crop equal horizontal bands from the
+                // top and bottom so the background fills the viewport without distortion.
                 float visibleHeight = textureAspect / viewportAspect;
-                return new Rect(0f, (1f - visibleHeight) * 0.5f, 1f, visibleHeight);
+                float verticalInset = (1f - visibleHeight) * 0.5f;
+                return new Rect(0f, verticalInset, 1f, visibleHeight);
             }
 
+            // Narrower aspect ratios cannot be filled without either letterboxing or trimming
+            // the sides. Use a centered cover crop here; the image is never stretched.
             float visibleWidth = viewportAspect / textureAspect;
             return new Rect((1f - visibleWidth) * 0.5f, 0f, visibleWidth, 1f);
         }
@@ -521,9 +539,7 @@ namespace UnityIsekaiGame.UI.Authentication
             Image backgroundImage = CreateImage(name, parent, GameUiTheme.SurfaceInset);
             RectTransform root = backgroundImage.rectTransform;
             AddLayout(root.gameObject, 30f);
-            InputField field = password
-                ? root.gameObject.AddComponent<ExplicitSubmitInputField>()
-                : root.gameObject.AddComponent<InputField>();
+            InputField field = root.gameObject.AddComponent<ExplicitSubmitInputField>();
             RectTransform textArea = CreateRect("Text Area", root);
             textArea.anchorMin = Vector2.zero;
             textArea.anchorMax = Vector2.one;

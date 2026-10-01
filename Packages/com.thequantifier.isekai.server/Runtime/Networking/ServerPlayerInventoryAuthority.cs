@@ -13,6 +13,7 @@ namespace UnityIsekaiGame.Networking.Server
     {
         private NetworkPlayerInventory networkInventory;
         private NetworkPlayerVitals networkVitals;
+        private NetworkPlayerActor actor;
         private PlayerInventory inventory;
         private PlayerEquipment equipment;
         private DefinitionRegistry registry;
@@ -38,6 +39,8 @@ namespace UnityIsekaiGame.Networking.Server
             if (configured) throw new InvalidOperationException("Server inventory authority is already configured.");
             networkInventory = replicatedInventory ?? throw new ArgumentNullException(nameof(replicatedInventory));
             networkVitals = replicatedVitals ?? throw new ArgumentNullException(nameof(replicatedVitals));
+            actor = GetComponent<NetworkPlayerActor>()
+                ?? throw new InvalidOperationException("Server inventory authority requires a NetworkPlayerActor.");
             registry = definitionRegistry ?? throw new ArgumentNullException(nameof(definitionRegistry));
             worldItemAuthority = authoritativeWorldItems ?? throw new ArgumentNullException(nameof(authoritativeWorldItems));
             statePersisted = onStatePersisted;
@@ -78,6 +81,14 @@ namespace UnityIsekaiGame.Networking.Server
 
         private NetworkInventoryCommandResult ExecuteCommand(NetworkInventoryCommand command)
         {
+            if (actor?.IsPausedProtected == true)
+            {
+                return NetworkInventoryCommandResult.Reject(
+                    command.Sequence,
+                    InventoryAuthorityFailure.PlayerPaused,
+                    "Inventory actions are unavailable while the player is paused and protected.");
+            }
+
             executingCommand = true;
             try
             {
@@ -290,6 +301,12 @@ namespace UnityIsekaiGame.Networking.Server
 
         public bool TryCollectWorldPickup(NetworkWorldItemState pickupState, out string message)
         {
+            if (actor?.IsPausedProtected == true)
+            {
+                message = "World pickups are unavailable while the player is paused and protected.";
+                return false;
+            }
+
             if (!configured)
             {
                 message = "Authoritative inventory is not configured.";

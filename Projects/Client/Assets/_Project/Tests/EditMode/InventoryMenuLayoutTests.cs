@@ -13,6 +13,7 @@ using UnityIsekaiGame.CharacterSystem;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Presentation;
+using UnityIsekaiGame.Stats;
 using UnityIsekaiGame.UI.Inventory;
 
 namespace UnityIsekaiGame.Tests
@@ -211,8 +212,15 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(statusText, Is.Not.Null);
                 Assert.That(detailsText.fontSize, Is.GreaterThanOrEqualTo(14));
                 Assert.That(statusText.fontSize, Is.GreaterThanOrEqualTo(14));
-                Transform comparisonTooltip = FindDescendant(details, "Equipment Comparison Tooltip");
+                Transform comparisonTooltip = FindDescendant(view.transform, "Equipment Comparison Tooltip");
                 Assert.That(comparisonTooltip, Is.Not.Null);
+                Assert.That(comparisonTooltip.IsChildOf(details), Is.False,
+                    "Hover cards must live outside the details panel so sibling slot canvases cannot cover them.");
+                Assert.That(comparisonTooltip.parent?.name, Is.EqualTo("Inventory Tooltip Overlay"));
+                Canvas tooltipOverlayCanvas = comparisonTooltip.parent?.GetComponent<Canvas>();
+                Assert.That(tooltipOverlayCanvas, Is.Not.Null);
+                Assert.That(tooltipOverlayCanvas.overrideSorting, Is.True);
+                Assert.That(tooltipOverlayCanvas.sortingOrder, Is.GreaterThanOrEqualTo(32000));
                 Assert.That(comparisonTooltip.gameObject.activeSelf, Is.False);
                 Text comparisonText = FindDescendant(comparisonTooltip, "Comparison Details")?.GetComponent<Text>();
                 Assert.That(comparisonText, Is.Not.Null);
@@ -270,6 +278,20 @@ namespace UnityIsekaiGame.Tests
                 });
                 view.SetInventoryActions(canUse: true, canEquip: false, canDrop: true, canDropAll: true);
                 Assert.That(dropAllAction.gameObject.activeSelf, Is.True);
+
+                InventoryScreenController controller = scene.GetRootGameObjects()
+                    .SelectMany(root => root.GetComponentsInChildren<InventoryScreenController>(true))
+                    .Single();
+                MethodInfo hoverSlot = typeof(InventoryScreenController).GetMethod("HoverSlot", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(hoverSlot, Is.Not.Null);
+                hoverSlot.Invoke(controller, new object[] { 8, true });
+                hoverSlot.Invoke(controller, new object[] { 8, false });
+                Assert.That(primaryAction.gameObject.activeSelf, Is.True,
+                    "Leaving the selected slot must not hide its primary action before it can be clicked.");
+                Assert.That(dropAction.gameObject.activeSelf, Is.True,
+                    "Inventory actions must remain owned by selection rather than pointer hover.");
+                Assert.That(dropAllAction.gameObject.activeSelf, Is.True,
+                    "Stack actions must remain reachable after the pointer leaves an inventory slot.");
                 primaryAction.onClick.Invoke();
 
                 ItemDefinition healthPotion = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Packages/com.thequantifier.isekai.content/Content/Items/Definitions/HealthPotion.asset");
@@ -280,15 +302,41 @@ namespace UnityIsekaiGame.Tests
                 Assert.That(itemStatus.gameObject.activeSelf, Is.True);
                 StringAssert.Contains("Stack  2 /", statusText.text);
                 StringAssert.Contains("Health", detailsText.text);
+                string selectedPotionDetails = detailsText.text;
+                view.ShowInventoryHoverPreview(potionSlot);
+                Assert.That(comparisonTooltip.gameObject.activeSelf, Is.True);
+                StringAssert.Contains("HEALTH POTION", FindDescendant(comparisonTooltip, "Comparison Heading")?.GetComponent<Text>()?.text);
+                StringAssert.Contains("Stack:", comparisonText.text);
+                Assert.That(detailsText.text, Is.EqualTo(selectedPotionDetails),
+                    "Hover previews must never replace the selected item's main display.");
+                view.HideInventoryHoverPreview();
+                Assert.That(comparisonTooltip.gameObject.activeSelf, Is.False);
                 view.SetInventoryActions(canUse: true, canEquip: false, canDrop: true, actionItem: healthPotion);
                 Assert.That(primaryIcon.sprite?.name, Is.EqualTo("action-consume-potion"));
+                Assert.That(view.PrimaryActionKind, Is.EqualTo(InventoryPrimaryActionKind.Drink));
+                Assert.That(primaryAction.name, Is.EqualTo("Drink Item Action Button"));
+
+                view.SetInventoryActions(canUse: true, canEquip: false, canDrop: true, canDropAll: true, actionItem: healthPotion);
+                view.ShowInventoryHoverPreview(potionSlot);
+                Assert.That(primaryIcon.sprite?.name, Is.EqualTo("action-consume-potion"),
+                    "Opening a hover card must not reset the selected potion's primary action.");
+                Assert.That(view.PrimaryActionKind, Is.EqualTo(InventoryPrimaryActionKind.Drink));
+                Assert.That(dropAllAction.gameObject.activeSelf, Is.True,
+                    "Opening a hover card must not hide Drop All for a selected stack.");
+                view.HideInventoryHoverPreview();
 
                 ItemDefinition food = ScriptableObject.CreateInstance<ItemDefinition>();
                 typeof(ItemDefinition).GetField("consumablePresentation", BindingFlags.Instance | BindingFlags.NonPublic)
                     ?.SetValue(food, ConsumablePresentationType.Food);
                 view.SetInventoryActions(canUse: true, canEquip: false, canDrop: true, actionItem: food);
                 Assert.That(primaryIcon.sprite?.name, Is.EqualTo("action-consume-food"));
+                Assert.That(view.PrimaryActionKind, Is.EqualTo(InventoryPrimaryActionKind.Eat));
+                Assert.That(primaryAction.name, Is.EqualTo("Eat Item Action Button"));
                 Object.DestroyImmediate(food);
+
+                view.SetInventoryActions(canUse: true, canEquip: false, canDrop: true, actionItem: healthPotion);
+                Assert.That(primaryIcon.sprite?.name, Is.EqualTo("action-consume-potion"),
+                    "Changing the selected consumable must replace the previous item's action icon.");
 
                 dropAction.onClick.Invoke();
                 dropAllAction.onClick.Invoke();
@@ -304,7 +352,12 @@ namespace UnityIsekaiGame.Tests
                 view.SetInventoryActions(canUse: false, canEquip: false, canDrop: false, canUnequip: true);
                 Assert.That(primaryIcon.sprite?.name, Is.EqualTo("action-unequip"));
                 primaryAction.onClick.Invoke();
-                Assert.That(useInvocations, Is.EqualTo(1));
+                view.SetInventoryActions(canUse: true, canEquip: false, canDrop: true, actionItem: healthPotion);
+                Assert.That(primaryIcon.sprite?.name, Is.EqualTo("action-consume-potion"));
+                Assert.That(view.PrimaryActionKind, Is.EqualTo(InventoryPrimaryActionKind.Drink));
+                Assert.That(primaryAction.name, Is.EqualTo("Drink Item Action Button"));
+                primaryAction.onClick.Invoke();
+                Assert.That(useInvocations, Is.EqualTo(2), "Returning to a consumable must not retain the prior unequip action.");
                 Assert.That(equipInvocations, Is.EqualTo(1));
                 Assert.That(unequipInvocations, Is.EqualTo(1));
                 Assert.That(dropInvocations, Is.EqualTo(1));
@@ -319,6 +372,26 @@ namespace UnityIsekaiGame.Tests
                 Transform characterStats = FindDescendant(view.transform, "Character Stats And Status");
                 Assert.That(characterStats, Is.Not.Null);
                 Assert.That(characterStats.GetComponentInChildren<ScrollRect>(true), Is.Not.Null);
+                RectTransform characterRootRect = characterStats.GetComponent<RectTransform>();
+                Assert.That(characterRootRect.anchorMin.x, Is.EqualTo(0.01f).Within(0.001f));
+                Assert.That(characterRootRect.anchorMax.x, Is.EqualTo(0.99f).Within(0.001f));
+                for (int i = 0; i < 4; i++)
+                {
+                    RectTransform column = FindDescendant(characterStats, $"Character Column {i + 1}")?.GetComponent<RectTransform>();
+                    Assert.That(column, Is.Not.Null);
+                    Assert.That(column.anchorMin.x, Is.EqualTo(i * 0.25f).Within(0.001f));
+                    Assert.That(column.anchorMax.x, Is.EqualTo((i + 1) * 0.25f).Within(0.001f));
+                }
+                Assert.That(FindDescendant(characterStats, "Character Preview Section"), Is.Not.Null);
+                Assert.That(FindDescendant(characterStats, "Basic Information Section"), Is.Not.Null);
+                Assert.That(FindDescendant(characterStats, "Roles And Organizations Section"), Is.Not.Null);
+                Assert.That(FindDescendant(characterStats, "Skills Section"), Is.Not.Null);
+                Assert.That(FindDescendant(characterStats, "Base Stats Scroll")?.GetComponent<ScrollRect>(), Is.Not.Null);
+                Assert.That(FindDescendant(characterStats, "Advanced Stats Scroll")?.GetComponent<ScrollRect>(), Is.Not.Null);
+                Assert.That(FindDescendant(characterStats, "Quarter Separator 1")?.GetComponent<RectTransform>().anchorMin.x, Is.EqualTo(0.25f));
+                Assert.That(FindDescendant(characterStats, "Quarter Separator 2")?.GetComponent<RectTransform>().anchorMin.x, Is.EqualTo(0.5f));
+                Assert.That(FindDescendant(characterStats, "Quarter Separator 3")?.GetComponent<RectTransform>().anchorMin.x, Is.EqualTo(0.75f));
+                Assert.That(FindDescendant(characterStats, "Character Stat Breakdown Tooltip")?.gameObject.activeSelf, Is.False);
             }
             finally
             {
@@ -331,6 +404,81 @@ namespace UnityIsekaiGame.Tests
                     EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
                 }
             }
+        }
+
+        [Test]
+        public void CharacterStatBreakdownIncludesBaseAndEveryActiveModifier()
+        {
+            CalculatedStatEvaluationBreakdown breakdown = new CalculatedStatEvaluationBreakdown
+            {
+                BaseValue = 100f,
+                AttributeWeightedTotal = 12f,
+                FinalValue = 119f,
+                Contributions = new[]
+                {
+                    new RuntimeCalculatedStatContribution
+                    {
+                        sourceId = "equipment.slot.Feet",
+                        sourceCategory = (int)CalculatedStatContributionSourceCategory.Equipment,
+                        kind = (int)CalculatedStatContributionKind.Flat,
+                        direction = (int)CalculatedStatContributionDirection.Improve,
+                        magnitude = 10f
+                    },
+                    new RuntimeCalculatedStatContribution
+                    {
+                        sourceId = "status.hunger",
+                        sourceCategory = (int)CalculatedStatContributionSourceCategory.Condition,
+                        kind = (int)CalculatedStatContributionKind.Percent,
+                        direction = (int)CalculatedStatContributionDirection.Reduce,
+                        magnitude = 0.025f
+                    }
+                }
+            };
+
+            string formatted = CharacterStatBreakdownFormatter.FormatCalculatedStat(breakdown, null);
+
+            StringAssert.Contains("<b>BASE:</b> 112", formatted);
+            StringAssert.Contains("+10", formatted);
+            StringAssert.Contains("Feet", formatted);
+            StringAssert.Contains("-2.5%", formatted);
+            StringAssert.Contains("Hunger", formatted);
+            StringAssert.Contains("Final: 119", formatted);
+
+            string authoritative = CharacterStatBreakdownFormatter.FormatCalculatedStat(breakdown, null, 105f);
+            StringAssert.Contains("Live authoritative resource synchronization", authoritative);
+            StringAssert.Contains("-14", authoritative);
+            StringAssert.Contains("Final: 105", authoritative);
+        }
+
+        [Test]
+        public void BaseAttributeBreakdownIncludesPermanentAndGrowthSources()
+        {
+            RuntimeAttributeValueRecord record = new RuntimeAttributeValueRecord
+            {
+                attributeId = "attribute.vitality",
+                foundationValue = 5f,
+                permanentSourceTotal = 2f,
+                growthTotal = 1f,
+                currentValue = 8f
+            };
+            RuntimeAttributeSourceContribution[] contributions =
+            {
+                new RuntimeAttributeSourceContribution
+                {
+                    attributeId = record.attributeId,
+                    sourceId = "origin.farmer",
+                    sourceCategory = (int)CalculatedStatContributionSourceCategory.Origin,
+                    amount = 2f
+                }
+            };
+
+            string formatted = CharacterStatBreakdownFormatter.FormatBaseAttribute(record, contributions);
+
+            StringAssert.Contains("<b>BASE:</b> 5", formatted);
+            StringAssert.Contains("+2", formatted);
+            StringAssert.Contains("Farmer", formatted);
+            StringAssert.Contains("+1", formatted);
+            StringAssert.Contains("Training & growth", formatted);
         }
 
         [Test]

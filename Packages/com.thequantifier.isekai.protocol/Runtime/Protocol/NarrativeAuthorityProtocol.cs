@@ -35,7 +35,8 @@ namespace UnityIsekaiGame.Networking
         DialogueRejected = 8,
         PartyRejected = 9,
         DeferredTransaction = 10,
-        ServerRejected = 11
+        ServerRejected = 11,
+        PlayerPaused = 12
     }
 
     public enum NarrativePresentationAction : byte

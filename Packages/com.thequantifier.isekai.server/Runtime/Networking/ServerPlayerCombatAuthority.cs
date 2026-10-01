@@ -22,6 +22,7 @@ namespace UnityIsekaiGame.Networking.Server
 
         private NetworkPlayerCombat networkCombat;
         private NetworkPlayerVitals networkVitals;
+        private NetworkPlayerActor actor;
         private ServerPlayerInventoryAuthority inventoryAuthority;
         private ServerCombatWorldAuthority worldAuthority;
         private DefinitionRegistry registry;
@@ -42,6 +43,8 @@ namespace UnityIsekaiGame.Networking.Server
             if (configured) throw new InvalidOperationException("Server player combat authority is already configured.");
             networkCombat = replicatedCombat ?? throw new ArgumentNullException(nameof(replicatedCombat));
             networkVitals = replicatedVitals ?? throw new ArgumentNullException(nameof(replicatedVitals));
+            actor = GetComponent<NetworkPlayerActor>()
+                ?? throw new InvalidOperationException("Server combat authority requires a NetworkPlayerActor.");
             inventoryAuthority = authoritativeInventory ?? throw new ArgumentNullException(nameof(authoritativeInventory));
             worldAuthority = authoritativeWorld ?? throw new ArgumentNullException(nameof(authoritativeWorld));
             registry = definitionRegistry ?? throw new ArgumentNullException(nameof(definitionRegistry));
@@ -95,6 +98,11 @@ namespace UnityIsekaiGame.Networking.Server
         {
             try
             {
+                if (actor.IsPausedProtected)
+                {
+                    return Reject(command, CombatAuthorityFailure.PlayerPaused, "Combat actions are unavailable while the player is paused and protected.");
+                }
+
                 if (networkVitals.IsDefeated)
                 {
                     return Reject(command, CombatAuthorityFailure.ActionUnavailable, "A defeated player cannot act.");
@@ -243,7 +251,6 @@ namespace UnityIsekaiGame.Networking.Server
         private AbilityExecutionResult ExecuteAbilityEffects(uint sequence, SpellDefinition spell, EnemyHealth target, Vector3 hitPoint, Vector3 direction, out float appliedAmount)
         {
             float before = target == null ? 0f : target.CurrentHealth;
-            NetworkPlayerActor actor = GetComponent<NetworkPlayerActor>();
             EffectExecutionContext context = new EffectExecutionContext(
                 spell.Ability,
                 gameObject,

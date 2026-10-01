@@ -28,6 +28,7 @@ namespace UnityIsekaiGame.Networking
 
         private CharacterController controller;
         private NetworkTransform networkTransform;
+        private NetworkPlayerActor actor;
         private NetworkPlayerVitals vitals;
         private NetworkMovementInput latestInput;
         private uint localSequence;
@@ -83,12 +84,14 @@ namespace UnityIsekaiGame.Networking
             controller = GetComponent<CharacterController>();
             networkTransform = GetComponent<NetworkTransform>();
             originalInterpolation = networkTransform != null && networkTransform.Interpolate;
+            actor = GetComponent<NetworkPlayerActor>();
             vitals = GetComponent<NetworkPlayerVitals>();
         }
 
         public override void OnNetworkSpawn()
         {
-            controller.enabled = IsServer;
+            if (actor != null) actor.WorldParticipationStateChanged += OnWorldParticipationStateChanged;
+            controller.enabled = IsServer && (actor == null || actor.IsWorldParticipationActive);
             spawnPosition = transform.position;
             latestInput = new NetworkMovementInput(0, Vector2.zero, transform.eulerAngles.y, false);
             lastInputReceivedAt = Time.realtimeSinceStartupAsDouble;
@@ -102,6 +105,7 @@ namespace UnityIsekaiGame.Networking
 
         public override void OnNetworkDespawn()
         {
+            if (actor != null) actor.WorldParticipationStateChanged -= OnWorldParticipationStateChanged;
             if (controller != null)
             {
                 controller.enabled = false;
@@ -129,7 +133,7 @@ namespace UnityIsekaiGame.Networking
 
         public bool SubmitLocalInput(Vector2 move, bool sprint, bool jump, float yawDegrees)
         {
-            if (!IsSpawned || !IsOwner || IsServer)
+            if (!IsSpawned || !IsOwner || IsServer || actor?.IsPausedProtected == true)
             {
                 return false;
             }
@@ -156,6 +160,11 @@ namespace UnityIsekaiGame.Networking
             {
                 return;
             }
+            if (actor?.IsPausedProtected == true)
+            {
+                StopAuthoritativeMotion();
+                return;
+            }
             if (!movementRateLimiter.TryConsume(Time.realtimeSinceStartupAsDouble)) return;
 
             if (!NetworkMovementInputValidator.TryNormalize(requested, lastAcceptedSequence.Value, out NetworkMovementInput normalized, out _))
@@ -173,6 +182,11 @@ namespace UnityIsekaiGame.Networking
         {
             if (!IsServer || rpcParams.Receive.SenderClientId != OwnerClientId)
             {
+                return;
+            }
+            if (actor?.IsPausedProtected == true)
+            {
+                StopAuthoritativeMotion();
                 return;
             }
 
@@ -206,6 +220,30 @@ namespace UnityIsekaiGame.Networking
             }
 
             Simulate(input, Time.fixedDeltaTime);
+        }
+
+        private void OnWorldParticipationStateChanged(
+            NetworkPlayerActor _,
+            NetworkPlayerWorldParticipationState __,
+            NetworkPlayerWorldParticipationState current)
+        {
+            if (!IsServer || controller == null)
+            {
+                return;
+            }
+
+            bool active = current == NetworkPlayerWorldParticipationState.Active;
+            if (!active) StopAuthoritativeMotion();
+            controller.enabled = active;
+        }
+
+        private void StopAuthoritativeMotion()
+        {
+            latestInput.Move = Vector2.zero;
+            latestInput.Sprint = false;
+            horizontalSpeed = 0f;
+            verticalVelocity = 0f;
+            jumpRequested = false;
         }
 
         private void Simulate(NetworkMovementInput input, float deltaTime)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -31,6 +32,7 @@ namespace UnityIsekaiGame.Networking
         private readonly NetworkList<FixedString4096Bytes> authoritativeSnapshotChunks;
 
         private uint localCommandSequence;
+        private uint lastDeliveredSnapshotGeneration;
         private readonly TokenBucketRateLimiter commandRateLimiter = new TokenBucketRateLimiter(6d, 6d);
         private string lastPublishedSnapshotJson = string.Empty;
 
@@ -49,21 +51,24 @@ namespace UnityIsekaiGame.Networking
         public uint LastSubmittedCommandSequence => localCommandSequence;
         public uint AuthoritativeRevision => authoritativeRevision.Value;
         public NetworkNarrativeCommandResult LatestCommandResult => latestCommandResult.Value;
-        public string AuthoritativeSnapshotJson => BuildSnapshotJson();
+        public string AuthoritativeSnapshotJson => TryBuildSnapshotJson(out string json) ? json : string.Empty;
 
         public override void OnNetworkSpawn()
         {
             latestCommandResult.OnValueChanged += OnCommandResultChanged;
             snapshotGeneration.OnValueChanged += OnSnapshotGenerationChanged;
-            if (IsOwner && snapshotGeneration.Value != 0u) AuthoritativeSnapshotChanged?.Invoke(BuildSnapshotJson());
+            authoritativeSnapshotChunks.OnListChanged += OnSnapshotChunksChanged;
+            TryPublishSnapshot();
         }
 
         public override void OnNetworkDespawn()
         {
             latestCommandResult.OnValueChanged -= OnCommandResultChanged;
             snapshotGeneration.OnValueChanged -= OnSnapshotGenerationChanged;
+            authoritativeSnapshotChunks.OnListChanged -= OnSnapshotChunksChanged;
             ServerCommandHandler = null;
             localCommandSequence = 0u;
+            lastDeliveredSnapshotGeneration = 0u;
             commandRateLimiter.Reset();
             lastPublishedSnapshotJson = string.Empty;
         }
@@ -100,8 +105,8 @@ namespace UnityIsekaiGame.Networking
             if (!IsSpawned || !IsServer || string.IsNullOrWhiteSpace(snapshotJson)) return false;
             if (string.Equals(snapshotJson, lastPublishedSnapshotJson, StringComparison.Ordinal)) return true;
             const int maximumChunks = 32;
-            string encodedSnapshot = EncodeSnapshot(snapshotJson);
-            string[] chunks = SplitSnapshot(encodedSnapshot);
+            uint generation = NextSequence(snapshotGeneration.Value);
+            string[] chunks = NetworkNarrativeSnapshotCodec.CreateChunks(snapshotJson, generation);
             if (chunks.Length > maximumChunks)
             {
                 Debug.LogError($"Authoritative narrative snapshot exceeds the {maximumChunks}-chunk replication budget.", this);
@@ -110,7 +115,7 @@ namespace UnityIsekaiGame.Networking
 
             authoritativeSnapshotChunks.Clear();
             for (int i = 0; i < chunks.Length; i++) authoritativeSnapshotChunks.Add(new FixedString4096Bytes(chunks[i]));
-            snapshotGeneration.Value = NextSequence(snapshotGeneration.Value);
+            snapshotGeneration.Value = generation;
             authoritativeRevision.Value = NextSequence(authoritativeRevision.Value);
             lastPublishedSnapshotJson = snapshotJson;
             return true;
@@ -162,18 +167,118 @@ namespace UnityIsekaiGame.Networking
 
         private void OnSnapshotGenerationChanged(uint previous, uint current)
         {
-            AuthoritativeSnapshotChanged?.Invoke(BuildSnapshotJson());
+            TryPublishSnapshot();
         }
 
-        private string BuildSnapshotJson()
+        private void OnSnapshotChunksChanged(NetworkListEvent<FixedString4096Bytes> change)
         {
-            if (authoritativeSnapshotChunks.Count == 0) return string.Empty;
-            StringBuilder builder = new StringBuilder(authoritativeSnapshotChunks.Count * 2048);
-            for (int i = 0; i < authoritativeSnapshotChunks.Count; i++) builder.Append(authoritativeSnapshotChunks[i].ToString());
-            return DecodeSnapshot(builder.ToString());
+            TryPublishSnapshot();
         }
 
-        private static string EncodeSnapshot(string value)
+        private void TryPublishSnapshot()
+        {
+            uint generation = snapshotGeneration.Value;
+            if (!IsOwner || generation == 0u || generation == lastDeliveredSnapshotGeneration) return;
+            if (!TryBuildSnapshotJson(out string json)) return;
+            lastDeliveredSnapshotGeneration = generation;
+            AuthoritativeSnapshotChanged?.Invoke(json);
+        }
+
+        private bool TryBuildSnapshotJson(out string json)
+        {
+            List<string> chunks = new List<string>(authoritativeSnapshotChunks.Count);
+            for (int i = 0; i < authoritativeSnapshotChunks.Count; i++)
+                chunks.Add(authoritativeSnapshotChunks[i].ToString());
+            return NetworkNarrativeSnapshotCodec.TryAssemble(chunks, snapshotGeneration.Value, out json);
+        }
+    }
+
+    /// <summary>
+    /// Frames narrative snapshot chunks with their committed generation. NetworkVariable and
+    /// NetworkList deltas can arrive in either order, so a client must never parse chunks until
+    /// every chunk belongs to the generation announced by the server.
+    /// </summary>
+    public static class NetworkNarrativeSnapshotCodec
+    {
+        private const string EnvelopePrefix = "n1|";
+        private const int EnvelopeReserveBytes = 96;
+
+        public static string[] CreateChunks(string snapshotJson, uint generation)
+        {
+            if (string.IsNullOrWhiteSpace(snapshotJson)) throw new ArgumentException("Snapshot JSON is required.", nameof(snapshotJson));
+            if (generation == 0u) throw new ArgumentOutOfRangeException(nameof(generation));
+            string encoded = Encode(snapshotJson);
+            List<string> payloads = Split(encoded);
+            string[] chunks = new string[payloads.Count];
+            for (int i = 0; i < payloads.Count; i++)
+                chunks[i] = $"{EnvelopePrefix}{generation}|{i}|{payloads.Count}|{payloads[i]}";
+            return chunks;
+        }
+
+        public static bool TryAssemble(IReadOnlyList<string> chunks, uint generation, out string snapshotJson)
+        {
+            snapshotJson = string.Empty;
+            if (generation == 0u || chunks == null || chunks.Count == 0) return false;
+
+            string[] payloads = null;
+            bool[] received = null;
+            int expectedCount = -1;
+            for (int i = 0; i < chunks.Count; i++)
+            {
+                if (!TryParseEnvelope(chunks[i], out uint chunkGeneration, out int index, out int count, out string payload)
+                    || chunkGeneration != generation
+                    || count <= 0
+                    || count > 32
+                    || index < 0
+                    || index >= count)
+                    return false;
+
+                if (expectedCount < 0)
+                {
+                    expectedCount = count;
+                    payloads = new string[count];
+                    received = new bool[count];
+                }
+                else if (count != expectedCount)
+                {
+                    return false;
+                }
+
+                if (received[index]) return false;
+                received[index] = true;
+                payloads[index] = payload;
+            }
+
+            if (expectedCount != chunks.Count) return false;
+            for (int i = 0; i < received.Length; i++)
+                if (!received[i]) return false;
+
+            string decoded = Decode(string.Concat(payloads));
+            if (string.IsNullOrWhiteSpace(decoded)) return false;
+            snapshotJson = decoded;
+            return true;
+        }
+
+        private static bool TryParseEnvelope(string chunk, out uint generation, out int index, out int count, out string payload)
+        {
+            generation = 0u;
+            index = -1;
+            count = 0;
+            payload = string.Empty;
+            if (string.IsNullOrEmpty(chunk) || !chunk.StartsWith(EnvelopePrefix, StringComparison.Ordinal)) return false;
+
+            int generationEnd = chunk.IndexOf('|', EnvelopePrefix.Length);
+            int indexEnd = generationEnd < 0 ? -1 : chunk.IndexOf('|', generationEnd + 1);
+            int countEnd = indexEnd < 0 ? -1 : chunk.IndexOf('|', indexEnd + 1);
+            if (generationEnd < 0 || indexEnd < 0 || countEnd < 0) return false;
+            if (!uint.TryParse(chunk.Substring(EnvelopePrefix.Length, generationEnd - EnvelopePrefix.Length), out generation)) return false;
+            if (!int.TryParse(chunk.Substring(generationEnd + 1, indexEnd - generationEnd - 1), out index)) return false;
+            if (!int.TryParse(chunk.Substring(indexEnd + 1, countEnd - indexEnd - 1), out count)) return false;
+            payload = chunk.Substring(countEnd + 1);
+            return true;
+        }
+
+        private static string Encode(string value)
         {
             byte[] input = Encoding.UTF8.GetBytes(value);
             using var output = new MemoryStream();
@@ -184,10 +289,10 @@ namespace UnityIsekaiGame.Networking
             return compressed.Length < raw.Length ? compressed : raw;
         }
 
-        private static string DecodeSnapshot(string value)
+        private static string Decode(string value)
         {
             if (value.StartsWith("raw:", StringComparison.Ordinal)) return value.Substring(4);
-            if (!value.StartsWith("gz:", StringComparison.Ordinal)) return value;
+            if (!value.StartsWith("gz:", StringComparison.Ordinal)) return string.Empty;
             try
             {
                 byte[] compressed = Convert.FromBase64String(value.Substring(3));
@@ -197,26 +302,26 @@ namespace UnityIsekaiGame.Networking
                 gzip.CopyTo(output);
                 return Encoding.UTF8.GetString(output.ToArray());
             }
-            catch (Exception exception)
+            catch
             {
-                Debug.LogError($"Could not decode authoritative narrative snapshot: {exception.Message}");
                 return string.Empty;
             }
         }
 
-        private static string[] SplitSnapshot(string value)
+        private static List<string> Split(string value)
         {
-            System.Collections.Generic.List<string> chunks = new System.Collections.Generic.List<string>();
+            List<string> chunks = new List<string>();
             int offset = 0;
+            int maximumPayloadBytes = FixedString4096Bytes.UTF8MaxLengthInBytes - EnvelopeReserveBytes;
             while (offset < value.Length)
             {
                 int length = Math.Min(3000, value.Length - offset);
-                while (length > 0 && Encoding.UTF8.GetByteCount(value.Substring(offset, length)) > FixedString4096Bytes.UTF8MaxLengthInBytes) length--;
+                while (length > 0 && Encoding.UTF8.GetByteCount(value.Substring(offset, length)) > maximumPayloadBytes) length--;
                 if (length <= 0) throw new InvalidOperationException("Narrative snapshot contains an unsupported UTF-8 sequence.");
                 chunks.Add(value.Substring(offset, length));
                 offset += length;
             }
-            return chunks.ToArray();
+            return chunks;
         }
     }
 }

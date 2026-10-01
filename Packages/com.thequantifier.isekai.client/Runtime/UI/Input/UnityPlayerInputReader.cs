@@ -5,6 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityIsekaiGame.Gameplay;
+using UnityIsekaiGame.UI;
 
 namespace UnityIsekaiGame.Input
 {
@@ -219,6 +220,12 @@ namespace UnityIsekaiGame.Input
                 bool wasLockedForLook = PlayerCursorMode.MouseLookEnabled;
                 PlayerCursorMode.UnlockMouse();
                 if (wasLockedForLook) GameHudMessageBus.Show("Mouse unlocked. Press L to enable mouse look.");
+                return;
+            }
+
+            if (keyboard.pKey.wasPressedThisFrame && !IsTypingInUiField())
+            {
+                PauseMenuController.TryToggleForGameplay();
                 return;
             }
 

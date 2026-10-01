@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using NUnit.Framework;
 using UnityEngine;
@@ -103,6 +104,29 @@ namespace UnityIsekaiGame.Tests
                 string.Empty,
                 0,
                 0), Is.False);
+        }
+
+        [Test]
+        public void Narrative_snapshots_apply_only_when_a_complete_generation_is_present()
+        {
+            System.Random random = new System.Random(8173);
+            StringBuilder body = new StringBuilder(16000);
+            for (int i = 0; i < 16000; i++) body.Append((char)('a' + random.Next(26)));
+            string json = $"{{\"schemaVersion\":1,\"personId\":\"person.test\",\"payload\":\"{body}\"}}";
+            string[] generationSeven = NetworkNarrativeSnapshotCodec.CreateChunks(json, 7u);
+            string[] generationEight = NetworkNarrativeSnapshotCodec.CreateChunks(json.Replace("person.test", "person.next"), 8u);
+
+            Assert.That(generationSeven.Length, Is.GreaterThan(1));
+            Assert.That(NetworkNarrativeSnapshotCodec.TryAssemble(generationSeven, 7u, out string assembled), Is.True);
+            Assert.That(assembled, Is.EqualTo(json));
+
+            List<string> incomplete = new List<string>(generationSeven);
+            incomplete.RemoveAt(incomplete.Count - 1);
+            Assert.That(NetworkNarrativeSnapshotCodec.TryAssemble(incomplete, 7u, out _), Is.False);
+
+            List<string> mixed = new List<string>(generationSeven) { [0] = generationEight[0] };
+            Assert.That(NetworkNarrativeSnapshotCodec.TryAssemble(mixed, 7u, out _), Is.False,
+                "Chunks from an uncommitted generation must never be parsed as a client snapshot.");
         }
     }
 }

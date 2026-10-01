@@ -74,6 +74,14 @@ namespace UnityIsekaiGame.Networking.Server
         {
             try
             {
+                if (actor?.IsPausedProtected == true)
+                {
+                    return Reject(
+                        command,
+                        NarrativeAuthorityFailure.PlayerPaused,
+                        "World interactions are unavailable while the player is paused and protected.");
+                }
+
                 NetworkNarrativeCommandResult result = command.CommandType switch
                 {
                     NarrativeAuthorityCommandType.Interact => Interact(command),

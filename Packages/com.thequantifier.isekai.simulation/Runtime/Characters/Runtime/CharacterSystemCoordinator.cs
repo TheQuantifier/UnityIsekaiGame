@@ -141,7 +141,6 @@ namespace UnityIsekaiGame.CharacterSystem
                 {
                     body.AssignSpecies(actorStats.ActorProfile.DefaultSpecies.Id, restoring, "Actor profile default Species");
                 }
-                resources?.Configure(registry, calculatedStats, PlayerId);
                 identity?.ConfigureRuntimeReferences(actorStats, worldEntityIdentity, null, null);
                 identity?.ConfigureDefinitions(registry);
                 if (identity != null)
@@ -152,6 +151,12 @@ namespace UnityIsekaiGame.CharacterSystem
                         throw new InvalidOperationException(originInitialization.Message);
                     }
                 }
+                // Current resources must be created only after all immediate character-creation
+                // effects have settled. Configuring them earlier filled a new character against
+                // the foundation-only maximum, then left that smaller current value behind when
+                // an origin or immediately-awakened birth gift increased the maximum. Delayed
+                // (latent) gifts still apply later and follow the authored reconciliation policy.
+                resources?.Configure(registry, calculatedStats, PlayerId);
                 SetReadiness(CharacterReadinessState.IdentityReady, restoring);
 
                 Subscribe();
