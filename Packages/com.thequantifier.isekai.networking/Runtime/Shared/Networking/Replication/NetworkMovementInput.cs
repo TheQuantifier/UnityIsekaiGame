@@ -6,18 +6,20 @@ namespace UnityIsekaiGame.Networking
 {
     public struct NetworkMovementInput : INetworkSerializable, IEquatable<NetworkMovementInput>
     {
-        public NetworkMovementInput(uint sequence, Vector2 move, float yawDegrees, bool sprint)
+        public NetworkMovementInput(uint sequence, Vector2 move, float yawDegrees, bool sprint, bool jump = false)
         {
             Sequence = sequence;
             Move = move;
             YawDegrees = yawDegrees;
             Sprint = sprint;
+            Jump = jump;
         }
 
         public uint Sequence;
         public Vector2 Move;
         public float YawDegrees;
         public bool Sprint;
+        public bool Jump;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -25,15 +27,17 @@ namespace UnityIsekaiGame.Networking
             serializer.SerializeValue(ref Move);
             serializer.SerializeValue(ref YawDegrees);
             serializer.SerializeValue(ref Sprint);
+            serializer.SerializeValue(ref Jump);
         }
 
         public bool Equals(NetworkMovementInput other) => Sequence == other.Sequence
             && Move == other.Move
             && YawDegrees.Equals(other.YawDegrees)
-            && Sprint == other.Sprint;
+            && Sprint == other.Sprint
+            && Jump == other.Jump;
 
         public override bool Equals(object obj) => obj is NetworkMovementInput other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(Sequence, Move, YawDegrees, Sprint);
+        public override int GetHashCode() => HashCode.Combine(Sequence, Move, YawDegrees, Sprint, Jump);
     }
 
     public static class NetworkMovementInputValidator
@@ -61,7 +65,8 @@ namespace UnityIsekaiGame.Networking
                 requested.Sequence,
                 Vector2.ClampMagnitude(requested.Move, 1f),
                 Mathf.Repeat(requested.YawDegrees, 360f),
-                requested.Sprint);
+                requested.Sprint,
+                requested.Jump);
             failure = string.Empty;
             return true;
         }

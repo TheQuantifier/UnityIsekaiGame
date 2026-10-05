@@ -1,3 +1,5 @@
+using System;
+
 namespace UnityIsekaiGame.GameData.Persistence
 {
     public enum PersistenceContextKind
@@ -111,6 +113,85 @@ namespace UnityIsekaiGame.GameData.Persistence
         PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion);
         PersistenceParticipantCommitResult CommitPreparedPayload(object preparedPayload);
         void DiscardPreparedPayload(object preparedPayload);
+    }
+
+    /// <summary>
+    /// Captures an immutable object graph on the simulation thread and returns work that is safe to
+    /// execute on a background thread. Implementations may defer validation, deterministic ordering,
+    /// and serialization, but must not retain references to mutable runtime collections or Unity objects.
+    /// </summary>
+    public interface IDeferredPersistenceParticipant
+    {
+        DeferredPersistenceParticipantCapture CaptureDeferredPayload();
+    }
+
+    /// <summary>
+    /// Supplies a monotonic content revision. A successful checkpoint may reuse the previous validated
+    /// payload while this revision is unchanged. Implementations must advance the revision for every
+    /// persisted mutation and after restore.
+    /// </summary>
+    public interface IPersistenceRevisionParticipant
+    {
+        long PersistenceRevision { get; }
+    }
+
+    /// <summary>
+    /// Creates a bounded, simulation-thread capture which may span multiple frames. Each continuation
+    /// must retain only detached data from work completed during that call.
+    /// </summary>
+    public interface IIncrementalPersistenceParticipant
+    {
+        IIncrementalPersistenceCapture BeginIncrementalCapture();
+    }
+
+    public interface IIncrementalPersistenceCapture
+    {
+        bool TryContinue(
+            out bool completed,
+            out DeferredPersistenceParticipantCapture completedCapture,
+            out string failureReason);
+    }
+
+    public sealed class DeferredPersistenceParticipantCapture
+    {
+        private readonly Func<PersistenceParticipantSaveResult> serialize;
+
+        private DeferredPersistenceParticipantCapture(bool succeeded, string message, Func<PersistenceParticipantSaveResult> serialize)
+        {
+            Succeeded = succeeded;
+            Message = message ?? string.Empty;
+            this.serialize = serialize;
+        }
+
+        public bool Succeeded { get; }
+        public string Message { get; }
+
+        public PersistenceParticipantSaveResult SerializePayload()
+        {
+            if (!Succeeded || serialize == null)
+            {
+                return PersistenceParticipantSaveResult.Failure(string.IsNullOrWhiteSpace(Message) ? "Deferred participant capture is invalid." : Message);
+            }
+
+            try
+            {
+                return serialize.Invoke();
+            }
+            catch (Exception exception)
+            {
+                return PersistenceParticipantSaveResult.Failure($"Deferred participant serialization failed: {exception.Message}");
+            }
+        }
+
+        public static DeferredPersistenceParticipantCapture Success(Func<PersistenceParticipantSaveResult> serialize)
+        {
+            return new DeferredPersistenceParticipantCapture(true, "Participant snapshot captured.", serialize ?? throw new ArgumentNullException(nameof(serialize)));
+        }
+
+        public static DeferredPersistenceParticipantCapture Failure(string message)
+        {
+            return new DeferredPersistenceParticipantCapture(false, message, null);
+        }
     }
 
     public interface IPersistenceParticipantDependencies

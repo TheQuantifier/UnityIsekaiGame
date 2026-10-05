@@ -68,6 +68,8 @@ namespace UnityIsekaiGame.Networking.Server
         private void Update()
         {
             if (!configured || projectiles.Count == 0) return;
+            using NetworkMovementTrace.ServerPhaseScope phase =
+                NetworkMovementTrace.MeasureServerPhase("ProjectileSimulation");
             float delta = Time.unscaledDeltaTime;
             double now = Time.realtimeSinceStartupAsDouble;
             for (int i = projectiles.Count - 1; i >= 0; i--)

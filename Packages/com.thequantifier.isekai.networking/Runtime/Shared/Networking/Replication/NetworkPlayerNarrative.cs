@@ -82,6 +82,11 @@ namespace UnityIsekaiGame.Networking
         {
             if (!IsSpawned || !IsOwner || IsServer) return false;
             localCommandSequence = NextSequence(localCommandSequence);
+            NetworkActionTrace.ClientSend(
+                NetworkActionTraceCategory.Interaction,
+                commandType.ToString(),
+                NetworkActionTrace.Correlation(GetComponent<NetworkPlayerActor>()?.ActorId, localCommandSequence),
+                context: this);
             SubmitNarrativeCommandRpc(new NetworkNarrativeCommand(
                 localCommandSequence,
                 commandType,
@@ -125,6 +130,12 @@ namespace UnityIsekaiGame.Networking
         private void SubmitNarrativeCommandRpc(NetworkNarrativeCommand command, RpcParams rpcParams = default)
         {
             if (!IsServer || rpcParams.Receive.SenderClientId != OwnerClientId) return;
+            NetworkActionTrace.ServerReceive(
+                NetworkActionTraceCategory.Interaction,
+                command.CommandType.ToString(),
+                NetworkActionTrace.Correlation(GetComponent<NetworkPlayerActor>()?.ActorId, command.Sequence),
+                rpcParams.Receive.SenderClientId,
+                context: this);
             if (!commandRateLimiter.TryConsume(Time.realtimeSinceStartupAsDouble))
             {
                 latestCommandResult.Value = NetworkNarrativeCommandResult.Reject(
@@ -142,9 +153,21 @@ namespace UnityIsekaiGame.Networking
             }
 
             lastAcceptedCommandSequence.Value = command.Sequence;
-            NetworkNarrativeCommandResult result = ServerCommandHandler == null
-                ? NetworkNarrativeCommandResult.Reject(command, NarrativeAuthorityFailure.ServerRejected, "Server narrative authority is unavailable.")
-                : ServerCommandHandler(command);
+            NetworkNarrativeCommandResult result;
+            try
+            {
+                result = ServerCommandHandler == null
+                    ? NetworkNarrativeCommandResult.Reject(command, NarrativeAuthorityFailure.ServerRejected, "Server narrative authority is unavailable.")
+                    : ServerCommandHandler(command);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                result = NetworkNarrativeCommandResult.Reject(
+                    command,
+                    NarrativeAuthorityFailure.ServerRejected,
+                    "The server could not complete the narrative action.");
+            }
             if (result.Sequence != command.Sequence || result.CommandType != command.CommandType)
             {
                 result = NetworkNarrativeCommandResult.Reject(command, NarrativeAuthorityFailure.ServerRejected, "Server returned an invalid narrative command result.");

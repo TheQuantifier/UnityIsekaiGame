@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using UnityIsekaiGame.ActorLifecycle;
@@ -283,7 +284,9 @@ namespace UnityIsekaiGame.Gameplay
         private MemoryMaintenanceService memoryMaintenance;
         private KnowledgeHistoryEventBridge knowledgeHistoryEventBridge;
         private const double BackgroundSimulationPollIntervalSeconds = 0.25d;
+        private const long BackgroundAllocationTraceThresholdBytes = 64 * 1024;
         private double nextBackgroundSimulationPollRealtime;
+        private bool traceBackgroundSimulationAllocations;
         private bool characterCreationHistoryEnsured;
         private PersonProfessionRuntime playerProfessions;
         private ProfessionEntryRuntime playerProfessionEntries;
@@ -1184,6 +1187,9 @@ namespace UnityIsekaiGame.Gameplay
 
         private void Awake()
         {
+            traceBackgroundSimulationAllocations = Array.Exists(
+                Environment.GetCommandLineArgs(),
+                value => string.Equals(value, "--movement-trace", StringComparison.OrdinalIgnoreCase));
             EnsureInitialized();
             if (Application.isBatchMode || !IsAuthoritativeRuntime)
             {
@@ -1203,8 +1209,12 @@ namespace UnityIsekaiGame.Gameplay
                 return;
             }
 
+            long allocationStart = BeginBackgroundAllocationSample();
             worldNarrativeCoordinator?.Advance();
+            EndBackgroundAllocationSample("WorldNarrative", allocationStart);
+            allocationStart = BeginBackgroundAllocationSample();
             AdvanceGroup6Crafting();
+            EndBackgroundAllocationSample("Crafting", allocationStart);
 
             double realtime = Time.unscaledTimeAsDouble;
             if (realtime < nextBackgroundSimulationPollRealtime)
@@ -1213,22 +1223,51 @@ namespace UnityIsekaiGame.Gameplay
             }
 
             nextBackgroundSimulationPollRealtime = realtime + BackgroundSimulationPollIntervalSeconds;
+            allocationStart = BeginBackgroundAllocationSample();
             AdvanceWorldTravel();
+            EndBackgroundAllocationSample("WorldTravel", allocationStart);
+            allocationStart = BeginBackgroundAllocationSample();
             SynchronizeProfessionLifecycle();
+            EndBackgroundAllocationSample("ProfessionLifecycle", allocationStart);
+            allocationStart = BeginBackgroundAllocationSample();
             AdvancePrototypeEconomy();
+            EndBackgroundAllocationSample("Economy", allocationStart);
+            allocationStart = BeginBackgroundAllocationSample();
             AdvanceGroup9SocialSimulation();
+            EndBackgroundAllocationSample("Social", allocationStart);
+            allocationStart = BeginBackgroundAllocationSample();
             AdvanceGroup10InstitutionalSimulation();
+            EndBackgroundAllocationSample("Institutions", allocationStart);
 
             if (memoryMaintenance == null || playTimeTracker == null)
             {
                 return;
             }
 
+            allocationStart = BeginBackgroundAllocationSample();
             IReadOnlyList<HistoryOperationResult> results = memoryMaintenance.AdvanceTo(playTimeTracker.CumulativeSeconds);
+            EndBackgroundAllocationSample("MemoryMaintenance", allocationStart);
             if (results.Any(result => result != null && result.Succeeded && !result.Duplicate))
             {
                 dirtyTracker?.MarkDirty("Player memory advanced with authoritative world time.");
             }
+        }
+
+        private long BeginBackgroundAllocationSample() => traceBackgroundSimulationAllocations
+            ? Profiler.GetMonoUsedSizeLong()
+            : 0L;
+
+        private void EndBackgroundAllocationSample(string phase, long startingBytes)
+        {
+            if (!traceBackgroundSimulationAllocations) return;
+            // Unity's Mono backend reports zero from GetAllocatedBytesForCurrentThread in
+            // player builds. The profiler heap counter is coarse but works in dedicated
+            // server players and is sufficient to identify allocation-heavy simulation phases.
+            long allocatedBytes = Math.Max(0L, Profiler.GetMonoUsedSizeLong() - startingBytes);
+            if (allocatedBytes < BackgroundAllocationTraceThresholdBytes) return;
+            Debug.LogWarning(
+                $"[Server Simulation Allocation] utc={DateTime.UtcNow:O} phase={phase} allocatedBytes={allocatedBytes}",
+                this);
         }
 
         private void OnDisable()

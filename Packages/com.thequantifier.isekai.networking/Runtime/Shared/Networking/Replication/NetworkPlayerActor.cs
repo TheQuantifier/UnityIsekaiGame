@@ -17,15 +17,15 @@ namespace UnityIsekaiGame.Networking
     {
         private readonly NetworkVariable<FixedString128Bytes> sessionId = new NetworkVariable<FixedString128Bytes>(
             default,
-            NetworkVariableReadPermission.Everyone,
+            NetworkVariableReadPermission.Owner,
             NetworkVariableWritePermission.Server);
         private readonly NetworkVariable<FixedString128Bytes> clientInstanceId = new NetworkVariable<FixedString128Bytes>(
             default,
-            NetworkVariableReadPermission.Everyone,
+            NetworkVariableReadPermission.Owner,
             NetworkVariableWritePermission.Server);
         private readonly NetworkVariable<FixedString128Bytes> playerId = new NetworkVariable<FixedString128Bytes>(
             default,
-            NetworkVariableReadPermission.Everyone,
+            NetworkVariableReadPermission.Owner,
             NetworkVariableWritePermission.Server);
         private readonly NetworkVariable<FixedString128Bytes> personId = new NetworkVariable<FixedString128Bytes>(
             default,
@@ -37,7 +37,7 @@ namespace UnityIsekaiGame.Networking
             NetworkVariableWritePermission.Server);
         private readonly NetworkVariable<long> sessionRevision = new NetworkVariable<long>(
             0L,
-            NetworkVariableReadPermission.Everyone,
+            NetworkVariableReadPermission.Owner,
             NetworkVariableWritePermission.Server);
         private readonly NetworkVariable<NetworkPlayerWorldParticipationState> worldParticipationState =
             new NetworkVariable<NetworkPlayerWorldParticipationState>(
@@ -53,6 +53,10 @@ namespace UnityIsekaiGame.Networking
         private long configuredSessionRevision;
         private bool hasConfiguredIdentity;
         private readonly TokenBucketRateLimiter worldParticipationRateLimiter = new TokenBucketRateLimiter(4d, 2d);
+        private uint backgroundTraceSequence;
+        private double nextBackgroundTraceAt;
+
+        private const double BackgroundTraceIntervalSeconds = 0.5d;
 
         public event Action<NetworkPlayerActor> IdentityChanged;
         public event Action<NetworkPlayerActor, NetworkPlayerWorldParticipationState, NetworkPlayerWorldParticipationState>
@@ -138,6 +142,39 @@ namespace UnityIsekaiGame.Networking
             sessionRevision.OnValueChanged -= OnRevisionChanged;
             worldParticipationState.OnValueChanged -= OnWorldParticipationStateChanged;
             worldParticipationRateLimiter.Reset();
+            backgroundTraceSequence = 0;
+            nextBackgroundTraceAt = 0d;
+        }
+
+        private void Update()
+        {
+            if (!IsSpawned || !IsClient || !IsOwner || IsServer || !HasIdentity)
+            {
+                return;
+            }
+
+            if (!NetworkActionTrace.IsEnabled)
+            {
+                nextBackgroundTraceAt = 0d;
+                return;
+            }
+
+            double now = Time.realtimeSinceStartupAsDouble;
+            if (now < nextBackgroundTraceAt)
+            {
+                return;
+            }
+
+            nextBackgroundTraceAt = now + BackgroundTraceIntervalSeconds;
+            uint sequence = ++backgroundTraceSequence;
+            string correlation = NetworkActionTrace.Correlation(ActorId, sequence);
+            NetworkActionTrace.ClientSend(
+                NetworkActionTraceCategory.System,
+                "BackgroundProbe",
+                correlation,
+                "background",
+                this);
+            TraceBackgroundProbeRpc(sequence);
         }
 
         public bool RequestPausedProtected(bool paused)
@@ -155,6 +192,11 @@ namespace UnityIsekaiGame.Networking
                 return SetWorldParticipationStateServer(requestedState);
             }
 
+            NetworkActionTrace.ClientSend(
+                NetworkActionTraceCategory.UI,
+                requestedState.ToString(),
+                $"{ActorId}:{requestedState}",
+                context: this);
             RequestWorldParticipationStateRpc(requestedState);
             return true;
         }
@@ -192,7 +234,30 @@ namespace UnityIsekaiGame.Networking
                 return;
             }
 
+            NetworkActionTrace.ServerReceive(
+                NetworkActionTraceCategory.UI,
+                requestedState.ToString(),
+                $"{ActorId}:{requestedState}",
+                rpcParams.Receive.SenderClientId,
+                context: this);
             SetWorldParticipationStateServer(requestedState);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner, Delivery = RpcDelivery.Unreliable)]
+        private void TraceBackgroundProbeRpc(uint sequence, RpcParams rpcParams = default)
+        {
+            if (!IsServer || rpcParams.Receive.SenderClientId != OwnerClientId)
+            {
+                return;
+            }
+
+            NetworkActionTrace.ServerReceive(
+                NetworkActionTraceCategory.System,
+                "BackgroundProbe",
+                NetworkActionTrace.Correlation(ActorId, sequence),
+                rpcParams.Receive.SenderClientId,
+                "background",
+                this);
         }
 
         private void OnIdentityValueChanged(FixedString128Bytes previous, FixedString128Bytes current) => IdentityChanged?.Invoke(this);

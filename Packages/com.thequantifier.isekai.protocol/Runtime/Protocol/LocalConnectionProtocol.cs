@@ -14,7 +14,9 @@ namespace UnityIsekaiGame.Networking
 
     public static class LocalConnectionProtocol
     {
-        public const int CurrentVersion = 4;
+        // Version 5 adds generation-tagged inventory and combat snapshot records. Older
+        // clients must be rejected before NGO attempts to deserialize the changed wire shape.
+        public const int CurrentVersion = 5;
         public const int MaximumPayloadBytes = 2048;
         public const int MaximumIdentifierLength = 64;
         public const int MaximumBuildVersionLength = 64;

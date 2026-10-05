@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityIsekaiGame.Input;
@@ -19,15 +20,8 @@ namespace UnityIsekaiGame.Networking.Client
         [SerializeField, Range(10f, 60f)] private float inputSendRate = 60f;
         [SerializeField, Min(1f)] private float reconciliationSharpness = 10f;
         [SerializeField, Min(0f)] private float reconciliationDeadZone = 0.12f;
-        [SerializeField, Min(0f)] private float maximumPredictionLead = 1.25f;
-        [SerializeField, Min(0f)] private float groundedVerticalTolerance = 0.08f;
-        [SerializeField, Min(0f)] private float airborneVerticalTolerance = 0.45f;
-        [SerializeField, Min(0f)] private float jumpPredictionGraceSeconds = 0.3f;
-        [SerializeField, Min(0f)] private float minimumLandingGraceSeconds = 0.08f;
-        [SerializeField, Min(0f)] private float maximumLandingGraceSeconds = 0.25f;
-        [SerializeField, Min(0f)] private float minimumMovementGraceSeconds = 0.05f;
-        [SerializeField, Min(0f)] private float maximumMovementGraceSeconds = 0.2f;
         [SerializeField, Min(0.5f)] private float hardSnapDistance = 4f;
+        [SerializeField, Range(16, 512)] private int predictionHistoryCapacity = 256;
 
         private NetworkPlayerMovement networkMovement;
         private NetworkPlayerVitals networkVitals;
@@ -35,15 +29,22 @@ namespace UnityIsekaiGame.Networking.Client
         private bool controlsOverridden;
         private double inputSendAccumulator;
         private double lastInputSampleAt;
-        private double jumpPredictionGraceUntil;
         private Vector2 lastSubmittedMove;
         private bool lastSubmittedSprint;
         private bool predictionSprintExhausted;
         private bool predictionSprintAllowed = true;
-        private bool wasPredictionAirborne;
-        private double landingPredictionGraceUntil;
-        private bool wasPredictionMoving;
-        private double movementPredictionGraceUntil;
+        private uint pendingStopSequence;
+        private readonly List<PredictedMovementSample> predictionHistory = new List<PredictedMovementSample>(256);
+        private readonly List<uint> pendingPredictedJumpSequences = new List<uint>(4);
+        private uint pendingPredictionCaptureSequence;
+        private ulong lastReconciledSimulationTick;
+        private bool movementTraceEnabled;
+        private bool movementTraceDirty;
+        private string pendingMovementTracePhase;
+        private double nextMovementTraceAt;
+        private bool traceCorrectionWasActive;
+        private bool traceRequestedSprint;
+        private float traceSubmittedYaw;
         private bool smokeInputEnabled;
         private bool vitalsSmokeEnabled;
         private bool vitalsSmokeStarted;
@@ -51,6 +52,13 @@ namespace UnityIsekaiGame.Networking.Client
         private Vector3 smokeStartPosition;
         private bool smokeResultLogged;
         private bool jumpPending;
+
+        private struct PredictedMovementSample
+        {
+            public NetworkMovementInput Input;
+            public Vector3 Position;
+            public bool Captured;
+        }
 
         public NetworkPlayerMovement BoundMovement => networkMovement;
         public bool IsServerAuthorityActive => networkMovement != null && networkMovement.IsSpawned;
@@ -62,6 +70,7 @@ namespace UnityIsekaiGame.Networking.Client
                 string.Equals(value, MovementSmokeFlag, StringComparison.OrdinalIgnoreCase));
             vitalsSmokeEnabled = Array.Exists(Environment.GetCommandLineArgs(), value =>
                 string.Equals(value, LocalPlayerVitalsBridge.VitalsSmokeFlag, StringComparison.OrdinalIgnoreCase));
+            movementTraceEnabled = NetworkMovementTrace.IsRequested();
         }
 
         private void OnEnable()
@@ -88,6 +97,7 @@ namespace UnityIsekaiGame.Networking.Client
 
         private void Update()
         {
+            RefreshMovementTraceState();
             if (networkMovement == null || !networkMovement.IsSpawned || !networkMovement.IsOwner)
             {
                 return;
@@ -98,7 +108,6 @@ namespace UnityIsekaiGame.Networking.Client
             if (input != null && input.JumpPressedThisFrame)
             {
                 jumpPending = true;
-                jumpPredictionGraceUntil = now + jumpPredictionGraceSeconds;
             }
             if (vitalsSmokeEnabled && !vitalsSmokeStarted)
             {
@@ -131,9 +140,64 @@ namespace UnityIsekaiGame.Networking.Client
             bool jump = !smokeMoving && jumpPending;
             if (jump) jumpPending = false;
             float yaw = presentationRoot == null ? networkMovement.transform.eulerAngles.y : presentationRoot.eulerAngles.y;
+            bool wasSubmittingMovement = lastSubmittedMove.sqrMagnitude > 0.0001f;
+            bool wasSubmittingSprint = lastSubmittedSprint;
             lastSubmittedMove = move;
             lastSubmittedSprint = sprint && predictionSprintAllowed;
-            networkMovement.SubmitLocalInput(move, sprint, jump, yaw);
+            uint expectedSequence = networkMovement.LastSubmittedSequence + 1u;
+            if (expectedSequence == 0u) expectedSequence = 1u;
+            string deliveryTimingUtc = movementTraceEnabled && NetworkMovementTrace.ShouldSampleDeliveryTiming(expectedSequence)
+                ? NetworkMovementTrace.TimestampUtc()
+                : null;
+            bool submitted = networkMovement.SubmitLocalInput(move, sprint, jump, yaw);
+            bool isSubmittingMovement = move.sqrMagnitude > 0.0001f;
+            if (submitted)
+            {
+                uint sequence = networkMovement.LastSubmittedSequence;
+                if (deliveryTimingUtc != null && sequence == expectedSequence)
+                {
+                    NetworkPlayerActor traceActor = networkMovement.GetComponent<NetworkPlayerActor>();
+                    Debug.Log(
+                        $"[Movement Timing][ClientSend] utc={deliveryTimingUtc} " +
+                        $"actor={traceActor?.ActorId ?? "unknown"} seq={sequence}",
+                        this);
+                }
+                predictionHistory.Add(new PredictedMovementSample
+                {
+                    Input = new NetworkMovementInput(sequence, move, yaw, lastSubmittedSprint, jump),
+                    Position = presentationRoot == null ? networkMovement.AuthoritativePosition : presentationRoot.position,
+                    Captured = false
+                });
+                pendingPredictionCaptureSequence = sequence;
+                if (jump)
+                {
+                    pendingPredictedJumpSequences.Add(sequence);
+                }
+
+                TrimPredictionHistory();
+            }
+            if (submitted && wasSubmittingMovement && !isSubmittingMovement)
+            {
+                pendingStopSequence = networkMovement.LastSubmittedSequence;
+            }
+
+            if (movementTraceEnabled && submitted)
+            {
+                traceRequestedSprint = sprint;
+                traceSubmittedYaw = yaw;
+                if (wasSubmittingMovement != isSubmittingMovement)
+                {
+                    MarkMovementTrace(isSubmittingMovement ? "input-start" : "input-stop");
+                }
+                else if (jump)
+                {
+                    MarkMovementTrace("jump");
+                }
+                else if (wasSubmittingSprint != lastSubmittedSprint)
+                {
+                    MarkMovementTrace("sprint-change");
+                }
+            }
         }
 
         private void LateUpdate()
@@ -143,94 +207,45 @@ namespace UnityIsekaiGame.Networking.Client
                 return;
             }
 
-            Vector3 authoritativePosition = networkMovement.transform.position;
-            bool airborne = false;
-            bool suppressVertical = false;
-            bool suppressHorizontal = false;
+            CaptureLatestPredictedSample();
+            NetworkMovementState authoritativeState = networkMovement.AuthoritativeState;
+            Vector3 authoritativePosition = networkMovement.AuthoritativePosition;
+            Vector3 reconciliationError = Vector3.zero;
+            Vector3 appliedCorrection = Vector3.zero;
+            ulong roundTripTimeMilliseconds = GetRoundTripTimeMilliseconds();
+            bool airborne = localMotor != null && !localMotor.IsGrounded;
+            bool hardSnapApplied = false;
             if (localMotor != null && localMotor.enabled)
             {
-                Vector3 error = authoritativePosition - presentationRoot.position;
-                if (error.sqrMagnitude >= hardSnapDistance * hardSnapDistance)
-                {
-                    SetPresentationPosition(authoritativePosition);
-                    localMotor.ResetTransientMotionForPersistenceRestore();
-                }
-                else
-                {
-                    CharacterController controller = presentationRoot.GetComponent<CharacterController>();
-                    bool predictionMoving = localMotor.CurrentHorizontalSpeed > 0.01f;
-                    float predictionSpeed = predictionMoving
-                        ? Mathf.Max(
-                            localMotor.CurrentHorizontalSpeed,
-                            lastSubmittedSprint ? networkMovement.SprintSpeed : networkMovement.WalkSpeed)
-                        : 0f;
-                    ulong roundTripTimeMilliseconds = GetRoundTripTimeMilliseconds();
-                    float horizontalTolerance = CalculateHorizontalPredictionTolerance(
-                        reconciliationDeadZone,
-                        maximumPredictionLead,
-                        predictionSpeed,
-                        roundTripTimeMilliseconds,
-                        inputSendRate);
-                    airborne = localMotor != null && !localMotor.IsGrounded;
-                    double now = Time.realtimeSinceStartupAsDouble;
-                    if (airborne)
-                    {
-                        wasPredictionAirborne = true;
-                    }
-                    else if (wasPredictionAirborne)
-                    {
-                        wasPredictionAirborne = false;
-                        landingPredictionGraceUntil = now + CalculateLandingPredictionGrace(
-                            minimumLandingGraceSeconds,
-                            maximumLandingGraceSeconds,
-                            roundTripTimeMilliseconds);
-                    }
-
-                    bool landingGraceActive = now < landingPredictionGraceUntil;
-                    if (predictionMoving)
-                    {
-                        wasPredictionMoving = true;
-                    }
-                    else if (wasPredictionMoving)
-                    {
-                        wasPredictionMoving = false;
-                        movementPredictionGraceUntil = now + CalculateMovementPredictionGrace(
-                            minimumMovementGraceSeconds,
-                            maximumMovementGraceSeconds,
-                            roundTripTimeMilliseconds);
-                    }
-
-                    bool movementGraceActive = now < movementPredictionGraceUntil;
-                    suppressVertical = airborne || landingGraceActive || now < jumpPredictionGraceUntil;
-                    // The locally predicted motor owns horizontal movement while input is in
-                    // flight. Correcting against a delayed server snapshot during walking,
-                    // sprinting, strafing, direction changes, or deceleration creates the same
-                    // double-simulation hitch that previously affected jumps. Let the server
-                    // catch up, then reconcile any residual error once local motion is settled.
-                    suppressHorizontal = airborne || landingGraceActive || predictionMoving || movementGraceActive;
-                    float verticalTolerance = controller != null && controller.isGrounded
-                        ? groundedVerticalTolerance
-                        : airborneVerticalTolerance;
-                    Vector3 correctionError = CalculateCorrectionError(
-                        error,
-                        horizontalTolerance,
-                        verticalTolerance,
-                        suppressHorizontal,
-                        suppressVertical);
-                    Vector3 correction = correctionError * (1f - Mathf.Exp(-reconciliationSharpness * Time.unscaledDeltaTime));
-                    if (ShouldApplyControllerCorrection(correction))
-                    {
-                        // Reconciliation is a position correction, not a second simulation tick.
-                        // Calling CharacterController.Move here would alter collision/grounding
-                        // state and fight the local motor's acceleration and direction changes.
-                        SetPresentationPosition(presentationRoot.position + correction);
-                    }
-                }
+                ReconcileAuthoritativeState(
+                    authoritativeState,
+                    out reconciliationError,
+                    out appliedCorrection,
+                    out hardSnapApplied);
             }
             else
             {
                 presentationRoot.position = authoritativePosition;
             }
+
+            if (movementTraceEnabled && !hardSnapApplied)
+            {
+                bool correctionActive = ShouldApplyControllerCorrection(appliedCorrection);
+                if (correctionActive != traceCorrectionWasActive)
+                {
+                    MarkMovementTrace(correctionActive ? "correction-start" : "correction-end");
+                }
+                traceCorrectionWasActive = correctionActive;
+            }
+            TraceClientMovement(
+                authoritativePosition,
+                reconciliationError,
+                appliedCorrection,
+                roundTripTimeMilliseconds,
+                airborne,
+                false,
+                false,
+                hardSnapApplied);
             if ((smokeInputEnabled || vitalsSmokeStarted) && !smokeResultLogged && Time.realtimeSinceStartupAsDouble >= smokeInputEndsAt)
             {
                 smokeResultLogged = true;
@@ -295,25 +310,31 @@ namespace UnityIsekaiGame.Networking.Client
 
             inputSendAccumulator = 0d;
             lastInputSampleAt = 0d;
-            jumpPredictionGraceUntil = 0d;
             lastSubmittedMove = Vector2.zero;
             lastSubmittedSprint = false;
             predictionSprintExhausted = networkVitals != null
                 && networkVitals.HasState
                 && networkVitals.CurrentState.Stamina <= 0.0001f;
             predictionSprintAllowed = true;
-            wasPredictionAirborne = false;
-            landingPredictionGraceUntil = 0d;
-            wasPredictionMoving = false;
-            movementPredictionGraceUntil = 0d;
-            smokeStartPosition = networkMovement.transform.position;
+            pendingStopSequence = 0u;
+            predictionHistory.Clear();
+            pendingPredictedJumpSequences.Clear();
+            pendingPredictionCaptureSequence = 0u;
+            lastReconciledSimulationTick = 0ul;
+            movementTraceDirty = movementTraceEnabled;
+            pendingMovementTracePhase = movementTraceEnabled ? "bind" : null;
+            nextMovementTraceAt = 0d;
+            traceCorrectionWasActive = false;
+            traceRequestedSprint = false;
+            traceSubmittedYaw = 0f;
+            smokeStartPosition = networkMovement.AuthoritativePosition;
             smokeInputEndsAt = Time.realtimeSinceStartupAsDouble + 1.5d;
             smokeResultLogged = false;
             vitalsSmokeStarted = false;
             jumpPending = false;
             if (presentationRoot != null)
             {
-                SetPresentationPosition(networkMovement.transform.position);
+                SetPresentationPosition(networkMovement.AuthoritativePosition);
             }
         }
 
@@ -436,6 +457,25 @@ namespace UnityIsekaiGame.Networking.Client
             return Mathf.Clamp(minimum + roundTripTimeMilliseconds / 1000f, minimum, maximum);
         }
 
+        public static bool HasAcknowledgedSequence(uint acknowledgedSequence, uint expectedSequence)
+        {
+            return expectedSequence != 0u
+                && (acknowledgedSequence == expectedSequence
+                    || NetworkMovementInputValidator.IsNewer(acknowledgedSequence, expectedSequence));
+        }
+
+        public static float CalculateStopSettlementGrace(
+            float maximumSpeed,
+            float deceleration,
+            ulong roundTripTimeMilliseconds,
+            float sendRate)
+        {
+            float brakingSeconds = Mathf.Max(0f, maximumSpeed) / Mathf.Max(0.01f, deceleration);
+            float networkSeconds = Mathf.Min(roundTripTimeMilliseconds / 1000f, 0.5f);
+            float snapshotAllowance = 2f / Mathf.Max(1f, sendRate);
+            return Mathf.Clamp(brakingSeconds + networkSeconds + snapshotAllowance, 0.1f, 0.75f);
+        }
+
         public static bool ShouldApplyControllerCorrection(Vector3 correction)
         {
             return correction.sqrMagnitude > 0.00000001f;
@@ -452,6 +492,273 @@ namespace UnityIsekaiGame.Networking.Client
             {
                 localMotor.SetNetworkPredictionSprintAllowed(predictionSprintAllowed);
             }
+        }
+
+        private void CaptureLatestPredictedSample()
+        {
+            if (pendingPredictionCaptureSequence == 0u || presentationRoot == null)
+            {
+                return;
+            }
+
+            for (int index = predictionHistory.Count - 1; index >= 0; index--)
+            {
+                PredictedMovementSample sample = predictionHistory[index];
+                if (sample.Input.Sequence != pendingPredictionCaptureSequence)
+                {
+                    continue;
+                }
+
+                sample.Position = presentationRoot.position;
+                sample.Captured = true;
+                predictionHistory[index] = sample;
+                break;
+            }
+
+            pendingPredictionCaptureSequence = 0u;
+        }
+
+        private void ReconcileAuthoritativeState(
+            NetworkMovementState state,
+            out Vector3 reconciliationError,
+            out Vector3 appliedCorrection,
+            out bool hardSnapApplied)
+        {
+            reconciliationError = Vector3.zero;
+            appliedCorrection = Vector3.zero;
+            hardSnapApplied = false;
+            if (!state.IsInitialized || state.SimulationTick == 0ul || state.SimulationTick == lastReconciledSimulationTick)
+            {
+                return;
+            }
+
+            lastReconciledSimulationTick = state.SimulationTick;
+            bool rejectedJump = ResolvePredictedJumpOutcomes(state);
+            if (pendingStopSequence != 0u && HasAcknowledgedSequence(state.InputSequence, pendingStopSequence))
+            {
+                pendingStopSequence = 0u;
+                MarkMovementTrace("stop-reconciled");
+            }
+
+            int acknowledgedIndex = FindPredictionSample(state.InputSequence);
+            if (acknowledgedIndex < 0 || !predictionHistory[acknowledgedIndex].Captured)
+            {
+                if (rejectedJump && localMotor != null)
+                {
+                    localMotor.RestoreNetworkPredictionVerticalMotion(
+                        state.VerticalVelocity,
+                        state.Grounded);
+                }
+                return;
+            }
+
+            PredictedMovementSample acknowledged = predictionHistory[acknowledgedIndex];
+            reconciliationError = state.Position - acknowledged.Position;
+            Vector3 correctionError = CalculateCorrectionError(
+                reconciliationError,
+                reconciliationDeadZone,
+                reconciliationDeadZone,
+                false,
+                false);
+            if (rejectedJump)
+            {
+                // A rejected predicted jump must stop its local arc immediately. Retaining a
+                // vertical dead zone here is what previously allowed metres of divergence.
+                correctionError.y = reconciliationError.y;
+            }
+
+            if (reconciliationError.sqrMagnitude >= hardSnapDistance * hardSnapDistance)
+            {
+                appliedCorrection = reconciliationError;
+                hardSnapApplied = true;
+                MarkMovementTrace("hard-snap");
+            }
+            else
+            {
+                float blend = rejectedJump
+                    ? 1f
+                    : 1f - Mathf.Exp(-reconciliationSharpness * Time.unscaledDeltaTime);
+                appliedCorrection = correctionError * blend;
+            }
+
+            if (ShouldApplyControllerCorrection(appliedCorrection))
+            {
+                SetPresentationPosition(presentationRoot.position + appliedCorrection);
+                ShiftPendingPredictions(acknowledgedIndex + 1, appliedCorrection);
+            }
+
+            if (rejectedJump && localMotor != null)
+            {
+                localMotor.RestoreNetworkPredictionVerticalMotion(
+                    state.VerticalVelocity,
+                    state.Grounded);
+                MarkMovementTrace("jump-rejected-reconciled");
+            }
+
+            PruneAcknowledgedPredictions(state.InputSequence);
+        }
+
+        private bool ResolvePredictedJumpOutcomes(NetworkMovementState state)
+        {
+            bool rejected = false;
+            for (int index = pendingPredictedJumpSequences.Count - 1; index >= 0; index--)
+            {
+                uint predictedSequence = pendingPredictedJumpSequences[index];
+                if (!HasAcknowledgedSequence(state.LastProcessedJumpSequence, predictedSequence))
+                {
+                    continue;
+                }
+
+                if (state.LastExecutedJumpSequence != predictedSequence)
+                {
+                    rejected = true;
+                }
+                pendingPredictedJumpSequences.RemoveAt(index);
+            }
+
+            return rejected;
+        }
+
+        private int FindPredictionSample(uint sequence)
+        {
+            for (int index = predictionHistory.Count - 1; index >= 0; index--)
+            {
+                if (predictionHistory[index].Input.Sequence == sequence)
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        private void ShiftPendingPredictions(int firstIndex, Vector3 correction)
+        {
+            for (int index = Mathf.Max(0, firstIndex); index < predictionHistory.Count; index++)
+            {
+                PredictedMovementSample sample = predictionHistory[index];
+                sample.Position += correction;
+                predictionHistory[index] = sample;
+            }
+        }
+
+        private void PruneAcknowledgedPredictions(uint acknowledgedSequence)
+        {
+            int removeCount = 0;
+            while (removeCount < predictionHistory.Count
+                   && HasAcknowledgedSequence(acknowledgedSequence, predictionHistory[removeCount].Input.Sequence))
+            {
+                removeCount++;
+            }
+
+            if (removeCount > 0)
+            {
+                predictionHistory.RemoveRange(0, removeCount);
+            }
+        }
+
+        private void TrimPredictionHistory()
+        {
+            int capacity = Mathf.Clamp(predictionHistoryCapacity, 16, 512);
+            if (predictionHistory.Count > capacity)
+            {
+                predictionHistory.RemoveRange(0, predictionHistory.Count - capacity);
+                MarkMovementTrace("prediction-history-trimmed");
+            }
+        }
+
+        public static Vector3 CalculateReplayedPosition(
+            Vector3 currentPredictedPosition,
+            Vector3 authoritativeAcknowledgedPosition,
+            Vector3 predictedAcknowledgedPosition)
+        {
+            return currentPredictedPosition + authoritativeAcknowledgedPosition - predictedAcknowledgedPosition;
+        }
+
+        public static bool IsPredictedJumpRejected(
+            uint lastProcessedJumpSequence,
+            uint lastExecutedJumpSequence,
+            uint predictedJumpSequence)
+        {
+            return HasAcknowledgedSequence(lastProcessedJumpSequence, predictedJumpSequence)
+                && lastExecutedJumpSequence != predictedJumpSequence;
+        }
+
+        private void MarkMovementTrace(string phase)
+        {
+            if (!movementTraceEnabled)
+            {
+                return;
+            }
+
+            movementTraceDirty = true;
+            pendingMovementTracePhase = phase;
+        }
+
+        private void RefreshMovementTraceState()
+        {
+            bool requested = NetworkMovementTrace.IsRequested();
+            if (requested == movementTraceEnabled) return;
+
+            movementTraceEnabled = requested;
+            movementTraceDirty = requested;
+            pendingMovementTracePhase = requested ? "trace-enabled" : null;
+            nextMovementTraceAt = 0d;
+            if (!requested) traceCorrectionWasActive = false;
+        }
+
+        private void TraceClientMovement(
+            Vector3 authoritativePosition,
+            Vector3 reconciliationError,
+            Vector3 appliedCorrection,
+            ulong roundTripTimeMilliseconds,
+            bool airborne,
+            bool suppressHorizontal,
+            bool suppressVertical,
+            bool hardSnapApplied)
+        {
+            if (!movementTraceEnabled)
+            {
+                return;
+            }
+
+            double now = Time.realtimeSinceStartupAsDouble;
+            bool active = lastSubmittedMove.sqrMagnitude > 0.0001f
+                || pendingStopSequence != 0u
+                || (localMotor != null && localMotor.CurrentHorizontalSpeed > 0.01f)
+                || airborne
+                || reconciliationError.sqrMagnitude > reconciliationDeadZone * reconciliationDeadZone;
+            if (!movementTraceDirty && (!active || now < nextMovementTraceAt))
+            {
+                return;
+            }
+
+            string phase = string.IsNullOrWhiteSpace(pendingMovementTracePhase)
+                ? "sample"
+                : pendingMovementTracePhase;
+            movementTraceDirty = false;
+            pendingMovementTracePhase = null;
+            nextMovementTraceAt = now + NetworkMovementTrace.SampleIntervalSeconds;
+            NetworkPlayerActor actor = networkMovement.GetComponent<NetworkPlayerActor>();
+            NetworkMovementState authoritativeState = networkMovement.AuthoritativeState;
+            Debug.Log(
+                $"[Movement Trace][Client] utc={NetworkMovementTrace.TimestampUtc()} phase={phase} " +
+                $"actor={actor?.ActorId ?? networkMovement.name} seq={networkMovement.LastSubmittedSequence} " +
+                $"ack={networkMovement.LastAcceptedSequence} authTick={authoritativeState.SimulationTick} " +
+                $"move={NetworkMovementTrace.Format(lastSubmittedMove)} " +
+                $"yaw={traceSubmittedYaw:F2} requestedSprint={traceRequestedSprint} allowedSprint={lastSubmittedSprint} " +
+                $"predicted={NetworkMovementTrace.Format(presentationRoot.position)} " +
+                $"authority={NetworkMovementTrace.Format(authoritativePosition)} " +
+                $"error={NetworkMovementTrace.Format(reconciliationError)} " +
+                $"correction={NetworkMovementTrace.Format(appliedCorrection)} " +
+                $"speed={(localMotor == null ? 0f : localMotor.CurrentHorizontalSpeed):F3} " +
+                $"verticalSpeed={(localMotor == null ? 0f : localMotor.VerticalVelocity):F3} " +
+                $"grounded={localMotor != null && localMotor.IsGrounded} airborne={airborne} " +
+                $"suppressHorizontal={suppressHorizontal} suppressVertical={suppressVertical} " +
+                $"pendingStop={pendingStopSequence} history={predictionHistory.Count} " +
+                $"processedJump={authoritativeState.LastProcessedJumpSequence} executedJump={authoritativeState.LastExecutedJumpSequence} " +
+                $"pendingPredictedJumps={pendingPredictedJumpSequences.Count} hardSnap={hardSnapApplied} rttMs={roundTripTimeMilliseconds}",
+                this);
         }
 
         private ulong GetRoundTripTimeMilliseconds()

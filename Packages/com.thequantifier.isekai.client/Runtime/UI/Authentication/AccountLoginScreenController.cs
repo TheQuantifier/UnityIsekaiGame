@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -19,7 +20,8 @@ namespace UnityIsekaiGame.UI.Authentication
     [DisallowMultipleComponent]
     public sealed class AccountLoginScreenController : MonoBehaviour
     {
-        private const string BackgroundResourcePath = "Login/backgroundimage";
+        private const string BackgroundResourcePath = "Login/backgroundimage-v2";
+        private const string CrestResourcePath = "Login/isekai-reality-crest";
         private static bool hooksInstalled;
 
         private readonly List<Canvas> hiddenCanvases = new List<Canvas>();
@@ -32,9 +34,21 @@ namespace UnityIsekaiGame.UI.Authentication
         private InputField passwordField;
         private Button loginButton;
         private Button createAccountButton;
+        private Button settingsButton;
+        private GameObject settingsOverlay;
+        private GameObject graphicsSettingsPage;
+        private GameObject gameSettingsPage;
+        private Button applyDisplayButton;
+        private Button graphicsTabButton;
+        private Button gameTabButton;
+        private Dropdown resolutionDropdown;
+        private Dropdown displayModeDropdown;
         private Text statusText;
+        private readonly List<GameDisplayResolution> displayedResolutions = new List<GameDisplayResolution>();
         private Rect lastPixelRect;
         private bool enteringWorld;
+        private bool submitAfterReconnect;
+        private bool reconnectCreateAccount;
         private float nextCanvasSuppressionAt;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -117,7 +131,23 @@ namespace UnityIsekaiGame.UI.Authentication
                 usernameField.ActivateInputField();
             }
 
-            if (TryReadCommandLineValue("--capture-login-screen", out string screenshotPath))
+            if (TryReadCommandLineValue("--capture-login-settings-dropdown", out string dropdownScreenshotPath))
+            {
+                OpenSettings();
+                StartCoroutine(CaptureLoginDropdown(dropdownScreenshotPath));
+            }
+            else if (TryReadCommandLineValue("--capture-login-game-settings", out string gameSettingsScreenshotPath))
+            {
+                OpenSettings();
+                ShowSettingsPage(false);
+                StartCoroutine(CaptureLoginScreen(gameSettingsScreenshotPath));
+            }
+            else if (TryReadCommandLineValue("--capture-login-settings", out string settingsScreenshotPath))
+            {
+                OpenSettings();
+                StartCoroutine(CaptureLoginScreen(settingsScreenshotPath));
+            }
+            else if (TryReadCommandLineValue("--capture-login-screen", out string screenshotPath))
             {
                 StartCoroutine(CaptureLoginScreen(screenshotPath));
             }
@@ -125,6 +155,14 @@ namespace UnityIsekaiGame.UI.Authentication
 
         private void LateUpdate()
         {
+            if (settingsOverlay != null
+                && settingsOverlay.activeSelf
+                && Keyboard.current != null
+                && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                CloseSettings();
+            }
+
             if (Time.unscaledTime >= nextCanvasSuppressionAt)
             {
                 HideGameplayCanvases();
@@ -171,7 +209,9 @@ namespace UnityIsekaiGame.UI.Authentication
             }
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.overrideSorting = true;
-            canvas.sortingOrder = short.MaxValue;
+            // Unity's runtime Dropdown creates its popup canvas at sorting order 30000.
+            // Keep the login UI beneath that layer so option lists render above this modal.
+            canvas.sortingOrder = 20000;
             canvas.targetDisplay = 0;
             if (GetComponent<GraphicRaycaster>() == null)
             {
@@ -194,58 +234,74 @@ namespace UnityIsekaiGame.UI.Authentication
             Stretch(shade.rectTransform);
 
             RectTransform banner = CreateRect("Leather Login Banner", transform);
-            banner.anchorMin = new Vector2(0.022f, 0f);
-            banner.anchorMax = new Vector2(0.37f, 1f);
+            banner.anchorMin = new Vector2(0.024f, 0f);
+            banner.anchorMax = new Vector2(0.382f, 1f);
             banner.offsetMin = Vector2.zero;
             banner.offsetMax = Vector2.zero;
-            Image bannerImage = banner.gameObject.AddComponent<Image>();
-            bannerImage.color = new Color(0.17f, 0.075f, 0.03f, 0.97f);
+            LoginOrnamentGraphic bannerGraphic = banner.gameObject.AddComponent<LoginOrnamentGraphic>();
+            bannerGraphic.Configure(LoginOrnamentGraphic.OrnamentStyle.Leather);
 
             Image leftEdge = CreateImage("Leather Edge", banner, new Color(0.78f, 0.51f, 0.19f, 0.88f));
             RectTransform edgeRect = leftEdge.rectTransform;
             edgeRect.anchorMin = new Vector2(0f, 0f);
             edgeRect.anchorMax = new Vector2(0f, 1f);
             edgeRect.pivot = new Vector2(0f, 0.5f);
-            edgeRect.sizeDelta = new Vector2(7f, 0f);
+            edgeRect.sizeDelta = new Vector2(5f, 0f);
             edgeRect.anchoredPosition = Vector2.zero;
 
-            Image innerLeather = CreateImage("Leather Inset", banner, new Color(0.31f, 0.16f, 0.07f, 0.9f));
-            RectTransform innerRect = innerLeather.rectTransform;
-            innerRect.anchorMin = new Vector2(0.06f, 0.08f);
-            innerRect.anchorMax = new Vector2(0.94f, 0.92f);
+            RectTransform innerRect = CreateRect("Ornate Gold Frame", banner);
+            innerRect.anchorMin = new Vector2(0.055f, 0.045f);
+            innerRect.anchorMax = new Vector2(0.945f, 0.955f);
             innerRect.offsetMin = Vector2.zero;
             innerRect.offsetMax = Vector2.zero;
-            GameUiTheme.StylePanel(innerLeather, true);
+            LoginOrnamentGraphic frame = innerRect.gameObject.AddComponent<LoginOrnamentGraphic>();
+            frame.Configure(LoginOrnamentGraphic.OrnamentStyle.Frame);
 
             RectTransform form = CreateRect("Login Form", innerRect);
-            form.anchorMin = new Vector2(0.1f, 0.5f);
-            form.anchorMax = new Vector2(0.9f, 0.5f);
-            form.pivot = new Vector2(0.5f, 0.5f);
-            form.sizeDelta = new Vector2(0f, 300f);
-            form.anchoredPosition = Vector2.zero;
-            VerticalLayoutGroup layout = form.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(8, 8, 8, 8);
-            layout.spacing = 8f;
-            layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.childControlHeight = true;
-            layout.childControlWidth = true;
-            layout.childForceExpandHeight = false;
-            layout.childForceExpandWidth = true;
+            form.anchorMin = new Vector2(0.08f, 0.04f);
+            form.anchorMax = new Vector2(0.92f, 0.96f);
+            form.offsetMin = Vector2.zero;
+            form.offsetMax = Vector2.zero;
 
-            Text title = CreateText("Login Title", form, "UNITY ISEKAI", 34, FontStyle.Bold, GameUiTheme.AccentBright);
+            RawImage crest = CreateRawImage("Isekai Reality Crest", form);
+            crest.texture = Resources.Load<Texture2D>(CrestResourcePath);
+            crest.color = crest.texture == null ? Color.clear : Color.white;
+            crest.rectTransform.anchorMin = new Vector2(0.5f, 0.855f);
+            crest.rectTransform.anchorMax = new Vector2(0.5f, 0.855f);
+            crest.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            crest.rectTransform.sizeDelta = new Vector2(165f, 165f);
+            crest.rectTransform.anchoredPosition = Vector2.zero;
+            crest.raycastTarget = false;
+
+            Text title = CreateText("Login Title", form, "ISEKAI REALITY", 43, FontStyle.Bold, GameUiTheme.AccentBright);
             title.alignment = TextAnchor.MiddleCenter;
-            AddLayout(title.gameObject, 44f);
-            Text subtitle = CreateText("Login Subtitle", form, "ENTER THE WORLD", 16, FontStyle.Bold, GameUiTheme.TextMuted);
-            subtitle.alignment = TextAnchor.MiddleCenter;
-            AddLayout(subtitle.gameObject, 28f);
+            title.resizeTextForBestFit = true;
+            title.resizeTextMinSize = 27;
+            title.resizeTextMaxSize = 43;
+            title.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Place(title.rectTransform, new Vector2(0.02f, 0.655f), new Vector2(0.98f, 0.755f));
+            GameUiTheme.EnsureTextShadow(title, 2f);
 
-            usernameField = CreateInputField("Username Pill Input", form, "username or user ID...", false);
-            passwordField = CreateInputField("Password Pill Input", form, "password...", true);
+            Text subtitle = CreateText("Login Subtitle", form, "E N T E R   T H E   W O R L D", 14, FontStyle.Normal, GameUiTheme.AccentBright);
+            subtitle.alignment = TextAnchor.MiddleCenter;
+            subtitle.resizeTextForBestFit = true;
+            subtitle.resizeTextMinSize = 10;
+            subtitle.resizeTextMaxSize = 14;
+            Place(subtitle.rectTransform, new Vector2(0.08f, 0.605f), new Vector2(0.92f, 0.655f));
+
+            CreateSeparator("Title Separator", form, new Vector2(0.08f, 0.575f), new Vector2(0.92f, 0.605f));
+
+            usernameField = CreateInputField("Username Input", form, "Username or user ID", false);
+            Place(usernameField.GetComponent<RectTransform>(), new Vector2(0.04f, 0.485f), new Vector2(0.96f, 0.555f));
+            passwordField = CreateInputField("Password Input", form, "Password", true);
+            Place(passwordField.GetComponent<RectTransform>(), new Vector2(0.04f, 0.385f), new Vector2(0.96f, 0.455f));
             usernameField.characterLimit = AccountAuthenticationProtocol.SecureUserIdLength;
             passwordField.characterLimit = LocalConnectionProtocol.MaximumPasswordLength;
 
-            loginButton = CreateButton("Login Pill Button", form, "LOGIN", () => Submit(false), GameUiButtonTone.Neutral);
-            createAccountButton = CreateButton("Register Account Pill Button", form, "CREATE ACCOUNT", () => Submit(true), GameUiButtonTone.Neutral);
+            loginButton = CreateButton("Login Button", form, "LOGIN", () => Submit(false), GameUiButtonTone.Primary);
+            Place(loginButton.GetComponent<RectTransform>(), new Vector2(0.04f, 0.275f), new Vector2(0.96f, 0.35f));
+            createAccountButton = CreateButton("Register Account Button", form, "CREATE ACCOUNT", () => Submit(true), GameUiButtonTone.Neutral);
+            Place(createAccountButton.GetComponent<RectTransform>(), new Vector2(0.04f, 0.185f), new Vector2(0.96f, 0.25f));
             if (usernameField is ExplicitSubmitInputField usernameSubmit)
             {
                 usernameSubmit.Submitted += InvokeLoginButton;
@@ -255,21 +311,257 @@ namespace UnityIsekaiGame.UI.Authentication
                 passwordSubmit.Submitted += InvokeLoginButton;
             }
 
-            statusText = CreateText("Login Feedback", form, string.Empty, 15, FontStyle.Bold, GameUiTheme.TextMuted);
-            statusText.alignment = TextAnchor.UpperCenter;
+            CreateSeparator("Status Separator", form, new Vector2(0.08f, 0.125f), new Vector2(0.92f, 0.155f));
+
+            statusText = CreateText("Login Feedback", form, string.Empty, 14, FontStyle.Normal, GameUiTheme.TextMuted);
+            statusText.alignment = TextAnchor.MiddleCenter;
             statusText.horizontalOverflow = HorizontalWrapMode.Wrap;
-            statusText.verticalOverflow = VerticalWrapMode.Overflow;
-            AddLayout(statusText.gameObject, 42f);
+            statusText.verticalOverflow = VerticalWrapMode.Truncate;
+            Place(statusText.rectTransform, new Vector2(0.07f, 0.025f), new Vector2(0.93f, 0.12f));
 
             if (texture != null)
             {
                 ApplyCoverCrop(background, texture, new Vector2(Screen.width, Screen.height));
             }
+
+            BuildSettingsInterface();
+        }
+
+        private void BuildSettingsInterface()
+        {
+            settingsButton = CreateIconButton("Display Settings Button", transform, OpenSettings);
+            RectTransform settingsButtonRect = settingsButton.GetComponent<RectTransform>();
+            settingsButtonRect.anchorMin = Vector2.one;
+            settingsButtonRect.anchorMax = Vector2.one;
+            settingsButtonRect.pivot = Vector2.one;
+            settingsButtonRect.anchoredPosition = new Vector2(-26f, -26f);
+            settingsButtonRect.sizeDelta = new Vector2(62f, 62f);
+
+            settingsOverlay = CreateRect("Display Settings Overlay", transform).gameObject;
+            RectTransform overlayRect = settingsOverlay.GetComponent<RectTransform>();
+            Stretch(overlayRect);
+            Image overlayShade = settingsOverlay.AddComponent<Image>();
+            overlayShade.color = new Color(0.025f, 0.012f, 0.006f, 0.70f);
+            overlayShade.raycastTarget = true;
+
+            RectTransform panel = CreateRect("Settings Leather Banner", settingsOverlay.transform);
+            panel.anchorMin = new Vector2(0.5f, 0.5f);
+            panel.anchorMax = new Vector2(0.5f, 0.5f);
+            panel.pivot = new Vector2(0.5f, 0.5f);
+            panel.sizeDelta = new Vector2(720f, 520f);
+            panel.anchoredPosition = Vector2.zero;
+            LoginOrnamentGraphic leather = panel.gameObject.AddComponent<LoginOrnamentGraphic>();
+            leather.Configure(LoginOrnamentGraphic.OrnamentStyle.Leather, true);
+
+            RectTransform frameRect = CreateRect("Settings Ornate Frame", panel);
+            Place(frameRect, new Vector2(0.025f, 0.035f), new Vector2(0.975f, 0.965f));
+            LoginOrnamentGraphic frame = frameRect.gameObject.AddComponent<LoginOrnamentGraphic>();
+            frame.Configure(LoginOrnamentGraphic.OrnamentStyle.Frame);
+
+            Text heading = CreateText("Settings Heading", frameRect, "SETTINGS", 31, FontStyle.Bold, GameUiTheme.AccentBright);
+            heading.alignment = TextAnchor.MiddleCenter;
+            Place(heading.rectTransform, new Vector2(0.08f, 0.845f), new Vector2(0.92f, 0.95f));
+            GameUiTheme.EnsureTextShadow(heading, 1.6f);
+
+            CreateSeparator("Settings Header Separator", frameRect, new Vector2(0.08f, 0.82f), new Vector2(0.92f, 0.845f));
+
+            gameTabButton = CreateSettingsTab(
+                "Game Settings Group",
+                frameRect,
+                "GAME",
+                LoginOrnamentGraphic.OrnamentStyle.ControllerIcon,
+                0.40f,
+                () => ShowSettingsPage(false));
+            graphicsTabButton = CreateSettingsTab(
+                "Graphics Settings Group",
+                frameRect,
+                "GRAPHICS",
+                LoginOrnamentGraphic.OrnamentStyle.GearIcon,
+                0.60f,
+                () => ShowSettingsPage(true));
+
+            RectTransform options = CreateRect("Graphics Options", frameRect);
+            graphicsSettingsPage = options.gameObject;
+            Place(options, new Vector2(0.12f, 0.155f), new Vector2(0.88f, 0.615f));
+
+            Text resolutionLabel = CreateText("Window Size Label", options, "WINDOW SIZE", 16, FontStyle.Bold, GameUiTheme.AccentBright);
+            resolutionLabel.alignment = TextAnchor.MiddleLeft;
+            Place(resolutionLabel.rectTransform, new Vector2(0f, 0.72f), new Vector2(0.35f, 0.94f));
+            resolutionDropdown = CreateDropdown("Window Size Dropdown", options);
+            Place(resolutionDropdown.GetComponent<RectTransform>(), new Vector2(0.38f, 0.72f), new Vector2(1f, 0.94f));
+
+            Text modeLabel = CreateText("Fullscreen Mode Label", options, "FULLSCREEN MODE", 16, FontStyle.Bold, GameUiTheme.AccentBright);
+            modeLabel.alignment = TextAnchor.MiddleLeft;
+            Place(modeLabel.rectTransform, new Vector2(0f, 0.37f), new Vector2(0.35f, 0.59f));
+            displayModeDropdown = CreateDropdown("Fullscreen Mode Dropdown", options);
+            Place(displayModeDropdown.GetComponent<RectTransform>(), new Vector2(0.38f, 0.37f), new Vector2(1f, 0.59f));
+            displayModeDropdown.AddOptions(new List<string> { "Fullscreen", "Borderless", "Windowed" });
+
+            Text hint = CreateText(
+                "Settings Hint",
+                options,
+                "Borderless fills the current monitor and is recommended for fast multitasking.",
+                13,
+                FontStyle.Normal,
+                GameUiTheme.TextMuted);
+            hint.alignment = TextAnchor.MiddleCenter;
+            Place(hint.rectTransform, new Vector2(0f, 0.02f), new Vector2(1f, 0.22f));
+
+            RectTransform gamePage = CreateRect("Game Options", frameRect);
+            gameSettingsPage = gamePage.gameObject;
+            Place(gamePage, new Vector2(0.12f, 0.155f), new Vector2(0.88f, 0.615f));
+            Text gameHint = CreateText(
+                "Game Settings Hint",
+                gamePage,
+                "Exit the client and return to your desktop.",
+                15,
+                FontStyle.Normal,
+                GameUiTheme.TextMuted);
+            gameHint.alignment = TextAnchor.MiddleCenter;
+            Place(gameHint.rectTransform, new Vector2(0.08f, 0.62f), new Vector2(0.92f, 0.83f));
+            Button quitButton = CreateButton("Quit Game Button", gamePage, "QUIT GAME", QuitGame, GameUiButtonTone.Neutral);
+            Place(quitButton.GetComponent<RectTransform>(), new Vector2(0.25f, 0.30f), new Vector2(0.75f, 0.54f));
+
+            applyDisplayButton = CreateButton("Apply Display Settings", frameRect, "APPLY", ApplyDisplaySettings, GameUiButtonTone.Primary);
+            Place(applyDisplayButton.GetComponent<RectTransform>(), new Vector2(0.18f, 0.055f), new Vector2(0.48f, 0.145f));
+            Button closeButton = CreateButton("Close Display Settings", frameRect, "CLOSE", CloseSettings, GameUiButtonTone.Neutral);
+            Place(closeButton.GetComponent<RectTransform>(), new Vector2(0.52f, 0.055f), new Vector2(0.82f, 0.145f));
+
+            ShowSettingsPage(false);
+            settingsOverlay.SetActive(false);
+        }
+
+        private Button CreateSettingsTab(
+            string name,
+            Transform parent,
+            string label,
+            LoginOrnamentGraphic.OrnamentStyle iconStyle,
+            float horizontalAnchor,
+            Action clicked)
+        {
+            RectTransform root = CreateRect(name, parent);
+            root.anchorMin = new Vector2(horizontalAnchor, 0.705f);
+            root.anchorMax = new Vector2(horizontalAnchor, 0.705f);
+            root.pivot = new Vector2(0.5f, 0.5f);
+            root.sizeDelta = new Vector2(130f, 86f);
+            root.anchoredPosition = Vector2.zero;
+
+            LoginOrnamentGraphic surface = root.gameObject.AddComponent<LoginOrnamentGraphic>();
+            surface.Configure(LoginOrnamentGraphic.OrnamentStyle.SecondaryButton, true);
+            Button button = root.gameObject.AddComponent<Button>();
+            button.targetGraphic = surface;
+            button.onClick.AddListener(() => clicked());
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1f, 0.90f, 0.65f, 1f);
+            colors.selectedColor = colors.highlightedColor;
+            colors.pressedColor = new Color(0.72f, 0.55f, 0.34f, 1f);
+            colors.disabledColor = new Color(1f, 0.77f, 0.34f, 1f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+
+            RectTransform icon = CreateRect(label + " Icon", root);
+            icon.anchorMin = new Vector2(0.5f, 0.58f);
+            icon.anchorMax = new Vector2(0.5f, 0.58f);
+            icon.pivot = new Vector2(0.5f, 0.5f);
+            icon.sizeDelta = new Vector2(39f, 39f);
+            icon.anchoredPosition = Vector2.zero;
+            LoginOrnamentGraphic iconGraphic = icon.gameObject.AddComponent<LoginOrnamentGraphic>();
+            iconGraphic.Configure(iconStyle);
+
+            Text groupLabel = CreateText(label + " Group Label", root, label, 13, FontStyle.Bold, GameUiTheme.AccentBright);
+            groupLabel.alignment = TextAnchor.MiddleCenter;
+            Place(groupLabel.rectTransform, new Vector2(0.05f, 0.03f), new Vector2(0.95f, 0.30f));
+            return button;
+        }
+
+        private void ShowSettingsPage(bool showGraphics)
+        {
+            if (graphicsSettingsPage != null)
+            {
+                graphicsSettingsPage.SetActive(showGraphics);
+            }
+
+            if (gameSettingsPage != null)
+            {
+                gameSettingsPage.SetActive(!showGraphics);
+            }
+
+            if (applyDisplayButton != null)
+            {
+                applyDisplayButton.gameObject.SetActive(showGraphics);
+            }
+
+            if (graphicsTabButton != null)
+            {
+                graphicsTabButton.interactable = !showGraphics;
+            }
+
+            if (gameTabButton != null)
+            {
+                gameTabButton.interactable = showGraphics;
+            }
+        }
+
+        private static void QuitGame()
+        {
+            Debug.Log("[Login UI] Quit requested from the Game settings page.");
+            Application.Quit();
+        }
+
+        private void OpenSettings()
+        {
+            ClientDisplaySettings settings = ClientDisplaySettings.Instance;
+            if (settings == null || settingsOverlay == null)
+            {
+                return;
+            }
+
+            settings.RefreshForCurrentDisplay();
+            displayedResolutions.Clear();
+            displayedResolutions.AddRange(settings.AvailableResolutions);
+            resolutionDropdown.ClearOptions();
+            resolutionDropdown.AddOptions(displayedResolutions.ConvertAll(value => value.Label));
+            resolutionDropdown.SetValueWithoutNotify(Mathf.Max(0, displayedResolutions.IndexOf(settings.SelectedResolution)));
+            resolutionDropdown.RefreshShownValue();
+            displayModeDropdown.SetValueWithoutNotify((int)settings.SelectedMode);
+            displayModeDropdown.RefreshShownValue();
+            ShowSettingsPage(false);
+            settingsOverlay.SetActive(true);
+            settingsOverlay.transform.SetAsLastSibling();
+            SetControlsInteractable(false);
+            EventSystem.current?.SetSelectedGameObject(resolutionDropdown.gameObject);
+        }
+
+        private void ApplyDisplaySettings()
+        {
+            if (resolutionDropdown == null
+                || displayModeDropdown == null
+                || displayedResolutions.Count == 0)
+            {
+                return;
+            }
+
+            int resolutionIndex = Mathf.Clamp(resolutionDropdown.value, 0, displayedResolutions.Count - 1);
+            int modeIndex = Mathf.Clamp(displayModeDropdown.value, 0, Enum.GetValues(typeof(GameDisplayMode)).Length - 1);
+            ClientDisplaySettings.Instance?.Apply((GameDisplayMode)modeIndex, displayedResolutions[resolutionIndex]);
+        }
+
+        private void CloseSettings()
+        {
+            if (settingsOverlay == null)
+            {
+                return;
+            }
+
+            settingsOverlay.SetActive(false);
+            SetControlsInteractable(!enteringWorld);
+            EventSystem.current?.SetSelectedGameObject(usernameField != null ? usernameField.gameObject : null);
         }
 
         private void Submit(bool createAccount)
         {
-            if (client == null || !client.IsConnected || enteringWorld)
+            if (client == null || enteringWorld)
             {
                 return;
             }
@@ -299,6 +591,21 @@ namespace UnityIsekaiGame.UI.Authentication
                 return;
             }
 
+            if (!client.IsConnected)
+            {
+                submitAfterReconnect = true;
+                reconnectCreateAccount = createAccount;
+                SetControlsInteractable(false);
+                SetFeedback("Reconnecting to the server...", GameUiTheme.TextMuted);
+                if (!client.ReconnectApplication())
+                {
+                    submitAfterReconnect = false;
+                    SetControlsInteractable(true);
+                }
+                return;
+            }
+
+            submitAfterReconnect = false;
             SetControlsInteractable(false);
             SetFeedback(createAccount ? "Creating account..." : "Verifying account...", GameUiTheme.TextMuted);
             if (!client.ConnectWithCredentials(username, password, createAccount))
@@ -330,17 +637,23 @@ namespace UnityIsekaiGame.UI.Authentication
                     enteringWorld = false;
                     SetControlsInteractable(true);
                     SetFeedback("App connection accepted. Enter your account credentials.", GameUiTheme.TextMuted);
+                    if (submitAfterReconnect)
+                    {
+                        bool createAccount = reconnectCreateAccount;
+                        submitAfterReconnect = false;
+                        Submit(createAccount);
+                    }
                     break;
                 case LocalConnectionPhase.Failed:
-                    passwordField.text = string.Empty;
-                    SetControlsInteractable(client != null && client.IsConnected);
+                    submitAfterReconnect = false;
+                    SetControlsInteractable(true);
                     SetFeedback(status.Message, GameUiTheme.Danger);
                     enteringWorld = false;
                     passwordField.Select();
                     passwordField.ActivateInputField();
                     break;
                 case LocalConnectionPhase.Offline:
-                    SetControlsInteractable(false);
+                    SetControlsInteractable(true);
                     if (!string.IsNullOrWhiteSpace(status.Message) && !status.Message.Contains("credentials"))
                     {
                         SetFeedback(status.Message, GameUiTheme.TextMuted);
@@ -354,6 +667,7 @@ namespace UnityIsekaiGame.UI.Authentication
             if (response.Succeeded)
             {
                 enteringWorld = true;
+                passwordField.text = string.Empty;
                 SetControlsInteractable(false);
                 SetFeedback($"Welcome, {response.Username}. Preparing your character...", GameUiTheme.Success);
                 return;
@@ -536,37 +850,214 @@ namespace UnityIsekaiGame.UI.Authentication
 
         private static InputField CreateInputField(string name, Transform parent, string placeholderValue, bool password)
         {
-            Image backgroundImage = CreateImage(name, parent, GameUiTheme.SurfaceInset);
-            RectTransform root = backgroundImage.rectTransform;
-            AddLayout(root.gameObject, 30f);
+            RectTransform root = CreateRect(name, parent);
+            LoginOrnamentGraphic backgroundGraphic = root.gameObject.AddComponent<LoginOrnamentGraphic>();
+            backgroundGraphic.Configure(LoginOrnamentGraphic.OrnamentStyle.Input, true);
             InputField field = root.gameObject.AddComponent<ExplicitSubmitInputField>();
+
+            RectTransform iconWell = CreateRect(password ? "Lock Icon Well" : "User Icon Well", root);
+            iconWell.anchorMin = Vector2.zero;
+            iconWell.anchorMax = new Vector2(0.135f, 1f);
+            iconWell.offsetMin = Vector2.zero;
+            iconWell.offsetMax = Vector2.zero;
+            LoginOrnamentGraphic icon = iconWell.gameObject.AddComponent<LoginOrnamentGraphic>();
+            icon.Configure(password ? LoginOrnamentGraphic.OrnamentStyle.LockIcon : LoginOrnamentGraphic.OrnamentStyle.UserIcon);
+
+            Image iconDivider = CreateImage("Icon Divider", root, new Color(0.70f, 0.43f, 0.12f, 0.48f));
+            RectTransform dividerRect = iconDivider.rectTransform;
+            dividerRect.anchorMin = new Vector2(0.135f, 0.13f);
+            dividerRect.anchorMax = new Vector2(0.135f, 0.87f);
+            dividerRect.sizeDelta = new Vector2(1f, 0f);
+            dividerRect.anchoredPosition = Vector2.zero;
+
             RectTransform textArea = CreateRect("Text Area", root);
-            textArea.anchorMin = Vector2.zero;
+            textArea.anchorMin = new Vector2(0.135f, 0f);
             textArea.anchorMax = Vector2.one;
-            textArea.offsetMin = new Vector2(16f, 3f);
-            textArea.offsetMax = new Vector2(-16f, -3f);
-            Text text = CreateText("Text", textArea, string.Empty, 15, FontStyle.Normal, GameUiTheme.TextPrimary);
+            textArea.offsetMin = new Vector2(18f, 4f);
+            textArea.offsetMax = new Vector2(-18f, -4f);
+            Text text = CreateText("Text", textArea, string.Empty, 17, FontStyle.Normal, GameUiTheme.TextPrimary);
             Stretch(text.rectTransform);
             text.alignment = TextAnchor.MiddleLeft;
-            Text placeholder = CreateText("Placeholder", textArea, placeholderValue, 15, FontStyle.Italic, new Color(GameUiTheme.TextMuted.r, GameUiTheme.TextMuted.g, GameUiTheme.TextMuted.b, 0.62f));
+            Text placeholder = CreateText("Placeholder", textArea, placeholderValue, 17, FontStyle.Normal, new Color(GameUiTheme.TextMuted.r, GameUiTheme.TextMuted.g, GameUiTheme.TextMuted.b, 0.78f));
             Stretch(placeholder.rectTransform);
             placeholder.alignment = TextAnchor.MiddleLeft;
             field.textComponent = text;
             field.placeholder = placeholder;
-            field.targetGraphic = backgroundImage;
+            field.targetGraphic = backgroundGraphic;
             field.lineType = InputField.LineType.SingleLine;
             field.contentType = password ? InputField.ContentType.Password : InputField.ContentType.Standard;
             field.asteriskChar = '\u2022';
             GameUiTheme.StyleInputField(field);
-            GameUiTheme.StylePillSurface(backgroundImage);
-            backgroundImage.color = new Color(0.20f, 0.085f, 0.025f, 0.98f);
             ColorBlock fieldColors = field.colors;
             fieldColors.normalColor = Color.white;
-            fieldColors.highlightedColor = new Color(1f, 0.94f, 0.82f, 1f);
-            fieldColors.selectedColor = new Color(1f, 0.94f, 0.82f, 1f);
-            fieldColors.pressedColor = Color.white;
+            fieldColors.highlightedColor = new Color(1f, 0.92f, 0.72f, 1f);
+            fieldColors.selectedColor = new Color(1f, 0.92f, 0.72f, 1f);
+            fieldColors.pressedColor = new Color(0.94f, 0.84f, 0.68f, 1f);
+            fieldColors.disabledColor = new Color(0.48f, 0.43f, 0.38f, 0.82f);
+            fieldColors.fadeDuration = 0.1f;
             field.colors = fieldColors;
             return field;
+        }
+
+        private static Button CreateIconButton(string name, Transform parent, Action clicked)
+        {
+            RectTransform root = CreateRect(name, parent);
+            LoginOrnamentGraphic surface = root.gameObject.AddComponent<LoginOrnamentGraphic>();
+            surface.Configure(LoginOrnamentGraphic.OrnamentStyle.SecondaryButton, true);
+            Button button = root.gameObject.AddComponent<Button>();
+            button.targetGraphic = surface;
+            button.onClick.AddListener(() => clicked());
+
+            RectTransform iconRect = CreateRect("Gear Icon", root);
+            Place(iconRect, new Vector2(0.18f, 0.18f), new Vector2(0.82f, 0.82f));
+            LoginOrnamentGraphic icon = iconRect.gameObject.AddComponent<LoginOrnamentGraphic>();
+            icon.Configure(LoginOrnamentGraphic.OrnamentStyle.GearIcon);
+
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1f, 0.91f, 0.66f, 1f);
+            colors.selectedColor = colors.highlightedColor;
+            colors.pressedColor = new Color(0.75f, 0.58f, 0.38f, 1f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+            return button;
+        }
+
+        private static Dropdown CreateDropdown(string name, Transform parent)
+        {
+            RectTransform root = CreateRect(name, parent);
+            LoginOrnamentGraphic surface = root.gameObject.AddComponent<LoginOrnamentGraphic>();
+            surface.Configure(LoginOrnamentGraphic.OrnamentStyle.Input, true);
+            Dropdown dropdown = root.gameObject.AddComponent<ToggleDropdown>();
+            dropdown.targetGraphic = surface;
+
+            Text caption = CreateText("Label", root, string.Empty, 16, FontStyle.Normal, GameUiTheme.TextPrimary);
+            caption.alignment = TextAnchor.MiddleLeft;
+            caption.resizeTextForBestFit = true;
+            caption.resizeTextMinSize = 12;
+            caption.resizeTextMaxSize = 16;
+            Place(caption.rectTransform, new Vector2(0.06f, 0.08f), new Vector2(0.84f, 0.92f));
+
+            Text arrow = CreateText("Arrow", root, "v", 17, FontStyle.Bold, GameUiTheme.AccentBright);
+            arrow.alignment = TextAnchor.MiddleCenter;
+            Place(arrow.rectTransform, new Vector2(0.84f, 0.08f), new Vector2(0.96f, 0.92f));
+
+            RectTransform template = CreateRect("Template", root);
+            template.anchorMin = new Vector2(0f, 0f);
+            template.anchorMax = new Vector2(1f, 0f);
+            template.pivot = new Vector2(0.5f, 1f);
+            template.anchoredPosition = new Vector2(0f, -4f);
+            template.sizeDelta = new Vector2(0f, 210f);
+            template.gameObject.AddComponent<GameUiThemeOptOut>();
+            template.gameObject.AddComponent<CanvasGroup>();
+            Image templateBackground = template.gameObject.AddComponent<Image>();
+            templateBackground.color = new Color(0.10f, 0.04f, 0.015f, 0.995f);
+            GameUiTheme.StylePanel(templateBackground, true);
+            ScrollRect scroll = template.gameObject.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+
+            RectTransform roundedClip = CreateRect("Rounded Dropdown Window", template);
+            Stretch(roundedClip);
+            roundedClip.offsetMin = new Vector2(2f, 2f);
+            roundedClip.offsetMax = new Vector2(-2f, -2f);
+            Image clipImage = roundedClip.gameObject.AddComponent<Image>();
+            clipImage.color = Color.white;
+            GameUiTheme.StylePanel(clipImage);
+            Mask roundedMask = roundedClip.gameObject.AddComponent<Mask>();
+            roundedMask.showMaskGraphic = false;
+
+            RectTransform viewport = CreateRect("Viewport", roundedClip);
+            viewport.anchorMin = Vector2.zero;
+            viewport.anchorMax = Vector2.one;
+            viewport.offsetMin = new Vector2(4f, 4f);
+            viewport.offsetMax = new Vector2(-23f, -4f);
+            viewport.gameObject.AddComponent<RectMask2D>();
+
+            RectTransform content = CreateRect("Content", viewport);
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0.5f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = new Vector2(0f, 42f);
+
+            RectTransform item = CreateRect("Item", content);
+            item.anchorMin = new Vector2(0f, 0.5f);
+            item.anchorMax = new Vector2(1f, 0.5f);
+            item.pivot = new Vector2(0.5f, 0.5f);
+            item.sizeDelta = new Vector2(0f, 42f);
+            item.anchoredPosition = Vector2.zero;
+            Image itemBackground = item.gameObject.AddComponent<Image>();
+            itemBackground.color = new Color(0.24f, 0.11f, 0.035f, 1f);
+            itemBackground.sprite = null;
+            itemBackground.type = Image.Type.Simple;
+            Toggle itemToggle = item.gameObject.AddComponent<Toggle>();
+            itemToggle.targetGraphic = itemBackground;
+            itemToggle.graphic = null;
+            ColorBlock toggleColors = itemToggle.colors;
+            toggleColors.normalColor = Color.white;
+            toggleColors.highlightedColor = new Color(1f, 0.82f, 0.50f, 1f);
+            toggleColors.selectedColor = toggleColors.highlightedColor;
+            toggleColors.pressedColor = new Color(0.78f, 0.63f, 0.43f, 1f);
+            itemToggle.colors = toggleColors;
+
+            Text itemLabel = CreateText("Item Label", item, "Option", 15, FontStyle.Normal, GameUiTheme.TextPrimary);
+            itemLabel.alignment = TextAnchor.MiddleLeft;
+            Place(itemLabel.rectTransform, new Vector2(0.06f, 0.05f), new Vector2(0.96f, 0.95f));
+
+            Image itemDivider = CreateImage("Item Divider", item, new Color(0.70f, 0.43f, 0.12f, 0.28f));
+            RectTransform dividerRect = itemDivider.rectTransform;
+            dividerRect.anchorMin = Vector2.zero;
+            dividerRect.anchorMax = Vector2.right;
+            dividerRect.pivot = new Vector2(0.5f, 0f);
+            dividerRect.sizeDelta = new Vector2(0f, 1f);
+            dividerRect.anchoredPosition = Vector2.zero;
+
+            RectTransform scrollbarRoot = CreateRect("Scrollbar Vertical", roundedClip);
+            scrollbarRoot.anchorMin = new Vector2(1f, 0f);
+            scrollbarRoot.anchorMax = Vector2.one;
+            scrollbarRoot.pivot = new Vector2(1f, 0.5f);
+            scrollbarRoot.offsetMin = new Vector2(-17f, 5f);
+            scrollbarRoot.offsetMax = new Vector2(-5f, -5f);
+            Image scrollbarTrack = scrollbarRoot.gameObject.AddComponent<Image>();
+            scrollbarTrack.color = new Color(0.055f, 0.018f, 0.006f, 0.96f);
+            GameUiTheme.StylePillSurface(scrollbarTrack);
+            Scrollbar scrollbar = scrollbarRoot.gameObject.AddComponent<Scrollbar>();
+
+            RectTransform slidingArea = CreateRect("Sliding Area", scrollbarRoot);
+            Stretch(slidingArea);
+            slidingArea.offsetMin = new Vector2(2f, 2f);
+            slidingArea.offsetMax = new Vector2(-2f, -2f);
+            RectTransform handle = CreateRect("Handle", slidingArea);
+            Stretch(handle);
+            Image handleImage = handle.gameObject.AddComponent<Image>();
+            handleImage.color = new Color(0.86f, 0.57f, 0.17f, 0.96f);
+            GameUiTheme.StylePillSurface(handleImage);
+            scrollbar.handleRect = handle;
+            scrollbar.targetGraphic = handleImage;
+            scrollbar.direction = Scrollbar.Direction.BottomToTop;
+            scrollbar.navigation = new Navigation { mode = Navigation.Mode.None };
+
+            scroll.viewport = viewport;
+            scroll.content = content;
+            scroll.vertical = true;
+            scroll.verticalScrollbar = scrollbar;
+            scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
+            scroll.verticalScrollbarSpacing = 4f;
+            dropdown.template = template;
+            dropdown.captionText = caption;
+            dropdown.itemText = itemLabel;
+            dropdown.options = new List<Dropdown.OptionData>();
+            template.gameObject.SetActive(false);
+
+            ColorBlock dropdownColors = dropdown.colors;
+            dropdownColors.normalColor = Color.white;
+            dropdownColors.highlightedColor = new Color(1f, 0.92f, 0.72f, 1f);
+            dropdownColors.selectedColor = dropdownColors.highlightedColor;
+            dropdownColors.pressedColor = new Color(0.78f, 0.66f, 0.48f, 1f);
+            dropdownColors.fadeDuration = 0.08f;
+            dropdown.colors = dropdownColors;
+            return dropdown;
         }
 
         private static Button CreateButton(
@@ -576,32 +1067,48 @@ namespace UnityIsekaiGame.UI.Authentication
             Action clicked,
             GameUiButtonTone tone)
         {
-            Image image = CreateImage(name, parent, GameUiTheme.PanelRaised);
-            AddLayout(image.gameObject, 30f);
-            Button button = image.gameObject.AddComponent<Button>();
-            button.targetGraphic = image;
+            RectTransform root = CreateRect(name, parent);
+            LoginOrnamentGraphic surface = root.gameObject.AddComponent<LoginOrnamentGraphic>();
+            surface.Configure(
+                tone == GameUiButtonTone.Primary
+                    ? LoginOrnamentGraphic.OrnamentStyle.PrimaryButton
+                    : LoginOrnamentGraphic.OrnamentStyle.SecondaryButton,
+                true);
+            Button button = root.gameObject.AddComponent<Button>();
+            button.targetGraphic = surface;
             button.onClick.AddListener(() => clicked());
-            Text text = CreateText("Label", image.transform, label, 15, FontStyle.Bold, GameUiTheme.AccentBright);
+            Color textColor = tone == GameUiButtonTone.Primary
+                ? new Color(0.15f, 0.06f, 0.015f, 1f)
+                : GameUiTheme.AccentBright;
+            Text text = CreateText("Label", root, label, tone == GameUiButtonTone.Primary ? 21 : 18, FontStyle.Bold, textColor);
             Stretch(text.rectTransform);
             text.alignment = TextAnchor.MiddleCenter;
-            GameUiTheme.StyleButton(button, tone);
-            GameUiTheme.StylePillSurface(image);
-            image.color = new Color(0.34f, 0.14f, 0.035f, 1f);
+            GameUiTheme.EnsureTextShadow(text, tone == GameUiButtonTone.Primary ? 0.65f : 1.25f);
             ColorBlock buttonColors = button.colors;
             buttonColors.normalColor = Color.white;
-            buttonColors.highlightedColor = new Color(1f, 0.92f, 0.75f, 1f);
-            buttonColors.selectedColor = new Color(1f, 0.92f, 0.75f, 1f);
-            buttonColors.pressedColor = new Color(0.72f, 0.72f, 0.72f, 1f);
-            buttonColors.disabledColor = new Color(0.45f, 0.45f, 0.45f, 0.8f);
+            buttonColors.highlightedColor = new Color(1f, 0.92f, 0.72f, 1f);
+            buttonColors.selectedColor = new Color(1f, 0.92f, 0.72f, 1f);
+            buttonColors.pressedColor = new Color(0.78f, 0.66f, 0.48f, 1f);
+            buttonColors.disabledColor = new Color(0.45f, 0.42f, 0.38f, 0.72f);
+            buttonColors.fadeDuration = 0.08f;
             button.colors = buttonColors;
             return button;
         }
 
-        private static void AddLayout(GameObject target, float preferredHeight)
+        private static void CreateSeparator(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax)
         {
-            LayoutElement layout = target.AddComponent<LayoutElement>();
-            layout.preferredHeight = preferredHeight;
-            layout.minHeight = preferredHeight;
+            RectTransform rect = CreateRect(name, parent);
+            Place(rect, anchorMin, anchorMax);
+            LoginOrnamentGraphic separator = rect.gameObject.AddComponent<LoginOrnamentGraphic>();
+            separator.Configure(LoginOrnamentGraphic.OrnamentStyle.Separator);
+        }
+
+        private static void Place(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
         }
 
         private static void Stretch(RectTransform rect)
@@ -657,6 +1164,15 @@ namespace UnityIsekaiGame.UI.Authentication
                 + $"Active={gameObject.activeInHierarchy}, Canvas={canvas != null && canvas.enabled}, "
                 + $"Children={transform.childCount}, Background={background != null && background.gameObject.activeInHierarchy}, "
                 + $"Texture={background?.texture?.name ?? "missing"}, PixelRect={canvas?.pixelRect}.");
+        }
+
+        private IEnumerator CaptureLoginDropdown(string requestedPath)
+        {
+            ShowSettingsPage(true);
+            yield return null;
+            Canvas.ForceUpdateCanvases();
+            resolutionDropdown?.Show();
+            yield return CaptureLoginScreen(requestedPath);
         }
     }
 }

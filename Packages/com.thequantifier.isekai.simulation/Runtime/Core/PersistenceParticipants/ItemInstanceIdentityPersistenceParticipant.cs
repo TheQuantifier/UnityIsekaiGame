@@ -6,7 +6,7 @@ using UnityIsekaiGame.Inventory.Identity;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class ItemInstanceIdentityPersistenceParticipant : IPersistenceParticipant
+    public sealed class ItemInstanceIdentityPersistenceParticipant : IPersistenceParticipant, IDeferredPersistenceParticipant
     {
         public const string Key = "world.item-instance-identity";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -49,6 +49,22 @@ namespace UnityIsekaiGame.Persistence
 
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null) return DeferredPersistenceParticipantCapture.Failure("Item identity runtime is missing.");
+            ItemInstanceRuntimeSaveData saveData = runtime.CreateSaveData();
+            DefinitionRegistry registry = registryProvider?.Invoke();
+            return DeferredPersistenceParticipantCapture.Success(() =>
+            {
+                if (!ItemInstanceIdentityRuntime.ValidateSaveData(saveData, registry, out string failureReason))
+                {
+                    return PersistenceParticipantSaveResult.Failure(failureReason);
+                }
+
+                return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+            });
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

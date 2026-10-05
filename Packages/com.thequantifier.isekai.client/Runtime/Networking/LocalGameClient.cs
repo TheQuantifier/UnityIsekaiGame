@@ -139,6 +139,38 @@ namespace UnityIsekaiGame.Networking.Client
             return ConnectApplication();
         }
 
+        /// <summary>
+        /// Ensures the app-level connection exists before account credentials are submitted.
+        /// Login screens may remain open longer than the server's unauthenticated connection
+        /// lifetime, so a submit action must be able to replace that expired transport session.
+        /// </summary>
+        public bool ReconnectApplication()
+        {
+            if (IsConnected || status.Phase == LocalConnectionPhase.Connecting)
+            {
+                return true;
+            }
+
+            ResolveReferences();
+            if (networkManager == null)
+            {
+                return Fail("A NetworkManager is required before reconnecting.");
+            }
+
+            StopPlayerActorResolution();
+            UnregisterAuthenticationHandler();
+            if (networkManager.IsListening)
+            {
+                networkManager.Shutdown();
+            }
+
+            ownsClientSession = false;
+            ClearConnectionPayload();
+            AuthenticatedUserId = string.Empty;
+            AuthenticatedUsername = string.Empty;
+            return ConnectApplication();
+        }
+
         public bool Connect(string address, int port, string playerId, string token = "")
         {
             ConfigureLoginEndpoint(address, port, playerId, token);
@@ -179,6 +211,11 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             request.ClearPassword();
+            NetworkActionTrace.ClientSend(
+                NetworkActionTraceCategory.Authentication,
+                createAccount ? "CreateAccount" : "Login",
+                createAccount ? "authentication-create" : "authentication-login",
+                context: this);
             using var writer = new FastBufferWriter(sizeof(int) + payload.Length, Allocator.Temp);
             writer.WriteValueSafe(payload.Length);
             writer.WriteBytesSafe(payload);

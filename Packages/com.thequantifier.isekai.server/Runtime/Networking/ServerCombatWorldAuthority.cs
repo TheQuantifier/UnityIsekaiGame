@@ -32,6 +32,8 @@ namespace UnityIsekaiGame.Networking.Server
         private void Update()
         {
             if (!configured || networkState == null || !networkState.IsSpawned || !networkState.IsServer) return;
+            using NetworkMovementTrace.ServerPhaseScope phase =
+                NetworkMovementTrace.MeasureServerPhase("CombatWorldUpdate");
             RefreshEnemyTargets();
             double now = Time.realtimeSinceStartupAsDouble;
             if (now < nextPublishAt) return;

@@ -58,4 +58,39 @@ The extractor lives in `com.thequantifier.isekai.project-tools`. It preserves pr
 
 The dedicated server is the only world-simulation and persistence authority during a network session. A connected client switches its local persistence coordinator to replica mode, while standalone editor play remains authoritative for development. Connection requests require the matching protocol version, application build version, and the local authentication token generated under `.uig`.
 
-`uig server start` waits until the authoritative scene and checkpoint have loaded and the transport is listening. `uig server status` distinguishes a merely running process from a ready server, and `uig client start` refuses to launch into the short startup window that would otherwise cause a connection timeout. An optional `uig client <username-or-userID> start` only prefills the account identifier.
+`uig server start` waits until the authoritative scene and checkpoint have loaded and the transport is listening. `uig server status` distinguishes a merely running process from a ready server, and `uig client start` refuses to launch into the short startup window that would otherwise cause a connection timeout. Account authentication happens only through the client's login screen; launcher commands never accept or prefill a username or user ID.
+
+## Movement diagnostics
+
+Reload the launcher and enable tracing on both processes before reproducing movement problems:
+
+```powershell
+. $PROFILE
+uig movement start
+```
+
+`uig movement start` safely stops tracked clients and the local server, then starts both with movement tracing enabled. The individual equivalents are `uig server start trace` and `uig client start trace`. Direct executable launches accept `--movement-trace` on both sides.
+
+Walk, sprint, release movement, and jump several times, then inspect the filtered logs:
+
+```powershell
+uig movement logs 200
+```
+
+The command displays the last matching entries from the server and `client-default.log` under `Logs/Runtime`. Trace entries contain a UTC timestamp, actor ID, and input sequence. Client entries show submitted movement/yaw, requested and predicted sprint authorization, predicted position, the atomic authoritative state, sequence-replay error/correction, speed, grounding, pending stop sequence, and round-trip time. Server entries show received/accepted or rejected input, reliable stop/jump delivery, buffered/executed/rejected jump outcomes, authoritative simulation ticks, actual displacement/collision flags, sprint authorization, and input age/timeouts.
+
+Movement transitions and correction changes are logged immediately; active movement is sampled every 0.2 seconds. Compare matching input sequences and nearby UTC times across the two files. Position reconciliation compares authority with the stored prediction for that same acknowledged sequence, shifts the still-unacknowledged prediction history by the resulting correction, and never waits for movement to stop. Jump intent travels atomically with its input sequence; the authoritative state reports the last processed and last executed jump sequences so a rejected prediction can end immediately. Tracing is disabled for ordinary launches.
+
+## World-checkpoint capture diagnostics
+
+World checkpoint capture advances at most one persistence work unit per server frame. Ordinary participants use one work unit; large social-interaction snapshots clone a bounded batch and continue on later frames, restarting from a new revision if the authoritative runtime changes during capture. Revision-aware participants reuse their last successfully written payload when their persisted state has not changed. Mutable runtime state is copied on the simulation thread; validation, deterministic ordering where supported, JSON serialization, envelope construction, and atomic disk writes run outside that frame path. This keeps the authoritative simulation responsive without allowing a background worker to read live mutable collections.
+
+Every completed capture logs both an aggregate line and a raw sample line with UTC time and one `frame|participant|elapsedMs` entry per capture frame. Inspect the latest results with:
+
+```powershell
+uig server captures 5
+```
+
+The report includes total capture CPU time, mean, median, 0.1 ms mode bucket, p95, p99, maximum frame time, per-frame managed allocations, reused participant count, and the participant responsible for each maximum. Background write telemetry separately reports deferred serialization, envelope/checksum serialization, atomic-write time, total latency, and byte size. Raw samples are emitted to `Logs/Runtime/server.log`; before the next launch rotates that file, the launcher appends capture and write records to `Logs/Runtime/server-captures.log` so the history survives server restarts. Configurable warning and critical budgets emit explicit server warnings when capture time or allocation limits are crossed.
+
+Player-profile autosaves are offset from world checkpoints. They compare detached authoritative state against the last queued snapshot, ignore insignificant transform drift, and do not increment revisions or enqueue writes when nothing changed. Profile serialization and atomic disk writes both run on the profile writer thread.

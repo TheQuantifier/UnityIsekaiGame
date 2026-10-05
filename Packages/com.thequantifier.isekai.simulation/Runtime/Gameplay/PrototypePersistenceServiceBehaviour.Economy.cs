@@ -34,6 +34,7 @@ namespace UnityIsekaiGame.Gameplay
     {
         private bool prototypeEconomyInitialized;
         private long lastPrototypeMarketBoundary = -1L;
+        private long marketRevisionAtBoundaryScan = -1L;
         private PrototypeMarketChangePlan lastPrototypeMarketChange;
 
         public string PlayerEconomyAccountId => PrototypeEconomyContentIds.PlayerAccount(ResolvePlayerPersonId());
@@ -925,7 +926,11 @@ namespace UnityIsekaiGame.Gameplay
 
             MerchantSimulationPolicyData simulation = PrototypeSimulationPolicy;
             long boundary = (long)Math.Floor(CurrentEconomyWorldTime / simulation.marketIntervalSeconds);
-            lastPrototypeMarketBoundary = LatestPersistedPrototypeMarketBoundary();
+            if (marketRevisionAtBoundaryScan != Markets.Revision)
+            {
+                lastPrototypeMarketBoundary = LatestPersistedPrototypeMarketBoundary();
+                marketRevisionAtBoundaryScan = Markets.Revision;
+            }
             if (boundary <= lastPrototypeMarketBoundary)
             {
                 if (lastPrototypeMarketChange == null)
@@ -946,6 +951,7 @@ namespace UnityIsekaiGame.Gameplay
                 }
 
                 lastPrototypeMarketBoundary = next;
+                marketRevisionAtBoundaryScan = Markets.Revision;
             }
         }
 
@@ -1004,11 +1010,11 @@ namespace UnityIsekaiGame.Gameplay
 
         private long LatestPersistedPrototypeMarketBoundary()
         {
-            return Markets.DemandRecords
-                .Where(record => string.Equals(record.provenance, "prototype-market-boundary-complete", StringComparison.Ordinal))
-                .Select(record => long.TryParse(record.sourceReferenceId, out long parsed) ? parsed : -1L)
-                .DefaultIfEmpty(-1L)
-                .Max();
+            return Markets.TryGetLatestDemandSourceReferenceLong(
+                "prototype-market-boundary-complete",
+                out long boundary)
+                ? boundary
+                : -1L;
         }
 
         private long PoolSupply(string poolId) => RegionalFlow.TryGetPool(poolId, out CommodityPoolData pool) ? pool.AvailableQuantity : 0L;

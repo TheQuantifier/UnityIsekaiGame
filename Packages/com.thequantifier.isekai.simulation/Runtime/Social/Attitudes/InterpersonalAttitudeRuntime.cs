@@ -248,6 +248,122 @@ namespace UnityIsekaiGame.Social.Attitudes
             };
         }
 
+        public IncrementalSaveDataCapture BeginIncrementalSaveDataCapture(
+            int maximumItemsPerFrame = 256,
+            double maximumMillisecondsPerFrame = 1.5d,
+            int maximumRevisionRestarts = 8)
+        {
+            return new IncrementalSaveDataCapture(
+                this,
+                Math.Max(1, maximumItemsPerFrame),
+                Math.Max(0.1d, maximumMillisecondsPerFrame),
+                Math.Max(0, maximumRevisionRestarts));
+        }
+
+        public sealed class IncrementalSaveDataCapture
+        {
+            private readonly InterpersonalAttitudeRuntime runtime;
+            private readonly int maximumItemsPerFrame;
+            private readonly double maximumMillisecondsPerFrame;
+            private readonly int maximumRevisionRestarts;
+            private InterpersonalAttitudeRecordData[] records = Array.Empty<InterpersonalAttitudeRecordData>();
+            private string[] transactions = Array.Empty<string>();
+            private InterpersonalAttitudeRuntimeSaveData saveData;
+            private long capturedRevision;
+            private int recordIndex;
+            private int transactionIndex;
+            private int revisionRestarts;
+
+            internal IncrementalSaveDataCapture(
+                InterpersonalAttitudeRuntime runtime,
+                int maximumItemsPerFrame,
+                double maximumMillisecondsPerFrame,
+                int maximumRevisionRestarts)
+            {
+                this.runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+                this.maximumItemsPerFrame = maximumItemsPerFrame;
+                this.maximumMillisecondsPerFrame = maximumMillisecondsPerFrame;
+                this.maximumRevisionRestarts = maximumRevisionRestarts;
+                ResetSnapshot();
+            }
+
+            public InterpersonalAttitudeRuntimeSaveData SaveData => IsComplete ? saveData : null;
+            public bool IsComplete { get; private set; }
+            public int RevisionRestarts => revisionRestarts;
+
+            public bool TryContinue(out string failureReason)
+            {
+                failureReason = string.Empty;
+                if (IsComplete) return true;
+                if (runtime.Revision != capturedRevision)
+                {
+                    if (revisionRestarts >= maximumRevisionRestarts)
+                    {
+                        failureReason = $"Interpersonal Attitude snapshot changed during capture more than {maximumRevisionRestarts} times.";
+                        return false;
+                    }
+
+                    revisionRestarts++;
+                    ResetSnapshot();
+                }
+
+                var timer = System.Diagnostics.Stopwatch.StartNew();
+                int copied = 0;
+                while (copied < maximumItemsPerFrame && timer.Elapsed.TotalMilliseconds < maximumMillisecondsPerFrame)
+                {
+                    if (recordIndex < records.Length)
+                    {
+                        saveData.records.Add(records[recordIndex++].Clone());
+                    }
+                    else if (transactionIndex < transactions.Length)
+                    {
+                        saveData.processedTransactionIds.Add(transactions[transactionIndex++] ?? string.Empty);
+                    }
+                    else
+                    {
+                        break;
+                    }
+
+                    copied++;
+                }
+
+                bool exhausted = recordIndex >= records.Length && transactionIndex >= transactions.Length;
+                if (!exhausted) return true;
+                if (runtime.Revision != capturedRevision)
+                {
+                    if (revisionRestarts >= maximumRevisionRestarts)
+                    {
+                        failureReason = $"Interpersonal Attitude snapshot changed during capture more than {maximumRevisionRestarts} times.";
+                        return false;
+                    }
+
+                    revisionRestarts++;
+                    ResetSnapshot();
+                    return true;
+                }
+
+                IsComplete = true;
+                return true;
+            }
+
+            private void ResetSnapshot()
+            {
+                capturedRevision = runtime.Revision;
+                records = runtime.recordsById.Values.Where(item => item != null).ToArray();
+                transactions = runtime.processedTransactionIds.Where(item => item != null).ToArray();
+                saveData = new InterpersonalAttitudeRuntimeSaveData
+                {
+                    schemaVersion = InterpersonalAttitudeRuntimeSaveData.CurrentSchemaVersion,
+                    revision = capturedRevision,
+                    records = new List<InterpersonalAttitudeRecordData>(records.Length),
+                    processedTransactionIds = new List<string>(transactions.Length)
+                };
+                recordIndex = 0;
+                transactionIndex = 0;
+                IsComplete = false;
+            }
+        }
+
         public AttitudeMutationResult RestoreFromSaveData(InterpersonalAttitudeRuntimeSaveData saveData, DefinitionRegistry definitionRegistry, IEnumerable<string> persons, bool restoringState = true)
         {
             long before = revision;

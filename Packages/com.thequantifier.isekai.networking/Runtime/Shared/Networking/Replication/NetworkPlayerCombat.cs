@@ -57,6 +57,11 @@ namespace UnityIsekaiGame.Networking
             if (!IsSpawned || !IsOwner || IsServer) return false;
             Vector3 normalized = aimDirection.sqrMagnitude > 0.0001f ? aimDirection.normalized : Vector3.forward;
             localCommandSequence = NextSequence(localCommandSequence);
+            NetworkActionTrace.ClientSend(
+                NetworkActionTraceCategory.Combat,
+                commandType.ToString(),
+                NetworkActionTrace.Correlation(GetComponent<NetworkPlayerActor>()?.ActorId, localCommandSequence),
+                context: this);
             SubmitCombatCommandRpc(new NetworkCombatCommand(localCommandSequence, commandType, normalized, actionId));
             return true;
         }
@@ -65,6 +70,12 @@ namespace UnityIsekaiGame.Networking
         private void SubmitCombatCommandRpc(NetworkCombatCommand command, RpcParams rpcParams = default)
         {
             if (!IsServer || rpcParams.Receive.SenderClientId != OwnerClientId) return;
+            NetworkActionTrace.ServerReceive(
+                NetworkActionTraceCategory.Combat,
+                command.CommandType.ToString(),
+                NetworkActionTrace.Correlation(GetComponent<NetworkPlayerActor>()?.ActorId, command.Sequence),
+                rpcParams.Receive.SenderClientId,
+                context: this);
             if (!commandRateLimiter.TryConsume(Time.realtimeSinceStartupAsDouble))
             {
                 latestCommandResult.Value = NetworkCombatCommandResult.Reject(
@@ -83,9 +94,22 @@ namespace UnityIsekaiGame.Networking
             }
 
             lastAcceptedCommandSequence.Value = command.Sequence;
-            NetworkCombatCommandResult result = ServerCommandHandler == null
-                ? NetworkCombatCommandResult.Reject(command.Sequence, CombatAuthorityFailure.ServerRejected, "Server combat authority is unavailable.", command.ActionIdText)
-                : ServerCommandHandler(command);
+            NetworkCombatCommandResult result;
+            try
+            {
+                result = ServerCommandHandler == null
+                    ? NetworkCombatCommandResult.Reject(command.Sequence, CombatAuthorityFailure.ServerRejected, "Server combat authority is unavailable.", command.ActionIdText)
+                    : ServerCommandHandler(command);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                result = NetworkCombatCommandResult.Reject(
+                    command.Sequence,
+                    CombatAuthorityFailure.ServerRejected,
+                    "The server could not complete the combat action.",
+                    command.ActionIdText);
+            }
             latestCommandResult.Value = result.Sequence == command.Sequence
                 ? result
                 : NetworkCombatCommandResult.Reject(command.Sequence, CombatAuthorityFailure.ServerRejected, "Server returned an invalid combat command result.", command.ActionIdText);

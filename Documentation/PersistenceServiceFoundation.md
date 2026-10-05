@@ -297,11 +297,11 @@ Backup load is explicit through the service API or development menu.
 
 Corrupt files are not deleted automatically. Feature 4.8 adds recovery scanning, explicit backup promotion, explicit primary quarantine, and stale temporary save cleanup for development and future UI workflows.
 
-## Main Thread Policy
+## Runtime Thread Policy
 
-Feature 4.1 is synchronous.
+The original `Save` API remains synchronous for editor tooling and simple standalone callers. The dedicated server uses the incremental prepared-save API instead: it captures at most one participant work unit per simulation frame, lets large participants split a revision-guarded snapshot across frames, reuses previously validated payloads for unchanged revision-aware participants, and then sends thread-safe validation, ordering, serialization, checksum/envelope construction, and atomic disk I/O to its single background persistence worker.
 
-Unity object access, capture, prepare, and commit happen on the main thread. Future work may move serialization and disk I/O to background tasks after immutable DTO capture, but that is not implemented yet.
+Unity object access and reads of live mutable runtime collections remain on the simulation thread. Deferred participant work must retain only detached DTOs and immutable lookup data. Load preparation and commit also remain on the simulation thread because they validate against and mutate live authoritative runtimes.
 
 ## Security Boundary
 

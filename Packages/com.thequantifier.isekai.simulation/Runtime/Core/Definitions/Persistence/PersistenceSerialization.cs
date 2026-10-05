@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
@@ -15,7 +16,17 @@ namespace UnityIsekaiGame.GameData.Persistence
         T Deserialize<T>(string json);
     }
 
-    public sealed class NewtonsoftSaveSerializer : ISaveSerializer
+    /// <summary>
+    /// Optional low-allocation serializer contract used by large server checkpoints. Implementations
+    /// write directly to the destination instead of first constructing one very large JSON string.
+    /// </summary>
+    public interface IStreamingSaveSerializer : ISaveSerializer
+    {
+        void Serialize<T>(TextWriter writer, T value, bool indented = false);
+        T Deserialize<T>(TextReader reader);
+    }
+
+    public sealed class NewtonsoftSaveSerializer : IStreamingSaveSerializer
     {
         private static readonly JsonSerializerSettings CompactSettings = CreateSettings(Formatting.None);
         private static readonly JsonSerializerSettings IndentedSettings = CreateSettings(Formatting.Indented);
@@ -23,6 +34,19 @@ namespace UnityIsekaiGame.GameData.Persistence
         public string Serialize<T>(T value, bool indented = false)
         {
             return JsonConvert.SerializeObject(value, indented ? IndentedSettings : CompactSettings);
+        }
+
+        public void Serialize<T>(TextWriter writer, T value, bool indented = false)
+        {
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
+            JsonSerializer serializer = JsonSerializer.Create(indented ? IndentedSettings : CompactSettings);
+            using var jsonWriter = new JsonTextWriter(writer)
+            {
+                CloseOutput = false,
+                Formatting = indented ? Formatting.Indented : Formatting.None
+            };
+            serializer.Serialize(jsonWriter, value);
+            jsonWriter.Flush();
         }
 
         public T Deserialize<T>(string json)
@@ -33,6 +57,14 @@ namespace UnityIsekaiGame.GameData.Persistence
             }
 
             return JsonConvert.DeserializeObject<T>(json, CompactSettings);
+        }
+
+        public T Deserialize<T>(TextReader reader)
+        {
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            JsonSerializer serializer = JsonSerializer.Create(CompactSettings);
+            using var jsonReader = new JsonTextReader(reader) { CloseInput = false };
+            return serializer.Deserialize<T>(jsonReader);
         }
 
         private static JsonSerializerSettings CreateSettings(Formatting formatting)
@@ -98,7 +130,9 @@ namespace UnityIsekaiGame.GameData.Persistence
                 }
                 else
                 {
-                    JToken.Parse(record.payloadJson).WriteTo(writer);
+                    // Payloads are normalized and validated before envelope serialization. Writing the
+                    // raw value avoids building a second JToken tree for multi-megabyte participants.
+                    writer.WriteRawValue(record.payloadJson);
                 }
 
                 writer.WriteEndObject();

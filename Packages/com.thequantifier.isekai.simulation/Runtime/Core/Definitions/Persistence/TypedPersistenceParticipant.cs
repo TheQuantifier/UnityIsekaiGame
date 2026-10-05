@@ -2,7 +2,7 @@ using System;
 
 namespace UnityIsekaiGame.GameData.Persistence
 {
-    public abstract class TypedPersistenceParticipant<TSaveData> : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public abstract class TypedPersistenceParticipant<TSaveData> : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant
         where TSaveData : class
     {
         private readonly ISaveSerializer serializer;
@@ -48,6 +48,32 @@ namespace UnityIsekaiGame.GameData.Persistence
             {
                 return PersistenceParticipantSaveResult.Failure($"'{ParticipantKey}' serialization failed: {exception.Message}");
             }
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (!TryCapture(out TSaveData saveData, out string failureReason) || saveData == null)
+            {
+                return DeferredPersistenceParticipantCapture.Failure(
+                    string.IsNullOrWhiteSpace(failureReason) ? $"'{ParticipantKey}' capture returned no data." : failureReason);
+            }
+
+            if (!TryValidate(saveData, out failureReason))
+            {
+                return DeferredPersistenceParticipantCapture.Failure(failureReason);
+            }
+
+            return DeferredPersistenceParticipantCapture.Success(() =>
+            {
+                try
+                {
+                    return PersistenceParticipantSaveResult.Success(serializer.Serialize(saveData));
+                }
+                catch (Exception exception)
+                {
+                    return PersistenceParticipantSaveResult.Failure($"'{ParticipantKey}' serialization failed: {exception.Message}");
+                }
+            });
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

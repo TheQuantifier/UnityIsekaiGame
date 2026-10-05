@@ -204,8 +204,16 @@ namespace UnityIsekaiGame.Networking.Client
         private void ApplySnapshot(uint revision)
         {
             if (worldState == null) return;
-            worldState.CopySnapshotTo(snapshot);
-            if (!NetworkCombatantSnapshotValidator.TryValidate(snapshot, out string failure))
+            if (!worldState.TryCopyCommittedSnapshotTo(revision, snapshot, out string failure))
+            {
+                if (worldState.SnapshotRevision == revision)
+                {
+                    pendingSnapshotRevision = revision;
+                }
+                return;
+            }
+
+            if (!NetworkCombatantSnapshotValidator.TryValidate(snapshot, out failure))
             {
                 Debug.LogError($"[Network Combat] Client rejected world snapshot {revision}: {failure}", this);
                 return;
@@ -255,7 +263,7 @@ namespace UnityIsekaiGame.Networking.Client
 
             if (!smokeRequested)
             {
-                worldState.CopySnapshotTo(snapshot);
+                if (!worldState.TryCopyCommittedSnapshotTo(worldState.SnapshotRevision, snapshot, out _)) return;
                 if (snapshot.Count == 0) return;
                 smokeTargetId = snapshot[0].EntityIdText;
                 smokeInitialTargetHealth = snapshot[0].Health;
@@ -268,7 +276,7 @@ namespace UnityIsekaiGame.Networking.Client
                 return;
             }
 
-            worldState.CopySnapshotTo(snapshot);
+            if (!worldState.TryCopyCommittedSnapshotTo(worldState.SnapshotRevision, snapshot, out _)) return;
             NetworkCombatantState current = snapshot.Find(value => string.Equals(value.EntityIdText, smokeTargetId, StringComparison.Ordinal));
             if (string.IsNullOrWhiteSpace(current.EntityIdText)
                 || current.Health >= smokeInitialTargetHealth - 0.01f

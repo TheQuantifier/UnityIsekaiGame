@@ -17,7 +17,9 @@ namespace UnityIsekaiGame.Tests
             Assert.That(EditorBuildSettings.scenes[0].path, Is.EqualTo(StartupSceneAuthoring.StartupScenePath));
             Assert.That(AssetDatabase.LoadAssetAtPath<SceneAsset>(StartupSceneAuthoring.StartupScenePath), Is.Not.Null);
             Assert.That(AssetDatabase.LoadAssetAtPath<Texture2D>(
-                "Assets/_Project/Presentation/Login/Resources/Login/backgroundimage.jpg"), Is.Not.Null);
+                "Assets/_Project/Presentation/Login/Resources/Login/backgroundimage-v2.png"), Is.Not.Null);
+            Assert.That(AssetDatabase.LoadAssetAtPath<Texture2D>(
+                "Assets/_Project/Presentation/Login/Resources/Login/isekai-reality-crest.png"), Is.Not.Null);
             Assert.That(File.Exists(Path.Combine(Application.streamingAssetsPath, "Startup/startup_scene.mp4")), Is.True);
         }
 
@@ -88,6 +90,57 @@ namespace UnityIsekaiGame.Tests
             StringAssert.Contains("passwordSubmit.Submitted += InvokeLoginButton", source);
             StringAssert.Contains("loginButton.onClick.Invoke()", source);
             StringAssert.Contains("root.gameObject.AddComponent<ExplicitSubmitInputField>()", source);
+        }
+
+        [Test]
+        public void Login_submit_reconnects_an_expired_app_connection_before_authenticating()
+        {
+            string repositoryRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".."));
+            string screenSource = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.client/Runtime/UI/Authentication/AccountLoginScreenController.cs"));
+            string clientSource = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.client/Runtime/Networking/LocalGameClient.cs"));
+
+            StringAssert.Contains("submitAfterReconnect = true", screenSource);
+            StringAssert.Contains("client.ReconnectApplication()", screenSource);
+            StringAssert.Contains("if (submitAfterReconnect)", screenSource);
+            StringAssert.Contains("public bool ReconnectApplication()", clientSource);
+        }
+
+        [Test]
+        public void Login_settings_support_visible_dropdowns_and_a_game_quit_tab()
+        {
+            string repositoryRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".."));
+            string screenSource = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.client/Runtime/UI/Authentication/AccountLoginScreenController.cs"));
+            string ornamentSource = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.client/Runtime/UI/Authentication/LoginOrnamentGraphic.cs"));
+            string toggleDropdownSource = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.client/Runtime/UI/Authentication/ToggleDropdown.cs"));
+
+            StringAssert.Contains("canvas.sortingOrder = 20000", screenSource);
+            StringAssert.Contains("ControllerIcon", screenSource);
+            StringAssert.Contains("QUIT GAME", screenSource);
+            StringAssert.Contains("Application.Quit()", screenSource);
+            StringAssert.Contains("DrawControllerIcon", ornamentSource);
+            Assert.That(
+                screenSource.IndexOf("gameTabButton = CreateSettingsTab", System.StringComparison.Ordinal),
+                Is.LessThan(screenSource.IndexOf("graphicsTabButton = CreateSettingsTab", System.StringComparison.Ordinal)));
+            StringAssert.Contains("ShowSettingsPage(false)", screenSource);
+            StringAssert.Contains("Scrollbar Vertical", screenSource);
+            StringAssert.Contains("ScrollRect.ScrollbarVisibility.Permanent", screenSource);
+            StringAssert.Contains("GameUiThemeOptOut", screenSource);
+            StringAssert.Contains("AddComponent<ToggleDropdown>()", screenSource);
+            StringAssert.Contains("HasVisiblePopup()", toggleDropdownSource);
+            StringAssert.Contains("CreateBlocker(Canvas rootCanvas)", toggleDropdownSource);
+            StringAssert.Contains("RectangleContainsScreenPoint", toggleDropdownSource);
+            StringAssert.Contains("Hide();", toggleDropdownSource);
+            StringAssert.Contains("Show();", toggleDropdownSource);
         }
     }
 }

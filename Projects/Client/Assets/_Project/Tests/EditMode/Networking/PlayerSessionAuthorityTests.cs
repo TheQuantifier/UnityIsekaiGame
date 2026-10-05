@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Reflection;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEditor;
@@ -90,6 +91,18 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void Private_session_identity_is_owner_only_but_world_identity_and_pause_state_are_observable()
+        {
+            AssertReadPermission("sessionId", NetworkVariableReadPermission.Owner);
+            AssertReadPermission("clientInstanceId", NetworkVariableReadPermission.Owner);
+            AssertReadPermission("playerId", NetworkVariableReadPermission.Owner);
+            AssertReadPermission("sessionRevision", NetworkVariableReadPermission.Owner);
+            AssertReadPermission("personId", NetworkVariableReadPermission.Everyone);
+            AssertReadPermission("actorId", NetworkVariableReadPermission.Everyone);
+            AssertReadPermission("worldParticipationState", NetworkVariableReadPermission.Everyone);
+        }
+
+        [Test]
         public void Authored_player_actor_prefab_is_registered_for_network_spawning()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(UnityIsekaiGame.Editor.LocalNetworkFoundationAuthoring.PlayerActorPrefabPath);
@@ -109,5 +122,25 @@ namespace UnityIsekaiGame.Tests
         }
 
         private static string Id(char value) => new string(value, AccountAuthenticationProtocol.SecureUserIdLength);
+
+        private static void AssertReadPermission(string fieldName, NetworkVariableReadPermission expected)
+        {
+            FieldInfo field = typeof(NetworkPlayerActor).GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"Missing NetworkPlayerActor field '{fieldName}'.");
+
+            GameObject root = new GameObject($"Permission Test {fieldName}", typeof(NetworkObject));
+            try
+            {
+                NetworkPlayerActor actor = root.AddComponent<NetworkPlayerActor>();
+                var variable = field.GetValue(actor) as NetworkVariableBase;
+                Assert.That(variable, Is.Not.Null);
+                Assert.That(variable.ReadPerm, Is.EqualTo(expected), fieldName);
+                Assert.That(variable.WritePerm, Is.EqualTo(NetworkVariableWritePermission.Server), fieldName);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
     }
 }

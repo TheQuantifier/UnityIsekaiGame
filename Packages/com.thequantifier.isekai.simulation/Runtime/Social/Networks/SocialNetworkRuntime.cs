@@ -13,6 +13,8 @@ namespace UnityIsekaiGame.Social.Networks
 {
     public sealed class SocialNetworkRuntime : IDisposable
     {
+        private const int MaximumGraphCacheEntries = 8;
+        private const double GraphTimeBucketSeconds = 5d;
         private readonly Dictionary<string, SocialGroupRecordData> groupsById = new Dictionary<string, SocialGroupRecordData>(StringComparer.Ordinal);
         private readonly Dictionary<string, SocialGroupMembershipRecordData> membershipsById = new Dictionary<string, SocialGroupMembershipRecordData>(StringComparer.Ordinal);
         private readonly Dictionary<string, SocialNetworkProcessedTransactionData> processedTransactions = new Dictionary<string, SocialNetworkProcessedTransactionData>(StringComparer.Ordinal);
@@ -135,7 +137,15 @@ namespace UnityIsekaiGame.Social.Networks
                 return cached;
             }
 
-            List<SocialGraphNodeData> nodes = Clean(knownPersonIds).Select(person => new SocialGraphNodeData { nodeId = person }).ToList();
+            int maximumNodes = Math.Max(1, definition.MaximumNodes);
+            bool truncated = knownPersonIds.Count > maximumNodes;
+            List<SocialGraphNodeData> nodes = knownPersonIds
+                .Where(person => !string.IsNullOrWhiteSpace(person))
+                .OrderBy(person => person, StringComparer.Ordinal)
+                .Take(maximumNodes)
+                .Select(person => new SocialGraphNodeData { nodeId = person.Trim() })
+                .ToList();
+            HashSet<string> allowedPeople = new HashSet<string>(nodes.Select(node => node.nodeId), StringComparer.Ordinal);
             List<SocialGraphEdgeData> edges = new List<SocialGraphEdgeData>();
             AddRelationshipEdges(definition, request, edges);
             AddAttitudeEdges(definition, request, edges);
@@ -143,28 +153,15 @@ namespace UnityIsekaiGame.Social.Networks
             AddRumorEdges(definition, request, edges);
             AddGroupEdges(definition, request, edges);
             edges = ApplyRequestFilters(definition, request, edges);
-
-            HashSet<string> edgePeople = new HashSet<string>(edges.SelectMany(edge => new[] { edge.sourcePersonId, edge.destinationPersonId }).Where(item => !string.IsNullOrWhiteSpace(item)), StringComparer.Ordinal);
-            foreach (string person in edgePeople.OrderBy(item => item, StringComparer.Ordinal))
-            {
-                if (nodes.All(node => !string.Equals(node.nodeId, person, StringComparison.Ordinal)))
-                {
-                    nodes.Add(new SocialGraphNodeData { nodeId = person });
-                }
-            }
+            int unboundedEdgeCount = edges.Count;
+            edges = edges
+                .Where(edge => allowedPeople.Contains(edge.sourcePersonId) && allowedPeople.Contains(edge.destinationPersonId))
+                .ToList();
+            truncated |= edges.Count != unboundedEdgeCount;
 
             foreach (SocialGraphNodeData node in nodes)
             {
                 node.isolated = edges.All(edge => !string.Equals(edge.sourcePersonId, node.nodeId, StringComparison.Ordinal) && !string.Equals(edge.destinationPersonId, node.nodeId, StringComparison.Ordinal));
-            }
-
-            bool truncated = false;
-            if (nodes.Count > definition.MaximumNodes)
-            {
-                nodes = nodes.OrderBy(item => item.nodeId, StringComparer.Ordinal).Take(definition.MaximumNodes).ToList();
-                HashSet<string> allowed = new HashSet<string>(nodes.Select(item => item.nodeId), StringComparer.Ordinal);
-                edges = edges.Where(edge => allowed.Contains(edge.sourcePersonId) && allowed.Contains(edge.destinationPersonId)).ToList();
-                truncated = true;
             }
 
             if (edges.Count > definition.MaximumEdges)
@@ -174,6 +171,7 @@ namespace UnityIsekaiGame.Social.Networks
             }
 
             SocialGraphSnapshot snapshot = new SocialGraphSnapshot(definition.Id, request?.WorldTime ?? 0d, nodes, OrderedEdges(edges).ToArray(), dependencies, truncated, truncated ? "Projection truncated by configured limits." : "Projection built from authoritative social runtimes.");
+            if (graphCache.Count >= MaximumGraphCacheEntries) graphCache.Clear();
             graphCache[cacheKey] = snapshot;
             return snapshot;
         }
@@ -690,7 +688,8 @@ namespace UnityIsekaiGame.Social.Networks
         {
             string kinds = string.Join(",", (request?.EdgeKinds ?? Array.Empty<SocialGraphEdgeKind>()).Distinct().OrderBy(item => item).Select(item => item.ToString()));
             int minimumWeight = Math.Max(definition.MinimumEdgeWeight, request?.MinimumWeight ?? 0);
-            return $"{definition.Id}|{request?.WorldTime ?? 0d}|{request?.Visibility ?? definition.Visibility}|{request?.MaxDepth ?? 0}|{request?.MaxVisitedNodes ?? 0}|{minimumWeight}|{kinds}|{dependencies.relationshipRevision}.{dependencies.attitudeRevision}.{dependencies.reputationRevision}.{dependencies.rumorRevision}.{dependencies.interactionRevision}.{dependencies.normRevision}.{dependencies.groupRevision}";
+            long timeBucket = (long)Math.Floor(Math.Max(0d, request?.WorldTime ?? 0d) / GraphTimeBucketSeconds);
+            return $"{definition.Id}|{timeBucket}|{request?.Visibility ?? definition.Visibility}|{minimumWeight}|{kinds}|{dependencies.relationshipRevision}.{dependencies.attitudeRevision}.{dependencies.reputationRevision}.{dependencies.rumorRevision}.{dependencies.interactionRevision}.{dependencies.normRevision}.{dependencies.groupRevision}";
         }
         private void StampResult(SocialNetworkMutationResult result, long revision) { if (result?.Group?.GroupId != null && groupsById.TryGetValue(result.Group.GroupId, out SocialGroupRecordData group)) group.revision = revision; if (result?.Membership?.MembershipId != null && membershipsById.TryGetValue(result.Membership.MembershipId, out SocialGroupMembershipRecordData membership)) membership.revision = revision; }
     }

@@ -62,6 +62,22 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void Combatant_snapshot_generation_rejects_mixed_replication_payloads()
+        {
+            NetworkCombatantState[] snapshot =
+            {
+                new NetworkCombatantState("enemy.a", Vector3.zero, Quaternion.identity, 10f, 10f, false, 7u),
+                new NetworkCombatantState("enemy.b", Vector3.one, Quaternion.identity, 10f, 10f, false, 6u)
+            };
+
+            Assert.That(NetworkCombatantSnapshotValidator.HasCommittedGeneration(snapshot, 7u, out string failure), Is.False);
+            Assert.That(failure, Does.Contain("generation 6"));
+
+            snapshot[1].SnapshotGeneration = 7u;
+            Assert.That(NetworkCombatantSnapshotValidator.HasCommittedGeneration(snapshot, 7u, out failure), Is.True, failure);
+        }
+
+        [Test]
         public void Combat_result_messages_are_protocol_bounded()
         {
             NetworkCombatCommandResult result = NetworkCombatCommandResult.Reject(

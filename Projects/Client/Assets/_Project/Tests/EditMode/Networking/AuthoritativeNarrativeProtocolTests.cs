@@ -11,6 +11,32 @@ namespace UnityIsekaiGame.Tests
     public sealed class AuthoritativeNarrativeProtocolTests
     {
         [Test]
+        public void Commands_reject_unused_fields_and_invalid_party_payloads()
+        {
+            NarrativeCommandValidationResult smuggledSecondary = NetworkNarrativeCommandValidator.Validate(
+                new NetworkNarrativeCommand(1u, NarrativeAuthorityCommandType.Interact, "interaction.desk", "unexpected"),
+                0u);
+            Assert.That(smuggledSecondary.Succeeded, Is.False);
+
+            NarrativeCommandValidationResult invalidReady = NetworkNarrativeCommandValidator.Validate(
+                new NetworkNarrativeCommand(2u, NarrativeAuthorityCommandType.SetPartyReady, "self", value: 2),
+                1u);
+            Assert.That(invalidReady.Succeeded, Is.False);
+
+            int invalidSettings = 4;
+            NarrativeCommandValidationResult invalidEnum = NetworkNarrativeCommandValidator.Validate(
+                new NetworkNarrativeCommand(3u, NarrativeAuthorityCommandType.SetPartySettings, value: invalidSettings),
+                2u);
+            Assert.That(invalidEnum.Succeeded, Is.False);
+
+            int validSettings = 2 | (3 << 8) | (1 << 16) | (5 << 24);
+            NarrativeCommandValidationResult valid = NetworkNarrativeCommandValidator.Validate(
+                new NetworkNarrativeCommand(4u, NarrativeAuthorityCommandType.SetPartySettings, value: validSettings),
+                3u);
+            Assert.That(valid.Succeeded, Is.True, valid.Message);
+        }
+
+        [Test]
         public void Commands_reject_replays_invalid_types_and_missing_targets()
         {
             NarrativeCommandValidationResult replay = NetworkNarrativeCommandValidator.Validate(

@@ -1,3 +1,4 @@
+using System.IO;
 using NUnit.Framework;
 using Unity.Netcode;
 using Unity.Netcode.Components;
@@ -15,13 +16,15 @@ namespace UnityIsekaiGame.Tests
         [Test]
         public void Movement_input_is_clamped_and_yaw_is_normalized()
         {
-            NetworkMovementInput requested = new NetworkMovementInput(7, new Vector2(3f, 4f), -90f, true);
+            NetworkMovementInput requested = new NetworkMovementInput(7, new Vector2(3f, 4f), -90f, true, true);
 
             Assert.That(NetworkMovementInputValidator.TryNormalize(requested, 6, out NetworkMovementInput normalized, out string failure), Is.True, failure);
             Assert.That(normalized.Sequence, Is.EqualTo(7));
             Assert.That(normalized.Move.magnitude, Is.EqualTo(1f).Within(0.0001f));
             Assert.That(normalized.YawDegrees, Is.EqualTo(270f).Within(0.0001f));
             Assert.That(normalized.Sprint, Is.True);
+            Assert.That(normalized.Jump, Is.True,
+                "Jump intent must remain atomic with the input sequence used for reconciliation.");
         }
 
         [Test]
@@ -78,6 +81,35 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void Delivery_timing_trace_samples_ten_times_per_second_at_sixty_hertz()
+        {
+            Assert.That(NetworkMovementTrace.DeliveryTimingSampleStride, Is.EqualTo(6u));
+            Assert.That(NetworkMovementTrace.ShouldSampleDeliveryTiming(0u), Is.False);
+            Assert.That(NetworkMovementTrace.ShouldSampleDeliveryTiming(5u), Is.False);
+            Assert.That(NetworkMovementTrace.ShouldSampleDeliveryTiming(6u), Is.True);
+            Assert.That(NetworkMovementTrace.ShouldSampleDeliveryTiming(12u), Is.True);
+            Assert.That(NetworkMovementTrace.CalculateSequenceSpan(60u, 72u), Is.EqualTo(13u));
+            Assert.That(NetworkMovementTrace.CalculateSequenceSpan(uint.MaxValue, 2u), Is.EqualTo(4u));
+        }
+
+        [Test]
+        public void Movement_trace_can_be_toggled_by_a_runtime_control_file()
+        {
+            string controlFile = Path.GetTempFileName();
+            string[] arguments = { NetworkMovementTrace.ControlFileFlag, controlFile };
+            try
+            {
+                Assert.That(NetworkMovementTrace.IsRequested(arguments), Is.True);
+                File.Delete(controlFile);
+                Assert.That(NetworkMovementTrace.IsRequested(arguments), Is.False);
+            }
+            finally
+            {
+                if (File.Exists(controlFile)) File.Delete(controlFile);
+            }
+        }
+
+        [Test]
         public void Token_bucket_allows_a_bounded_burst_and_refills_over_time()
         {
             var limiter = new TokenBucketRateLimiter(2d, 1d);
@@ -86,6 +118,52 @@ namespace UnityIsekaiGame.Tests
             Assert.That(limiter.TryConsume(10d), Is.False);
             Assert.That(limiter.TryConsume(10.5d), Is.False);
             Assert.That(limiter.TryConsume(11d), Is.True);
+        }
+
+        [Test]
+        public void Authoritative_movement_state_keeps_sequence_and_simulated_position_atomic()
+        {
+            var state = new NetworkMovementState(
+                true,
+                91ul,
+                407u,
+                new Vector3(12f, 3f, -8f),
+                135f,
+                7.5f,
+                -2.5f,
+                true,
+                405u,
+                405u);
+
+            Assert.That(state.IsInitialized, Is.True);
+            Assert.That(state.SimulationTick, Is.EqualTo(91ul));
+            Assert.That(state.InputSequence, Is.EqualTo(407u));
+            Assert.That(state.Position, Is.EqualTo(new Vector3(12f, 3f, -8f)));
+            Assert.That(state.Grounded, Is.True);
+            Assert.That(state.LastProcessedJumpSequence, Is.EqualTo(405u));
+            Assert.That(state.LastExecutedJumpSequence, Is.EqualTo(405u));
+        }
+
+        [Test]
+        public void Sequence_replay_preserves_unacknowledged_local_displacement()
+        {
+            Vector3 replayed = LocalPlayerMovementBridge.CalculateReplayedPosition(
+                new Vector3(12f, 3f, 8f),
+                new Vector3(10f, 2f, 5f),
+                new Vector3(9f, 2.5f, 4f));
+
+            Assert.That(replayed, Is.EqualTo(new Vector3(13f, 2.5f, 9f)),
+                "Reconciliation must rebase the current prediction by the error measured at the acknowledged input, not by a delayed-current comparison.");
+        }
+
+        [Test]
+        public void Authoritative_jump_outcome_explicitly_rejects_only_processed_unexecuted_prediction()
+        {
+            Assert.That(LocalPlayerMovementBridge.IsPredictedJumpRejected(40u, 39u, 41u), Is.False);
+            Assert.That(LocalPlayerMovementBridge.IsPredictedJumpRejected(41u, 39u, 41u), Is.True);
+            Assert.That(LocalPlayerMovementBridge.IsPredictedJumpRejected(41u, 41u, 41u), Is.False);
+            Assert.That(LocalPlayerMovementBridge.IsPredictedJumpRejected(1u, uint.MaxValue, uint.MaxValue), Is.False,
+                "A jump executed immediately before sequence wrap must remain accepted.");
         }
 
         [Test]
@@ -201,6 +279,30 @@ namespace UnityIsekaiGame.Tests
                 true,
                 false), Is.EqualTo(Vector3.zero),
                 "An in-flight server snapshot must not fight active local walking or sprinting.");
+        }
+
+        [Test]
+        public void Stop_reconciliation_waits_for_the_exact_input_acknowledgement()
+        {
+            Assert.That(LocalPlayerMovementBridge.HasAcknowledgedSequence(41u, 42u), Is.False);
+            Assert.That(LocalPlayerMovementBridge.HasAcknowledgedSequence(42u, 42u), Is.True);
+            Assert.That(LocalPlayerMovementBridge.HasAcknowledgedSequence(43u, 42u), Is.True);
+            Assert.That(LocalPlayerMovementBridge.HasAcknowledgedSequence(1u, uint.MaxValue), Is.True,
+                "Acknowledgement comparison must remain valid across sequence wraparound.");
+        }
+
+        [Test]
+        public void Stop_reconciliation_allows_server_braking_and_snapshot_delivery_to_settle()
+        {
+            float grace = LocalPlayerMovementBridge.CalculateStopSettlementGrace(
+                7.5f,
+                72f,
+                50ul,
+                60f);
+
+            Assert.That(grace, Is.EqualTo(0.1875f).Within(0.0001f));
+            Assert.That(grace, Is.GreaterThan(7.5f / 72f),
+                "The hold must include both authoritative braking and return snapshot delivery.");
         }
 
         [Test]

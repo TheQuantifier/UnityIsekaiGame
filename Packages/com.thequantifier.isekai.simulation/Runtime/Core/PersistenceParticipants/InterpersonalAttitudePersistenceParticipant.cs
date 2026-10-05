@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
@@ -7,7 +8,7 @@ using UnityIsekaiGame.Social.Attitudes;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class InterpersonalAttitudePersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class InterpersonalAttitudePersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant, IPersistenceRevisionParticipant, IIncrementalPersistenceParticipant
     {
         public const string Key = "world.interpersonal-attitudes";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -38,6 +39,7 @@ namespace UnityIsekaiGame.Persistence
         public bool RequiresSceneReadiness => false;
         public bool RequiresDefinitionRegistry => true;
         public bool RequiresWorldEntityRegistry => false;
+        public long PersistenceRevision => runtime?.Revision ?? -1L;
 
         public PersistenceParticipantSaveResult CapturePayload()
         {
@@ -55,6 +57,56 @@ namespace UnityIsekaiGame.Persistence
 
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null)
+            {
+                return DeferredPersistenceParticipantCapture.Failure("Interpersonal attitude runtime is missing.");
+            }
+
+            return BuildDeferredCapture(runtime.CreateSaveData(), registryProvider?.Invoke(), knownPersonProvider?.Invoke());
+        }
+
+        public IIncrementalPersistenceCapture BeginIncrementalCapture()
+        {
+            if (runtime == null)
+            {
+                return new FailedIncrementalCapture("Interpersonal attitude runtime is missing.");
+            }
+
+            return new IncrementalCapture(
+                runtime.BeginIncrementalSaveDataCapture(),
+                registryProvider?.Invoke(),
+                knownPersonProvider?.Invoke());
+        }
+
+        private static DeferredPersistenceParticipantCapture BuildDeferredCapture(
+            InterpersonalAttitudeRuntimeSaveData saveData,
+            DefinitionRegistry registry,
+            string[] knownPersons)
+        {
+            return DeferredPersistenceParticipantCapture.Success(() =>
+            {
+                saveData.records = (saveData.records ?? new System.Collections.Generic.List<InterpersonalAttitudeRecordData>())
+                    .Where(record => record != null)
+                    .OrderBy(record => record.observerPersonId, StringComparer.Ordinal)
+                    .ThenBy(record => record.subjectPersonId, StringComparer.Ordinal)
+                    .ThenBy(record => record.recordId, StringComparer.Ordinal)
+                    .ToList();
+                saveData.processedTransactionIds = (saveData.processedTransactionIds ?? new System.Collections.Generic.List<string>())
+                    .Where(transactionId => !string.IsNullOrWhiteSpace(transactionId))
+                    .OrderBy(transactionId => transactionId, StringComparer.Ordinal)
+                    .ToList();
+
+                if (!InterpersonalAttitudeRuntime.ValidateSaveData(saveData, registry, knownPersons, out string failureReason))
+                {
+                    return PersistenceParticipantSaveResult.Failure(failureReason);
+                }
+
+                return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+            });
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -122,6 +174,58 @@ namespace UnityIsekaiGame.Persistence
             }
 
             public InterpersonalAttitudeRuntimeSaveData SaveData { get; }
+        }
+
+        private sealed class IncrementalCapture : IIncrementalPersistenceCapture
+        {
+            private readonly InterpersonalAttitudeRuntime.IncrementalSaveDataCapture capture;
+            private readonly DefinitionRegistry registry;
+            private readonly string[] knownPersons;
+
+            public IncrementalCapture(
+                InterpersonalAttitudeRuntime.IncrementalSaveDataCapture capture,
+                DefinitionRegistry registry,
+                string[] knownPersons)
+            {
+                this.capture = capture;
+                this.registry = registry;
+                this.knownPersons = knownPersons;
+            }
+
+            public bool TryContinue(out bool completed, out DeferredPersistenceParticipantCapture completedCapture, out string failureReason)
+            {
+                completed = false;
+                completedCapture = null;
+                if (capture == null)
+                {
+                    failureReason = "Interpersonal attitude incremental capture is missing.";
+                    return false;
+                }
+
+                if (!capture.TryContinue(out failureReason)) return false;
+                if (!capture.IsComplete) return true;
+                completed = true;
+                completedCapture = BuildDeferredCapture(capture.SaveData, registry, knownPersons);
+                return true;
+            }
+        }
+
+        private sealed class FailedIncrementalCapture : IIncrementalPersistenceCapture
+        {
+            private readonly string failureReason;
+
+            public FailedIncrementalCapture(string failureReason)
+            {
+                this.failureReason = failureReason;
+            }
+
+            public bool TryContinue(out bool completed, out DeferredPersistenceParticipantCapture completedCapture, out string reason)
+            {
+                completed = true;
+                completedCapture = null;
+                reason = failureReason;
+                return false;
+            }
         }
     }
 }

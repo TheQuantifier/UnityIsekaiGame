@@ -165,7 +165,14 @@ namespace UnityIsekaiGame.Networking
 
     public struct NetworkCombatantState : INetworkSerializable, IEquatable<NetworkCombatantState>
     {
-        public NetworkCombatantState(string entityId, Vector3 position, Quaternion rotation, float health, float maximumHealth, bool defeated)
+        public NetworkCombatantState(
+            string entityId,
+            Vector3 position,
+            Quaternion rotation,
+            float health,
+            float maximumHealth,
+            bool defeated,
+            uint snapshotGeneration = 0u)
         {
             EntityId = entityId ?? string.Empty;
             Position = position;
@@ -173,6 +180,7 @@ namespace UnityIsekaiGame.Networking
             Health = health;
             MaximumHealth = maximumHealth;
             Defeated = defeated;
+            SnapshotGeneration = snapshotGeneration;
         }
 
         public FixedString128Bytes EntityId;
@@ -181,6 +189,7 @@ namespace UnityIsekaiGame.Networking
         public float Health;
         public float MaximumHealth;
         public bool Defeated;
+        public uint SnapshotGeneration;
         public string EntityIdText => EntityId.ToString();
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -191,6 +200,7 @@ namespace UnityIsekaiGame.Networking
             serializer.SerializeValue(ref Health);
             serializer.SerializeValue(ref MaximumHealth);
             serializer.SerializeValue(ref Defeated);
+            serializer.SerializeValue(ref SnapshotGeneration);
         }
 
         public bool Equals(NetworkCombatantState other) => EntityId.Equals(other.EntityId)
@@ -198,13 +208,44 @@ namespace UnityIsekaiGame.Networking
             && Rotation.Equals(other.Rotation)
             && Health.Equals(other.Health)
             && MaximumHealth.Equals(other.MaximumHealth)
-            && Defeated == other.Defeated;
+            && Defeated == other.Defeated
+            && SnapshotGeneration == other.SnapshotGeneration;
         public override bool Equals(object obj) => obj is NetworkCombatantState other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(EntityId, Position, Rotation, Health, MaximumHealth, Defeated);
+        public override int GetHashCode() => HashCode.Combine(EntityId, Position, Rotation, Health, MaximumHealth, Defeated, SnapshotGeneration);
     }
 
     public static class NetworkCombatantSnapshotValidator
     {
+        public static bool HasCommittedGeneration(
+            IReadOnlyList<NetworkCombatantState> combatants,
+            uint expectedGeneration,
+            out string failure)
+        {
+            if (expectedGeneration == 0u)
+            {
+                failure = "Combat snapshot generation is not committed.";
+                return false;
+            }
+
+            if (combatants == null)
+            {
+                failure = "Combatant snapshot is missing.";
+                return false;
+            }
+
+            for (int i = 0; i < combatants.Count; i++)
+            {
+                if (combatants[i].SnapshotGeneration != expectedGeneration)
+                {
+                    failure = $"Combatant record {i} belongs to generation {combatants[i].SnapshotGeneration}, not committed generation {expectedGeneration}.";
+                    return false;
+                }
+            }
+
+            failure = string.Empty;
+            return true;
+        }
+
         public static bool TryValidate(IReadOnlyList<NetworkCombatantState> combatants, out string failure)
         {
             if (combatants == null || combatants.Count > CombatAuthorityLimits.MaximumWorldCombatants)

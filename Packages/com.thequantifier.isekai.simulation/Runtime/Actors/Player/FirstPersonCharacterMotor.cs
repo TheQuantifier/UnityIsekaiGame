@@ -160,5 +160,24 @@ namespace UnityIsekaiGame.Player
         {
             networkPredictionSprintAllowed = allowed;
         }
+
+        /// <summary>
+        /// Re-bases transient prediction motion after the server has processed an input that the
+        /// client predicted differently (most importantly a rejected or buffered jump). Position
+        /// reconciliation remains owned by the networking bridge so the motor never consumes a
+        /// second collision step merely to correct presentation.
+        /// </summary>
+        public void RestoreNetworkPredictionVerticalMotion(
+            float authoritativeVerticalVelocity,
+            bool authoritativeGrounded)
+        {
+            if (!networkPredictionMode)
+            {
+                return;
+            }
+
+            verticalVelocity = authoritativeVerticalVelocity;
+            simulationGrounded = authoritativeGrounded;
+        }
     }
 }

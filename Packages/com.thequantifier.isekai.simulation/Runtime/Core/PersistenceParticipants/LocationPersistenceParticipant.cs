@@ -6,7 +6,7 @@ using UnityIsekaiGame.WorldLocations;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class LocationPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class LocationPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant
     {
         public const string Key = "world.locations";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -69,6 +69,26 @@ namespace UnityIsekaiGame.Persistence
 
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(payload);
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null) return DeferredPersistenceParticipantCapture.Failure("Location runtime is missing.");
+            LocationRuntimeSaveData saveData = runtime.CreateSaveData();
+            DefinitionRegistry registry = registryProvider?.Invoke();
+            string[] properties = knownPropertyProvider?.Invoke();
+            string[] organizations = knownOrganizationProvider?.Invoke();
+            string[] governments = knownGovernmentProvider?.Invoke();
+            string[] territories = knownTerritoryProvider?.Invoke();
+            return DeferredPersistenceParticipantCapture.Success(() =>
+            {
+                if (!LocationRuntime.ValidateSaveData(saveData, registry, ownerId, properties, organizations, governments, territories, out string failure))
+                {
+                    return PersistenceParticipantSaveResult.Failure(failure);
+                }
+
+                return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+            });
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

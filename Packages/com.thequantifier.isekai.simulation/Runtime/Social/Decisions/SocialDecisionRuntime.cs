@@ -503,6 +503,23 @@ CandidateGenerationFinished:
                 AddTarget(targets, actor, target, SocialDecisionTargetSource.AvailableContext, 80);
             }
 
+            // Explicit world context has higher priority than relationship, group, and
+            // projected-graph discovery. Once it fills the bounded request there is no
+            // reason to build and clone the complete social graph merely to discard its
+            // lower-priority candidates during truncation.
+            int maximumOtherKnownPeople = Math.Max(0, knownPersonIds.Count - (knownPersonIds.Contains(actor) ? 1 : 0));
+            if ((limit > 0 && targets.Count >= limit)
+                || targets.Count >= maximumOtherKnownPeople)
+            {
+                bool bounded = limit > 0 && targets.Count > limit;
+                truncated = bounded;
+                IEnumerable<SocialDecisionTargetCandidateData> available = targets.Values
+                    .OrderByDescending(item => item.priority)
+                    .ThenBy(item => item.personId, StringComparer.Ordinal);
+                if (bounded) available = available.Take(limit);
+                return available.Select(item => item.Clone()).ToArray();
+            }
+
             if (relationships != null)
             {
                 foreach (RelationshipSnapshot relationship in relationships.QueryByPerson(actor, true))

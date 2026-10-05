@@ -20,16 +20,16 @@ namespace UnityIsekaiGame.Networking.Server
     }
 
     /// <summary>
-    /// Serializes profile snapshots on the Unity thread, then coalesces and writes those immutable
-    /// snapshots on one background writer. This keeps disk latency out of authoritative commands
-    /// while preserving ordered, atomic writes per player.
+    /// Copies profile DTOs on the Unity thread, then coalesces, serializes, and writes those immutable
+    /// snapshots on one background worker. This keeps serialization and disk latency out of authoritative
+    /// commands while preserving ordered, atomic writes per player.
     /// </summary>
     public sealed class ServerPlayerProfileWriteQueue : IDisposable
     {
         private readonly ServerPlayerProfileStore store;
         private readonly object gate = new object();
-        private readonly Dictionary<string, ServerPlayerProfileWriteRequest> pending =
-            new Dictionary<string, ServerPlayerProfileWriteRequest>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ServerPlayerProfileData> pending =
+            new Dictionary<string, ServerPlayerProfileData>(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentQueue<ServerPlayerProfileWriteResult> results =
             new ConcurrentQueue<ServerPlayerProfileWriteResult>();
         private readonly AutoResetEvent signal = new AutoResetEvent(false);
@@ -58,10 +58,13 @@ namespace UnityIsekaiGame.Networking.Server
 
         public bool TryEnqueue(ServerPlayerProfileData profile, out string message)
         {
-            if (!store.TryPrepareWrite(profile, out ServerPlayerProfileWriteRequest request, out message))
+            if (profile == null || string.IsNullOrWhiteSpace(profile.playerId))
             {
+                message = "A valid server profile is required.";
                 return false;
             }
+
+            ServerPlayerProfileData snapshot = profile.Clone();
 
             lock (gate)
             {
@@ -71,15 +74,15 @@ namespace UnityIsekaiGame.Networking.Server
                     return false;
                 }
 
-                if (!pending.TryGetValue(request.PlayerId, out ServerPlayerProfileWriteRequest existing)
-                    || request.Revision >= existing.Revision)
+                if (!pending.TryGetValue(snapshot.playerId, out ServerPlayerProfileData existing)
+                    || snapshot.revision >= existing.revision)
                 {
-                    pending[request.PlayerId] = request;
+                    pending[snapshot.playerId] = snapshot;
                 }
             }
 
             signal.Set();
-            message = $"Queued server profile revision {request.Revision} for '{request.PlayerId}'.";
+            message = $"Queued server profile revision {snapshot.revision} for '{snapshot.playerId}'.";
             return true;
         }
 
@@ -111,13 +114,13 @@ namespace UnityIsekaiGame.Networking.Server
         {
             while (true)
             {
-                ServerPlayerProfileWriteRequest request = null;
+                ServerPlayerProfileData profile = null;
                 lock (gate)
                 {
                     if (pending.Count > 0)
                     {
-                        request = pending.Values.OrderBy(value => value.Revision).First();
-                        pending.Remove(request.PlayerId);
+                        profile = pending.Values.OrderBy(value => value.revision).First();
+                        pending.Remove(profile.playerId);
                         activeWrites++;
                     }
                     else if (stopping)
@@ -126,13 +129,14 @@ namespace UnityIsekaiGame.Networking.Server
                     }
                 }
 
-                if (request == null)
+                if (profile == null)
                 {
                     signal.WaitOne();
                     continue;
                 }
 
-                bool succeeded = store.TryWrite(request, out string message);
+                bool succeeded = store.TryPrepareWrite(profile, out ServerPlayerProfileWriteRequest request, out string message)
+                    && store.TryWrite(request, out message);
                 results.Enqueue(new ServerPlayerProfileWriteResult(succeeded, message));
                 lock (gate) activeWrites--;
             }

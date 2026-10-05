@@ -41,6 +41,25 @@ namespace UnityIsekaiGame.Networking
             for (int i = 0; i < combatants.Count; i++) destination.Add(combatants[i]);
         }
 
+        public bool TryCopyCommittedSnapshotTo(uint expectedRevision, List<NetworkCombatantState> destination, out string failure)
+        {
+            if (expectedRevision == 0u || snapshotRevision.Value != expectedRevision)
+            {
+                failure = "The requested combat snapshot revision is no longer current.";
+                return false;
+            }
+
+            CopySnapshotTo(destination);
+            if (snapshotRevision.Value != expectedRevision)
+            {
+                destination.Clear();
+                failure = "The combat snapshot changed while it was being copied.";
+                return false;
+            }
+
+            return NetworkCombatantSnapshotValidator.HasCommittedGeneration(destination, expectedRevision, out failure);
+        }
+
         public bool PublishServerSnapshot(IReadOnlyList<NetworkCombatantState> state)
         {
             if (!IsSpawned || !IsServer) return false;
@@ -50,11 +69,22 @@ namespace UnityIsekaiGame.Networking
                 return false;
             }
 
+            uint next = NextRevision(snapshotRevision.Value);
             combatants.Clear();
-            for (int i = 0; i < state.Count; i++) combatants.Add(state[i]);
-            uint next = unchecked(snapshotRevision.Value + 1u);
-            snapshotRevision.Value = next == 0u ? 1u : next;
+            for (int i = 0; i < state.Count; i++)
+            {
+                NetworkCombatantState entry = state[i];
+                entry.SnapshotGeneration = next;
+                combatants.Add(entry);
+            }
+            snapshotRevision.Value = next;
             return true;
+        }
+
+        private static uint NextRevision(uint revision)
+        {
+            uint next = unchecked(revision + 1u);
+            return next == 0u ? 1u : next;
         }
 
         private void OnSnapshotRevisionChanged(uint previous, uint current) => SnapshotChanged?.Invoke(current);

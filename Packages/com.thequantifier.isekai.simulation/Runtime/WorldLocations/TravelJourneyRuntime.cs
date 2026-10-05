@@ -34,6 +34,18 @@ namespace UnityIsekaiGame.WorldLocations
         public int StepCount => stepsById.Count;
         public IReadOnlyList<TravelJourneySnapshot> Journeys => journeysById.Values.OrderBy(item => item.journeyId, StringComparer.Ordinal).Select(BuildSnapshot).ToArray();
         public IReadOnlyList<TravelJourneyHistoryRecordData> History => historyById.Values.OrderBy(item => item.worldTime).ThenBy(item => item.historyId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
+        public bool HasActiveJourneys
+        {
+            get
+            {
+                foreach (TravelJourneyRecordData journey in journeysById.Values)
+                {
+                    if (journey.lifecycleState == TravelJourneyLifecycleState.Active) return true;
+                }
+
+                return false;
+            }
+        }
 
         public void Configure(DefinitionRegistry definitionRegistry, LocationRuntime locationRuntime, EntityLocationRuntime entityLocationRuntime, LocationConnectionRuntime connectionRuntime, LocationRouteRuntime routeRuntime, string runtimeWorldId = PersistenceService.LocalWorldId, TravelConditionRuntime conditionRuntime = null)
         {

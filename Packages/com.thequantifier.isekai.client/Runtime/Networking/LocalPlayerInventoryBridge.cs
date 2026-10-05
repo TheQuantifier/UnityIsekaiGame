@@ -139,12 +139,26 @@ namespace UnityIsekaiGame.Networking.Client
                 return;
             }
 
-            networkInventory.CopySnapshotTo(inventorySnapshot, equipmentSnapshot);
+            if (!networkInventory.TryCopyCommittedSnapshotTo(
+                    revision,
+                    inventorySnapshot,
+                    equipmentSnapshot,
+                    out string failure))
+            {
+                // The revision marker may arrive before its NetworkList deltas. Keep the
+                // newest revision queued instead of applying a mixed-generation inventory.
+                if (networkInventory.SnapshotRevision == revision)
+                {
+                    pendingSnapshotRevision = revision;
+                }
+                return;
+            }
+
             if (!NetworkInventorySnapshotValidator.TryValidate(
                     inventorySnapshot,
                     equipmentSnapshot,
                     networkInventory.InventoryCapacity,
-                    out string failure))
+                    out failure))
             {
                 Debug.LogError($"[Network Inventory] Client rejected snapshot {revision}: {failure}", this);
                 return;

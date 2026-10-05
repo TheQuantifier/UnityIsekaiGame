@@ -211,21 +211,8 @@ namespace UnityIsekaiGame.Input
 
             if (keyboard.escapeKey.wasPressedThisFrame)
             {
-                if (PlayerCursorMode.TryCloseTopMenu())
-                {
-                    ClearCancel();
-                    return;
-                }
-
-                bool wasLockedForLook = PlayerCursorMode.MouseLookEnabled;
-                PlayerCursorMode.UnlockMouse();
-                if (wasLockedForLook) GameHudMessageBus.Show("Mouse unlocked. Press L to enable mouse look.");
-                return;
-            }
-
-            if (keyboard.pKey.wasPressedThisFrame && !IsTypingInUiField())
-            {
                 PauseMenuController.TryToggleForGameplay();
+                ClearCancel();
                 return;
             }
 

@@ -131,6 +131,7 @@ namespace UnityIsekaiGame.Networking
         private bool hasConfiguredState;
         private bool collectionInProgress;
         private bool localRequestPending;
+        private uint localTraceSequence;
 
         public static event Action<NetworkWorldItemPickup> ClientPickupSpawned;
         public event Action<bool, string> CollectionResultReceived;
@@ -179,6 +180,7 @@ namespace UnityIsekaiGame.Networking
         {
             collectionInProgress = false;
             localRequestPending = false;
+            localTraceSequence = 0u;
             ServerCollectionHandler = null;
         }
 
@@ -186,14 +188,27 @@ namespace UnityIsekaiGame.Networking
         {
             if (!CanRequestCollection) return false;
             localRequestPending = true;
-            RequestCollectionRpc();
+            localTraceSequence = localTraceSequence == uint.MaxValue ? 1u : localTraceSequence + 1u;
+            string correlation = $"pickup-{NetworkObjectId}:{localTraceSequence}";
+            NetworkActionTrace.ClientSend(
+                NetworkActionTraceCategory.Interaction,
+                "CollectWorldItem",
+                correlation,
+                context: this);
+            RequestCollectionRpc(localTraceSequence);
             return true;
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone, Delivery = RpcDelivery.Reliable)]
-        private void RequestCollectionRpc(RpcParams rpcParams = default)
+        private void RequestCollectionRpc(uint traceSequence, RpcParams rpcParams = default)
         {
             ulong senderClientId = rpcParams.Receive.SenderClientId;
+            NetworkActionTrace.ServerReceive(
+                NetworkActionTraceCategory.Interaction,
+                "CollectWorldItem",
+                $"pickup-{NetworkObjectId}:{traceSequence}",
+                senderClientId,
+                context: this);
             WorldItemCollectionResult result;
             if (!IsServer || !IsSpawned)
             {

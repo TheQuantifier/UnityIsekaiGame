@@ -30,7 +30,6 @@ namespace UnityIsekaiGame.Networking.Server
         private const float SpawnGroundProbeDistance = 100f;
         private const float MaximumSpawnSurfaceRise = 2f;
         private const float SpawnGroundClearance = 0.02f;
-
         public const string InventorySmokeSeedFlag = "--inventory-smoke-seed";
         public const string CombatSmokeSeedFlag = "--combat-smoke-seed";
         public const string NarrativeSmokeSeedFlag = "--narrative-smoke-seed";
@@ -56,18 +55,37 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField] private PrototypePersistenceServiceBehaviour prototypePersistence;
         [SerializeField, Min(1f)] private float playerProfileAutosaveSeconds = 15f;
         [SerializeField, Min(5f)] private float worldCheckpointAutosaveSeconds = 60f;
+        [SerializeField, Min(0f)] private float worldCheckpointAutosaveOffsetSeconds = 5f;
+        [SerializeField, Min(0.1f)] private float captureWarningMilliseconds = 8f;
+        [SerializeField, Min(0.1f)] private float captureCriticalMilliseconds = 16.667f;
+        [SerializeField, Min(1024)] private long captureAllocationWarningBytes = 1048576L;
 
         private readonly Dictionary<ulong, string> connectedPlayerIds = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, ConnectionRequestPayload> pendingConnections = new Dictionary<ulong, ConnectionRequestPayload>();
+        private readonly Dictionary<ulong, double> pendingConnectionAcceptedAt = new Dictionary<ulong, double>();
         private readonly Dictionary<ulong, int> failedAuthenticationCounts = new Dictionary<ulong, int>();
         private readonly Dictionary<ulong, float> nextAuthenticationAt = new Dictionary<ulong, float>();
         private readonly HashSet<ulong> authenticationInFlight = new HashSet<ulong>();
+        private readonly Dictionary<ulong, double> authenticationStartedAt = new Dictionary<ulong, double>();
         private readonly ConcurrentQueue<AccountAuthenticationWorkResult> authenticationResults = new ConcurrentQueue<AccountAuthenticationWorkResult>();
+        private readonly ConcurrentQueue<PlayerProfileLoadWorkResult> playerProfileLoadResults = new ConcurrentQueue<PlayerProfileLoadWorkResult>();
         private readonly Dictionary<ulong, NetworkPlayerActor> playerActors = new Dictionary<ulong, NetworkPlayerActor>();
         private readonly PlayerSessionRegistry playerSessions = new PlayerSessionRegistry();
         private readonly Dictionary<string, ServerPlayerProfileData> playerProfiles = new Dictionary<string, ServerPlayerProfileData>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ServerPlayerProfileData> lastQueuedPlayerProfiles = new Dictionary<string, ServerPlayerProfileData>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> completedPlayerProfileLoads = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> playerProfileLoadMessages = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private ServerPlayerProfileStore playerProfileStore;
         private ServerPlayerProfileWriteQueue playerProfileWriteQueue;
+        private ServerWorldCheckpointWriteQueue worldCheckpointWriteQueue;
+        private PreparedPersistenceSaveCapture worldCheckpointCapture;
+        private string worldCheckpointCaptureReason = string.Empty;
+        private double worldCheckpointCaptureCpuMilliseconds;
+        private double worldCheckpointMaximumCaptureTickMilliseconds;
+        private string worldCheckpointMaximumCaptureParticipant = string.Empty;
+        private int worldCheckpointCaptureFrames;
+        private readonly List<ServerPersistenceCaptureSample> worldCheckpointCaptureSamples =
+            new List<ServerPersistenceCaptureSample>();
         private ServerAccountStore accountStore;
         private float nextPlayerProfileAutosaveAt;
         private float nextWorldCheckpointAutosaveAt;
@@ -83,6 +101,7 @@ namespace UnityIsekaiGame.Networking.Server
         private NetworkCombatWorldState combatWorldState;
         private ServerCombatWorldAuthority combatWorldAuthority;
         private ServerWorldItemAuthority worldItemAuthority;
+        private DefinitionRegistry cachedDefinitionRegistry;
         private LocalConnectionStatus status = new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server is offline.");
 
         public event Action<LocalConnectionStatus> StatusChanged;
@@ -106,7 +125,12 @@ namespace UnityIsekaiGame.Networking.Server
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = DedicatedServerTargetFrameRate;
 #endif
+            if (GetComponent<ServerFrameStallMonitor>() == null)
+            {
+                gameObject.AddComponent<ServerFrameStallMonitor>();
+            }
             ResolveReferences();
+            cachedDefinitionRegistry = definitionCatalog == null ? null : definitionCatalog.CreateRegistry();
             prototypePersistence?.SetRuntimeRole(SimulationRuntimeRole.DedicatedServerAuthoritative);
         }
 
@@ -129,20 +153,55 @@ namespace UnityIsekaiGame.Networking.Server
 
         private void Update()
         {
-            DrainProfileWriteResults();
-            DrainAuthenticationResults();
-            if (!ownsServerSession || networkManager == null || !networkManager.IsServer || !serverPersistenceReady) return;
+            using (NetworkMovementTrace.MeasureServerPhase("ProfileWriteResults"))
+            {
+                DrainProfileWriteResults();
+            }
+            using (NetworkMovementTrace.MeasureServerPhase("WorldCheckpointWriteResults"))
+            {
+                DrainWorldCheckpointWriteResults();
+            }
+            using (NetworkMovementTrace.MeasureServerPhase("WorldCheckpointCapture"))
+            {
+                AdvanceWorldCheckpointCapture(1);
+            }
+            using (NetworkMovementTrace.MeasureServerPhase("AuthenticationResults"))
+            {
+                DrainAuthenticationResults();
+                DrainPlayerProfileLoadResults();
+            }
+            if (!ownsServerSession || networkManager == null || !networkManager.IsServer) return;
+            using (NetworkMovementTrace.MeasureServerPhase("ConnectionExpiry"))
+            {
+                ExpireUnauthenticatedConnections();
+            }
+            if (!serverPersistenceReady) return;
             float now = Time.unscaledTime;
+            bool capturedProfilesThisFrame = false;
             if (now >= nextPlayerProfileAutosaveAt)
             {
-                SaveAllConnectedPlayerProfiles("Scheduled autosave");
+                using (NetworkMovementTrace.MeasureServerPhase("PlayerProfileCapture"))
+                {
+                    SaveAllConnectedPlayerProfiles("Scheduled autosave");
+                }
                 nextPlayerProfileAutosaveAt = now + Mathf.Max(1f, playerProfileAutosaveSeconds);
+                capturedProfilesThisFrame = true;
             }
 
             if (now >= nextWorldCheckpointAutosaveAt)
             {
-                SaveWorldCheckpoint("Scheduled autosave");
-                nextWorldCheckpointAutosaveAt = now + Mathf.Max(5f, worldCheckpointAutosaveSeconds);
+                if (capturedProfilesThisFrame)
+                {
+                    nextWorldCheckpointAutosaveAt = now + 0.25f;
+                }
+                else
+                {
+                    using (NetworkMovementTrace.MeasureServerPhase("WorldCheckpointStart"))
+                    {
+                        SaveWorldCheckpoint("Scheduled autosave");
+                    }
+                    nextWorldCheckpointAutosaveAt = now + Mathf.Max(5f, worldCheckpointAutosaveSeconds);
+                }
             }
         }
 
@@ -248,14 +307,20 @@ namespace UnityIsekaiGame.Networking.Server
             serverPort = endpoint.Port;
             connectedPlayerIds.Clear();
             pendingConnections.Clear();
+            pendingConnectionAcceptedAt.Clear();
             failedAuthenticationCounts.Clear();
             nextAuthenticationAt.Clear();
             authenticationInFlight.Clear();
+            authenticationStartedAt.Clear();
             while (authenticationResults.TryDequeue(out _)) { }
+            while (playerProfileLoadResults.TryDequeue(out _)) { }
             serverGeneration = checked(serverGeneration + 1);
             playerActors.Clear();
             playerSessions.Clear();
             playerProfiles.Clear();
+            lastQueuedPlayerProfiles.Clear();
+            completedPlayerProfileLoads.Clear();
+            playerProfileLoadMessages.Clear();
             combatWorldState = null;
             combatWorldAuthority = null;
             worldItemAuthority = null;
@@ -264,9 +329,16 @@ namespace UnityIsekaiGame.Networking.Server
             accountStore ??= new ServerAccountStore();
             playerProfileWriteQueue?.Dispose();
             playerProfileWriteQueue = new ServerPlayerProfileWriteQueue(playerProfileStore);
+            DisposeWorldCheckpointWriteQueue();
             serverPersistenceReady = TryLoadWorldCheckpoint();
+            if (serverPersistenceReady && prototypePersistence?.WorldService != null)
+            {
+                worldCheckpointWriteQueue = new ServerWorldCheckpointWriteQueue(prototypePersistence.WorldService);
+            }
             nextPlayerProfileAutosaveAt = Time.unscaledTime + Mathf.Max(1f, playerProfileAutosaveSeconds);
-            nextWorldCheckpointAutosaveAt = Time.unscaledTime + Mathf.Max(5f, worldCheckpointAutosaveSeconds);
+            nextWorldCheckpointAutosaveAt = Time.unscaledTime
+                + Mathf.Max(5f, worldCheckpointAutosaveSeconds)
+                + Mathf.Max(0f, worldCheckpointAutosaveOffsetSeconds);
             networkManager.NetworkConfig.TickRate = LocalServerEndpoint.DefaultTickRate;
             OverrideFixedSimulationRate();
             networkManager.NetworkConfig.ConnectionApproval = true;
@@ -337,16 +409,22 @@ namespace UnityIsekaiGame.Networking.Server
             if (!ownsServerSession || networkManager == null)
             {
                 DisposeProfileWriteQueue();
+                DisposeWorldCheckpointWriteQueue();
                 worldItemAuthority?.RestoreScenePickupSources();
                 connectedPlayerIds.Clear();
                 pendingConnections.Clear();
+                pendingConnectionAcceptedAt.Clear();
                 failedAuthenticationCounts.Clear();
                 nextAuthenticationAt.Clear();
                 authenticationInFlight.Clear();
+                authenticationStartedAt.Clear();
                 serverGeneration = checked(serverGeneration + 1);
                 playerActors.Clear();
                 playerSessions.Clear();
                 playerProfiles.Clear();
+                lastQueuedPlayerProfiles.Clear();
+                completedPlayerProfileLoads.Clear();
+                playerProfileLoadMessages.Clear();
                 serverPersistenceReady = false;
                 inventorySmokeSeeded = false;
                 combatWorldState = null;
@@ -360,7 +438,11 @@ namespace UnityIsekaiGame.Networking.Server
 
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Disconnecting, "Stopping the local server.", status.Endpoint));
             SaveAllConnectedPlayerProfiles("Server shutdown");
+            CompleteWorldCheckpointCaptureImmediately();
+            FlushWorldCheckpointWrites("pending autosave before server shutdown");
             SaveWorldCheckpoint("Server shutdown");
+            CompleteWorldCheckpointCaptureImmediately();
+            FlushWorldCheckpointWrites("server shutdown");
             FlushProfileWrites("Server shutdown");
             Unsubscribe();
             networkManager.Shutdown();
@@ -368,19 +450,25 @@ namespace UnityIsekaiGame.Networking.Server
             ownsServerSession = false;
             connectedPlayerIds.Clear();
             pendingConnections.Clear();
+            pendingConnectionAcceptedAt.Clear();
             failedAuthenticationCounts.Clear();
             nextAuthenticationAt.Clear();
             authenticationInFlight.Clear();
+            authenticationStartedAt.Clear();
             serverGeneration = checked(serverGeneration + 1);
             playerActors.Clear();
             playerSessions.Clear();
             playerProfiles.Clear();
+            lastQueuedPlayerProfiles.Clear();
+            completedPlayerProfileLoads.Clear();
+            playerProfileLoadMessages.Clear();
             serverPersistenceReady = false;
             inventorySmokeSeeded = false;
             combatWorldState = null;
             combatWorldAuthority = null;
             worldItemAuthority = null;
             DisposeProfileWriteQueue();
+            DisposeWorldCheckpointWriteQueue();
             RestorePrototypeMovement();
             RestoreFixedSimulationRate();
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Offline, "Server stopped.", status.Endpoint));
@@ -422,6 +510,7 @@ namespace UnityIsekaiGame.Networking.Server
                 // dispatch OnClientConnected as soon as the response is marked non-pending, including
                 // re-entrantly during this callback.
                 pendingConnections[request.ClientNetworkId] = admission.Request;
+                pendingConnectionAcceptedAt[request.ClientNetworkId] = Time.realtimeSinceStartupAsDouble;
                 Debug.Log($"[Local Server] App-authenticated client {request.ClientNetworkId}; awaiting account login.", this);
             }
             else
@@ -476,14 +565,24 @@ namespace UnityIsekaiGame.Networking.Server
                 return;
             }
 
+            authenticationStartedAt[clientId] = Time.realtimeSinceStartupAsDouble;
+
             if (!TryReadAuthenticationPayload(reader, out byte[] payload, out string failure)
                 || !AccountAuthenticationProtocol.TryDecodeRequest(payload, out AccountAuthenticationRequest request, out failure))
             {
                 authenticationInFlight.Remove(clientId);
+                authenticationStartedAt.Remove(clientId);
                 RegisterAuthenticationFailure(clientId);
                 SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty, failure));
                 return;
             }
+
+            NetworkActionTrace.ServerReceive(
+                NetworkActionTraceCategory.Authentication,
+                request.Mode == AccountAuthenticationMode.CreateAccount ? "CreateAccount" : "Login",
+                request.Mode == AccountAuthenticationMode.CreateAccount ? "authentication-create" : "authentication-login",
+                clientId,
+                context: this);
 
             accountStore ??= new ServerAccountStore();
             ServerAccountStore store = accountStore;
@@ -510,7 +609,6 @@ namespace UnityIsekaiGame.Networking.Server
             while (authenticationResults.TryDequeue(out AccountAuthenticationWorkResult work))
             {
                 if (work.ServerGeneration != serverGeneration) continue;
-                authenticationInFlight.Remove(work.ClientId);
                 CompleteAccountAuthentication(work.ClientId, work.Result);
             }
         }
@@ -523,6 +621,7 @@ namespace UnityIsekaiGame.Networking.Server
 
             if (!result.Succeeded)
             {
+                CompleteAuthenticationWork(clientId);
                 RegisterAuthenticationFailure(clientId);
                 SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty, result.Message));
                 return;
@@ -530,34 +629,101 @@ namespace UnityIsekaiGame.Networking.Server
 
             if (connectedPlayerIds.Values.Any(id => string.Equals(id, result.UserId, StringComparison.Ordinal)))
             {
+                CompleteAuthenticationWork(clientId);
                 RegisterAuthenticationFailure(clientId);
                 SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty,
                     "That account is already signed in."));
                 return;
             }
 
-            string failure;
-            if (!playerSessions.TryOpen(clientId, appRequest.ClientInstanceId, result.UserId, out PlayerSessionSnapshot session, out failure)
-                || !TrySpawnPlayerActor(session, out NetworkPlayerActor actor, out failure))
+            if (!playerSessions.TryOpen(clientId, appRequest.ClientInstanceId, result.UserId, out PlayerSessionSnapshot session, out string failure))
             {
+                CompleteAuthenticationWork(clientId);
                 playerSessions.TryClose(clientId, out _);
                 SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty, failure));
                 return;
             }
 
-            failedAuthenticationCounts.Remove(clientId);
-            nextAuthenticationAt.Remove(clientId);
-            pendingConnections.Remove(clientId);
-            connectedPlayerIds[clientId] = result.UserId;
-            playerActors[clientId] = actor;
-            SendAuthenticationResponse(clientId, new AccountAuthenticationResponse(
+            playerProfileStore ??= new ServerPlayerProfileStore();
+            ServerPlayerProfileStore profileStore = playerProfileStore;
+            int generation = serverGeneration;
+            _ = Task.Run(() =>
+            {
+                ServerPlayerProfileData profile = null;
+                bool loaded = false;
+                string loadMessage;
+                try
+                {
+                    loaded = profileStore.TryLoad(session, out profile, out loadMessage);
+                }
+                catch (Exception exception)
+                {
+                    loadMessage = $"Server profile loading failed: {exception.Message}";
+                }
+
+                playerProfileLoadResults.Enqueue(new PlayerProfileLoadWorkResult(
+                    generation,
+                    clientId,
+                    result,
+                    session,
+                    loaded,
+                    profile,
+                    loadMessage));
+            });
+        }
+
+        private void DrainPlayerProfileLoadResults()
+        {
+            while (playerProfileLoadResults.TryDequeue(out PlayerProfileLoadWorkResult work))
+            {
+                if (work.ServerGeneration != serverGeneration) continue;
+                CompleteAuthenticationWork(work.ClientId);
+                if (!ownsServerSession
+                    || !pendingConnections.ContainsKey(work.ClientId)
+                    || !playerSessions.TryGetByClientId(work.ClientId, out PlayerSessionSnapshot activeSession)
+                    || !string.Equals(activeSession.SessionId, work.Session.SessionId, StringComparison.Ordinal))
+                {
+                    playerSessions.TryClose(work.ClientId, out _);
+                    continue;
+                }
+
+                completedPlayerProfileLoads.Add(work.Session.PlayerId);
+                playerProfileLoadMessages[work.Session.PlayerId] = work.LoadMessage;
+                if (work.Loaded && work.Profile != null)
+                {
+                    playerProfiles[work.Session.PlayerId] = work.Profile;
+                    lastQueuedPlayerProfiles[work.Session.PlayerId] = work.Profile.Clone();
+                    Debug.Log($"[Server Persistence] {work.LoadMessage}", this);
+                }
+
+                if (!TrySpawnPlayerActor(work.Session, out NetworkPlayerActor actor, out string failure))
+                {
+                    playerSessions.TryClose(work.ClientId, out _);
+                    SendAuthenticationResponse(work.ClientId, new AccountAuthenticationResponse(false, false, string.Empty, string.Empty, failure));
+                    continue;
+                }
+
+                failedAuthenticationCounts.Remove(work.ClientId);
+                nextAuthenticationAt.Remove(work.ClientId);
+                pendingConnections.Remove(work.ClientId);
+                pendingConnectionAcceptedAt.Remove(work.ClientId);
+                connectedPlayerIds[work.ClientId] = work.Authentication.UserId;
+                playerActors[work.ClientId] = actor;
+                SendAuthenticationResponse(work.ClientId, new AccountAuthenticationResponse(
                 true,
-                result.Status == ServerAccountAuthenticationStatus.Created,
-                result.UserId,
-                result.Username,
-                result.Message));
-            Debug.Log($"[Local Server] Started session '{session.SessionId}' for account '{result.Username}' ({result.UserId}).", this);
-            PlayerSessionStarted?.Invoke(session, actor);
+                    work.Authentication.Status == ServerAccountAuthenticationStatus.Created,
+                    work.Authentication.UserId,
+                    work.Authentication.Username,
+                    work.Authentication.Message));
+                Debug.Log($"[Local Server] Started session '{work.Session.SessionId}' for account '{work.Authentication.Username}' ({work.Authentication.UserId}).", this);
+                PlayerSessionStarted?.Invoke(work.Session, actor);
+            }
+        }
+
+        private void CompleteAuthenticationWork(ulong clientId)
+        {
+            authenticationInFlight.Remove(clientId);
+            authenticationStartedAt.Remove(clientId);
         }
 
         private void RegisterAuthenticationFailure(ulong clientId)
@@ -613,10 +779,13 @@ namespace UnityIsekaiGame.Networking.Server
         {
             SavePlayerProfile(clientId, "Client disconnect");
             combatWorldAuthority?.UnregisterPlayerTarget(clientId);
+            worldItemAuthority?.ForgetClient(clientId);
             pendingConnections.Remove(clientId);
+            pendingConnectionAcceptedAt.Remove(clientId);
             failedAuthenticationCounts.Remove(clientId);
             nextAuthenticationAt.Remove(clientId);
             authenticationInFlight.Remove(clientId);
+            authenticationStartedAt.Remove(clientId);
             playerActors.Remove(clientId);
             if (connectedPlayerIds.Remove(clientId))
             {
@@ -728,7 +897,7 @@ namespace UnityIsekaiGame.Networking.Server
                 inventoryAuthority.Configure(
                     replicatedInventory,
                     vitals,
-                    definitionCatalog.CreateRegistry(),
+                    GetDefinitionRegistry(),
                     worldItemAuthority,
                     profile.inventory,
                     profile.equipment,
@@ -745,13 +914,18 @@ namespace UnityIsekaiGame.Networking.Server
                     vitals,
                     inventoryAuthority,
                     combatWorldAuthority,
-                    definitionCatalog.CreateRegistry(),
+                    GetDefinitionRegistry(),
                     prototypePlayerMeleeCombat.UnarmedAttack,
                     prototypePlayerSpellLoadout.KnownSpells,
                     CombatStatUtility.GetAttackPower(prototypePlayerMeleeCombat.gameObject));
 
                 ServerPlayerNarrativeAuthority narrativeAuthority = instance.AddComponent<ServerPlayerNarrativeAuthority>();
-                narrativeAuthority.Configure(actor, replicatedNarrative, prototypePersistence, inventoryAuthority);
+                narrativeAuthority.Configure(
+                    actor,
+                    replicatedNarrative,
+                    prototypePersistence,
+                    inventoryAuthority,
+                    definitionRegistry: GetDefinitionRegistry());
 
                 networkObject.SpawnAsPlayerObject(session.ClientId, true);
                 narrativeAuthority.PublishProjection();
@@ -894,11 +1068,55 @@ namespace UnityIsekaiGame.Networking.Server
         {
             connectedPlayerIds.Remove(clientId);
             pendingConnections.Remove(clientId);
+            pendingConnectionAcceptedAt.Remove(clientId);
             failedAuthenticationCounts.Remove(clientId);
             nextAuthenticationAt.Remove(clientId);
             authenticationInFlight.Remove(clientId);
+            authenticationStartedAt.Remove(clientId);
             Debug.LogError($"[Local Server] Disconnecting client {clientId}: {reason}", this);
             networkManager?.DisconnectClient(clientId, reason);
+        }
+
+        private void ExpireUnauthenticatedConnections()
+        {
+            if (pendingConnectionAcceptedAt.Count == 0) return;
+            double now = Time.realtimeSinceStartupAsDouble;
+            List<(ulong ClientId, string Reason)> expired = null;
+            foreach (KeyValuePair<ulong, double> entry in pendingConnectionAcceptedAt)
+            {
+                if (connectedPlayerIds.ContainsKey(entry.Key))
+                {
+                    continue;
+                }
+
+                bool requestInFlight = authenticationInFlight.Contains(entry.Key);
+                double timeoutStartedAt = requestInFlight
+                    && authenticationStartedAt.TryGetValue(entry.Key, out double startedAt)
+                        ? startedAt
+                        : entry.Value;
+                AccountAuthenticationExpiration expiration = AccountAuthenticationTimeoutPolicy.Evaluate(
+                    entry.Value,
+                    timeoutStartedAt,
+                    requestInFlight,
+                    now);
+                if (expiration == AccountAuthenticationExpiration.None)
+                {
+                    continue;
+                }
+
+                expired ??= new List<(ulong ClientId, string Reason)>();
+                expired.Add((
+                    entry.Key,
+                    expiration == AccountAuthenticationExpiration.AuthenticationRequest
+                        ? "The account authentication request timed out. Please try again."
+                        : "The login connection expired after being idle. Press Login to reconnect."));
+            }
+
+            if (expired == null) return;
+            for (int i = 0; i < expired.Count; i++)
+            {
+                DisconnectClient(expired[i].ClientId, expired[i].Reason);
+            }
         }
 
         private void ResolveReferences()
@@ -933,9 +1151,14 @@ namespace UnityIsekaiGame.Networking.Server
             }
 
             EnsureInventorySmokeSeed();
-            if (playerProfileStore.TryLoad(session, out ServerPlayerProfileData loaded, out string loadMessage))
+            string loadMessage = playerProfileLoadMessages.TryGetValue(session.PlayerId, out string backgroundMessage)
+                ? backgroundMessage
+                : string.Empty;
+            if (!completedPlayerProfileLoads.Contains(session.PlayerId)
+                && playerProfileStore.TryLoad(session, out ServerPlayerProfileData loaded, out loadMessage))
             {
                 playerProfiles[session.PlayerId] = loaded;
+                lastQueuedPlayerProfiles[session.PlayerId] = loaded.Clone();
                 Debug.Log($"[Server Persistence] {loadMessage}", this);
                 return loaded;
             }
@@ -957,7 +1180,6 @@ namespace UnityIsekaiGame.Networking.Server
             if (!playerProfiles.TryGetValue(playerId, out ServerPlayerProfileData profile)) return;
             profile.inventory = inventory;
             profile.equipment = equipment;
-            profile.revision = checked(profile.revision + 1L);
             PersistProfile(profile, "Inventory mutation");
         }
 
@@ -985,16 +1207,26 @@ namespace UnityIsekaiGame.Networking.Server
                 profile.equipment = inventory.CreateEquipmentSaveData();
             }
 
-            profile.revision = checked(profile.revision + 1L);
             PersistProfile(profile, reason);
         }
 
         private void PersistProfile(ServerPlayerProfileData profile, string reason)
         {
+            if (profile == null) return;
+            if (lastQueuedPlayerProfiles.TryGetValue(profile.playerId, out ServerPlayerProfileData previous)
+                && profile.HasSamePersistentState(previous))
+            {
+                return;
+            }
+
+            profile.revision = checked(Math.Max(0L, profile.revision) + 1L);
             playerProfileStore ??= new ServerPlayerProfileStore();
             playerProfileWriteQueue ??= new ServerPlayerProfileWriteQueue(playerProfileStore);
             if (playerProfileWriteQueue.TryEnqueue(profile, out string message))
+            {
+                lastQueuedPlayerProfiles[profile.playerId] = profile.Clone();
                 Debug.Log($"[Server Persistence] {message} Reason={reason}.", this);
+            }
             else
                 Debug.LogError($"[Server Persistence] {message} Reason={reason}.", this);
         }
@@ -1060,8 +1292,206 @@ namespace UnityIsekaiGame.Networking.Server
         private void SaveWorldCheckpoint(string reason)
         {
             if (!serverPersistenceReady || prototypePersistence == null) return;
-            PersistenceSaveResult result = prototypePersistence.SaveWorldCheckpoint(reason);
-            if (!result.Succeeded) Debug.LogError($"[Server Persistence] World checkpoint save failed: {result.Message}", this);
+            PersistenceService service = prototypePersistence.WorldService;
+            if (service == null) return;
+
+            worldCheckpointWriteQueue ??= new ServerWorldCheckpointWriteQueue(service);
+            if (worldCheckpointCapture != null) return;
+            if (!service.TryBeginSaveCapture(
+                    PrototypeSaveSlotCatalog.CurrentWorldCheckpointSlotId,
+                    $"World Checkpoint ({reason})",
+                    out worldCheckpointCapture,
+                    out PersistenceSaveResult failure))
+            {
+                if (failure?.Status != PersistenceSaveStatus.OperationAlreadyRunning)
+                {
+                    Debug.LogError($"[Server Persistence] World checkpoint snapshot failed: {failure?.Message ?? "Unknown failure."}", this);
+                }
+                return;
+            }
+
+            worldCheckpointCaptureReason = reason ?? string.Empty;
+            worldCheckpointCaptureCpuMilliseconds = 0d;
+            worldCheckpointMaximumCaptureTickMilliseconds = 0d;
+            worldCheckpointMaximumCaptureParticipant = string.Empty;
+            worldCheckpointCaptureFrames = 0;
+            worldCheckpointCaptureSamples.Clear();
+        }
+
+        private void AdvanceWorldCheckpointCapture(int maximumParticipants)
+        {
+            if (worldCheckpointCapture == null || prototypePersistence?.WorldService == null) return;
+            PersistenceService service = prototypePersistence.WorldService;
+            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+            long managedBefore = GC.GetTotalMemory(forceFullCollection: false);
+            var tickTimer = System.Diagnostics.Stopwatch.StartNew();
+            bool continued = service.TryContinueSaveCapture(
+                worldCheckpointCapture,
+                maximumParticipants,
+                out PreparedPersistenceSave prepared,
+                out PersistenceSaveResult failure);
+            tickTimer.Stop();
+            double tickMilliseconds = tickTimer.Elapsed.TotalMilliseconds;
+            long threadAllocatedBytes = Math.Max(0L, GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
+            long managedGrowthBytes = Math.Max(0L, GC.GetTotalMemory(forceFullCollection: false) - managedBefore);
+            long allocatedBytes = threadAllocatedBytes > 0L ? threadAllocatedBytes : managedGrowthBytes;
+            worldCheckpointCaptureCpuMilliseconds += tickMilliseconds;
+            worldCheckpointCaptureSamples.Add(new ServerPersistenceCaptureSample(
+                worldCheckpointCaptureFrames + 1,
+                worldCheckpointCapture.LastCapturedParticipantKey,
+                tickMilliseconds,
+                allocatedBytes));
+            if (tickMilliseconds > worldCheckpointMaximumCaptureTickMilliseconds)
+            {
+                worldCheckpointMaximumCaptureTickMilliseconds = tickMilliseconds;
+                worldCheckpointMaximumCaptureParticipant = worldCheckpointCapture.LastCapturedParticipantKey;
+            }
+            worldCheckpointCaptureFrames++;
+
+            if (!continued)
+            {
+                Debug.LogError($"[Server Persistence] World checkpoint snapshot failed: {failure?.Message ?? "Unknown failure."}", this);
+                ClearWorldCheckpointCapture();
+                return;
+            }
+
+            if (prepared == null) return;
+            string reason = worldCheckpointCaptureReason;
+            double captureCpuMilliseconds = worldCheckpointCaptureCpuMilliseconds;
+            double maximumTickMilliseconds = worldCheckpointMaximumCaptureTickMilliseconds;
+            string maximumCaptureParticipant = worldCheckpointMaximumCaptureParticipant;
+            int captureFrames = worldCheckpointCaptureFrames;
+            ServerPersistenceCaptureSample[] captureSamples = worldCheckpointCaptureSamples.ToArray();
+            ClearWorldCheckpointCapture();
+
+            if (!worldCheckpointWriteQueue.TryEnqueue(prepared, out string message))
+            {
+                PersistenceSaveResult enqueueFailure = PersistenceSaveResult.Failure(
+                    PersistenceSaveStatus.OperationAlreadyRunning,
+                    prepared.SlotId,
+                    prepared.Path,
+                    message,
+                    transactionId: prepared.TransactionId);
+                service.CompletePreparedSave(prepared, enqueueFailure);
+                Debug.LogError($"[Server Persistence] World checkpoint queue failed: {message}", this);
+                return;
+            }
+
+            ServerPersistenceCaptureSummary summary = ServerPersistenceCaptureMetrics.Summarize(captureSamples);
+            Debug.Log(
+                $"[Server Persistence] Utc={DateTime.UtcNow:o} {message} Reason={reason}. "
+                + $"CaptureCpuMs={captureCpuMilliseconds:F1} MeanCaptureTickMs={summary.MeanMilliseconds:F3} "
+                + $"MedianCaptureTickMs={summary.MedianMilliseconds:F3} ModeCaptureTickMs={summary.ModeBucketMilliseconds:F1} "
+                + $"P95CaptureTickMs={summary.Percentile95Milliseconds:F3} P99CaptureTickMs={summary.Percentile99Milliseconds:F3} "
+                + $"MaxCaptureTickMs={maximumTickMilliseconds:F3} MaxCaptureParticipant={maximumCaptureParticipant} "
+                + $"CaptureFrames={captureFrames} CaptureAllocatedBytes={summary.TotalAllocatedBytes} "
+                + $"MaxCaptureAllocatedBytes={summary.MaximumAllocatedBytes} MaxAllocationParticipant={summary.MaximumAllocationParticipantKey} "
+                + $"ReusedParticipants={prepared.ReusedParticipantCount}.",
+                this);
+            Debug.Log(
+                $"[Server Persistence Capture] Utc={DateTime.UtcNow:o} Transaction={prepared.TransactionId} "
+                + "Format=frame|participant|elapsedMs|allocatedBytes "
+                + $"Samples={ServerPersistenceCaptureMetrics.FormatSamples(captureSamples)}",
+                this);
+            if (summary.MaximumMilliseconds >= Math.Max(0.1f, captureCriticalMilliseconds))
+            {
+                Debug.LogWarning(
+                    $"[Server Persistence Budget] CRITICAL capture frame {summary.MaximumMilliseconds:F3} ms "
+                    + $"for '{summary.MaximumParticipantKey}' exceeded {captureCriticalMilliseconds:F3} ms.",
+                    this);
+            }
+            else if (summary.Percentile95Milliseconds >= Math.Max(0.1f, captureWarningMilliseconds)
+                || summary.MaximumMilliseconds >= Math.Max(0.1f, captureWarningMilliseconds))
+            {
+                Debug.LogWarning(
+                    $"[Server Persistence Budget] Capture p95={summary.Percentile95Milliseconds:F3} ms, "
+                    + $"max={summary.MaximumMilliseconds:F3} ms ('{summary.MaximumParticipantKey}'); "
+                    + $"warning budget={captureWarningMilliseconds:F3} ms.",
+                    this);
+            }
+
+            if (summary.MaximumAllocatedBytes >= Math.Max(1024L, captureAllocationWarningBytes))
+            {
+                Debug.LogWarning(
+                    $"[Server Persistence Budget] Capture frame for '{summary.MaximumAllocationParticipantKey}' allocated "
+                    + $"{summary.MaximumAllocatedBytes} bytes; warning budget={captureAllocationWarningBytes} bytes.",
+                    this);
+            }
+        }
+
+        private void CompleteWorldCheckpointCaptureImmediately()
+        {
+            while (worldCheckpointCapture != null)
+            {
+                AdvanceWorldCheckpointCapture(int.MaxValue);
+            }
+        }
+
+        private void ClearWorldCheckpointCapture()
+        {
+            worldCheckpointCapture = null;
+            worldCheckpointCaptureReason = string.Empty;
+            worldCheckpointCaptureCpuMilliseconds = 0d;
+            worldCheckpointMaximumCaptureTickMilliseconds = 0d;
+            worldCheckpointMaximumCaptureParticipant = string.Empty;
+            worldCheckpointCaptureFrames = 0;
+            worldCheckpointCaptureSamples.Clear();
+        }
+
+        private void DrainWorldCheckpointWriteResults()
+        {
+            if (worldCheckpointWriteQueue == null || prototypePersistence?.WorldService == null) return;
+            while (worldCheckpointWriteQueue.TryDequeueResult(out ServerWorldCheckpointWriteResult completed))
+            {
+                PersistenceSaveResult result = prototypePersistence.WorldService.CompletePreparedSave(completed.Prepared, completed.Result);
+                if (result.Succeeded)
+                {
+                    Debug.Log(
+                        $"[Server Persistence Write] Utc={DateTime.UtcNow:o} Transaction={completed.Prepared.TransactionId} "
+                        + $"DeferredSerializationMs={completed.Prepared.DeferredSerializationMilliseconds:F3} "
+                        + $"EnvelopeSerializationMs={completed.Prepared.EnvelopeSerializationMilliseconds:F3} "
+                        + $"AtomicWriteMs={completed.Prepared.AtomicWriteMilliseconds:F3} "
+                        + $"TotalWriteMs={completed.Prepared.TotalWriteMilliseconds:F3} "
+                        + $"SerializedBytes={completed.Prepared.SerializedBytes} "
+                        + $"ReusedParticipants={completed.Prepared.ReusedParticipantCount}. {result.Message}",
+                        this);
+                }
+                else Debug.LogError($"[Server Persistence] World checkpoint save failed: {result.Message}", this);
+            }
+        }
+
+        private void FlushWorldCheckpointWrites(string reason)
+        {
+            if (worldCheckpointWriteQueue == null) return;
+            if (!worldCheckpointWriteQueue.Flush(TimeSpan.FromSeconds(30)))
+            {
+                Debug.LogError($"[Server Persistence] Timed out flushing world checkpoint writes during {reason}.", this);
+            }
+
+            DrainWorldCheckpointWriteResults();
+        }
+
+        private void DisposeWorldCheckpointWriteQueue()
+        {
+            if (worldCheckpointWriteQueue == null) return;
+            worldCheckpointWriteQueue.Dispose();
+            DrainWorldCheckpointWriteResults();
+            worldCheckpointWriteQueue = null;
+        }
+
+        private DefinitionRegistry GetDefinitionRegistry()
+        {
+            if (cachedDefinitionRegistry == null)
+            {
+                if (definitionCatalog == null)
+                {
+                    throw new InvalidOperationException("The server definition catalog is not configured.");
+                }
+
+                cachedDefinitionRegistry = definitionCatalog.CreateRegistry();
+            }
+
+            return cachedDefinitionRegistry;
         }
 
         private void EnsureInventorySmokeSeed()
@@ -1073,7 +1503,7 @@ namespace UnityIsekaiGame.Networking.Server
             }
 
             inventorySmokeSeeded = true;
-            DefinitionRegistry definitions = definitionCatalog.CreateRegistry();
+            DefinitionRegistry definitions = GetDefinitionRegistry();
             if (!definitions.TryGet("item.wood-log", out ItemDefinition dropItem)
                 || !definitions.TryGet("item.prototype-sword", out ItemDefinition equipItem)
                 || !definitions.TryGet("item.stamina-potion", out ItemDefinition useItem))
@@ -1244,6 +1674,35 @@ namespace UnityIsekaiGame.Networking.Server
             public int ServerGeneration { get; }
             public ulong ClientId { get; }
             public ServerAccountAuthenticationResult Result { get; }
+        }
+
+        private readonly struct PlayerProfileLoadWorkResult
+        {
+            public PlayerProfileLoadWorkResult(
+                int serverGeneration,
+                ulong clientId,
+                ServerAccountAuthenticationResult authentication,
+                PlayerSessionSnapshot session,
+                bool loaded,
+                ServerPlayerProfileData profile,
+                string loadMessage)
+            {
+                ServerGeneration = serverGeneration;
+                ClientId = clientId;
+                Authentication = authentication;
+                Session = session;
+                Loaded = loaded;
+                Profile = profile;
+                LoadMessage = loadMessage ?? string.Empty;
+            }
+
+            public int ServerGeneration { get; }
+            public ulong ClientId { get; }
+            public ServerAccountAuthenticationResult Authentication { get; }
+            public PlayerSessionSnapshot Session { get; }
+            public bool Loaded { get; }
+            public ServerPlayerProfileData Profile { get; }
+            public string LoadMessage { get; }
         }
 
     }

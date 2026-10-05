@@ -137,6 +137,11 @@ namespace UnityIsekaiGame.Networking.Server
             suppressedScenePickups.Clear();
         }
 
+        public void ForgetClient(ulong clientId)
+        {
+            collectionRateLimiters.Remove(clientId);
+        }
+
         private bool TrySpawnPickupState(
             NetworkWorldItemState pickupState,
             Vector3 spawnPosition,
@@ -198,9 +203,38 @@ namespace UnityIsekaiGame.Networking.Server
             if (distanceSquared > maximumPickupDistance * maximumPickupDistance)
                 return WorldItemCollectionResult.Reject("Move closer to pick up this item.");
 
+            if (!HasUnobstructedPath(inventoryAuthority.transform, pickup.transform))
+                return WorldItemCollectionResult.Reject("The item is obstructed and cannot be picked up from here.");
+
             return inventoryAuthority.TryCollectWorldPickup(pickup.State, out string message)
                 ? WorldItemCollectionResult.Success(message)
                 : WorldItemCollectionResult.Reject(message);
+        }
+
+        internal static bool HasUnobstructedPath(Transform player, Transform pickup)
+        {
+            if (player == null || pickup == null) return false;
+            Vector3 origin = player.position + Vector3.up * 1.25f;
+            Vector3 destination = pickup.position + Vector3.up * 0.15f;
+            Vector3 displacement = destination - origin;
+            float distance = displacement.magnitude;
+            if (distance <= 0.001f) return true;
+
+            RaycastHit[] hits = Physics.RaycastAll(
+                origin,
+                displacement / distance,
+                distance,
+                ~0,
+                QueryTriggerInteraction.Ignore);
+            Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
+            for (int i = 0; i < hits.Length; i++)
+            {
+                Transform hit = hits[i].collider == null ? null : hits[i].collider.transform;
+                if (hit == null || hit.IsChildOf(player) || hit.IsChildOf(pickup)) continue;
+                return false;
+            }
+
+            return true;
         }
     }
 }
