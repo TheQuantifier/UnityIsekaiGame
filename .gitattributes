@@ -173,3 +173,5 @@ LightingData.asset     binary
 # Unity TerrainData assets are binary even when the project uses force text
 # serialization. Do not normalize these as YAML text.
 Projects/Client/Assets/_Project/Prototype/Environment/Terrain/Data/*.asset binary
+Packages/com.thequantifier.isekai.content/Content/World/Terrain/ServerCollision/*.asset binary
+Packages/com.thequantifier.isekai.content/Content/World/CollisionMeshes/*.asset binary
