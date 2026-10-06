@@ -32,6 +32,8 @@ namespace UnityIsekaiGame.Networking.Server
         private void Update()
         {
             if (!configured || networkState == null || !networkState.IsSpawned || !networkState.IsServer) return;
+            using NetworkMovementTrace.ServerPhaseScope phase =
+                NetworkMovementTrace.MeasureServerPhase("CombatWorldUpdate");
             RefreshEnemyTargets();
             double now = Time.realtimeSinceStartupAsDouble;
             if (now < nextPublishAt) return;
@@ -131,6 +133,8 @@ namespace UnityIsekaiGame.Networking.Server
                 foreach (Transform candidate in playerTargets.Values)
                 {
                     if (candidate == null) continue;
+                    NetworkPlayerActor actor = candidate.GetComponent<NetworkPlayerActor>();
+                    if (actor != null && !actor.IsWorldParticipationActive) continue;
                     float distance = (candidate.position - binding.Health.transform.position).sqrMagnitude;
                     if (distance < nearestDistance)
                     {

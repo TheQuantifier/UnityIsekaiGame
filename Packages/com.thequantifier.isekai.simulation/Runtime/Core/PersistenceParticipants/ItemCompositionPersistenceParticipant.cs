@@ -9,7 +9,7 @@ using UnityIsekaiGame.Inventory.Identity;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class ItemCompositionPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class ItemCompositionPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant
     {
         public const string Key = "world.item-composition";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -69,6 +69,21 @@ namespace UnityIsekaiGame.Persistence
 
             DiscardPreparedPayload(validation.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null) return DeferredPersistenceParticipantCapture.Failure("Item composition runtime is missing.");
+            DefinitionRegistry registry = registryProvider?.Invoke();
+            ItemCompositionRuntimeSaveData saveData = runtime.CreateSaveData();
+            ReportOrphans(ItemPersistenceSnapshotSanitizer.RemoveOrphanedCompositions(saveData, itemIdentityRuntime));
+            if (!ItemCompositionRuntime.ValidateSaveData(saveData, registry, itemIdentityRuntime, out string failure))
+            {
+                return DeferredPersistenceParticipantCapture.Failure(failure);
+            }
+
+            return DeferredPersistenceParticipantCapture.Success(() =>
+                PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData)));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

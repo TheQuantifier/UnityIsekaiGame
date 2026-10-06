@@ -21,10 +21,14 @@ namespace UnityIsekaiGame.Networking.Client
         [SerializeField] private PlayerSpellcaster localSpellcaster;
         [SerializeField] private PlayerSpellLoadout spellLoadout;
         [SerializeField] private Transform aimOrigin;
+        [SerializeField, Min(1f)] private float replicaPositionSharpness = 18f;
+        [SerializeField, Min(1f)] private float replicaRotationSharpness = 18f;
+        [SerializeField, Min(0.5f)] private float replicaTeleportDistance = 6f;
 
         private readonly List<NetworkCombatantState> snapshot = new List<NetworkCombatantState>();
         private readonly Dictionary<string, ClientCombatantBinding> combatants = new Dictionary<string, ClientCombatantBinding>(StringComparer.Ordinal);
         private readonly Dictionary<uint, SpellProjectile> predictedSpellProjectiles = new Dictionary<uint, SpellProjectile>();
+        private readonly Dictionary<uint, SpellProjectile> predictedRangedProjectiles = new Dictionary<uint, SpellProjectile>();
         private NetworkPlayerCombat networkCombat;
         private NetworkCombatWorldState worldState;
         private uint pendingSnapshotRevision;
@@ -73,7 +77,10 @@ namespace UnityIsekaiGame.Networking.Client
             if (input == null || input.GameplayInputBlocked) return;
 
             Vector3 aim = ResolveAimDirection();
-            if (input.ConsumeAttack()) networkCombat.RequestPrimaryAttack(aim);
+            if (input.ConsumeAttack() && networkCombat.RequestPrimaryAttack(aim))
+            {
+                SpawnPredictedRangedProjectile(networkCombat.LastSubmittedCommandSequence, aim);
+            }
             if (input.ConsumeCastPrimarySpell())
             {
                 SpellDefinition spell = spellLoadout == null ? null : spellLoadout.SelectedSpell;
@@ -90,10 +97,22 @@ namespace UnityIsekaiGame.Networking.Client
 
         private void LateUpdate()
         {
-            if (pendingSnapshotRevision == 0u) return;
-            uint revision = pendingSnapshotRevision;
-            pendingSnapshotRevision = 0u;
-            ApplySnapshot(revision);
+            if (pendingSnapshotRevision != 0u)
+            {
+                uint revision = pendingSnapshotRevision;
+                pendingSnapshotRevision = 0u;
+                ApplySnapshot(revision);
+            }
+
+            float deltaTime = Time.unscaledDeltaTime;
+            foreach (ClientCombatantBinding binding in combatants.Values)
+            {
+                binding.AdvancePresentation(
+                    deltaTime,
+                    replicaPositionSharpness,
+                    replicaRotationSharpness,
+                    replicaTeleportDistance);
+            }
         }
 
         public void Configure(
@@ -189,8 +208,16 @@ namespace UnityIsekaiGame.Networking.Client
         private void ApplySnapshot(uint revision)
         {
             if (worldState == null) return;
-            worldState.CopySnapshotTo(snapshot);
-            if (!NetworkCombatantSnapshotValidator.TryValidate(snapshot, out string failure))
+            if (!worldState.TryCopyCommittedSnapshotTo(revision, snapshot, out string failure))
+            {
+                if (worldState.SnapshotRevision == revision)
+                {
+                    pendingSnapshotRevision = revision;
+                }
+                return;
+            }
+
+            if (!NetworkCombatantSnapshotValidator.TryValidate(snapshot, out failure))
             {
                 Debug.LogError($"[Network Combat] Client rejected world snapshot {revision}: {failure}", this);
                 return;
@@ -222,6 +249,13 @@ namespace UnityIsekaiGame.Networking.Client
                 Destroy(rejectedProjectile.gameObject);
             }
 
+            if (!result.Succeeded && predictedRangedProjectiles.Remove(result.Sequence, out SpellProjectile rejectedRangedProjectile)
+                && rejectedRangedProjectile != null)
+            {
+                rejectedRangedProjectile.Completed -= OnPredictedRangedProjectileCompleted;
+                Destroy(rejectedRangedProjectile.gameObject);
+            }
+
             PublishFeedback(result.MessageText, !result.Succeeded);
             if (smokeEnabled && result.Succeeded && result.AppliedAmount > 0f)
             {
@@ -240,7 +274,7 @@ namespace UnityIsekaiGame.Networking.Client
 
             if (!smokeRequested)
             {
-                worldState.CopySnapshotTo(snapshot);
+                if (!worldState.TryCopyCommittedSnapshotTo(worldState.SnapshotRevision, snapshot, out _)) return;
                 if (snapshot.Count == 0) return;
                 smokeTargetId = snapshot[0].EntityIdText;
                 smokeInitialTargetHealth = snapshot[0].Health;
@@ -253,7 +287,7 @@ namespace UnityIsekaiGame.Networking.Client
                 return;
             }
 
-            worldState.CopySnapshotTo(snapshot);
+            if (!worldState.TryCopyCommittedSnapshotTo(worldState.SnapshotRevision, snapshot, out _)) return;
             NetworkCombatantState current = snapshot.Find(value => string.Equals(value.EntityIdText, smokeTargetId, StringComparison.Ordinal));
             if (string.IsNullOrWhiteSpace(current.EntityIdText)
                 || current.Health >= smokeInitialTargetHealth - 0.01f
@@ -279,6 +313,11 @@ namespace UnityIsekaiGame.Networking.Client
             if (origin == null && Camera.main != null) origin = Camera.main.transform;
             Vector3 direction = origin == null ? transform.forward : origin.forward;
             return direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector3.forward;
+        }
+
+        public static float CalculateReplicaInterpolationFactor(float sharpness, float deltaTime)
+        {
+            return 1f - Mathf.Exp(-Mathf.Max(0f, sharpness) * Mathf.Max(0f, deltaTime));
         }
 
         private bool RequestSpell(SpellDefinition spell, Vector3 direction)
@@ -319,6 +358,54 @@ namespace UnityIsekaiGame.Networking.Client
             Debug.Log($"[Network Combat] Spawned {spell.DisplayName} projectile presentation for command {sequence}.", this);
         }
 
+        private void SpawnPredictedRangedProjectile(uint sequence, Vector3 direction)
+        {
+            RangedWeaponData weapon = localMeleeCombat == null ? null : localMeleeCombat.EquippedRangedWeapon;
+            if (sequence == 0u || weapon?.IsWeapon != true) return;
+
+            Transform origin = aimOrigin == null && Camera.main != null ? Camera.main.transform : aimOrigin;
+            Vector3 spawnPosition = origin == null
+                ? transform.position + Vector3.up * 1.4f
+                : origin.TransformPoint(weapon.LaunchOffset);
+            Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);
+            SpellProjectile projectile = weapon.ProjectilePrefab == null
+                ? CreatePresentationProjectile(spawnPosition, rotation, weapon.ProjectileHitRadius, weapon.AttackName)
+                : Instantiate(weapon.ProjectilePrefab, spawnPosition, rotation);
+            if (projectile == null) return;
+
+            projectile.name = $"Predicted {weapon.AttackName} Projectile";
+            if (weapon.ProjectileVisualPrefab != null)
+            {
+                GameObject visual = Instantiate(weapon.ProjectileVisualPrefab, projectile.transform);
+                visual.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            }
+
+            projectile.Initialize(
+                input == null ? gameObject : input.gameObject,
+                direction,
+                weapon.ProjectileSpeed,
+                weapon.ProjectileLifetime,
+                (_, _) => { });
+            projectile.Completed += OnPredictedRangedProjectileCompleted;
+            predictedRangedProjectiles[sequence] = projectile;
+            Debug.Log($"[Network Combat] Spawned {weapon.AttackName} projectile presentation for command {sequence}.", this);
+        }
+
+        private static SpellProjectile CreatePresentationProjectile(
+            Vector3 position,
+            Quaternion rotation,
+            float hitRadius,
+            string attackName)
+        {
+            GameObject projectileObject = new GameObject($"{attackName} Projectile Presentation");
+            projectileObject.transform.SetPositionAndRotation(position, rotation);
+            projectileObject.AddComponent<SphereCollider>().radius = Mathf.Max(0.01f, hitRadius);
+            Rigidbody body = projectileObject.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.useGravity = false;
+            return projectileObject.AddComponent<SpellProjectile>();
+        }
+
         private void OnPredictedSpellProjectileCompleted(SpellProjectile projectile)
         {
             if (projectile == null) return;
@@ -334,6 +421,21 @@ namespace UnityIsekaiGame.Networking.Client
             if (sequence != 0u) predictedSpellProjectiles.Remove(sequence);
         }
 
+        private void OnPredictedRangedProjectileCompleted(SpellProjectile projectile)
+        {
+            if (projectile == null) return;
+            projectile.Completed -= OnPredictedRangedProjectileCompleted;
+            uint sequence = 0u;
+            foreach (KeyValuePair<uint, SpellProjectile> entry in predictedRangedProjectiles)
+            {
+                if (!ReferenceEquals(entry.Value, projectile)) continue;
+                sequence = entry.Key;
+                break;
+            }
+
+            if (sequence != 0u) predictedRangedProjectiles.Remove(sequence);
+        }
+
         private void ClearPredictedSpellProjectiles()
         {
             foreach (SpellProjectile projectile in predictedSpellProjectiles.Values)
@@ -344,6 +446,14 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             predictedSpellProjectiles.Clear();
+            foreach (SpellProjectile projectile in predictedRangedProjectiles.Values)
+            {
+                if (projectile == null) continue;
+                projectile.Completed -= OnPredictedRangedProjectileCompleted;
+                Destroy(projectile.gameObject);
+            }
+
+            predictedRangedProjectiles.Clear();
         }
 
         private void ResolveReferences()
@@ -368,6 +478,9 @@ namespace UnityIsekaiGame.Networking.Client
             private readonly bool patrolEnabled;
             private readonly bool attackEnabled;
             private readonly bool characterControllerEnabled;
+            private Vector3 targetPosition;
+            private Quaternion targetRotation;
+            private bool hasPresentationTarget;
 
             public ClientCombatantBinding(EnemyHealth targetHealth, CharacterResourceCollection targetResources)
             {
@@ -391,9 +504,38 @@ namespace UnityIsekaiGame.Networking.Client
             public void Apply(NetworkCombatantState state)
             {
                 if (health == null || resources == null) return;
-                health.transform.SetPositionAndRotation(state.Position, state.Rotation);
+                targetPosition = state.Position;
+                targetRotation = state.Rotation;
+                if (!hasPresentationTarget)
+                {
+                    health.transform.SetPositionAndRotation(targetPosition, targetRotation);
+                    hasPresentationTarget = true;
+                }
                 resources.ApplyExternalReplicaSnapshot(ResourceIds.Health, state.Health, state.MaximumHealth);
                 resources.CompleteExternalReplicaSnapshot();
+            }
+
+            public void AdvancePresentation(
+                float deltaTime,
+                float positionSharpness,
+                float rotationSharpness,
+                float teleportDistance)
+            {
+                if (!hasPresentationTarget || health == null) return;
+                Transform presentation = health.transform;
+                float maximumSmoothDistance = Mathf.Max(0.5f, teleportDistance);
+                if ((targetPosition - presentation.position).sqrMagnitude
+                    >= maximumSmoothDistance * maximumSmoothDistance)
+                {
+                    presentation.SetPositionAndRotation(targetPosition, targetRotation);
+                    return;
+                }
+
+                float positionFactor = CalculateReplicaInterpolationFactor(positionSharpness, deltaTime);
+                float rotationFactor = CalculateReplicaInterpolationFactor(rotationSharpness, deltaTime);
+                presentation.SetPositionAndRotation(
+                    Vector3.LerpUnclamped(presentation.position, targetPosition, positionFactor),
+                    Quaternion.SlerpUnclamped(presentation.rotation, targetRotation, rotationFactor));
             }
 
             public void Restore()

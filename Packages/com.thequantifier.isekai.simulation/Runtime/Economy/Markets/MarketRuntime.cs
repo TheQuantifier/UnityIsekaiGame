@@ -37,6 +37,26 @@ namespace UnityIsekaiGame.Economy.Markets
         public IReadOnlyList<MarketPriceRecordData> PriceHistory => pricesById.Values.OrderBy(item => item.createdWorldTime).ThenBy(item => item.marketPriceId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
         public IReadOnlyList<MerchantQuoteRecordData> Quotes => quotesById.Values.OrderBy(item => item.quoteId, StringComparer.Ordinal).Select(item => item.Clone()).ToArray();
 
+        public bool TryGetLatestDemandSourceReferenceLong(string provenance, out long value)
+        {
+            value = -1L;
+            bool found = false;
+            foreach (MarketObservationRecordData record in demandById.Values)
+            {
+                if (!string.Equals(record.provenance, provenance, StringComparison.Ordinal)
+                    || !long.TryParse(record.sourceReferenceId, out long parsed)
+                    || parsed <= value)
+                {
+                    continue;
+                }
+
+                value = parsed;
+                found = true;
+            }
+
+            return found;
+        }
+
         public int PruneExpiredSimulationHistory(double cutoffWorldTime)
         {
             cutoffWorldTime = Math.Max(0d, cutoffWorldTime);

@@ -6,7 +6,7 @@ using UnityIsekaiGame.Organizations;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class OrganizationMembershipPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class OrganizationMembershipPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant
     {
         public const string Key = "world.organization-memberships";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -71,6 +71,19 @@ namespace UnityIsekaiGame.Persistence
 
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(payload);
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null) return DeferredPersistenceParticipantCapture.Failure("Organization membership runtime is missing.");
+            OrganizationMembershipRuntimeSaveData saveData = runtime.CreateSaveData();
+            if (!OrganizationMembershipRuntime.ValidateSaveData(saveData, registryProvider?.Invoke(), organizationRuntimeProvider?.Invoke(), ownerId, knownPersonProvider?.Invoke(), knownOrganizationProvider?.Invoke(), out string failure))
+            {
+                return DeferredPersistenceParticipantCapture.Failure(failure);
+            }
+
+            return DeferredPersistenceParticipantCapture.Success(() =>
+                PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData)));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

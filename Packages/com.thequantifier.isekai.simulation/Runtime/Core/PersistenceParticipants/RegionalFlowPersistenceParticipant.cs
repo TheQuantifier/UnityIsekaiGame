@@ -6,7 +6,7 @@ using UnityIsekaiGame.GameData.Persistence;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class RegionalFlowPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class RegionalFlowPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant, IPersistenceRevisionParticipant
     {
         public const string Key = "world.regional-flow";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -48,6 +48,7 @@ namespace UnityIsekaiGame.Persistence
         public bool RequiresSceneReadiness => false;
         public bool RequiresDefinitionRegistry => true;
         public bool RequiresWorldEntityRegistry => false;
+        public long PersistenceRevision => runtime?.Revision ?? -1L;
 
         public PersistenceParticipantSaveResult CapturePayload()
         {
@@ -65,6 +66,22 @@ namespace UnityIsekaiGame.Persistence
 
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null) return DeferredPersistenceParticipantCapture.Failure("Regional flow runtime is missing.");
+            RegionalFlowRuntimeSaveData saveData = runtime.CreateSaveData();
+            DefinitionRegistry registry = registryProvider?.Invoke();
+            return DeferredPersistenceParticipantCapture.Success(() =>
+            {
+                if (!RegionalFlowRuntime.ValidateSaveData(saveData, registry, out string failure))
+                {
+                    return PersistenceParticipantSaveResult.Failure(failure);
+                }
+
+                return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+            });
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

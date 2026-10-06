@@ -151,7 +151,7 @@ namespace UnityIsekaiGame.Social.Interactions
                 interactionDefinitionId = interactionDefinitionId ?? string.Empty,
                 initiatorPersonId = initiatorPersonId ?? string.Empty,
                 targetPersonId = targetPersonId ?? string.Empty,
-                participants = participants == null ? Array.Empty<SocialInteractionParticipantData>() : participants.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
+                participants = CloneParticipants(participants),
                 subject = subject?.Clone() ?? new SocialInteractionSubjectData(),
                 placeId = placeId ?? string.Empty,
                 audienceId = audienceId ?? string.Empty,
@@ -167,21 +167,51 @@ namespace UnityIsekaiGame.Social.Interactions
                 historicalEventId = historicalEventId ?? string.Empty,
                 memoryReferenceId = memoryReferenceId ?? string.Empty,
                 rumorTransmissionId = rumorTransmissionId ?? string.Empty,
-                consequences = consequences == null ? Array.Empty<SocialConsequenceRecordData>() : consequences.Select(item => item?.Clone()).Where(item => item != null).ToArray(),
-                diagnostics = Clean(diagnostics),
-                tags = Clean(tags),
+                consequences = CloneConsequences(consequences),
+                diagnostics = diagnostics == null || diagnostics.Length == 0 ? Array.Empty<string>() : (string[])diagnostics.Clone(),
+                tags = tags == null || tags.Length == 0 ? Array.Empty<string>() : (string[])tags.Clone(),
                 revision = revision
             };
         }
 
-        private static string[] Clean(IEnumerable<string> values)
+        private static SocialInteractionParticipantData[] CloneParticipants(SocialInteractionParticipantData[] source)
         {
-            return (values ?? Array.Empty<string>())
-                .Where(value => !string.IsNullOrWhiteSpace(value))
-                .Select(value => value.Trim())
-                .Distinct(StringComparer.Ordinal)
-                .OrderBy(value => value, StringComparer.Ordinal)
-                .ToArray();
+            if (source == null || source.Length == 0) return Array.Empty<SocialInteractionParticipantData>();
+            int count = 0;
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source[i] != null) count++;
+            }
+
+            if (count == 0) return Array.Empty<SocialInteractionParticipantData>();
+            SocialInteractionParticipantData[] copy = new SocialInteractionParticipantData[count];
+            int destination = 0;
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source[i] != null) copy[destination++] = source[i].Clone();
+            }
+
+            return copy;
+        }
+
+        private static SocialConsequenceRecordData[] CloneConsequences(SocialConsequenceRecordData[] source)
+        {
+            if (source == null || source.Length == 0) return Array.Empty<SocialConsequenceRecordData>();
+            int count = 0;
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source[i] != null) count++;
+            }
+
+            if (count == 0) return Array.Empty<SocialConsequenceRecordData>();
+            SocialConsequenceRecordData[] copy = new SocialConsequenceRecordData[count];
+            int destination = 0;
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source[i] != null) copy[destination++] = source[i].Clone();
+            }
+
+            return copy;
         }
     }
 

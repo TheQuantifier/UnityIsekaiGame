@@ -1,8 +1,11 @@
 using System;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using NUnit.Framework;
 using UnityEngine;
 using UnityIsekaiGame.Equipment;
+using UnityIsekaiGame.GameData.Persistence;
 using UnityIsekaiGame.Inventory;
 using UnityIsekaiGame.Networking;
 using UnityIsekaiGame.Networking.Server;
@@ -122,11 +125,100 @@ namespace UnityIsekaiGame.Tests
             Assert.That(loaded.positionX, Is.EqualTo(42f));
         }
 
+        [Test]
+        public void World_checkpoint_queue_writes_prepared_snapshot_without_blocking_runtime_capture()
+        {
+            string worldRoot = Path.Combine(root, "World");
+            PersistenceService service = new PersistenceService(
+                new PersistencePathProvider(worldRoot),
+                worldId: PersistenceService.LocalWorldId,
+                accountId: PersistenceService.LocalAccountId,
+                contextKind: PersistenceContextKind.World);
+            WorldTestParticipant participant = new WorldTestParticipant { Value = 12 };
+            Assert.That(service.RegisterParticipant(participant, out string registrationFailure), Is.True, registrationFailure);
+            Assert.That(
+                service.TryPrepareSave("world-current", "World Checkpoint", out PreparedPersistenceSave prepared, out PersistenceSaveResult prepareFailure),
+                Is.True,
+                prepareFailure?.Message);
+
+            using (var queue = new ServerWorldCheckpointWriteQueue(service))
+            {
+                Assert.That(queue.TryEnqueue(prepared, out string queueMessage), Is.True, queueMessage);
+                Assert.That(queue.Flush(TimeSpan.FromSeconds(5)), Is.True);
+                Assert.That(queue.TryDequeueResult(out ServerWorldCheckpointWriteResult completed), Is.True);
+                Assert.That(completed.Prepared, Is.SameAs(prepared));
+                Assert.That(service.CompletePreparedSave(completed.Prepared, completed.Result).Succeeded, Is.True, completed.Result.Message);
+            }
+
+            participant.Value = 99;
+            Assert.That(service.Load("world-current").Succeeded, Is.True);
+            Assert.That(participant.Value, Is.EqualTo(12));
+        }
+
         private static PlayerSessionSnapshot OpenSession(string playerId)
         {
             PlayerSessionRegistry registry = new PlayerSessionRegistry();
-            Assert.That(registry.TryOpen(1UL, new ConnectionRequestPayload("test-client", playerId, "test"), out PlayerSessionSnapshot session, out string failure), Is.True, failure);
+            using SHA256 sha = SHA256.Create();
+            string secureUserId = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(playerId))).Replace("-", string.Empty).ToLowerInvariant();
+            Assert.That(registry.TryOpen(
+                1UL,
+                "test-client",
+                secureUserId,
+                out PlayerSessionSnapshot session,
+                out string failure), Is.True, failure);
             return session;
+        }
+
+        [Test]
+        public void Persistence_capture_metrics_preserve_raw_frames_and_report_distribution()
+        {
+            var samples = new[]
+            {
+                new ServerPersistenceCaptureSample(1, "world.first", 0.04d, 10L),
+                new ServerPersistenceCaptureSample(2, "world.second", 0.12d, 20L),
+                new ServerPersistenceCaptureSample(3, "world.third", 0.14d, 30L),
+                new ServerPersistenceCaptureSample(4, "world.slowest", 2.0d, 40L)
+            };
+
+            ServerPersistenceCaptureSummary summary = ServerPersistenceCaptureMetrics.Summarize(samples);
+
+            Assert.That(summary.Count, Is.EqualTo(4));
+            Assert.That(summary.TotalMilliseconds, Is.EqualTo(2.3d).Within(0.0001d));
+            Assert.That(summary.MeanMilliseconds, Is.EqualTo(0.575d).Within(0.0001d));
+            Assert.That(summary.MedianMilliseconds, Is.EqualTo(0.13d).Within(0.0001d));
+            Assert.That(summary.ModeBucketMilliseconds, Is.EqualTo(0.1d).Within(0.0001d));
+            Assert.That(summary.MaximumMilliseconds, Is.EqualTo(2d));
+            Assert.That(summary.MaximumParticipantKey, Is.EqualTo("world.slowest"));
+            Assert.That(summary.TotalAllocatedBytes, Is.EqualTo(100L));
+            Assert.That(summary.MaximumAllocatedBytes, Is.EqualTo(40L));
+            Assert.That(summary.MaximumAllocationParticipantKey, Is.EqualTo("world.slowest"));
+            Assert.That(
+                ServerPersistenceCaptureMetrics.FormatSamples(samples),
+                Is.EqualTo("1|world.first|0.040|10;2|world.second|0.120|20;3|world.third|0.140|30;4|world.slowest|2.000|40"));
+        }
+
+        [Test]
+        public void Profile_snapshot_comparison_ignores_save_metadata_but_detects_gameplay_changes()
+        {
+            PlayerSessionSnapshot session = OpenSession("profile-dirty-check");
+            ServerPlayerProfileData profile = CreateProfile(session);
+            ServerPlayerProfileData snapshot = profile.Clone();
+
+            profile.revision += 10L;
+            profile.savedAtUnixMilliseconds += 1000L;
+            Assert.That(profile.HasSamePersistentState(snapshot), Is.True);
+
+            profile.positionX += 0.25f;
+            Assert.That(profile.HasSamePersistentState(snapshot), Is.False);
+            profile.positionX = snapshot.positionX;
+            profile.inventory.entries.Add(new InventoryEntrySaveData
+            {
+                mode = InventoryEntrySaveMode.DefinitionStack,
+                definitionId = "item.test",
+                quantity = 2
+            });
+            Assert.That(profile.HasSamePersistentState(snapshot), Is.False);
+            Assert.That(snapshot.inventory.entries, Is.Empty, "The queued snapshot must not share mutable inventory lists.");
         }
 
         private static ServerPlayerProfileData CreateProfile(PlayerSessionSnapshot session)
@@ -138,6 +230,57 @@ namespace UnityIsekaiGame.Tests
                 new NetworkVitalsState(73f, 150f, 180f, 240f, 91f, 120f, NetworkActorLifeState.Active, 8u),
                 new InventorySaveData { slotCapacity = 24 },
                 new EquipmentSaveData());
+        }
+
+        [Serializable]
+        private sealed class WorldTestPayload
+        {
+            public int value;
+        }
+
+        private sealed class WorldTestParticipant : TypedPersistenceParticipant<WorldTestPayload>
+        {
+            public WorldTestParticipant()
+                : base(new PersistenceParticipantDescriptor(
+                    "world.test",
+                    1,
+                    true,
+                    PersistenceScope.SharedWorld,
+                    PersistenceService.LocalWorldId,
+                    PersistenceLoadPhase.Bootstrap,
+                    0,
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
+                    true,
+                    false,
+                    false,
+                    false))
+            {
+            }
+
+            public int Value { get; set; }
+
+            protected override bool TryCapture(out WorldTestPayload saveData, out string failureReason)
+            {
+                saveData = new WorldTestPayload { value = Value };
+                failureReason = string.Empty;
+                return true;
+            }
+
+            protected override bool TryValidate(WorldTestPayload saveData, out string failureReason)
+            {
+                failureReason = saveData == null ? "Payload is missing." : string.Empty;
+                return saveData != null;
+            }
+
+            protected override WorldTestPayload CaptureRollback() => new WorldTestPayload { value = Value };
+
+            protected override bool TryRestore(WorldTestPayload saveData, out string failureReason)
+            {
+                Value = saveData.value;
+                failureReason = string.Empty;
+                return true;
+            }
         }
     }
 }

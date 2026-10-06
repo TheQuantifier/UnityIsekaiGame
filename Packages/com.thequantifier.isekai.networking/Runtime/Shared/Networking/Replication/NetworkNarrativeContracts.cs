@@ -100,6 +100,59 @@ namespace UnityIsekaiGame.Networking
                 return NarrativeCommandValidationResult.Reject(NarrativeAuthorityFailure.InvalidCommand, "Narrative command values cannot be negative.");
             }
 
+            NarrativeCommandValidationResult shape = ValidatePayloadShape(command);
+            if (!shape.Succeeded) return shape;
+
+            return NarrativeCommandValidationResult.Success();
+        }
+
+        private static NarrativeCommandValidationResult ValidatePayloadShape(NetworkNarrativeCommand command)
+        {
+            bool permitsSecondaryId = command.CommandType == NarrativeAuthorityCommandType.AcceptQuestListing;
+            if (!permitsSecondaryId && !string.IsNullOrEmpty(command.SecondaryIdText))
+            {
+                return NarrativeCommandValidationResult.Reject(
+                    NarrativeAuthorityFailure.InvalidCommand,
+                    "This narrative command must not supply a secondary identifier.");
+            }
+
+            if (command.SecondaryValue != 0)
+            {
+                return NarrativeCommandValidationResult.Reject(
+                    NarrativeAuthorityFailure.InvalidCommand,
+                    "This narrative command must not supply a secondary value.");
+            }
+
+            if (command.CommandType == NarrativeAuthorityCommandType.SetPartyReady)
+            {
+                return command.Value is 0 or 1
+                    ? NarrativeCommandValidationResult.Success()
+                    : NarrativeCommandValidationResult.Reject(
+                        NarrativeAuthorityFailure.InvalidCommand,
+                        "Party readiness must be either ready or not ready.");
+            }
+
+            if (command.CommandType == NarrativeAuthorityCommandType.SetPartySettings)
+            {
+                int formation = command.Value & 0xff;
+                int loot = (command.Value >> 8) & 0xff;
+                int friendlyFire = (command.Value >> 16) & 0xff;
+                int partyCommand = (command.Value >> 24) & 0x7f;
+                bool valid = formation <= 3 && loot <= 3 && friendlyFire <= 1 && partyCommand <= 5;
+                return valid
+                    ? NarrativeCommandValidationResult.Success()
+                    : NarrativeCommandValidationResult.Reject(
+                        NarrativeAuthorityFailure.InvalidCommand,
+                        "Party settings contain an unsupported enum value.");
+            }
+
+            if (command.Value != 0)
+            {
+                return NarrativeCommandValidationResult.Reject(
+                    NarrativeAuthorityFailure.InvalidCommand,
+                    "This narrative command must not supply a numeric value.");
+            }
+
             return NarrativeCommandValidationResult.Success();
         }
 

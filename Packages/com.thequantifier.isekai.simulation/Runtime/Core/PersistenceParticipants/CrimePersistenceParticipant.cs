@@ -11,7 +11,7 @@ using UnityIsekaiGame.Organizations;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class CrimePersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class CrimePersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant, IPersistenceRevisionParticipant
     {
         public const string Key = "world.crimes";
         public const int CurrentParticipantSchemaVersion = 2;
@@ -69,6 +69,7 @@ namespace UnityIsekaiGame.Persistence
         public bool RequiresSceneReadiness => false;
         public bool RequiresDefinitionRegistry => true;
         public bool RequiresWorldEntityRegistry => false;
+        public long PersistenceRevision => runtime?.Revision ?? -1L;
 
         public PersistenceParticipantSaveResult CapturePayload()
         {
@@ -78,6 +79,16 @@ namespace UnityIsekaiGame.Persistence
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Crime snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(payload);
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null) return DeferredPersistenceParticipantCapture.Failure("Crime runtime is missing.");
+            CrimeRuntimeSaveData saveData = runtime.CreateSaveData();
+            CrimeValidationReport validation = validationService.Validate(saveData, registryProvider?.Invoke(), governmentProvider?.Invoke(), legalProvider?.Invoke(), authorityProvider?.Invoke(), diplomacyProvider?.Invoke(), ownerId, personProvider?.Invoke(), placeProvider?.Invoke());
+            if (!validation.IsValid) return DeferredPersistenceParticipantCapture.Failure(validation.Errors.FirstOrDefault() ?? "Crime snapshot failed validation.");
+            return DeferredPersistenceParticipantCapture.Success(() =>
+                PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData)));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

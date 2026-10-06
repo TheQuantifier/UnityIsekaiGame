@@ -66,6 +66,39 @@ namespace UnityIsekaiGame.Networking
             for (int i = 0; i < equipmentSlots.Count; i++) equipmentDestination.Add(equipmentSlots[i]);
         }
 
+        /// <summary>
+        /// Copies only a payload whose records all belong to the requested committed revision.
+        /// NetworkList and NetworkVariable deltas are independent, so consumers must not pair a
+        /// newly observed revision with list records from an earlier replication update.
+        /// </summary>
+        public bool TryCopyCommittedSnapshotTo(
+            uint expectedRevision,
+            List<NetworkInventorySlotState> inventoryDestination,
+            List<NetworkEquipmentReferenceState> equipmentDestination,
+            out string failure)
+        {
+            if (expectedRevision == 0u || snapshotRevision.Value != expectedRevision)
+            {
+                failure = "The requested inventory snapshot revision is no longer current.";
+                return false;
+            }
+
+            CopySnapshotTo(inventoryDestination, equipmentDestination);
+            if (snapshotRevision.Value != expectedRevision)
+            {
+                inventoryDestination.Clear();
+                equipmentDestination.Clear();
+                failure = "The inventory snapshot changed while it was being copied.";
+                return false;
+            }
+
+            return NetworkInventorySnapshotValidator.HasCommittedGeneration(
+                inventoryDestination,
+                equipmentDestination,
+                expectedRevision,
+                out failure);
+        }
+
         public void ConfigureInitialSnapshotServer(
             IReadOnlyList<NetworkInventorySlotState> inventory,
             IReadOnlyList<NetworkEquipmentReferenceState> equipment,
@@ -137,17 +170,27 @@ namespace UnityIsekaiGame.Networking
                 return false;
             }
 
+            uint nextRevision = NextSequence(snapshotRevision.Value);
             inventorySlots.Clear();
             equipmentSlots.Clear();
-            for (int i = 0; i < inventory.Count; i++) inventorySlots.Add(inventory[i]);
+            for (int i = 0; i < inventory.Count; i++)
+            {
+                NetworkInventorySlotState entry = inventory[i];
+                entry.SnapshotGeneration = nextRevision;
+                inventorySlots.Add(entry);
+            }
             if (equipment != null)
             {
-                for (int i = 0; i < equipment.Count; i++) equipmentSlots.Add(equipment[i]);
+                for (int i = 0; i < equipment.Count; i++)
+                {
+                    NetworkEquipmentReferenceState entry = equipment[i];
+                    entry.SnapshotGeneration = nextRevision;
+                    equipmentSlots.Add(entry);
+                }
             }
 
             inventoryCapacity.Value = capacity;
-            uint nextRevision = unchecked(snapshotRevision.Value + 1u);
-            snapshotRevision.Value = nextRevision == 0u ? 1u : nextRevision;
+            snapshotRevision.Value = nextRevision;
             return true;
         }
 
@@ -171,6 +214,11 @@ namespace UnityIsekaiGame.Networking
             }
 
             localCommandSequence = NextSequence(localCommandSequence);
+            NetworkActionTrace.ClientSend(
+                NetworkActionTraceCategory.Inventory,
+                type.ToString(),
+                NetworkActionTrace.Correlation(GetComponent<NetworkPlayerActor>()?.ActorId, localCommandSequence),
+                context: this);
             SubmitInventoryCommandRpc(new NetworkInventoryCommand(
                 localCommandSequence,
                 type,
@@ -188,6 +236,12 @@ namespace UnityIsekaiGame.Networking
             {
                 return;
             }
+            NetworkActionTrace.ServerReceive(
+                NetworkActionTraceCategory.Inventory,
+                command.CommandType.ToString(),
+                NetworkActionTrace.Correlation(GetComponent<NetworkPlayerActor>()?.ActorId, command.Sequence),
+                rpcParams.Receive.SenderClientId,
+                context: this);
             if (!commandRateLimiter.TryConsume(Time.realtimeSinceStartupAsDouble))
             {
                 latestCommandResult.Value = NetworkInventoryCommandResult.Reject(
@@ -208,9 +262,21 @@ namespace UnityIsekaiGame.Networking
             }
 
             lastAcceptedCommandSequence.Value = command.Sequence;
-            NetworkInventoryCommandResult result = ServerCommandHandler == null
-                ? NetworkInventoryCommandResult.Reject(command.Sequence, InventoryAuthorityFailure.ServerRejected, "Server inventory authority is unavailable.")
-                : ServerCommandHandler(command);
+            NetworkInventoryCommandResult result;
+            try
+            {
+                result = ServerCommandHandler == null
+                    ? NetworkInventoryCommandResult.Reject(command.Sequence, InventoryAuthorityFailure.ServerRejected, "Server inventory authority is unavailable.")
+                    : ServerCommandHandler(command);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                result = NetworkInventoryCommandResult.Reject(
+                    command.Sequence,
+                    InventoryAuthorityFailure.ServerRejected,
+                    "The server could not complete the inventory action.");
+            }
             latestCommandResult.Value = result.Sequence == command.Sequence
                 ? result
                 : NetworkInventoryCommandResult.Reject(command.Sequence, InventoryAuthorityFailure.ServerRejected, "Server returned an invalid inventory command result.");

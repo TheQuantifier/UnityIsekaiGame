@@ -53,6 +53,16 @@ namespace UnityIsekaiGame.Tests
             Assert.That(identitySaveJson, Does.Contain("\"originId\":\"origin."));
             Assert.That(identitySaveJson, Does.Contain("\"giftDefinitionId\":\"birth-gift."));
 
+            Component resources = owner.GetComponent(RequiredType("UnityIsekaiGame.ResourceSystem.CharacterResourceCollection"));
+            Component calculatedStats = owner.GetComponent(RequiredType("UnityIsekaiGame.Stats.CalculatedStatCollection"));
+            float currentHealth = Invoke<float>(resources, "GetCurrent", "resource.health");
+            float maximumHealth = Invoke<float>(resources, "GetMaximum", "resource.health");
+            float calculatedMaximumHealth = Invoke<float>(calculatedStats, "GetValue", "calculated-stat.maximum-health");
+            Assert.That(currentHealth, Is.EqualTo(maximumHealth).Within(0.001f),
+                "A newly created character must start full after immediate origin and birth-gift modifiers are applied.");
+            Assert.That(maximumHealth, Is.EqualTo(calculatedMaximumHealth).Within(0.001f),
+                "The live Health resource must use the final calculated maximum at character creation.");
+
             Assert.That(Invoke<bool>(coordinator, "InitializeFromRegistry", registry, false), Is.True);
             Assert.That(JsonUtility.ToJson(Invoke(identity, "CreateSaveData")), Is.EqualTo(identitySaveJson));
         }

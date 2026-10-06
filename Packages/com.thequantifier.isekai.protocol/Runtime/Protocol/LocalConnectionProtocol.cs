@@ -6,13 +6,25 @@ using Newtonsoft.Json;
 
 namespace UnityIsekaiGame.Networking
 {
+    public enum AccountAuthenticationMode
+    {
+        Login = 1,
+        CreateAccount = 2
+    }
+
     public static class LocalConnectionProtocol
     {
-        public const int CurrentVersion = 2;
-        public const int MaximumPayloadBytes = 1024;
+        // Version 5 adds generation-tagged inventory and combat snapshot records. Older
+        // clients must be rejected before NGO attempts to deserialize the changed wire shape.
+        public const int CurrentVersion = 5;
+        public const int MaximumPayloadBytes = 2048;
         public const int MaximumIdentifierLength = 64;
         public const int MaximumBuildVersionLength = 64;
         public const int MaximumAuthenticationTokenLength = 128;
+        public const int MinimumAccountNameLength = 3;
+        public const int MaximumAccountNameLength = 32;
+        public const int MinimumPasswordLength = 8;
+        public const int MaximumPasswordLength = 128;
 
         private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings
         {
@@ -98,12 +110,6 @@ namespace UnityIsekaiGame.Networking
                 return false;
             }
 
-            if (!IsValidIdentifier(request.PlayerId))
-            {
-                failure = "The player ID is invalid.";
-                return false;
-            }
-
             if (string.IsNullOrWhiteSpace(request.BuildVersion)
                 || request.BuildVersion.Length > MaximumBuildVersionLength
                 || !string.Equals(request.BuildVersion, request.BuildVersion.Trim(), StringComparison.Ordinal))
@@ -140,11 +146,13 @@ namespace UnityIsekaiGame.Networking
         {
         }
 
-        public ConnectionRequestPayload(string clientInstanceId, string playerId, string buildVersion, string authenticationToken = "")
+        public ConnectionRequestPayload(
+            string clientInstanceId,
+            string buildVersion,
+            string authenticationToken)
         {
             ProtocolVersion = LocalConnectionProtocol.CurrentVersion;
             ClientInstanceId = clientInstanceId;
-            PlayerId = playerId;
             BuildVersion = buildVersion;
             AuthenticationToken = authenticationToken ?? string.Empty;
         }
@@ -155,14 +163,12 @@ namespace UnityIsekaiGame.Networking
         [JsonProperty("clientInstanceId", Required = Required.Always)]
         public string ClientInstanceId { get; set; } = string.Empty;
 
-        [JsonProperty("playerId", Required = Required.Always)]
-        public string PlayerId { get; set; } = string.Empty;
-
         [JsonProperty("buildVersion", Required = Required.Always)]
         public string BuildVersion { get; set; } = string.Empty;
 
         [JsonProperty("authenticationToken", Required = Required.Always)]
         public string AuthenticationToken { get; set; } = string.Empty;
+
     }
 
     public readonly struct ConnectionAdmissionResult
@@ -221,11 +227,6 @@ namespace UnityIsekaiGame.Networking
                 && !FixedTimeEquals(request.AuthenticationToken, expectedAuthenticationToken))
             {
                 return ConnectionAdmissionResult.Reject("Client authentication failed.");
-            }
-
-            if (connectedPlayerIds != null && connectedPlayerIds.Any(id => string.Equals(id, request.PlayerId, StringComparison.OrdinalIgnoreCase)))
-            {
-                return ConnectionAdmissionResult.Reject($"Player '{request.PlayerId}' is already connected.");
             }
 
             return ConnectionAdmissionResult.Approve(request);

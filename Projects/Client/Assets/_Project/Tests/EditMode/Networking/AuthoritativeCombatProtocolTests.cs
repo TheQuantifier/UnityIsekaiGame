@@ -1,9 +1,11 @@
 using NUnit.Framework;
+using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Magic;
 using UnityIsekaiGame.Networking;
+using UnityIsekaiGame.Networking.Client;
 
 namespace UnityIsekaiGame.Tests
 {
@@ -61,6 +63,22 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void Combatant_snapshot_generation_rejects_mixed_replication_payloads()
+        {
+            NetworkCombatantState[] snapshot =
+            {
+                new NetworkCombatantState("enemy.a", Vector3.zero, Quaternion.identity, 10f, 10f, false, 7u),
+                new NetworkCombatantState("enemy.b", Vector3.one, Quaternion.identity, 10f, 10f, false, 6u)
+            };
+
+            Assert.That(NetworkCombatantSnapshotValidator.HasCommittedGeneration(snapshot, 7u, out string failure), Is.False);
+            Assert.That(failure, Does.Contain("generation 6"));
+
+            snapshot[1].SnapshotGeneration = 7u;
+            Assert.That(NetworkCombatantSnapshotValidator.HasCommittedGeneration(snapshot, 7u, out failure), Is.True, failure);
+        }
+
+        [Test]
         public void Combat_result_messages_are_protocol_bounded()
         {
             NetworkCombatCommandResult result = NetworkCombatCommandResult.Reject(
@@ -106,6 +124,42 @@ namespace UnityIsekaiGame.Tests
             {
                 Object.DestroyImmediate(owner);
             }
+        }
+
+        [Test]
+        public void Replicated_entity_movement_uses_frame_rate_independent_smoothing()
+        {
+            float oneSixtieth = LocalCombatAuthorityBridge.CalculateReplicaInterpolationFactor(18f, 1f / 60f);
+            float twoSixtieths = LocalCombatAuthorityBridge.CalculateReplicaInterpolationFactor(18f, 2f / 60f);
+            float composed = 1f - (1f - oneSixtieth) * (1f - oneSixtieth);
+
+            Assert.That(oneSixtieth, Is.GreaterThan(0f).And.LessThan(1f));
+            Assert.That(twoSixtieths, Is.EqualTo(composed).Within(0.0001f));
+            Assert.That(LocalCombatAuthorityBridge.CalculateReplicaInterpolationFactor(18f, 0f), Is.Zero);
+        }
+
+        [Test]
+        public void Online_ranged_attacks_use_authoritative_ammunition_and_projectile_simulation()
+        {
+            string repositoryRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".."));
+            string serverCombat = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.server/Runtime/Networking/ServerPlayerCombatAuthority.cs"));
+            string serverInventory = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.server/Runtime/Networking/ServerPlayerInventoryAuthority.cs"));
+            string clientCombat = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.client/Runtime/Networking/LocalCombatAuthorityBridge.cs"));
+
+            StringAssert.DoesNotContain("Online ranged weapon attacks remain disabled", serverCombat);
+            StringAssert.Contains("CountAuthoritativeItem(ammunition)", serverCombat);
+            StringAssert.Contains("TryConsumeAuthoritativeItem(ammunition, 1", serverCombat);
+            StringAssert.Contains("PendingProjectile.ForRangedWeapon", serverCombat);
+            StringAssert.Contains("projectile.RangedWeapon.DamageType", serverCombat);
+            StringAssert.Contains("PublishAndPersist();", serverInventory);
+            StringAssert.Contains("SpawnPredictedRangedProjectile", clientCombat);
+            StringAssert.Contains("ProjectileVisualPrefab", clientCombat);
         }
     }
 }

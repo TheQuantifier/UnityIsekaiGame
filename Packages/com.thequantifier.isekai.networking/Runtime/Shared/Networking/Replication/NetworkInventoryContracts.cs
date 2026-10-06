@@ -246,13 +246,15 @@ namespace UnityIsekaiGame.Networking
             string definitionId,
             string itemInstanceId,
             int quantity,
-            NetworkInventoryItemFlags flags)
+            NetworkInventoryItemFlags flags,
+            uint snapshotGeneration = 0u)
         {
             SlotIndex = slotIndex;
             DefinitionId = definitionId ?? string.Empty;
             ItemInstanceId = itemInstanceId ?? string.Empty;
             Quantity = quantity;
             Flags = flags;
+            SnapshotGeneration = snapshotGeneration;
         }
 
         public int SlotIndex;
@@ -260,6 +262,7 @@ namespace UnityIsekaiGame.Networking
         public FixedString128Bytes ItemInstanceId;
         public int Quantity;
         public NetworkInventoryItemFlags Flags;
+        public uint SnapshotGeneration;
 
         public bool IsEmpty => string.IsNullOrEmpty(DefinitionId.ToString());
         public bool IsStateful => (Flags & NetworkInventoryItemFlags.Stateful) != 0;
@@ -271,6 +274,7 @@ namespace UnityIsekaiGame.Networking
             serializer.SerializeValue(ref ItemInstanceId);
             serializer.SerializeValue(ref Quantity);
             serializer.SerializeValue(ref Flags);
+            serializer.SerializeValue(ref SnapshotGeneration);
         }
 
         public bool Equals(NetworkInventorySlotState other)
@@ -279,25 +283,28 @@ namespace UnityIsekaiGame.Networking
                 && DefinitionId.Equals(other.DefinitionId)
                 && ItemInstanceId.Equals(other.ItemInstanceId)
                 && Quantity == other.Quantity
-                && Flags == other.Flags;
+                && Flags == other.Flags
+                && SnapshotGeneration == other.SnapshotGeneration;
         }
 
         public override bool Equals(object obj) => obj is NetworkInventorySlotState other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(SlotIndex, DefinitionId, ItemInstanceId, Quantity, (byte)Flags);
+        public override int GetHashCode() => HashCode.Combine(SlotIndex, DefinitionId, ItemInstanceId, Quantity, (byte)Flags, SnapshotGeneration);
     }
 
     public struct NetworkEquipmentReferenceState : INetworkSerializable, IEquatable<NetworkEquipmentReferenceState>
     {
-        public NetworkEquipmentReferenceState(int equipmentSlot, string definitionId, string itemInstanceId)
+        public NetworkEquipmentReferenceState(int equipmentSlot, string definitionId, string itemInstanceId, uint snapshotGeneration = 0u)
         {
             EquipmentSlot = equipmentSlot;
             DefinitionId = definitionId ?? string.Empty;
             ItemInstanceId = itemInstanceId ?? string.Empty;
+            SnapshotGeneration = snapshotGeneration;
         }
 
         public int EquipmentSlot;
         public FixedString128Bytes DefinitionId;
         public FixedString128Bytes ItemInstanceId;
+        public uint SnapshotGeneration;
 
         public bool IsEmpty => string.IsNullOrEmpty(DefinitionId.ToString());
 
@@ -306,21 +313,64 @@ namespace UnityIsekaiGame.Networking
             serializer.SerializeValue(ref EquipmentSlot);
             serializer.SerializeValue(ref DefinitionId);
             serializer.SerializeValue(ref ItemInstanceId);
+            serializer.SerializeValue(ref SnapshotGeneration);
         }
 
         public bool Equals(NetworkEquipmentReferenceState other)
         {
             return EquipmentSlot == other.EquipmentSlot
                 && DefinitionId.Equals(other.DefinitionId)
-                && ItemInstanceId.Equals(other.ItemInstanceId);
+                && ItemInstanceId.Equals(other.ItemInstanceId)
+                && SnapshotGeneration == other.SnapshotGeneration;
         }
 
         public override bool Equals(object obj) => obj is NetworkEquipmentReferenceState other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(EquipmentSlot, DefinitionId, ItemInstanceId);
+        public override int GetHashCode() => HashCode.Combine(EquipmentSlot, DefinitionId, ItemInstanceId, SnapshotGeneration);
     }
 
     public static class NetworkInventorySnapshotValidator
     {
+        public static bool HasCommittedGeneration(
+            IReadOnlyList<NetworkInventorySlotState> inventory,
+            IReadOnlyList<NetworkEquipmentReferenceState> equipment,
+            uint expectedGeneration,
+            out string failure)
+        {
+            if (expectedGeneration == 0u)
+            {
+                failure = "Inventory snapshot generation is not committed.";
+                return false;
+            }
+
+            if (inventory == null)
+            {
+                failure = "Inventory snapshot is missing.";
+                return false;
+            }
+
+            for (int i = 0; i < inventory.Count; i++)
+            {
+                if (inventory[i].SnapshotGeneration != expectedGeneration)
+                {
+                    failure = $"Inventory slot {i} belongs to generation {inventory[i].SnapshotGeneration}, not committed generation {expectedGeneration}.";
+                    return false;
+                }
+            }
+
+            IReadOnlyList<NetworkEquipmentReferenceState> equipmentRecords = equipment ?? Array.Empty<NetworkEquipmentReferenceState>();
+            for (int i = 0; i < equipmentRecords.Count; i++)
+            {
+                if (equipmentRecords[i].SnapshotGeneration != expectedGeneration)
+                {
+                    failure = $"Equipment record {i} belongs to generation {equipmentRecords[i].SnapshotGeneration}, not committed generation {expectedGeneration}.";
+                    return false;
+                }
+            }
+
+            failure = string.Empty;
+            return true;
+        }
+
         public static bool TryValidate(
             IReadOnlyList<NetworkInventorySlotState> inventory,
             IReadOnlyList<NetworkEquipmentReferenceState> equipment,

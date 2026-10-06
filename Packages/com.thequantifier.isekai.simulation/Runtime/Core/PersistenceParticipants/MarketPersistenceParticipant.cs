@@ -6,7 +6,7 @@ using UnityIsekaiGame.GameData.Persistence;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class MarketPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class MarketPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant, IPersistenceRevisionParticipant
     {
         public const string Key = "world.markets";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -35,6 +35,7 @@ namespace UnityIsekaiGame.Persistence
         public bool RequiresSceneReadiness => false;
         public bool RequiresDefinitionRegistry => true;
         public bool RequiresWorldEntityRegistry => false;
+        public long PersistenceRevision => runtime?.Revision ?? -1L;
 
         public PersistenceParticipantSaveResult CapturePayload()
         {
@@ -52,6 +53,27 @@ namespace UnityIsekaiGame.Persistence
 
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null)
+            {
+                return DeferredPersistenceParticipantCapture.Failure("Market runtime is missing.");
+            }
+
+            MarketRuntimeSaveData saveData = runtime.CreateSaveData();
+            DefinitionRegistry registry = registryProvider?.Invoke();
+
+            return DeferredPersistenceParticipantCapture.Success(() =>
+            {
+                if (!MarketRuntime.ValidateSaveData(saveData, registry, out string failureReason))
+                {
+                    return PersistenceParticipantSaveResult.Failure(failureReason);
+                }
+
+                return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+            });
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

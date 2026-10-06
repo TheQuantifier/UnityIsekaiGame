@@ -18,7 +18,8 @@ namespace UnityIsekaiGame.Networking
         InsufficientResource = 60,
         InvalidTarget = 70,
         DeferredTransaction = 80,
-        ServerRejected = 90
+        ServerRejected = 90,
+        PlayerPaused = 100
     }
 
     public static class CombatAuthorityLimits

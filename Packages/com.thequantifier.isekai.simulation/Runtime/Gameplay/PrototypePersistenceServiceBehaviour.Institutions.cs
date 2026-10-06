@@ -242,7 +242,10 @@ namespace UnityIsekaiGame.Gameplay
             if (configuringInstitutionalRuntime) return;
             double realtime = Time.unscaledTimeAsDouble;
             if (worldOrganizations != null && worldJustice != null && realtime < nextInstitutionalConfigurationCheckRealtime) return;
-            nextInstitutionalConfigurationCheckRealtime = realtime + 1d;
+            // Membership/place discovery changes slowly and explicit gameplay mutations
+            // reset this deadline to zero. Rebuilding and joining every institutional ID
+            // set once per second created avoidable steady-state garbage on the server.
+            nextInstitutionalConfigurationCheckRealtime = realtime + 5d;
             configuringInstitutionalRuntime = true;
             try
             {

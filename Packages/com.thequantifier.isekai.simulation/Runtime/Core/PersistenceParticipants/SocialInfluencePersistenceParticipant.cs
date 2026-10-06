@@ -7,7 +7,7 @@ using UnityIsekaiGame.Social.Influence;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class SocialInfluencePersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class SocialInfluencePersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant
     {
         public const string Key = "world.social-influence";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -55,6 +55,23 @@ namespace UnityIsekaiGame.Persistence
 
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null) return DeferredPersistenceParticipantCapture.Failure("Social Influence runtime is missing.");
+            SocialInfluenceRuntimeSaveData saveData = runtime.CreateSaveData();
+            DefinitionRegistry registry = registryProvider?.Invoke();
+            string[] knownPersons = knownPersonProvider?.Invoke();
+            return DeferredPersistenceParticipantCapture.Success(() =>
+            {
+                if (!SocialInfluenceRuntime.ValidateSaveData(saveData, registry, knownPersons, out string failure))
+                {
+                    return PersistenceParticipantSaveResult.Failure(failure);
+                }
+
+                return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+            });
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

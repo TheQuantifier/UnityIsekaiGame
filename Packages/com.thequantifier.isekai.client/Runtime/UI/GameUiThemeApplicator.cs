@@ -7,6 +7,14 @@ using UnityIsekaiGame.Presentation;
 namespace UnityIsekaiGame.UI
 {
     /// <summary>
+    /// Prevents the automatic theme pass from overwriting deliberately styled child controls.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class GameUiThemeOptOut : MonoBehaviour
+    {
+    }
+
+    /// <summary>
     /// Applies the shared theme to authored and runtime-created screen-space UI.
     /// Components are styled once so screen-specific selected states remain in control.
     /// </summary>
@@ -180,6 +188,11 @@ namespace UnityIsekaiGame.UI
                 if (button != null && styledButtons.Add(button))
                 {
                     GameUiTheme.StyleButton(button, GameUiTheme.InferButtonTone(button.name));
+                    if (button.name.IndexOf("pill", System.StringComparison.OrdinalIgnoreCase) >= 0
+                        && button.targetGraphic is Image pillImage)
+                    {
+                        GameUiTheme.StylePillSurface(pillImage);
+                    }
                 }
             }
         }
@@ -228,6 +241,10 @@ namespace UnityIsekaiGame.UI
                 if (inputField != null && styledInputFields.Add(inputField))
                 {
                     GameUiTheme.StyleInputField(inputField);
+                    if (inputField.name.IndexOf("pill", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        GameUiTheme.StylePillSurface(inputField.targetGraphic as Image ?? inputField.GetComponent<Image>());
+                    }
                 }
             }
         }
@@ -240,7 +257,9 @@ namespace UnityIsekaiGame.UI
             for (int i = 0; i < toggleBuffer.Count; i++)
             {
                 Toggle toggle = toggleBuffer[i];
-                if (toggle != null && styledToggles.Add(toggle))
+                if (toggle != null
+                    && toggle.GetComponentInParent<GameUiThemeOptOut>(true) == null
+                    && styledToggles.Add(toggle))
                 {
                     GameUiTheme.StyleToggle(toggle);
                 }
@@ -255,7 +274,9 @@ namespace UnityIsekaiGame.UI
             for (int i = 0; i < scrollbarBuffer.Count; i++)
             {
                 Scrollbar scrollbar = scrollbarBuffer[i];
-                if (scrollbar != null && styledScrollbars.Add(scrollbar))
+                if (scrollbar != null
+                    && scrollbar.GetComponentInParent<GameUiThemeOptOut>(true) == null
+                    && styledScrollbars.Add(scrollbar))
                 {
                     GameUiTheme.StyleScrollbar(scrollbar);
                 }

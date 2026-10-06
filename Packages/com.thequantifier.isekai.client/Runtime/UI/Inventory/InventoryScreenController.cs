@@ -17,6 +17,7 @@ using UnityIsekaiGame.StatusEffects;
 using UnityIsekaiGame.Traits;
 using UnityIsekaiGame.UI.Quests;
 using UnityIsekaiGame.Networking.Client;
+using UnityIsekaiGame.People;
 
 namespace UnityIsekaiGame.UI.Inventory
 {
@@ -40,6 +41,7 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private QuestJournalView questJournalView;
         [SerializeField] private GameObject itemUser;
         [SerializeField] private LocalPlayerInventoryBridge inventoryAuthority;
+        [SerializeField] private LocalGameClient localGameClient;
         private LocalNarrativeAuthorityBridge narrativeAuthority;
         [Header("Save/Load")]
         [SerializeField] private DefinitionCatalog saveLoadDefinitionCatalog;
@@ -48,7 +50,8 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private bool isOpen;
         private int selectedSlotIndex;
-        private int hoveredSlotIndex = -1;
+        private string selectedItemIdentity = string.Empty;
+        private int hoveredPreviewSlotIndex = -1;
         private bool primaryActionComparisonHovered;
         private EquipmentSlotType selectedEquipmentSlot;
         private int selectedKnownSpellIndex;
@@ -56,12 +59,19 @@ namespace UnityIsekaiGame.UI.Inventory
         private bool refreshing;
         private bool refreshPending;
         private readonly Dictionary<int, EquipmentSlotType> equippedDisplaySlots = new Dictionary<int, EquipmentSlotType>();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private string lastLoggedInventoryActionState = string.Empty;
+#endif
 
         private void Awake()
         {
             if (inventoryAuthority == null)
             {
                 inventoryAuthority = FindAnyObjectByType<LocalPlayerInventoryBridge>();
+            }
+            if (localGameClient == null)
+            {
+                localGameClient = FindAnyObjectByType<LocalGameClient>(FindObjectsInactive.Include);
             }
             narrativeAuthority = LocalNarrativeAuthorityBridge.Active ?? FindAnyObjectByType<LocalNarrativeAuthorityBridge>();
 
@@ -324,6 +334,7 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             isOpen = false;
+            hoveredPreviewSlotIndex = -1;
             primaryActionComparisonHovered = false;
             refreshPending = false;
         }
@@ -348,15 +359,29 @@ namespace UnityIsekaiGame.UI.Inventory
                 {
                     view.EnsureInventorySlotCapacity(inventory.Slots.Count);
                     RebuildEquippedDisplaySlots();
+                    ReconcileSelectedSlotIdentity();
                     view.Render(inventory.Slots, equipment == null ? null : equipment.Slots, equippedDisplaySlots);
                     view.RenderEquipment(equipment == null ? null : equipment.Slots);
                     ResolveCharacterSkills();
-                    view.RenderCharacter(playerStats, playerHealth, playerStamina, playerMana, statusEffects, playerStats == null ? null : playerStats.CharacterAttributes, playerStats == null ? null : playerStats.CalculatedStats, playerSkills, ResolveCharacterTraits(), characterSystem == null ? null : characterSystem.GetSnapshot(developmentView: false));
+                    view.RenderCharacter(
+                        playerStats,
+                        playerHealth,
+                        playerStamina,
+                        playerMana,
+                        statusEffects,
+                        playerStats == null ? null : playerStats.CharacterAttributes,
+                        playerStats == null ? null : playerStats.CalculatedStats,
+                        playerSkills,
+                        ResolveCharacterTraits(),
+                        characterSystem == null ? null : characterSystem.GetSnapshot(developmentView: false),
+                        equipment,
+                        characterSystem,
+                        itemUser == null ? null : itemUser.GetComponent<PersonIdentity>(),
+                        localGameClient == null ? string.Empty : localGameClient.AuthenticatedUsername);
                     ClampSelection();
                     view.SetSelectedSlot(selectedSlotIndex);
                     view.SetSelectedEquipmentSlot(selectedEquipmentSlot);
-                    RenderHoveredSlotDetails();
-                    UpdateEquipmentActions();
+                    ApplySelectedSlotPresentation();
                     if (primaryActionComparisonHovered)
                     {
                         HoverPrimaryAction(true);
@@ -564,8 +589,8 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
+            selectedItemIdentity = GetDisplayedItemIdentity(sourceSlotIndex);
             selectedSlotIndex = destinationSlotIndex;
-            hoveredSlotIndex = destinationSlotIndex;
             if (inventoryAuthority != null && inventoryAuthority.IsServerAuthorityActive)
             {
                 SetAuthorityRequestFeedback(
@@ -673,13 +698,15 @@ namespace UnityIsekaiGame.UI.Inventory
             {
                 selectedEquipmentSlot = equippedSlotType;
             }
+            selectedItemIdentity = GetDisplayedItemIdentity(selectedSlotIndex);
+            hoveredPreviewSlotIndex = -1;
 
             if (view != null)
             {
+                view.HideInventoryHoverPreview();
                 view.SetSelectedSlot(selectedSlotIndex);
                 view.SetFeedback(string.Empty);
-                RenderHoveredSlotDetails();
-                UpdateEquipmentActions();
+                ApplySelectedSlotPresentation();
             }
         }
 
@@ -697,24 +724,26 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void HoverSlot(int slotIndex, bool hovering)
         {
-            if (view == null || inventory == null)
+            if (view == null || inventory == null) return;
+            if (!hovering)
             {
+                if (hoveredPreviewSlotIndex != slotIndex) return;
+                hoveredPreviewSlotIndex = -1;
+                view.HideInventoryHoverPreview();
                 return;
             }
 
-            if (hovering)
+            hoveredPreviewSlotIndex = slotIndex;
+            // Selection exclusively owns the main inspector and action row. Hover renders into
+            // a separate transient tooltip, so the controls remain reachable when the pointer
+            // leaves the selected slot.
+            if (TryGetDisplayedEquipment(slotIndex, out EquipmentSlotState equippedSlot))
             {
-                hoveredSlotIndex = slotIndex;
-                RenderHoveredSlotDetails();
+                view.ShowInventoryHoverPreview(equippedSlot);
                 return;
             }
 
-            if (hoveredSlotIndex == slotIndex)
-            {
-                hoveredSlotIndex = -1;
-            }
-
-            RenderHoveredSlotDetails();
+            view.ShowInventoryHoverPreview(inventory.GetSlot(slotIndex));
         }
 
         private void HoverPrimaryAction(bool hovering)
@@ -750,22 +779,24 @@ namespace UnityIsekaiGame.UI.Inventory
             view.ShowEquipmentComparison(EquipmentComparisonFormatter.Format(equippedItem, desiredSlot.Item));
         }
 
-        private void RenderHoveredSlotDetails()
+        private void ApplySelectedSlotPresentation()
         {
             if (view == null || inventory == null)
             {
                 return;
             }
 
-            int inspectedSlotIndex = hoveredSlotIndex >= 0 ? hoveredSlotIndex : selectedSlotIndex;
-            if (TryGetDisplayedEquipment(inspectedSlotIndex, out EquipmentSlotState equippedSlot))
+            SelectedSlotPresentation presentation = ResolveSelectedSlotPresentation();
+            if (presentation.IsDisplayedEquipment)
             {
-                view.RenderSelectedItemDetails(equippedSlot, includeDescription: true);
-                return;
+                view.RenderSelectedItemDetails(presentation.DisplayedEquipment, includeDescription: true);
+            }
+            else
+            {
+                view.RenderSelectedItemDetails(presentation.InventorySlot, includeDescription: true);
             }
 
-            InventorySlot inspectedSlot = inventory.GetSlot(inspectedSlotIndex);
-            view.RenderSelectedItemDetails(inspectedSlot, includeDescription: true);
+            ApplyEquipmentActions(presentation);
         }
 
         private void MoveSelection(Vector2 direction)
@@ -787,17 +818,19 @@ namespace UnityIsekaiGame.UI.Inventory
             }
 
             selectedSlotIndex = Mathf.Clamp(selectedSlotIndex + delta, 0, view.SlotCount - 1);
+            selectedItemIdentity = GetDisplayedItemIdentity(selectedSlotIndex);
+            hoveredPreviewSlotIndex = -1;
+            view.HideInventoryHoverPreview();
             view.SetSelectedSlot(selectedSlotIndex);
             view.SetFeedback(string.Empty);
-            RenderHoveredSlotDetails();
-            UpdateEquipmentActions();
+            ApplySelectedSlotPresentation();
         }
 
         private void ClampSelection()
         {
             int slotCount = view == null ? 0 : view.SlotCount;
             selectedSlotIndex = slotCount <= 0 ? 0 : Mathf.Clamp(selectedSlotIndex, 0, slotCount - 1);
-            if (hoveredSlotIndex >= slotCount) hoveredSlotIndex = -1;
+            if (hoveredPreviewSlotIndex >= slotCount) hoveredPreviewSlotIndex = -1;
         }
 
         private void UpdateEquipmentActions()
@@ -807,8 +840,22 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
+            ApplyEquipmentActions(ResolveSelectedSlotPresentation());
+        }
+
+        private SelectedSlotPresentation ResolveSelectedSlotPresentation()
+        {
             InventorySlot selectedInventorySlot = inventory == null ? null : inventory.GetSlot(selectedSlotIndex);
             bool selectedEquippedItem = TryGetDisplayedEquipment(selectedSlotIndex, out EquipmentSlotState displayedEquipmentSlot);
+            return new SelectedSlotPresentation(selectedInventorySlot, displayedEquipmentSlot, selectedEquippedItem);
+        }
+
+        private void ApplyEquipmentActions(SelectedSlotPresentation presentation)
+        {
+            InventorySlot selectedInventorySlot = presentation.InventorySlot;
+            bool selectedEquippedItem = presentation.IsDisplayedEquipment;
+            EquipmentSlotState displayedEquipmentSlot = presentation.DisplayedEquipment;
+
             bool canEquip = selectedInventorySlot != null
                 && !selectedInventorySlot.IsEmpty
                 && selectedInventorySlot.Item != null
@@ -821,19 +868,100 @@ namespace UnityIsekaiGame.UI.Inventory
                 && !selectedInventorySlot.IsEmpty
                 && selectedInventorySlot.Item != null;
 
-            EquipmentSlotState selectedEquipment = equipment == null ? null : equipment.GetSlot(selectedEquipmentSlot);
-            bool canUnequip = selectedEquipment != null && !selectedEquipment.IsEmpty;
-
-            view.SetEquipmentActions(canEquip, canUnequip);
-            bool canDropAll = canDrop && selectedInventorySlot.Quantity > 1;
             if (selectedEquippedItem)
             {
                 selectedEquipmentSlot = displayedEquipmentSlot.SlotType;
                 canUse = false;
                 canEquip = false;
             }
+
+            EquipmentSlotState selectedEquipment = equipment == null ? null : equipment.GetSlot(selectedEquipmentSlot);
+            bool canUnequip = selectedEquipment != null && !selectedEquipment.IsEmpty;
+
+            view.SetEquipmentActions(canEquip, canUnequip);
+            bool canDropAll = canDrop && selectedInventorySlot.Quantity > 1;
             ItemDefinition actionItem = selectedEquippedItem ? displayedEquipmentSlot?.Item : selectedInventorySlot?.Item;
             view.SetInventoryActions(canUse, canEquip, canDrop, canDropAll, canUnequip: selectedEquippedItem, actionItem: actionItem);
+            LogInventoryActionTransition(actionItem, selectedInventorySlot, selectedEquippedItem, canUse, canEquip, canDrop, canDropAll);
+        }
+
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        private void LogInventoryActionTransition(
+            ItemDefinition item,
+            InventorySlot inventorySlot,
+            bool selectedEquippedItem,
+            bool canUse,
+            bool canEquip,
+            bool canDrop,
+            bool canDropAll)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            string state = $"slot={selectedSlotIndex}; identity={selectedItemIdentity}; item={item?.ItemId ?? "<empty>"}; "
+                + $"quantity={inventorySlot?.Quantity ?? 0}; equipped={selectedEquippedItem}; primary={view.PrimaryActionKind}; "
+                + $"use={canUse}; equip={canEquip}; drop={canDrop}; dropAll={canDropAll}";
+            if (string.Equals(lastLoggedInventoryActionState, state, System.StringComparison.Ordinal)) return;
+            lastLoggedInventoryActionState = state;
+            Debug.Log($"[Inventory UI] Selection/action row changed: {state}", this);
+#endif
+        }
+
+        private void ReconcileSelectedSlotIdentity()
+        {
+            ClampSelection();
+            if (string.IsNullOrWhiteSpace(selectedItemIdentity) || view == null)
+            {
+                selectedItemIdentity = GetDisplayedItemIdentity(selectedSlotIndex);
+                return;
+            }
+
+            for (int index = 0; index < view.SlotCount; index++)
+            {
+                if (string.Equals(GetDisplayedItemIdentity(index), selectedItemIdentity, System.StringComparison.Ordinal))
+                {
+                    selectedSlotIndex = index;
+                    return;
+                }
+            }
+
+            selectedItemIdentity = GetDisplayedItemIdentity(selectedSlotIndex);
+        }
+
+        private string GetDisplayedItemIdentity(int displaySlotIndex)
+        {
+            if (TryGetDisplayedEquipment(displaySlotIndex, out EquipmentSlotState equipped))
+            {
+                return BuildItemIdentity("equipment", equipped.ItemInstanceId);
+            }
+
+            InventorySlot slot = inventory == null ? null : inventory.GetSlot(displaySlotIndex);
+            return slot == null || slot.IsEmpty
+                ? string.Empty
+                : BuildItemIdentity("inventory", slot.ItemInstanceId);
+        }
+
+        private static string BuildItemIdentity(string source, string itemInstanceId)
+        {
+            return string.IsNullOrWhiteSpace(itemInstanceId)
+                ? string.Empty
+                : $"{source}:instance:{itemInstanceId}";
+        }
+
+        private readonly struct SelectedSlotPresentation
+        {
+            public SelectedSlotPresentation(
+                InventorySlot inventorySlot,
+                EquipmentSlotState displayedEquipment,
+                bool isDisplayedEquipment)
+            {
+                InventorySlot = inventorySlot;
+                DisplayedEquipment = displayedEquipment;
+                IsDisplayedEquipment = isDisplayedEquipment;
+            }
+
+            public InventorySlot InventorySlot { get; }
+            public EquipmentSlotState DisplayedEquipment { get; }
+            public bool IsDisplayedEquipment { get; }
         }
 
         private void RebuildEquippedDisplaySlots()

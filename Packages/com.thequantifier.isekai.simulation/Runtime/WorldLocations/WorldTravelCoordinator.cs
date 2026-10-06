@@ -155,6 +155,8 @@ namespace UnityIsekaiGame.WorldLocations
 
         public IReadOnlyList<WorldTravelResult> AdvanceActiveJourneys(double worldTime)
         {
+            if (!journeys.HasActiveJourneys) return Array.Empty<WorldTravelResult>();
+
             List<WorldTravelResult> results = new List<WorldTravelResult>();
             foreach (TravelJourneySnapshot journey in journeys.Journeys.Where(value => value.LifecycleState == TravelJourneyLifecycleState.Active).OrderBy(value => value.JourneyId, StringComparer.Ordinal).ToArray())
             {

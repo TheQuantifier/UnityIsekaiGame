@@ -46,7 +46,7 @@ Client prediction and reconciliation are deliberately deferred until measured la
 The client-only `--movement-smoke-forward` flag submits forward input for 1.5 seconds after the local actor becomes ready. It is intended for automated local build verification:
 
 ```powershell
-.\UnityIsekaiClient.exe -batchmode -nographics --local-client --server-address 127.0.0.1 --server-port 7777 --player-id movement-test --movement-smoke-forward -logFile client.log
+.\UnityIsekaiClient.exe -batchmode -nographics --local-client --server-address 127.0.0.1 --server-port 7777 --account movement-test --movement-smoke-forward -logFile client.log
 ```
 
 The server log must contain `Server moved actor`; the client log must contain `Client observed authoritative movement`. The normal game never enables this input unless the explicit flag is present.

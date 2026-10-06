@@ -35,7 +35,8 @@ namespace UnityIsekaiGame.Networking.Server
             NetworkPlayerNarrative replicatedNarrative,
             PrototypePersistenceServiceBehaviour persistence,
             ServerPlayerInventoryAuthority authoritativeInventory,
-            PrototypeNarrativeCoordinator authoritativeNarrative = null)
+            PrototypeNarrativeCoordinator authoritativeNarrative = null,
+            DefinitionRegistry definitionRegistry = null)
         {
             if (configured) throw new InvalidOperationException("Server player narrative authority is already configured.");
             actor = playerActor ?? throw new ArgumentNullException(nameof(playerActor));
@@ -46,7 +47,7 @@ namespace UnityIsekaiGame.Networking.Server
             services.RegisterAuthoritativeRuntimePerson(personId);
             narrative = authoritativeNarrative ?? new PrototypeNarrativeCoordinator(
                 services,
-                services.DefinitionCatalog.CreateRegistry(),
+                definitionRegistry ?? services.DefinitionCatalog.CreateRegistry(),
                 personId,
                 subscribeToRuntimeEvents: false);
             ownsNarrativeCoordinator = authoritativeNarrative == null;
@@ -74,6 +75,14 @@ namespace UnityIsekaiGame.Networking.Server
         {
             try
             {
+                if (actor?.IsPausedProtected == true)
+                {
+                    return Reject(
+                        command,
+                        NarrativeAuthorityFailure.PlayerPaused,
+                        "World interactions are unavailable while the player is paused and protected.");
+                }
+
                 NetworkNarrativeCommandResult result = command.CommandType switch
                 {
                     NarrativeAuthorityCommandType.Interact => Interact(command),

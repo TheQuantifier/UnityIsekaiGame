@@ -106,7 +106,7 @@ MonoBehaviour:
   ScaleMaxInterpolationTime: 0.1
   AuthorityMode: 0
   TickSyncChildren: 0
-  UseUnreliableDeltas: 0
+  UseUnreliableDeltas: 1
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
@@ -172,6 +172,7 @@ MonoBehaviour:
   gravity: 30
   groundedStickForce: 2
   fallRecoveryDistance: 50
+  fallRecoveryNearbyRadius: 10
 --- !u!114 &3654913487725053500
 MonoBehaviour:
   m_ObjectHideFlags: 0

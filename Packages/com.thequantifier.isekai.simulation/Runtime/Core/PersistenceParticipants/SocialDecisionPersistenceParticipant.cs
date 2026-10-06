@@ -7,7 +7,7 @@ using UnityIsekaiGame.Social.Decisions;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class SocialDecisionPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class SocialDecisionPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant
     {
         public const string Key = "world.social-decisions";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -67,6 +67,28 @@ namespace UnityIsekaiGame.Persistence
 
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null)
+            {
+                return DeferredPersistenceParticipantCapture.Failure("Social Decision runtime is missing.");
+            }
+
+            SocialDecisionRuntimeSaveData saveData = runtime.CreateSaveData();
+            DefinitionRegistry registry = registryProvider?.Invoke();
+            string[] knownPersons = knownPersonProvider?.Invoke();
+
+            return DeferredPersistenceParticipantCapture.Success(() =>
+            {
+                if (!SocialDecisionRuntime.ValidateSaveData(saveData, registry, knownPersons, out string failure))
+                {
+                    return PersistenceParticipantSaveResult.Failure(failure);
+                }
+
+                return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+            });
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

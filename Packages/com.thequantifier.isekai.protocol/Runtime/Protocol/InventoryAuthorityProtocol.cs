@@ -22,7 +22,8 @@ namespace UnityIsekaiGame.Networking
         NotAllowed = 70,
         InventoryFull = 80,
         ItemUnavailable = 90,
-        ServerRejected = 100
+        ServerRejected = 100,
+        PlayerPaused = 110
     }
 
     public static class InventoryAuthorityLimits

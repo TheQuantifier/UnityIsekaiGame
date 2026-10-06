@@ -89,6 +89,29 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
+        public void Snapshot_generation_rejects_mixed_inventory_and_equipment_payloads()
+        {
+            NetworkInventorySlotState[] inventory =
+            {
+                new NetworkInventorySlotState(0, string.Empty, string.Empty, 0, NetworkInventoryItemFlags.None, 12u),
+                new NetworkInventorySlotState(1, "item.sword", "item-instance.sword", 1,
+                    NetworkInventoryItemFlags.Stateful | NetworkInventoryItemFlags.Equippable, 11u)
+            };
+            NetworkEquipmentReferenceState[] equipment =
+            {
+                new NetworkEquipmentReferenceState(4, "item.sword", "item-instance.sword", 12u)
+            };
+
+            Assert.That(NetworkInventorySnapshotValidator.HasCommittedGeneration(
+                inventory, equipment, 12u, out string failure), Is.False);
+            Assert.That(failure, Does.Contain("generation 11"));
+
+            inventory[1].SnapshotGeneration = 12u;
+            Assert.That(NetworkInventorySnapshotValidator.HasCommittedGeneration(
+                inventory, equipment, 12u, out failure), Is.True, failure);
+        }
+
+        [Test]
         public void Snapshot_requires_equipment_to_reference_inventory_owned_identity()
         {
             NetworkInventorySlotState[] inventory =

@@ -25,6 +25,8 @@ namespace UnityIsekaiGame.GameData.Persistence
         private readonly Dictionary<string, IPersistenceParticipant> participantsByKey = new Dictionary<string, IPersistenceParticipant>(StringComparer.Ordinal);
         private readonly Dictionary<string, PersistenceParticipantDescriptor> descriptorsByKey = new Dictionary<string, PersistenceParticipantDescriptor>(StringComparer.Ordinal);
         private readonly List<IPersistenceConsistencyValidator> consistencyValidators = new List<IPersistenceConsistencyValidator>();
+        private readonly Dictionary<string, SaveEnvelopeHeader> savedEnvelopeHeaders = new Dictionary<string, SaveEnvelopeHeader>(StringComparer.Ordinal);
+        private readonly Dictionary<string, CachedParticipantPayload> participantPayloadCache = new Dictionary<string, CachedParticipantPayload>(StringComparer.Ordinal);
         private bool operationInProgress;
         private PersistenceOperationState operationState = PersistenceOperationState.Idle;
         private PersistenceTransactionPhase currentPhase = PersistenceTransactionPhase.Idle;
@@ -32,6 +34,8 @@ namespace UnityIsekaiGame.GameData.Persistence
         private string currentTransactionId = string.Empty;
         private string lastRecoveryRecommendation = string.Empty;
         private string lastConsistencyAudit = "Not run.";
+        private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(false);
+        private const int StreamingIoBufferBytes = 64 * 1024;
 
         public PersistenceService(
             PersistencePathProvider pathProvider = null,
@@ -210,12 +214,12 @@ namespace UnityIsekaiGame.GameData.Persistence
                 }
 
                 SetOperation(PersistenceOperationState.Capturing, PersistenceTransactionPhase.Capture, transactionId, isSave: true);
-                GameSaveEnvelope envelope = BuildEnvelope(slotId, displayName, paths, transactionId);
+                GameSaveEnvelope envelope = BuildEnvelope(slotId, displayName, paths, transactionId, computeChecksum: true);
                 SetOperation(PersistenceOperationState.Capturing, PersistenceTransactionPhase.BuildEnvelope, transactionId, isSave: true);
                 string serialized;
                 try
                 {
-                    serialized = serializer.Serialize(envelope, true);
+                    serialized = serializer.Serialize(envelope, false);
                     if (string.IsNullOrWhiteSpace(serialized))
                     {
                         return FinishSave(PersistenceSaveResult.Failure(PersistenceSaveStatus.SerializationFailed, slotId, paths.PrimaryPath, "Save envelope serialized to empty JSON.", transactionId: transactionId, phase: PersistenceTransactionPhase.BuildEnvelope));
@@ -244,6 +248,7 @@ namespace UnityIsekaiGame.GameData.Persistence
 
                 SetOperation(PersistenceOperationState.Writing, PersistenceTransactionPhase.UpdateMetadata, transactionId, isSave: true);
                 SaveSlotsChanged?.Invoke();
+                RememberHeader(envelope);
                 return FinishSave(PersistenceSaveResult.Success(slotId, paths.PrimaryPath, $"Saved slot '{slotId}'.", transactionId));
             }
             catch (ParticipantSaveException exception)
@@ -254,6 +259,333 @@ namespace UnityIsekaiGame.GameData.Persistence
             {
                 return FinishSave(PersistenceSaveResult.Failure(PersistenceSaveStatus.UnknownException, slotId, paths.PrimaryPath, "Unexpected save failure.", exception, transactionId, currentPhase));
             }
+        }
+
+        /// <summary>
+        /// Captures an immutable save snapshot while runtime state is only accessed from the caller's
+        /// simulation thread. Call <see cref="WritePreparedSave"/> on a background worker, then call
+        /// <see cref="CompletePreparedSave"/> back on the simulation thread.
+        /// </summary>
+        public bool TryPrepareSave(
+            string slotId,
+            string displayName,
+            out PreparedPersistenceSave prepared,
+            out PersistenceSaveResult failure)
+        {
+            prepared = null;
+            if (!TryBeginSaveCapture(slotId, displayName, out PreparedPersistenceSaveCapture capture, out failure))
+            {
+                return false;
+            }
+
+            return TryContinueSaveCapture(capture, int.MaxValue, out prepared, out failure) && prepared != null;
+        }
+
+        /// <summary>
+        /// Starts a save snapshot transaction without walking participant state. The caller can then
+        /// capture a bounded number of participants per simulation tick with <see cref="TryContinueSaveCapture"/>.
+        /// </summary>
+        public bool TryBeginSaveCapture(
+            string slotId,
+            string displayName,
+            out PreparedPersistenceSaveCapture capture,
+            out PersistenceSaveResult failure)
+        {
+            capture = null;
+            failure = null;
+            if (operationInProgress)
+            {
+                failure = PersistenceSaveResult.Failure(PersistenceSaveStatus.OperationAlreadyRunning, slotId, string.Empty, "A save or load operation is already running.");
+                return false;
+            }
+
+            if (runtimeSafety == PersistenceRuntimeSafety.Unsafe)
+            {
+                failure = PersistenceSaveResult.Failure(PersistenceSaveStatus.UnsafeRuntimeState, slotId, string.Empty, "Persistence runtime is unsafe after a failed rollback. Restart or use an explicit recovery path before saving.", transactionId: currentTransactionId, phase: currentPhase);
+                return false;
+            }
+
+            if (!pathProvider.TryGetPaths(slotId, out SaveSlotPaths paths, out string pathFailure))
+            {
+                failure = PersistenceSaveResult.Failure(PersistenceSaveStatus.InvalidSlotId, slotId, string.Empty, pathFailure);
+                return false;
+            }
+
+            if (participants.Count == 0)
+            {
+                failure = PersistenceSaveResult.Failure(PersistenceSaveStatus.NoParticipants, slotId, paths.PrimaryPath, "No persistence participants are registered.");
+                return false;
+            }
+
+            string transactionId = Guid.NewGuid().ToString("N");
+            SetOperation(PersistenceOperationState.Capturing, PersistenceTransactionPhase.Eligibility, transactionId, isSave: true);
+            SaveStarted?.Invoke();
+            try
+            {
+                if (!Faulted(PersistenceFaultInjectionPoint.SaveCapture, out string injectedSaveFailure))
+                {
+                    PersistenceDependencyReport dependencyReport = BuildParticipantDependencyReport();
+                    if (!dependencyReport.succeeded)
+                    {
+                        failure = FinishSave(PersistenceSaveResult.Failure(PersistenceSaveStatus.DependencyValidationFailed, slotId, paths.PrimaryPath, dependencyReport.message, transactionId: transactionId, phase: PersistenceTransactionPhase.ResolveDependencies));
+                        return false;
+                    }
+                }
+                else
+                {
+                    failure = FinishSave(PersistenceSaveResult.Failure(PersistenceSaveStatus.ParticipantCaptureFailed, slotId, paths.PrimaryPath, injectedSaveFailure, transactionId: transactionId, phase: PersistenceTransactionPhase.Capture));
+                    return false;
+                }
+
+                SetOperation(PersistenceOperationState.Capturing, PersistenceTransactionPhase.Capture, transactionId, isSave: true);
+                capture = new PreparedPersistenceSaveCapture(
+                    this,
+                    paths,
+                    CreateEnvelope(slotId, displayName, paths, transactionId),
+                    GetOrderedParticipants(),
+                    transactionId);
+                return true;
+            }
+            catch (ParticipantSaveException exception)
+            {
+                failure = FinishSave(PersistenceSaveResult.Failure(exception.Status, slotId, paths.PrimaryPath, exception.Message, exception, transactionId, currentPhase));
+                return false;
+            }
+            catch (Exception exception)
+            {
+                failure = FinishSave(PersistenceSaveResult.Failure(PersistenceSaveStatus.UnknownException, slotId, paths.PrimaryPath, "Unexpected save snapshot failure.", exception, transactionId, currentPhase));
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Captures at most <paramref name="maximumParticipants"/> immutable participant snapshots.
+        /// A non-null prepared result means capture is complete and ready for the background writer.
+        /// </summary>
+        public bool TryContinueSaveCapture(
+            PreparedPersistenceSaveCapture capture,
+            int maximumParticipants,
+            out PreparedPersistenceSave prepared,
+            out PersistenceSaveResult failure)
+        {
+            prepared = null;
+            failure = null;
+            if (capture == null
+                || !ReferenceEquals(capture.Owner, this)
+                || !string.Equals(currentTransactionId, capture.TransactionId, StringComparison.Ordinal))
+            {
+                failure = PersistenceSaveResult.Failure(
+                    PersistenceSaveStatus.UnknownException,
+                    capture?.SlotId ?? string.Empty,
+                    capture?.Paths?.PrimaryPath ?? string.Empty,
+                    "Save capture does not match the active persistence transaction.");
+                return false;
+            }
+
+            try
+            {
+                int remaining = Math.Max(1, maximumParticipants);
+                while (!capture.IsComplete && remaining-- > 0)
+                {
+                    IPersistenceParticipant participant = capture.Participants[capture.NextParticipantIndex];
+                    capture.LastCapturedParticipantKeyValue = participant?.ParticipantKey ?? string.Empty;
+                    if (capture.ActiveIncrementalCapture != null)
+                    {
+                        if (!capture.ActiveIncrementalCapture.TryContinue(
+                                out bool completed,
+                                out DeferredPersistenceParticipantCapture completedCapture,
+                                out string failureReason))
+                        {
+                            throw new ParticipantSaveException(
+                                PersistenceSaveStatus.ParticipantCaptureFailed,
+                                $"Participant '{participant?.ParticipantKey}' failed incremental snapshot capture: {failureReason}");
+                        }
+
+                        if (!completed) continue;
+                        AddDeferredParticipantCapture(participant, completedCapture, capture.Envelope, capture.Captures);
+                        capture.ActiveIncrementalCapture = null;
+                        capture.ActiveIncrementalParticipant = null;
+                        capture.NextParticipantIndex++;
+                        continue;
+                    }
+
+                    if (TryUseCachedParticipantPayload(participant, capture.Envelope, capture.Captures))
+                    {
+                        capture.NextParticipantIndex++;
+                        continue;
+                    }
+
+                    if (participant is IIncrementalPersistenceParticipant incremental)
+                    {
+                        capture.ActiveIncrementalParticipant = participant;
+                        capture.ActiveIncrementalCapture = incremental.BeginIncrementalCapture();
+                        if (capture.ActiveIncrementalCapture == null)
+                        {
+                            throw new ParticipantSaveException(
+                                PersistenceSaveStatus.ParticipantCaptureFailed,
+                                $"Participant '{participant.ParticipantKey}' returned no incremental capture.");
+                        }
+
+                        if (!capture.ActiveIncrementalCapture.TryContinue(
+                                out bool completed,
+                                out DeferredPersistenceParticipantCapture completedCapture,
+                                out string failureReason))
+                        {
+                            throw new ParticipantSaveException(
+                                PersistenceSaveStatus.ParticipantCaptureFailed,
+                                $"Participant '{participant.ParticipantKey}' failed incremental snapshot capture: {failureReason}");
+                        }
+
+                        if (!completed) continue;
+                        AddDeferredParticipantCapture(participant, completedCapture, capture.Envelope, capture.Captures);
+                        capture.ActiveIncrementalCapture = null;
+                        capture.ActiveIncrementalParticipant = null;
+                        capture.NextParticipantIndex++;
+                        continue;
+                    }
+
+                    CaptureDeferredParticipant(participant, capture.Envelope, capture.Captures);
+                    capture.NextParticipantIndex++;
+                }
+
+                if (!capture.IsComplete) return true;
+                capture.Envelope.participants.Sort(CompareRecords);
+                prepared = new PreparedPersistenceSave(this, capture.Paths, capture.Envelope, capture.Captures, capture.TransactionId)
+                {
+                    ReusedParticipantCount = capture.Captures.Count(item => item != null && item.WasReused)
+                };
+                SetOperation(PersistenceOperationState.Writing, PersistenceTransactionPhase.BuildEnvelope, capture.TransactionId, isSave: true);
+                return true;
+            }
+            catch (ParticipantSaveException exception)
+            {
+                failure = FinishSave(PersistenceSaveResult.Failure(exception.Status, capture.SlotId, capture.Paths.PrimaryPath, exception.Message, exception, capture.TransactionId, currentPhase));
+                return false;
+            }
+            catch (Exception exception)
+            {
+                failure = FinishSave(PersistenceSaveResult.Failure(PersistenceSaveStatus.UnknownException, capture.SlotId, capture.Paths.PrimaryPath, "Unexpected incremental save snapshot failure.", exception, capture.TransactionId, currentPhase));
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Performs CPU-heavy envelope finalization and atomic file I/O without touching live runtime
+        /// participants. This method is safe to call from a single background persistence worker.
+        /// </summary>
+        public PersistenceSaveResult WritePreparedSave(PreparedPersistenceSave prepared)
+        {
+            if (prepared == null || !ReferenceEquals(prepared.Owner, this) || prepared.Paths == null || prepared.Envelope == null)
+            {
+                return PersistenceSaveResult.Failure(PersistenceSaveStatus.UnknownException, prepared?.SlotId ?? string.Empty, prepared?.Path ?? string.Empty, "The prepared save does not belong to this persistence service.");
+            }
+
+            var totalTimer = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                var phaseTimer = System.Diagnostics.Stopwatch.StartNew();
+                for (int i = 0; i < prepared.Participants.Count; i++)
+                {
+                    PreparedPersistenceParticipant participant = prepared.Participants[i];
+                    if (participant?.Record == null || participant.DeferredCapture == null) continue;
+                    PersistenceParticipantSaveResult payload = participant.DeferredCapture.SerializePayload();
+                    if (payload == null || !payload.Succeeded || string.IsNullOrWhiteSpace(payload.PayloadJson))
+                    {
+                        return PersistenceSaveResult.Failure(
+                            PersistenceSaveStatus.SerializationFailed,
+                            prepared.SlotId,
+                            prepared.Path,
+                            payload?.Message ?? "Deferred participant serialization returned no payload.",
+                            transactionId: prepared.TransactionId,
+                            phase: PersistenceTransactionPhase.BuildEnvelope);
+                    }
+
+                    participant.Record.payloadJson = NormalizePayloadJsonStrict(payload.PayloadJson);
+                }
+                phaseTimer.Stop();
+                prepared.DeferredSerializationMilliseconds = phaseTimer.Elapsed.TotalMilliseconds;
+
+                phaseTimer.Restart();
+                prepared.Envelope.contentChecksum = ComputeChecksumFromNormalizedPayloads(prepared.Envelope);
+                phaseTimer.Stop();
+                double checksumMilliseconds = phaseTimer.Elapsed.TotalMilliseconds;
+
+                try
+                {
+                    pathProvider.EnsureDirectory();
+                }
+                catch (Exception exception)
+                {
+                    return PersistenceSaveResult.Failure(PersistenceSaveStatus.DirectoryCreationFailed, prepared.SlotId, prepared.Path, "Could not create save directory.", exception, prepared.TransactionId, PersistenceTransactionPhase.WriteTemporary);
+                }
+
+                PersistenceSaveResult result;
+                if (serializer is IStreamingSaveSerializer streamingSerializer)
+                {
+                    result = WritePreparedSaveStreaming(
+                        prepared.Paths,
+                        prepared.Envelope,
+                        streamingSerializer,
+                        prepared.TransactionId,
+                        out double serializationMilliseconds,
+                        out double atomicWriteMilliseconds,
+                        out long serializedBytes);
+                    prepared.EnvelopeSerializationMilliseconds = checksumMilliseconds + serializationMilliseconds;
+                    prepared.AtomicWriteMilliseconds = atomicWriteMilliseconds;
+                    prepared.SerializedBytes = serializedBytes;
+                }
+                else
+                {
+                    phaseTimer.Restart();
+                    string serialized = serializer.Serialize(prepared.Envelope, false);
+                    if (string.IsNullOrWhiteSpace(serialized))
+                    {
+                        return PersistenceSaveResult.Failure(PersistenceSaveStatus.SerializationFailed, prepared.SlotId, prepared.Path, "Save envelope serialized to empty JSON.", transactionId: prepared.TransactionId, phase: PersistenceTransactionPhase.BuildEnvelope);
+                    }
+                    phaseTimer.Stop();
+                    prepared.EnvelopeSerializationMilliseconds = checksumMilliseconds + phaseTimer.Elapsed.TotalMilliseconds;
+                    prepared.SerializedBytes = Encoding.UTF8.GetByteCount(serialized);
+
+                    phaseTimer.Restart();
+                    result = WriteAtomically(prepared.Paths, serialized, prepared.TransactionId, updateOperationState: false);
+                    phaseTimer.Stop();
+                    prepared.AtomicWriteMilliseconds = phaseTimer.Elapsed.TotalMilliseconds;
+                }
+                totalTimer.Stop();
+                prepared.TotalWriteMilliseconds = totalTimer.Elapsed.TotalMilliseconds;
+                return result;
+            }
+            catch (Exception exception)
+            {
+                totalTimer.Stop();
+                prepared.TotalWriteMilliseconds = totalTimer.Elapsed.TotalMilliseconds;
+                return PersistenceSaveResult.Failure(PersistenceSaveStatus.UnknownException, prepared.SlotId, prepared.Path, "Unexpected prepared save failure.", exception, prepared.TransactionId, PersistenceTransactionPhase.Failed);
+            }
+        }
+
+        /// <summary>
+        /// Finalizes a background save on the simulation thread and publishes normal persistence events.
+        /// </summary>
+        public PersistenceSaveResult CompletePreparedSave(PreparedPersistenceSave prepared, PersistenceSaveResult result)
+        {
+            if (prepared == null || !ReferenceEquals(prepared.Owner, this) || result == null)
+            {
+                return FinishSave(PersistenceSaveResult.Failure(PersistenceSaveStatus.UnknownException, prepared?.SlotId ?? string.Empty, prepared?.Path ?? string.Empty, "Cannot complete an invalid prepared save."));
+            }
+
+            if (!string.Equals(currentTransactionId, prepared.TransactionId, StringComparison.Ordinal))
+            {
+                return FinishSave(PersistenceSaveResult.Failure(PersistenceSaveStatus.UnknownException, prepared.SlotId, prepared.Path, "Prepared save completion does not match the active persistence transaction.", transactionId: prepared.TransactionId));
+            }
+
+            if (result.Succeeded)
+            {
+                RememberParticipantPayloads(prepared);
+                RememberHeader(prepared.Envelope);
+                SaveSlotsChanged?.Invoke();
+            }
+
+            return FinishSave(result);
         }
 
         public PersistenceLoadResult Load(string slotId, bool loadBackup = false)
@@ -274,6 +606,7 @@ namespace UnityIsekaiGame.GameData.Persistence
             }
 
             string path = loadBackup ? paths.BackupPath : paths.PrimaryPath;
+            participantPayloadCache.Clear();
             string transactionId = Guid.NewGuid().ToString("N");
             SetOperation(PersistenceOperationState.PreparingLoad, PersistenceTransactionPhase.Eligibility, transactionId, isSave: false);
             LoadStarted?.Invoke();
@@ -294,6 +627,8 @@ namespace UnityIsekaiGame.GameData.Persistence
                     PersistenceLoadStatus status = backupAvailable ? PersistenceLoadStatus.BackupAvailable : MapValidationToLoadStatus(validation.Status);
                     return FinishLoad(PersistenceLoadResult.Failure(status, slotId, path, validation.Message, backupAvailable, validation.Exception, transactionId, PersistenceTransactionPhase.ValidateEnvelope));
                 }
+
+                RememberHeader(validation.Envelope);
 
                 SetOperation(PersistenceOperationState.PreparingLoad, PersistenceTransactionPhase.PrepareParticipants, transactionId, isSave: false);
                 PersistenceLoadResult prepared = PrepareAndCommit(slotId, path, validation.Envelope, loadBackup, transactionId);
@@ -363,6 +698,7 @@ namespace UnityIsekaiGame.GameData.Persistence
                 DeleteIfExists(paths.PrimaryPath);
                 DeleteIfExists(paths.BackupPath);
                 DeleteIfExists(paths.TemporaryPath);
+                savedEnvelopeHeaders.Remove(slotId);
                 SaveSlotsChanged?.Invoke();
                 return PersistenceDeleteResult.Success(slotId, $"Deleted save slot '{slotId}'.");
             }
@@ -766,41 +1102,9 @@ namespace UnityIsekaiGame.GameData.Persistence
             }
         }
 
-        private GameSaveEnvelope BuildEnvelope(string slotId, string displayName, SaveSlotPaths paths, string transactionId)
+        private GameSaveEnvelope BuildEnvelope(string slotId, string displayName, SaveSlotPaths paths, string transactionId, bool computeChecksum)
         {
-            string now = DateTime.UtcNow.ToString("o");
-            GameSaveEnvelope previous = paths == null ? null : TryReadEnvelopeHeader(paths.PrimaryPath);
-            GameSaveEnvelope envelope = new GameSaveEnvelope
-            {
-                formatIdentifier = FormatIdentifier,
-                schemaVersion = CurrentSchemaVersion,
-                persistenceContext = (int)ContextKind,
-                gameVersion = GameVersion,
-                saveId = string.IsNullOrWhiteSpace(previous?.saveId) ? Guid.NewGuid().ToString("N") : previous.saveId,
-                slotId = slotId,
-                displayName = string.IsNullOrWhiteSpace(displayName) ? slotId : displayName,
-                worldId = WorldId,
-                playerId = PlayerId,
-                accountId = AccountId,
-                createdUtc = string.IsNullOrWhiteSpace(previous?.createdUtc) ? now : previous.createdUtc,
-                lastWrittenUtc = now,
-                playtimeSeconds = PlaytimeSecondsProvider == null ? previous?.playtimeSeconds ?? 0 : Math.Max(0d, PlaytimeSecondsProvider.Invoke()),
-                sceneSummary = string.Empty,
-                placeSummary = string.Empty,
-                playerSummary = string.Empty,
-                transactionId = string.IsNullOrWhiteSpace(transactionId) ? Guid.NewGuid().ToString("N") : transactionId,
-                parentTransactionId = previous?.transactionId ?? string.Empty,
-                saveRevision = Math.Max(0, previous?.saveRevision ?? 0) + 1,
-                completedWriteMarker = true
-            };
-
-            SaveMetadataSnapshot metadata = MetadataProvider?.CaptureMetadata();
-            if (metadata != null)
-            {
-                envelope.sceneSummary = metadata.SceneId ?? string.Empty;
-                envelope.placeSummary = metadata.PlaceId ?? string.Empty;
-                envelope.playerSummary = metadata.PlayerSummary ?? string.Empty;
-            }
+            GameSaveEnvelope envelope = CreateEnvelope(slotId, displayName, paths, transactionId);
 
             IReadOnlyList<IPersistenceParticipant> orderedParticipants = GetOrderedParticipants();
             foreach (IPersistenceParticipant participant in orderedParticipants)
@@ -833,20 +1137,192 @@ namespace UnityIsekaiGame.GameData.Persistence
                     ownerId = descriptor.OwnerId,
                     loadPhase = (int)descriptor.LoadPhase,
                     loadPriority = descriptor.LoadPriority,
-                    payloadJson = result.PayloadJson
+                    payloadJson = computeChecksum ? NormalizePayloadJson(result.PayloadJson) : result.PayloadJson
                 });
             }
 
             envelope.participants.Sort(CompareRecords);
-            envelope.contentChecksum = ComputeChecksum(envelope);
+            if (computeChecksum)
+            {
+                envelope.contentChecksum = ComputeChecksumFromNormalizedPayloads(envelope);
+            }
             return envelope;
         }
 
-        private PersistenceSaveResult WriteAtomically(SaveSlotPaths paths, string serialized, string transactionId)
+        private void CaptureDeferredParticipant(
+            IPersistenceParticipant participant,
+            GameSaveEnvelope envelope,
+            List<PreparedPersistenceParticipant> captures)
+        {
+            SaveParticipantRecord record = CreateParticipantRecord(participant);
+            long? capturedRevision = GetParticipantRevision(participant);
+
+            if (participant is IDeferredPersistenceParticipant deferred)
+            {
+                DeferredPersistenceParticipantCapture capture = deferred.CaptureDeferredPayload();
+                if (capture == null || !capture.Succeeded)
+                {
+                    throw new ParticipantSaveException(
+                        PersistenceSaveStatus.ParticipantCaptureFailed,
+                        $"Participant '{participant.ParticipantKey}' failed snapshot capture: {capture?.Message ?? "No result."}");
+                }
+
+                captures.Add(new PreparedPersistenceParticipant(record, capture, capturedRevision));
+            }
+            else
+            {
+                PersistenceParticipantSaveResult result = participant.CapturePayload();
+                if (result == null || !result.Succeeded || string.IsNullOrWhiteSpace(result.PayloadJson))
+                {
+                    throw new ParticipantSaveException(
+                        PersistenceSaveStatus.ParticipantCaptureFailed,
+                        $"Participant '{participant.ParticipantKey}' failed capture: {result?.Message ?? "No result."}");
+                }
+
+                PersistenceParticipantPrepareResult prepareResult = participant.PreparePayload(result.PayloadJson, participant.ParticipantSchemaVersion);
+                if (prepareResult == null || !prepareResult.Succeeded)
+                {
+                    throw new ParticipantSaveException(
+                        PersistenceSaveStatus.ParticipantValidationFailed,
+                        $"Participant '{participant.ParticipantKey}' failed self-validation: {prepareResult?.Message ?? "No result."}");
+                }
+
+                participant.DiscardPreparedPayload(prepareResult.PreparedPayload);
+                record.payloadJson = NormalizePayloadJsonStrict(result.PayloadJson);
+                captures.Add(new PreparedPersistenceParticipant(record, null, capturedRevision));
+            }
+
+            envelope.participants.Add(record);
+        }
+
+        private void AddDeferredParticipantCapture(
+            IPersistenceParticipant participant,
+            DeferredPersistenceParticipantCapture deferredCapture,
+            GameSaveEnvelope envelope,
+            List<PreparedPersistenceParticipant> captures)
+        {
+            if (deferredCapture == null || !deferredCapture.Succeeded)
+            {
+                throw new ParticipantSaveException(
+                    PersistenceSaveStatus.ParticipantCaptureFailed,
+                    $"Participant '{participant?.ParticipantKey}' failed incremental snapshot capture: {deferredCapture?.Message ?? "No result."}");
+            }
+
+            SaveParticipantRecord record = CreateParticipantRecord(participant);
+            captures.Add(new PreparedPersistenceParticipant(record, deferredCapture, GetParticipantRevision(participant)));
+            envelope.participants.Add(record);
+        }
+
+        private bool TryUseCachedParticipantPayload(
+            IPersistenceParticipant participant,
+            GameSaveEnvelope envelope,
+            List<PreparedPersistenceParticipant> captures)
+        {
+            long? revision = GetParticipantRevision(participant);
+            if (!revision.HasValue
+                || !participantPayloadCache.TryGetValue(participant.ParticipantKey, out CachedParticipantPayload cached)
+                || cached.Revision != revision.Value
+                || cached.SchemaVersion != participant.ParticipantSchemaVersion
+                || string.IsNullOrWhiteSpace(cached.PayloadJson))
+            {
+                return false;
+            }
+
+            SaveParticipantRecord record = CreateParticipantRecord(participant);
+            record.payloadJson = cached.PayloadJson;
+            captures.Add(new PreparedPersistenceParticipant(record, null, revision, wasReused: true));
+            envelope.participants.Add(record);
+            return true;
+        }
+
+        private SaveParticipantRecord CreateParticipantRecord(IPersistenceParticipant participant)
+        {
+            if (participant == null) throw new ArgumentNullException(nameof(participant));
+            PersistenceParticipantDescriptor descriptor = descriptorsByKey[participant.ParticipantKey];
+            return new SaveParticipantRecord
+            {
+                participantKey = participant.ParticipantKey,
+                participantSchemaVersion = descriptor.SchemaVersion,
+                required = descriptor.Required,
+                persistenceScope = (int)descriptor.Scope,
+                ownerId = descriptor.OwnerId,
+                loadPhase = (int)descriptor.LoadPhase,
+                loadPriority = descriptor.LoadPriority,
+                payloadJson = string.Empty
+            };
+        }
+
+        private static long? GetParticipantRevision(IPersistenceParticipant participant)
+        {
+            return participant is IPersistenceRevisionParticipant revisionParticipant
+                ? revisionParticipant.PersistenceRevision
+                : null;
+        }
+
+        private void RememberParticipantPayloads(PreparedPersistenceSave prepared)
+        {
+            if (prepared?.Participants == null) return;
+            for (int i = 0; i < prepared.Participants.Count; i++)
+            {
+                PreparedPersistenceParticipant participant = prepared.Participants[i];
+                if (participant?.Record == null
+                    || !participant.CapturedRevision.HasValue
+                    || string.IsNullOrWhiteSpace(participant.Record.payloadJson))
+                {
+                    continue;
+                }
+
+                participantPayloadCache[participant.Record.participantKey] = new CachedParticipantPayload(
+                    participant.Record.participantSchemaVersion,
+                    participant.CapturedRevision.Value,
+                    participant.Record.payloadJson);
+            }
+        }
+
+        private GameSaveEnvelope CreateEnvelope(string slotId, string displayName, SaveSlotPaths paths, string transactionId)
+        {
+            string now = DateTime.UtcNow.ToString("o");
+            SaveEnvelopeHeader previous = paths == null ? null : TryReadEnvelopeHeader(paths);
+            GameSaveEnvelope envelope = new GameSaveEnvelope
+            {
+                formatIdentifier = FormatIdentifier,
+                schemaVersion = CurrentSchemaVersion,
+                persistenceContext = (int)ContextKind,
+                gameVersion = GameVersion,
+                saveId = string.IsNullOrWhiteSpace(previous?.SaveId) ? Guid.NewGuid().ToString("N") : previous.SaveId,
+                slotId = slotId,
+                displayName = string.IsNullOrWhiteSpace(displayName) ? slotId : displayName,
+                worldId = WorldId,
+                playerId = PlayerId,
+                accountId = AccountId,
+                createdUtc = string.IsNullOrWhiteSpace(previous?.CreatedUtc) ? now : previous.CreatedUtc,
+                lastWrittenUtc = now,
+                playtimeSeconds = PlaytimeSecondsProvider == null ? previous?.PlaytimeSeconds ?? 0 : Math.Max(0d, PlaytimeSecondsProvider.Invoke()),
+                sceneSummary = string.Empty,
+                placeSummary = string.Empty,
+                playerSummary = string.Empty,
+                transactionId = string.IsNullOrWhiteSpace(transactionId) ? Guid.NewGuid().ToString("N") : transactionId,
+                parentTransactionId = previous?.TransactionId ?? string.Empty,
+                saveRevision = Math.Max(0, previous?.SaveRevision ?? 0) + 1,
+                completedWriteMarker = true
+            };
+
+            SaveMetadataSnapshot metadata = MetadataProvider?.CaptureMetadata();
+            if (metadata != null)
+            {
+                envelope.sceneSummary = metadata.SceneId ?? string.Empty;
+                envelope.placeSummary = metadata.PlaceId ?? string.Empty;
+                envelope.playerSummary = metadata.PlayerSummary ?? string.Empty;
+            }
+
+            return envelope;
+        }
+
+        private PersistenceSaveResult WriteAtomically(SaveSlotPaths paths, string serialized, string transactionId, bool updateOperationState = true)
         {
             try
             {
-                SetOperation(PersistenceOperationState.Writing, PersistenceTransactionPhase.WriteTemporary, transactionId, isSave: true);
+                if (updateOperationState) SetOperation(PersistenceOperationState.Writing, PersistenceTransactionPhase.WriteTemporary, transactionId, isSave: true);
                 DeleteIfExists(paths.TemporaryPath);
                 File.WriteAllText(paths.TemporaryPath, serialized, Encoding.UTF8);
             }
@@ -855,8 +1331,8 @@ namespace UnityIsekaiGame.GameData.Persistence
                 return PersistenceSaveResult.Failure(PersistenceSaveStatus.TemporaryWriteFailed, paths.SlotId, paths.PrimaryPath, "Could not write temporary save file.", exception, transactionId, PersistenceTransactionPhase.WriteTemporary);
             }
 
-            SetOperation(PersistenceOperationState.Writing, PersistenceTransactionPhase.VerifyTemporary, transactionId, isSave: true);
-            if (Faulted(PersistenceFaultInjectionPoint.TemporaryVerification, out string tempFailure))
+            if (updateOperationState) SetOperation(PersistenceOperationState.Writing, PersistenceTransactionPhase.VerifyTemporary, transactionId, isSave: true);
+            if (updateOperationState && Faulted(PersistenceFaultInjectionPoint.TemporaryVerification, out string tempFailure))
             {
                 DeleteIfExists(paths.TemporaryPath);
                 return PersistenceSaveResult.Failure(PersistenceSaveStatus.TemporaryWriteFailed, paths.SlotId, paths.PrimaryPath, tempFailure, transactionId: transactionId, phase: PersistenceTransactionPhase.VerifyTemporary);
@@ -871,8 +1347,8 @@ namespace UnityIsekaiGame.GameData.Persistence
 
             try
             {
-                SetOperation(PersistenceOperationState.Writing, PersistenceTransactionPhase.PreservePrevious, transactionId, isSave: true);
-                if (Faulted(PersistenceFaultInjectionPoint.BackupPreservation, out string backupFailure))
+                if (updateOperationState) SetOperation(PersistenceOperationState.Writing, PersistenceTransactionPhase.PreservePrevious, transactionId, isSave: true);
+                if (updateOperationState && Faulted(PersistenceFaultInjectionPoint.BackupPreservation, out string backupFailure))
                 {
                     DeleteIfExists(paths.TemporaryPath);
                     return PersistenceSaveResult.Failure(PersistenceSaveStatus.BackupFailed, paths.SlotId, paths.PrimaryPath, backupFailure, transactionId: transactionId, phase: PersistenceTransactionPhase.PreservePrevious);
@@ -891,8 +1367,8 @@ namespace UnityIsekaiGame.GameData.Persistence
 
             try
             {
-                SetOperation(PersistenceOperationState.Writing, PersistenceTransactionPhase.PromotePrimary, transactionId, isSave: true);
-                if (Faulted(PersistenceFaultInjectionPoint.PrimaryPromotion, out string promotionFailure))
+                if (updateOperationState) SetOperation(PersistenceOperationState.Writing, PersistenceTransactionPhase.PromotePrimary, transactionId, isSave: true);
+                if (updateOperationState && Faulted(PersistenceFaultInjectionPoint.PrimaryPromotion, out string promotionFailure))
                 {
                     DeleteIfExists(paths.TemporaryPath);
                     return PersistenceSaveResult.Failure(PersistenceSaveStatus.ReplacementFailed, paths.SlotId, paths.PrimaryPath, promotionFailure, transactionId: transactionId, phase: PersistenceTransactionPhase.PromotePrimary);
@@ -1269,7 +1745,7 @@ namespace UnityIsekaiGame.GameData.Persistence
             }
 
             envelope.participants?.Sort(CompareRecords);
-            string expectedChecksum = ComputeChecksum(envelope);
+            string expectedChecksum = ComputeChecksumFromNormalizedPayloads(envelope);
             if (!string.Equals(envelope.contentChecksum, expectedChecksum, StringComparison.Ordinal))
             {
                 return PersistenceValidationResult.Failure(PersistenceValidationStatus.ChecksumMismatch, slotId, path, "Save checksum does not match the envelope content.");
@@ -1607,32 +2083,143 @@ namespace UnityIsekaiGame.GameData.Persistence
 
         public static string ComputeChecksum(GameSaveEnvelope envelope)
         {
+            return ComputeChecksum(envelope, normalizePayloads: true);
+        }
+
+        private PersistenceSaveResult WritePreparedSaveStreaming(
+            SaveSlotPaths paths,
+            GameSaveEnvelope envelope,
+            IStreamingSaveSerializer streamingSerializer,
+            string transactionId,
+            out double serializationMilliseconds,
+            out double atomicWriteMilliseconds,
+            out long serializedBytes)
+        {
+            serializationMilliseconds = 0d;
+            atomicWriteMilliseconds = 0d;
+            serializedBytes = 0L;
+            try
+            {
+                DeleteIfExists(paths.TemporaryPath);
+                var timer = System.Diagnostics.Stopwatch.StartNew();
+                using (var stream = new FileStream(
+                           paths.TemporaryPath,
+                           FileMode.CreateNew,
+                           FileAccess.Write,
+                           FileShare.None,
+                           StreamingIoBufferBytes,
+                           FileOptions.SequentialScan))
+                using (var writer = new StreamWriter(stream, Utf8WithoutBom, StreamingIoBufferBytes, leaveOpen: true))
+                {
+                    streamingSerializer.Serialize(writer, envelope, false);
+                    writer.Flush();
+                    stream.Flush(flushToDisk: true);
+                    serializedBytes = stream.Length;
+                }
+                timer.Stop();
+                serializationMilliseconds = timer.Elapsed.TotalMilliseconds;
+                if (serializedBytes <= 2L)
+                {
+                    DeleteIfExists(paths.TemporaryPath);
+                    return PersistenceSaveResult.Failure(
+                        PersistenceSaveStatus.TemporaryWriteFailed,
+                        paths.SlotId,
+                        paths.PrimaryPath,
+                        "Streamed save file was empty.",
+                        transactionId: transactionId,
+                        phase: PersistenceTransactionPhase.WriteTemporary);
+                }
+
+                timer.Restart();
+                if (File.Exists(paths.PrimaryPath))
+                {
+                    DeleteIfExists(paths.BackupPath);
+                    try
+                    {
+                        // File.Replace performs a same-volume atomic promotion and preserves the old
+                        // checkpoint without copying its full contents through managed memory.
+                        File.Replace(paths.TemporaryPath, paths.PrimaryPath, paths.BackupPath, ignoreMetadataErrors: true);
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        File.Copy(paths.PrimaryPath, paths.BackupPath, true);
+                        File.Delete(paths.PrimaryPath);
+                        File.Move(paths.TemporaryPath, paths.PrimaryPath);
+                    }
+                }
+                else
+                {
+                    File.Move(paths.TemporaryPath, paths.PrimaryPath);
+                }
+                timer.Stop();
+                atomicWriteMilliseconds = timer.Elapsed.TotalMilliseconds;
+                return PersistenceSaveResult.Success(
+                    paths.SlotId,
+                    paths.PrimaryPath,
+                    "Atomic streamed save write completed.",
+                    transactionId,
+                    PersistenceTransactionPhase.PromotePrimary);
+            }
+            catch (JsonException exception)
+            {
+                DeleteIfExists(paths.TemporaryPath);
+                return PersistenceSaveResult.Failure(
+                    PersistenceSaveStatus.SerializationFailed,
+                    paths.SlotId,
+                    paths.PrimaryPath,
+                    "Could not stream the save envelope.",
+                    exception,
+                    transactionId,
+                    PersistenceTransactionPhase.BuildEnvelope);
+            }
+            catch (Exception exception)
+            {
+                DeleteIfExists(paths.TemporaryPath);
+                return PersistenceSaveResult.Failure(
+                    PersistenceSaveStatus.TemporaryWriteFailed,
+                    paths.SlotId,
+                    paths.PrimaryPath,
+                    "Could not stream or promote the temporary save file.",
+                    exception,
+                    transactionId,
+                    PersistenceTransactionPhase.WriteTemporary);
+            }
+        }
+
+        private static string ComputeChecksumFromNormalizedPayloads(GameSaveEnvelope envelope)
+        {
+            return ComputeChecksum(envelope, normalizePayloads: false);
+        }
+
+        private static string ComputeChecksum(GameSaveEnvelope envelope, bool normalizePayloads)
+        {
             if (envelope == null)
             {
                 return string.Empty;
             }
 
-            StringBuilder builder = new StringBuilder();
-            AppendCanonical(builder, envelope.formatIdentifier);
-            AppendCanonical(builder, envelope.schemaVersion.ToString(CultureInfo.InvariantCulture));
-            AppendCanonical(builder, envelope.persistenceContext.ToString(CultureInfo.InvariantCulture));
-            AppendCanonical(builder, envelope.gameVersion);
-            AppendCanonical(builder, envelope.saveId);
-            AppendCanonical(builder, envelope.slotId);
-            AppendCanonical(builder, envelope.displayName);
-            AppendCanonical(builder, envelope.worldId);
-            AppendCanonical(builder, envelope.playerId);
-            AppendCanonical(builder, envelope.accountId);
-            AppendCanonical(builder, envelope.createdUtc);
-            AppendCanonical(builder, envelope.lastWrittenUtc);
-            AppendCanonical(builder, envelope.playtimeSeconds.ToString("R", CultureInfo.InvariantCulture));
-            AppendCanonical(builder, envelope.sceneSummary);
-            AppendCanonical(builder, envelope.placeSummary);
-            AppendCanonical(builder, envelope.playerSummary);
-            AppendCanonical(builder, envelope.transactionId);
-            AppendCanonical(builder, envelope.parentTransactionId);
-            AppendCanonical(builder, envelope.saveRevision.ToString(CultureInfo.InvariantCulture));
-            AppendCanonical(builder, envelope.completedWriteMarker ? "1" : "0");
+            using SHA256 sha = SHA256.Create();
+            byte[] utf8Buffer = new byte[16 * 1024];
+            AppendCanonical(sha, utf8Buffer, envelope.formatIdentifier);
+            AppendCanonical(sha, utf8Buffer, envelope.schemaVersion.ToString(CultureInfo.InvariantCulture));
+            AppendCanonical(sha, utf8Buffer, envelope.persistenceContext.ToString(CultureInfo.InvariantCulture));
+            AppendCanonical(sha, utf8Buffer, envelope.gameVersion);
+            AppendCanonical(sha, utf8Buffer, envelope.saveId);
+            AppendCanonical(sha, utf8Buffer, envelope.slotId);
+            AppendCanonical(sha, utf8Buffer, envelope.displayName);
+            AppendCanonical(sha, utf8Buffer, envelope.worldId);
+            AppendCanonical(sha, utf8Buffer, envelope.playerId);
+            AppendCanonical(sha, utf8Buffer, envelope.accountId);
+            AppendCanonical(sha, utf8Buffer, envelope.createdUtc);
+            AppendCanonical(sha, utf8Buffer, envelope.lastWrittenUtc);
+            AppendCanonical(sha, utf8Buffer, envelope.playtimeSeconds.ToString("R", CultureInfo.InvariantCulture));
+            AppendCanonical(sha, utf8Buffer, envelope.sceneSummary);
+            AppendCanonical(sha, utf8Buffer, envelope.placeSummary);
+            AppendCanonical(sha, utf8Buffer, envelope.playerSummary);
+            AppendCanonical(sha, utf8Buffer, envelope.transactionId);
+            AppendCanonical(sha, utf8Buffer, envelope.parentTransactionId);
+            AppendCanonical(sha, utf8Buffer, envelope.saveRevision.ToString(CultureInfo.InvariantCulture));
+            AppendCanonical(sha, utf8Buffer, envelope.completedWriteMarker ? "1" : "0");
 
             IReadOnlyList<SaveParticipantRecord> records = envelope.participants == null
                 ? Array.Empty<SaveParticipantRecord>()
@@ -1640,18 +2227,18 @@ namespace UnityIsekaiGame.GameData.Persistence
             for (int i = 0; i < records.Count; i++)
             {
                 SaveParticipantRecord record = records[i];
-                AppendCanonical(builder, record?.participantKey);
-                AppendCanonical(builder, (record?.participantSchemaVersion ?? 0).ToString(CultureInfo.InvariantCulture));
-                AppendCanonical(builder, record?.required == true ? "1" : "0");
-                AppendCanonical(builder, (record?.persistenceScope ?? 0).ToString(CultureInfo.InvariantCulture));
-                AppendCanonical(builder, record?.ownerId);
-                AppendCanonical(builder, (record?.loadPhase ?? 0).ToString(CultureInfo.InvariantCulture));
-                AppendCanonical(builder, (record?.loadPriority ?? 0).ToString(CultureInfo.InvariantCulture));
-                AppendCanonical(builder, NormalizePayloadJson(record?.payloadJson));
+                AppendCanonical(sha, utf8Buffer, record?.participantKey);
+                AppendCanonical(sha, utf8Buffer, (record?.participantSchemaVersion ?? 0).ToString(CultureInfo.InvariantCulture));
+                AppendCanonical(sha, utf8Buffer, record?.required == true ? "1" : "0");
+                AppendCanonical(sha, utf8Buffer, (record?.persistenceScope ?? 0).ToString(CultureInfo.InvariantCulture));
+                AppendCanonical(sha, utf8Buffer, record?.ownerId);
+                AppendCanonical(sha, utf8Buffer, (record?.loadPhase ?? 0).ToString(CultureInfo.InvariantCulture));
+                AppendCanonical(sha, utf8Buffer, (record?.loadPriority ?? 0).ToString(CultureInfo.InvariantCulture));
+                AppendCanonical(sha, utf8Buffer, normalizePayloads ? NormalizePayloadJson(record?.payloadJson) : record?.payloadJson);
             }
 
-            using SHA256 sha = SHA256.Create();
-            byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(builder.ToString()));
+            sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            byte[] hash = sha.Hash;
             StringBuilder hex = new StringBuilder(hash.Length * 2);
             for (int i = 0; i < hash.Length; i++)
             {
@@ -1678,29 +2265,113 @@ namespace UnityIsekaiGame.GameData.Persistence
             }
         }
 
-        private static void AppendCanonical(StringBuilder builder, string value)
+        private static string NormalizePayloadJsonStrict(string payloadJson)
         {
-            string normalized = value ?? string.Empty;
-            builder.Append(normalized.Length.ToString(CultureInfo.InvariantCulture))
-                .Append(':')
-                .Append(normalized);
+            if (string.IsNullOrWhiteSpace(payloadJson))
+            {
+                throw new JsonSerializationException("Participant payload JSON is empty.");
+            }
+
+            return JToken.Parse(payloadJson).ToString(Formatting.None);
         }
 
-        private GameSaveEnvelope TryReadEnvelopeHeader(string path)
+        private static void AppendCanonical(HashAlgorithm hash, byte[] utf8Buffer, string value)
         {
-            if (!File.Exists(path))
+            string normalized = value ?? string.Empty;
+            AppendUtf8(hash, utf8Buffer, normalized.Length.ToString(CultureInfo.InvariantCulture));
+            AppendUtf8(hash, utf8Buffer, ":");
+            AppendUtf8(hash, utf8Buffer, normalized);
+        }
+
+        private static void AppendUtf8(HashAlgorithm hash, byte[] buffer, string value)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+            const int MaximumCharactersPerBlock = 4096;
+            int characterOffset = 0;
+            while (characterOffset < value.Length)
+            {
+                int characterCount = Math.Min(MaximumCharactersPerBlock, value.Length - characterOffset);
+                if (characterOffset + characterCount < value.Length
+                    && char.IsHighSurrogate(value[characterOffset + characterCount - 1]))
+                {
+                    characterCount--;
+                }
+
+                int byteCount = Encoding.UTF8.GetBytes(value, characterOffset, characterCount, buffer, 0);
+                hash.TransformBlock(buffer, 0, byteCount, buffer, 0);
+                characterOffset += characterCount;
+            }
+        }
+
+        private SaveEnvelopeHeader TryReadEnvelopeHeader(SaveSlotPaths paths)
+        {
+            if (paths == null)
+            {
+                return null;
+            }
+
+            if (savedEnvelopeHeaders.TryGetValue(paths.SlotId, out SaveEnvelopeHeader cached))
+            {
+                return cached;
+            }
+
+            if (!File.Exists(paths.PrimaryPath))
             {
                 return null;
             }
 
             try
             {
-                return serializer.Deserialize<GameSaveEnvelope>(File.ReadAllText(path, Encoding.UTF8));
+                GameSaveEnvelope envelope = serializer.Deserialize<GameSaveEnvelope>(File.ReadAllText(paths.PrimaryPath, Encoding.UTF8));
+                RememberHeader(envelope);
+                return savedEnvelopeHeaders.TryGetValue(paths.SlotId, out SaveEnvelopeHeader loaded) ? loaded : null;
             }
             catch
             {
                 return null;
             }
+        }
+
+        private static void NormalizeParticipantPayloads(GameSaveEnvelope envelope)
+        {
+            if (envelope?.participants == null) return;
+            for (int i = 0; i < envelope.participants.Count; i++)
+            {
+                SaveParticipantRecord record = envelope.participants[i];
+                if (record != null)
+                {
+                    record.payloadJson = NormalizePayloadJson(record.payloadJson);
+                }
+            }
+        }
+
+        private void RememberHeader(GameSaveEnvelope envelope)
+        {
+            if (envelope == null || string.IsNullOrWhiteSpace(envelope.slotId)) return;
+            savedEnvelopeHeaders[envelope.slotId] = new SaveEnvelopeHeader(
+                envelope.saveId,
+                envelope.createdUtc,
+                envelope.transactionId,
+                envelope.saveRevision,
+                envelope.playtimeSeconds);
+        }
+
+        private sealed class SaveEnvelopeHeader
+        {
+            public SaveEnvelopeHeader(string saveId, string createdUtc, string transactionId, int saveRevision, double playtimeSeconds)
+            {
+                SaveId = saveId ?? string.Empty;
+                CreatedUtc = createdUtc ?? string.Empty;
+                TransactionId = transactionId ?? string.Empty;
+                SaveRevision = saveRevision;
+                PlaytimeSeconds = playtimeSeconds;
+            }
+
+            public string SaveId { get; }
+            public string CreatedUtc { get; }
+            public string TransactionId { get; }
+            public int SaveRevision { get; }
+            public double PlaytimeSeconds { get; }
         }
 
         private PersistenceSaveResult FinishSave(PersistenceSaveResult result)
@@ -1870,6 +2541,20 @@ namespace UnityIsekaiGame.GameData.Persistence
 
             public IPersistenceParticipant Participant { get; }
             public object PreparedPayload { get; }
+        }
+
+        private sealed class CachedParticipantPayload
+        {
+            public CachedParticipantPayload(int schemaVersion, long revision, string payloadJson)
+            {
+                SchemaVersion = schemaVersion;
+                Revision = revision;
+                PayloadJson = payloadJson ?? string.Empty;
+            }
+
+            public int SchemaVersion { get; }
+            public long Revision { get; }
+            public string PayloadJson { get; }
         }
 
         private sealed class ParticipantSaveException : Exception

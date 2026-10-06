@@ -30,6 +30,45 @@ namespace UnityIsekaiGame.Networking.Server
 
         public Vector3 Position => new Vector3(positionX, positionY, positionZ);
 
+        public ServerPlayerProfileData Clone()
+        {
+            return new ServerPlayerProfileData
+            {
+                formatVersion = formatVersion,
+                playerId = playerId ?? string.Empty,
+                personId = personId ?? string.Empty,
+                actorId = actorId ?? string.Empty,
+                revision = revision,
+                savedAtUnixMilliseconds = savedAtUnixMilliseconds,
+                positionX = positionX,
+                positionY = positionY,
+                positionZ = positionZ,
+                yawDegrees = yawDegrees,
+                vitals = vitals,
+                inventory = CloneInventory(inventory),
+                equipment = CloneEquipment(equipment)
+            };
+        }
+
+        public bool HasSamePersistentState(ServerPlayerProfileData other)
+        {
+            if (other == null
+                || !string.Equals(playerId, other.playerId, StringComparison.Ordinal)
+                || !string.Equals(personId, other.personId, StringComparison.Ordinal)
+                || !string.Equals(actorId, other.actorId, StringComparison.Ordinal)
+                || Math.Abs(positionX - other.positionX) > 0.01f
+                || Math.Abs(positionY - other.positionY) > 0.01f
+                || Math.Abs(positionZ - other.positionZ) > 0.01f
+                || Math.Abs(Mathf.DeltaAngle(yawDegrees, other.yawDegrees)) > 0.1f
+                || !vitals.Equals(other.vitals))
+            {
+                return false;
+            }
+
+            if (!InventoryEquals(inventory, other.inventory)) return false;
+            return EquipmentEquals(equipment, other.equipment);
+        }
+
         public static ServerPlayerProfileData Create(
             PlayerSessionSnapshot session,
             Vector3 position,
@@ -54,6 +93,98 @@ namespace UnityIsekaiGame.Networking.Server
                 inventory = initialInventory,
                 equipment = initialEquipment
             };
+        }
+
+        private static InventorySaveData CloneInventory(InventorySaveData source)
+        {
+            InventorySaveData copy = new InventorySaveData { slotCapacity = source?.slotCapacity ?? 0 };
+            if (source?.entries == null) return copy;
+            for (int i = 0; i < source.entries.Count; i++)
+            {
+                InventoryEntrySaveData entry = source.entries[i];
+                if (entry == null) continue;
+                copy.entries.Add(new InventoryEntrySaveData
+                {
+                    mode = entry.mode,
+                    definitionId = entry.definitionId ?? string.Empty,
+                    itemInstanceId = entry.itemInstanceId ?? string.Empty,
+                    quantity = entry.quantity
+                });
+            }
+
+            return copy;
+        }
+
+        private static EquipmentSaveData CloneEquipment(EquipmentSaveData source)
+        {
+            EquipmentSaveData copy = new EquipmentSaveData();
+            if (source?.slots == null) return copy;
+            for (int i = 0; i < source.slots.Count; i++)
+            {
+                EquipmentSlotSaveData slot = source.slots[i];
+                if (slot == null) continue;
+                copy.slots.Add(new EquipmentSlotSaveData
+                {
+                    slotType = slot.slotType,
+                    mode = slot.mode,
+                    definitionId = slot.definitionId ?? string.Empty,
+                    itemInstanceId = slot.itemInstanceId ?? string.Empty
+                });
+            }
+
+            return copy;
+        }
+
+        private static bool InventoryEquals(InventorySaveData first, InventorySaveData second)
+        {
+            if (ReferenceEquals(first, second)) return true;
+            if (first == null || second == null || first.slotCapacity != second.slotCapacity) return false;
+            int firstCount = first.entries?.Count ?? 0;
+            int secondCount = second.entries?.Count ?? 0;
+            if (firstCount != secondCount) return false;
+            for (int i = 0; i < firstCount; i++)
+            {
+                InventoryEntrySaveData left = first.entries[i];
+                InventoryEntrySaveData right = second.entries[i];
+                if (left == null || right == null)
+                {
+                    if (!ReferenceEquals(left, right)) return false;
+                    continue;
+                }
+
+                if (left.mode != right.mode
+                    || left.quantity != right.quantity
+                    || !string.Equals(left.definitionId, right.definitionId, StringComparison.Ordinal)
+                    || !string.Equals(left.itemInstanceId, right.itemInstanceId, StringComparison.Ordinal)) return false;
+            }
+
+            return true;
+        }
+
+        private static bool EquipmentEquals(EquipmentSaveData first, EquipmentSaveData second)
+        {
+            if (ReferenceEquals(first, second)) return true;
+            if (first == null || second == null) return false;
+            int firstCount = first.slots?.Count ?? 0;
+            int secondCount = second.slots?.Count ?? 0;
+            if (firstCount != secondCount) return false;
+            for (int i = 0; i < firstCount; i++)
+            {
+                EquipmentSlotSaveData left = first.slots[i];
+                EquipmentSlotSaveData right = second.slots[i];
+                if (left == null || right == null)
+                {
+                    if (!ReferenceEquals(left, right)) return false;
+                    continue;
+                }
+
+                if (left.slotType != right.slotType
+                    || left.mode != right.mode
+                    || !string.Equals(left.definitionId, right.definitionId, StringComparison.Ordinal)
+                    || !string.Equals(left.itemInstanceId, right.itemInstanceId, StringComparison.Ordinal)) return false;
+            }
+
+            return true;
         }
     }
 

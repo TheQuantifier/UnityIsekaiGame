@@ -286,6 +286,97 @@ namespace UnityIsekaiGame.GameData.Persistence
         public string payloadJson;
     }
 
+    /// <summary>
+    /// Immutable save snapshot captured from runtime participants on the simulation thread.
+    /// Expensive checksum, envelope serialization, validation, and disk I/O can be completed
+    /// by a background writer without reading live gameplay state.
+    /// </summary>
+    public sealed class PreparedPersistenceSave
+    {
+        internal PreparedPersistenceSave(
+            PersistenceService owner,
+            SaveSlotPaths paths,
+            GameSaveEnvelope envelope,
+            IReadOnlyList<PreparedPersistenceParticipant> participants,
+            string transactionId)
+        {
+            Owner = owner;
+            Paths = paths;
+            Envelope = envelope;
+            Participants = participants ?? Array.Empty<PreparedPersistenceParticipant>();
+            TransactionId = transactionId ?? string.Empty;
+        }
+
+        internal PersistenceService Owner { get; }
+        internal SaveSlotPaths Paths { get; }
+        internal GameSaveEnvelope Envelope { get; }
+        internal IReadOnlyList<PreparedPersistenceParticipant> Participants { get; }
+
+        public string SlotId => Paths?.SlotId ?? string.Empty;
+        public string Path => Paths?.PrimaryPath ?? string.Empty;
+        public string TransactionId { get; }
+        public double DeferredSerializationMilliseconds { get; internal set; }
+        public double EnvelopeSerializationMilliseconds { get; internal set; }
+        public double AtomicWriteMilliseconds { get; internal set; }
+        public double TotalWriteMilliseconds { get; internal set; }
+        public long SerializedBytes { get; internal set; }
+        public int ReusedParticipantCount { get; internal set; }
+    }
+
+    public sealed class PreparedPersistenceSaveCapture
+    {
+        internal PreparedPersistenceSaveCapture(
+            PersistenceService owner,
+            SaveSlotPaths paths,
+            GameSaveEnvelope envelope,
+            IReadOnlyList<IPersistenceParticipant> participants,
+            string transactionId)
+        {
+            Owner = owner;
+            Paths = paths;
+            Envelope = envelope;
+            Participants = participants ?? Array.Empty<IPersistenceParticipant>();
+            TransactionId = transactionId ?? string.Empty;
+        }
+
+        internal PersistenceService Owner { get; }
+        internal SaveSlotPaths Paths { get; }
+        internal GameSaveEnvelope Envelope { get; }
+        internal IReadOnlyList<IPersistenceParticipant> Participants { get; }
+        internal List<PreparedPersistenceParticipant> Captures { get; } = new List<PreparedPersistenceParticipant>();
+        internal int NextParticipantIndex { get; set; }
+        internal string LastCapturedParticipantKeyValue { get; set; } = string.Empty;
+        internal IIncrementalPersistenceCapture ActiveIncrementalCapture { get; set; }
+        internal IPersistenceParticipant ActiveIncrementalParticipant { get; set; }
+
+        public string SlotId => Paths?.SlotId ?? string.Empty;
+        public string TransactionId { get; }
+        public int CapturedParticipantCount => NextParticipantIndex;
+        public int TotalParticipantCount => Participants.Count;
+        public bool IsComplete => NextParticipantIndex >= Participants.Count;
+        public string LastCapturedParticipantKey => LastCapturedParticipantKeyValue;
+    }
+
+    internal sealed class PreparedPersistenceParticipant
+    {
+        public PreparedPersistenceParticipant(
+            SaveParticipantRecord record,
+            DeferredPersistenceParticipantCapture deferredCapture,
+            long? capturedRevision = null,
+            bool wasReused = false)
+        {
+            Record = record;
+            DeferredCapture = deferredCapture;
+            CapturedRevision = capturedRevision;
+            WasReused = wasReused;
+        }
+
+        public SaveParticipantRecord Record { get; }
+        public DeferredPersistenceParticipantCapture DeferredCapture { get; }
+        public long? CapturedRevision { get; }
+        public bool WasReused { get; }
+    }
+
     [Serializable]
     public sealed class SaveSlotMetadata
     {

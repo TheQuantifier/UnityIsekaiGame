@@ -6,10 +6,13 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityIsekaiGame.CharacterSystem;
+using UnityIsekaiGame.Beings.Biology;
 using UnityIsekaiGame.Combat;
 using UnityIsekaiGame.Equipment;
 using UnityIsekaiGame.Gameplay;
 using UnityIsekaiGame.Presentation;
+using UnityIsekaiGame.People;
+using UnityIsekaiGame.Progression;
 using UnityIsekaiGame.Skills;
 using UnityIsekaiGame.StatusEffects;
 using UnityIsekaiGame.Stats;
@@ -23,6 +26,16 @@ using ConsumablePresentationType = UnityIsekaiGame.Inventory.ConsumablePresentat
 
 namespace UnityIsekaiGame.UI.Inventory
 {
+    public enum InventoryPrimaryActionKind
+    {
+        None = 0,
+        Use = 1,
+        Equip = 2,
+        Unequip = 3,
+        Eat = 4,
+        Drink = 5
+    }
+
     public sealed class InventoryScreenView : MonoBehaviour
     {
         private const float NavigationButtonHeight = 42f;
@@ -56,6 +69,7 @@ namespace UnityIsekaiGame.UI.Inventory
         [SerializeField] private Text selectedItemStatusText;
         [SerializeField] private Text selectedItemDetailsText;
         [SerializeField] private GameObject equipmentComparisonTooltipRoot;
+        [SerializeField] private Text equipmentComparisonTooltipHeading;
         [SerializeField] private Text equipmentComparisonTooltipText;
         [SerializeField] private GameObject inventoryContentRoot;
         [SerializeField] private GameObject characterContentRoot;
@@ -85,8 +99,10 @@ namespace UnityIsekaiGame.UI.Inventory
         private Action dropSelected;
         private Action dropAllSelected;
         private Action unequipSelected;
-        private bool primaryActionUsesItem;
-        private bool primaryActionUnequipsItem;
+        private InventoryPrimaryActionKind primaryActionKind;
+        private bool dropActionAvailable;
+        private bool dropAllActionAvailable;
+        private RectTransform inventoryTooltipOverlayRoot;
         private InventoryMenuSection activeSection = InventoryMenuSection.Inventory;
         private InventoryMenuExtensionBinding activeExtension;
         private InventoryMenuSection appliedSection;
@@ -102,6 +118,17 @@ namespace UnityIsekaiGame.UI.Inventory
         private ScrollRect selectedItemDetailsScroll;
         private ScrollRect equipmentComparisonTooltipScroll;
         private ScrollRect characterStatsScroll;
+        private RectTransform characterPreviewRoot;
+        private Text characterBasicInfoText;
+        private Text characterRolesText;
+        private Text characterSkillsText;
+        private RectTransform characterBaseStatsContent;
+        private RectTransform characterAdvancedStatsContent;
+        private GameObject characterStatTooltipRoot;
+        private Text characterStatTooltipHeading;
+        private Text characterStatTooltipText;
+        private readonly List<CharacterStatRow> characterBaseStatRows = new List<CharacterStatRow>();
+        private readonly List<CharacterStatRow> characterAdvancedStatRows = new List<CharacterStatRow>();
         private ScrollRect inventorySlotsScroll;
         private GridLayoutGroup inventorySlotGridLayout;
         private RectTransform inventorySlotGridRect;
@@ -118,6 +145,8 @@ namespace UnityIsekaiGame.UI.Inventory
         private bool primaryActionIsHovered;
         private EventTrigger.Entry primaryActionEnterEntry;
         private EventTrigger.Entry primaryActionExitEntry;
+
+        public InventoryPrimaryActionKind PrimaryActionKind => primaryActionKind;
 
         private void Awake()
         {
@@ -167,7 +196,7 @@ namespace UnityIsekaiGame.UI.Inventory
             dropActionIcon = drop;
             consumeFoodActionIcon = consumeFood;
             consumePotionActionIcon = consumePotion;
-            RefreshInventoryActionIcons(primaryActionUnequipsItem);
+            RefreshInventoryActionIcons();
         }
 
         public void EnsureInventorySlotCapacity(int requiredCount)
@@ -562,16 +591,67 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
+            ShowItemHoverTooltip("EQUIPMENT COMPARISON", comparison);
+        }
+
+        public void ShowInventoryHoverPreview(InventorySlot slot)
+        {
+            if (slot == null || slot.IsEmpty || slot.Item == null)
+            {
+                HideInventoryHoverPreview();
+                return;
+            }
+
+            string stack = slot.Item.Stackable ? $"<b>Stack:</b> {slot.Quantity} / {slot.Item.MaximumStackSize}\n\n" : string.Empty;
+            ShowItemHoverTooltip(
+                InventoryItemDetailsFormatter.GetHeader(slot).ToUpperInvariant(),
+                stack + InventoryItemDetailsFormatter.FormatDetails(slot, includeDescription: true));
+        }
+
+        public void ShowInventoryHoverPreview(EquipmentSlotState slot)
+        {
+            if (slot == null || slot.IsEmpty || slot.Item == null)
+            {
+                HideInventoryHoverPreview();
+                return;
+            }
+
+            ShowItemHoverTooltip(
+                InventoryItemDetailsFormatter.GetHeader(slot.Item).ToUpperInvariant(),
+                "<b>Equipped</b>\n\n" + InventoryItemDetailsFormatter.FormatDetails(
+                    slot.Item,
+                    1,
+                    slot.ItemInstanceId,
+                    slot.IsStateful,
+                    includeDescription: true,
+                    equipped: true));
+        }
+
+        public void HideInventoryHoverPreview()
+        {
+            HideEquipmentComparison();
+        }
+
+        private void ShowItemHoverTooltip(string heading, string body)
+        {
             EnsureItemDetailsPanel();
             if (equipmentComparisonTooltipRoot != null)
             {
+                if (inventoryTooltipOverlayRoot != null)
+                {
+                    inventoryTooltipOverlayRoot.SetAsLastSibling();
+                }
                 equipmentComparisonTooltipRoot.SetActive(true);
                 equipmentComparisonTooltipRoot.transform.SetAsLastSibling();
+            }
+            if (equipmentComparisonTooltipHeading != null)
+            {
+                equipmentComparisonTooltipHeading.text = heading;
             }
             if (equipmentComparisonTooltipText != null)
             {
                 equipmentComparisonTooltipText.supportRichText = true;
-                equipmentComparisonTooltipText.text = comparison;
+                equipmentComparisonTooltipText.text = body;
             }
 
             Canvas.ForceUpdateCanvases();
@@ -768,7 +848,11 @@ namespace UnityIsekaiGame.UI.Inventory
             CalculatedStatCollection calculatedStats = null,
             CharacterSkillCollection skills = null,
             CharacterTraitCollection traits = null,
-            CharacterFullSnapshot characterSnapshot = null)
+            CharacterFullSnapshot characterSnapshot = null,
+            PlayerEquipment equipment = null,
+            CharacterSystemCoordinator characterSystem = null,
+            PersonIdentity personIdentity = null,
+            string authenticatedUsername = null)
         {
             EnsureCharacterStatsPanel();
 
@@ -777,121 +861,233 @@ namespace UnityIsekaiGame.UI.Inventory
                 characterStatsRoot.SetActive(true);
             }
 
-            if (characterStatsText == null)
+            RenderCharacterBasicInformation(characterSnapshot, characterSystem, personIdentity, authenticatedUsername);
+            RenderCharacterRoles(characterSnapshot);
+            RenderCharacterSkills(skills, characterSnapshot);
+            RenderBaseStatRows(attributes);
+            RenderAdvancedStatRows(calculatedStats, equipment, health, stamina, mana);
+            statusReadoutView?.SetStatusController(statusEffects);
+        }
+
+        private void RenderCharacterBasicInformation(
+            CharacterFullSnapshot snapshot,
+            CharacterSystemCoordinator characterSystem,
+            PersonIdentity personIdentity,
+            string authenticatedUsername)
+        {
+            if (characterBasicInfoText == null)
             {
                 return;
             }
 
             StringBuilder builder = new StringBuilder();
-            if (characterSnapshot != null)
+            string snapshotName = snapshot?.Identity?.DisplayName;
+            string name = personIdentity != null && !string.IsNullOrWhiteSpace(personIdentity.DisplayName)
+                ? personIdentity.DisplayName
+                : !string.IsNullOrWhiteSpace(authenticatedUsername)
+                    ? authenticatedUsername
+                    : string.IsNullOrWhiteSpace(snapshotName) ? "Not recorded" : snapshotName;
+            string species = characterSystem?.Body?.Species == null
+                ? "Not recorded"
+                : characterSystem.Body.Species.DisplayName;
+
+            AppendLine(builder, "Name", name);
+            AppendLine(builder, "Age", personIdentity == null || personIdentity.ChronologicalAgeYears <= 0
+                ? "Not recorded"
+                : personIdentity.ChronologicalAgeYears.ToString());
+            AppendLine(builder, "Race", species);
+            if (personIdentity != null)
             {
-                builder.AppendLine("Identity");
-                AppendLine(builder, "Readiness", characterSnapshot.Identity.Readiness.ToString());
-                AppendLine(builder, "Revision", characterSnapshot.Revision.ToString());
-                AppendLine(builder, "Player", string.IsNullOrWhiteSpace(characterSnapshot.Identity.PlayerId) ? "--" : characterSnapshot.Identity.PlayerId);
-                AppendLine(builder, "Person", string.IsNullOrWhiteSpace(characterSnapshot.Identity.PersonId) ? "--" : characterSnapshot.Identity.PersonId);
-                AppendLine(builder, "Actor", string.IsNullOrWhiteSpace(characterSnapshot.Identity.ActorId) ? "--" : characterSnapshot.Identity.ActorId);
-                AppendLine(builder, "Origin", string.IsNullOrWhiteSpace(characterSnapshot.Identity.OriginId) ? "Unassigned" : FormatDefinitionName(characterSnapshot.Identity.OriginId));
-                AppendLine(builder, "Birth Gift", string.IsNullOrWhiteSpace(characterSnapshot.Identity.BirthGiftId) ? "None" : FormatDefinitionName(characterSnapshot.Identity.BirthGiftId));
-                AppendLine(builder, "Overall Level", characterSnapshot.Progression.OverallLevel.OverallLevel.ToString());
-                builder.AppendLine();
+                AppendLine(builder, "Life Stage", FormatDefinitionName(personIdentity.LifeStage.ToString()));
+            }
+            AppendLine(builder, "Level", snapshot == null ? "--" : snapshot.Progression.OverallLevel.OverallLevel.ToString());
+            AppendLine(builder, "Origin", snapshot == null || string.IsNullOrWhiteSpace(snapshot.Identity.OriginId)
+                ? "Unassigned"
+                : FormatDefinitionName(snapshot.Identity.OriginId));
+            AppendLine(builder, "Birth Gift", snapshot == null || string.IsNullOrWhiteSpace(snapshot.Identity.BirthGiftId)
+                ? "None"
+                : FormatDefinitionName(snapshot.Identity.BirthGiftId));
+            AppendLine(builder, "Titles", snapshot == null
+                ? "None"
+                : FormatRecordIds(snapshot.Social.Titles.Where(title => title != null && title.active).ToArray(), title => title.titleDefinitionId));
+            characterBasicInfoText.text = builder.ToString().TrimEnd();
+        }
+
+        private void RenderCharacterRoles(CharacterFullSnapshot snapshot)
+        {
+            if (characterRolesText == null)
+            {
+                return;
             }
 
-            builder.AppendLine("Vitals");
-            AppendLine(builder, "Health", health == null ? "--" : $"{FormatNumber(health.CurrentHealth)}/{FormatNumber(health.MaximumHealth)}");
-            AppendLine(builder, "Stamina", stamina == null ? "--" : $"{FormatNumber(stamina.CurrentStamina)}/{FormatNumber(stamina.MaximumStamina)}");
-            AppendLine(builder, "Mana", mana == null ? "--" : $"{FormatNumber(mana.CurrentMana)}/{FormatNumber(mana.MaximumMana)}");
+            IReadOnlyList<RuntimeRoleRecord> roles = snapshot?.Social?.Roles;
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("<b>ROLES</b>");
+            List<RuntimeRoleRecord> activeRoles = roles == null
+                ? new List<RuntimeRoleRecord>()
+                : roles.Where(role => role != null && role.lifecycleState == RoleLifecycleState.Active).ToList();
+            if (activeRoles.Count == 0)
+            {
+                builder.AppendLine("None");
+            }
+            else
+            {
+                foreach (RuntimeRoleRecord role in activeRoles)
+                {
+                    builder.Append(role.primary ? "★ " : "• ");
+                    builder.AppendLine(FormatDefinitionName(role.roleDefinitionId));
+                }
+            }
 
             builder.AppendLine();
-            builder.AppendLine("Combat Summary");
-            AppendLine(builder, "Physical Power", stats == null ? "--" : FormatNumber(stats.AttackPower));
-            AppendLine(builder, "Physical Defense", stats == null ? "--" : FormatNumber(stats.Defense));
+            builder.AppendLine("<b>ORGANIZATIONS</b>");
+            string[] organizations = activeRoles
+                .Select(role => role.grantingOrganizationId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .Select(FormatDefinitionName)
+                .ToArray();
+            if (organizations.Length == 0)
+            {
+                builder.AppendLine("None");
+            }
+            else
+            {
+                foreach (string organization in organizations)
+                {
+                    builder.Append("• ");
+                    builder.AppendLine(organization);
+                }
+            }
 
+            characterRolesText.text = builder.ToString().TrimEnd();
+        }
+
+        private void RenderCharacterSkills(CharacterSkillCollection skills, CharacterFullSnapshot snapshot)
+        {
+            if (characterSkillsText == null)
+            {
+                return;
+            }
+
+            IReadOnlyList<RuntimeSkillRecord> learned = skills?.LearnedSkills ?? snapshot?.Progression?.LearnedSkills;
+            if (learned == null || learned.Count == 0)
+            {
+                characterSkillsText.text = "No learned skills";
+                return;
+            }
+
+            StringBuilder builder = new StringBuilder();
+            foreach (RuntimeSkillRecord record in learned.OrderBy(record => FormatDefinitionName(record.skillDefinitionId), StringComparer.Ordinal))
+            {
+                SkillGrade grade = SkillGradeUtility.Clamp((SkillGrade)record.currentGrade);
+                string progress = grade == SkillGrade.AAA ? "Mastered" : $"{record.currentXp} XP";
+                builder.Append("• ");
+                builder.Append(FormatDefinitionName(record.skillDefinitionId));
+                builder.Append("  ");
+                builder.Append(grade);
+                builder.Append("  <color=#C2A77A>");
+                builder.Append(progress);
+                builder.AppendLine("</color>");
+            }
+
+            characterSkillsText.text = builder.ToString().TrimEnd();
+        }
+
+        private void RenderBaseStatRows(CharacterAttributes attributes)
+        {
+            int index = 0;
             if (attributes != null && attributes.IsConfigured)
             {
-                builder.AppendLine();
-                builder.AppendLine("Base Attributes");
-                List<string> parts = new List<string>();
                 foreach (RuntimeAttributeValueRecord record in attributes.GetOrderedValues())
                 {
-                    parts.Add($"{FormatDefinitionName(record.attributeId)} {Mathf.FloorToInt(record.currentValue)}");
+                    CharacterStatRow row = GetOrCreateCharacterStatRow(characterBaseStatsContent, characterBaseStatRows, index++);
+                    string displayName = FormatDefinitionName(record.attributeId);
+                    row.Configure(displayName, FormatNumber(record.currentValue),
+                        () => ShowCharacterStatTooltip(displayName, CharacterStatBreakdownFormatter.FormatBaseAttribute(record, attributes.PermanentSourceContributions)),
+                        HideCharacterStatTooltip);
                 }
-
-                AppendCompactPairs(builder, parts);
             }
 
+            SetUnusedCharacterStatRowsInactive(characterBaseStatRows, index);
+            if (index == 0)
+            {
+                CharacterStatRow row = GetOrCreateCharacterStatRow(characterBaseStatsContent, characterBaseStatRows, index++);
+                row.Configure("No base stats", "--", null, HideCharacterStatTooltip);
+            }
+        }
+
+        private void RenderAdvancedStatRows(
+            CalculatedStatCollection calculatedStats,
+            PlayerEquipment equipment,
+            PlayerHealth health,
+            PlayerStamina stamina,
+            PlayerMana mana)
+        {
+            int index = 0;
             if (calculatedStats != null && calculatedStats.IsConfigured)
             {
-                builder.AppendLine();
-                builder.AppendLine("Calculated Stats");
-                List<string> parts = new List<string>();
                 foreach (CalculatedStatDefinition definition in calculatedStats.GetOrderedDefinitions(characterMenuOnly: true))
                 {
-                    string resource = definition.IsResourceMaximum ? $" [{definition.LinkedResourceId} max]" : string.Empty;
-                    parts.Add($"{definition.DisplayName} {FormatNumber(calculatedStats.GetValue(definition.Id))}{resource}");
+                    CharacterStatRow row = GetOrCreateCharacterStatRow(characterAdvancedStatsContent, characterAdvancedStatRows, index++);
+                    CalculatedStatEvaluationBreakdown breakdown = calculatedStats.GetBreakdown(definition.Id);
+                    string displayName = definition.DisplayName;
+                    float? liveResourceMaximum = ResolveLiveResourceMaximum(definition, health, stamina, mana);
+                    float displayedValue = liveResourceMaximum ?? calculatedStats.GetValue(definition.Id);
+                    row.Configure(displayName, FormatNumber(displayedValue),
+                        () => ShowCharacterStatTooltip(displayName, CharacterStatBreakdownFormatter.FormatCalculatedStat(breakdown, equipment, liveResourceMaximum)),
+                        HideCharacterStatTooltip);
                 }
-
-                AppendCompactPairs(builder, parts);
             }
 
-            if (skills != null)
+            SetUnusedCharacterStatRowsInactive(characterAdvancedStatRows, index);
+            if (index == 0)
             {
-                builder.AppendLine();
-                builder.AppendLine("Skills");
-                IReadOnlyList<RuntimeSkillRecord> learned = skills.LearnedSkills;
-                if (learned == null || learned.Count == 0)
-                {
-                    builder.AppendLine("None");
-                }
-                else
-                {
-                    List<string> parts = new List<string>();
-                    foreach (RuntimeSkillRecord record in learned)
-                    {
-                        SkillGrade grade = SkillGradeUtility.Clamp((SkillGrade)record.currentGrade);
-                        string progress = grade == SkillGrade.AAA ? "Mastered" : $"{record.currentXp} XP";
-                        parts.Add($"{FormatDefinitionName(record.skillDefinitionId)} {grade} ({progress})");
-                    }
-
-                    AppendCompactPairs(builder, parts);
-                }
+                CharacterStatRow row = GetOrCreateCharacterStatRow(characterAdvancedStatsContent, characterAdvancedStatRows, index++);
+                row.Configure("No advanced stats", "--", null, HideCharacterStatTooltip);
             }
+        }
 
-            if (traits != null)
+        private static float? ResolveLiveResourceMaximum(
+            CalculatedStatDefinition definition,
+            PlayerHealth health,
+            PlayerStamina stamina,
+            PlayerMana mana)
+        {
+            if (definition == null || !definition.IsResourceMaximum)
             {
-                builder.AppendLine();
-                builder.AppendLine("Traits");
-                IReadOnlyList<TraitSnapshot> knownTraits = traits.GetKnownTraits();
-                if (knownTraits == null || knownTraits.Count == 0)
-                {
-                    builder.AppendLine("None");
-                }
-                else
-                {
-                    List<string> parts = new List<string>();
-                    foreach (TraitSnapshot snapshot in knownTraits)
-                    {
-                        RuntimeTraitRecord record = snapshot.Record;
-                        parts.Add($"{snapshot.PresentationName} {(TraitLifecycleState)record.lifecycleState}");
-                    }
-
-                    AppendCompactPairs(builder, parts);
-                }
+                return null;
             }
 
-            if (characterSnapshot != null)
+            return definition.LinkedResourceId switch
             {
-                builder.AppendLine();
-                builder.AppendLine("Social");
-                AppendLine(builder, "Roles", FormatRecordIds(characterSnapshot.Social.Roles, role => role.roleDefinitionId));
-                AppendLine(builder, "Statuses", FormatRecordIds(characterSnapshot.Social.SocialStatuses, status => status.socialStatusDefinitionId));
-                AppendLine(builder, "Titles", FormatRecordIds(characterSnapshot.Social.Titles, title => title.titleDefinitionId));
-                AppendLine(builder, "Wallet", economyServices == null ? "Unavailable" : $"Gold {economyServices.GetPlayerBalance()}");
-                AppendLine(builder, "Capabilities", characterSnapshot.Capabilities.Capabilities.Count.ToString());
-            }
+                CalculatedStatIds.ResourceHealth when health != null => health.MaximumHealth,
+                CalculatedStatIds.ResourceStamina when stamina != null => stamina.MaximumStamina,
+                CalculatedStatIds.ResourceMana when mana != null => mana.MaximumMana,
+                _ => null
+            };
+        }
 
-            characterStatsText.text = builder.ToString().TrimEnd();
-            statusReadoutView?.SetStatusController(statusEffects);
+        private void ShowCharacterStatTooltip(string heading, string details)
+        {
+            EnsureCharacterStatTooltip();
+            if (characterStatTooltipHeading != null) characterStatTooltipHeading.text = heading == null ? "STAT BREAKDOWN" : heading.ToUpperInvariant();
+            if (characterStatTooltipText != null) characterStatTooltipText.text = details ?? string.Empty;
+            if (characterStatTooltipRoot != null)
+            {
+                characterStatTooltipRoot.SetActive(true);
+                characterStatTooltipRoot.transform.SetAsLastSibling();
+            }
+        }
+
+        private void HideCharacterStatTooltip()
+        {
+            if (characterStatTooltipRoot != null) characterStatTooltipRoot.SetActive(false);
+        }
+
+        private static void SetUnusedCharacterStatRowsInactive(List<CharacterStatRow> rows, int usedCount)
+        {
+            for (int i = usedCount; i < rows.Count; i++) rows[i].Root.SetActive(false);
         }
 
         private static string FormatRecordIds<T>(IReadOnlyList<T> records, Func<T, string> selector)
@@ -931,8 +1127,15 @@ namespace UnityIsekaiGame.UI.Inventory
         public void SetInventoryActions(bool canUse, bool canEquip, bool canDrop, bool canDropAll = false, bool canUnequip = false, ItemDefinition actionItem = null)
         {
             bool previousComparisonState = primaryActionShowsComparison;
-            primaryActionUsesItem = canUse;
-            primaryActionUnequipsItem = canUnequip;
+            primaryActionKind = canUnequip
+                ? InventoryPrimaryActionKind.Unequip
+                : canUse
+                    ? ResolveUseActionKind(actionItem)
+                    : canEquip
+                        ? InventoryPrimaryActionKind.Equip
+                        : InventoryPrimaryActionKind.None;
+            dropActionAvailable = canDrop;
+            dropAllActionAvailable = canDropAll;
             primaryActionShowsComparison = canEquip && !canUse && !canUnequip;
             if (!primaryActionShowsComparison)
             {
@@ -940,25 +1143,38 @@ namespace UnityIsekaiGame.UI.Inventory
             }
             if (primaryActionIsHovered && previousComparisonState != primaryActionShowsComparison)
                 primaryActionHovered?.Invoke(primaryActionShowsComparison);
+            ApplyInventoryActionPresentation();
+        }
+
+        private void ApplyInventoryActionPresentation()
+        {
             if (useButton != null)
             {
-                bool hasPrimaryAction = canUse || canEquip || canUnequip;
+                bool hasPrimaryAction = primaryActionKind != InventoryPrimaryActionKind.None;
                 useButton.gameObject.SetActive(hasPrimaryAction);
-                useButton.interactable = canUse || canEquip || canUnequip;
-                useButton.name = canUnequip ? "Unequip Item Action Button" : canUse ? "Use Item Action Button" : "Equip Item Action Button";
-                SetInventoryActionIcon(useButton, canUnequip ? unequipActionIcon : canUse ? ResolveConsumeActionIcon(actionItem) : useEquipActionIcon);
+                useButton.interactable = hasPrimaryAction;
+                useButton.name = primaryActionKind switch
+                {
+                    InventoryPrimaryActionKind.Unequip => "Unequip Item Action Button",
+                    InventoryPrimaryActionKind.Eat => "Eat Item Action Button",
+                    InventoryPrimaryActionKind.Drink => "Drink Item Action Button",
+                    InventoryPrimaryActionKind.Use => "Use Item Action Button",
+                    InventoryPrimaryActionKind.Equip => "Equip Item Action Button",
+                    _ => "Item Action Button"
+                };
+                SetInventoryActionIcon(useButton, ResolvePrimaryActionIcon());
             }
 
             if (dropButton != null)
             {
-                dropButton.gameObject.SetActive(canDrop);
-                dropButton.interactable = canDrop;
+                dropButton.gameObject.SetActive(dropActionAvailable);
+                dropButton.interactable = dropActionAvailable;
             }
 
             if (dropAllButton != null)
             {
-                dropAllButton.gameObject.SetActive(canDropAll);
-                dropAllButton.interactable = canDropAll;
+                dropAllButton.gameObject.SetActive(dropAllActionAvailable);
+                dropAllButton.interactable = dropAllActionAvailable;
             }
 
             UpdateResponsiveItemActions();
@@ -1007,17 +1223,19 @@ namespace UnityIsekaiGame.UI.Inventory
 
         private void InvokePrimarySelected()
         {
-            if (primaryActionUnequipsItem)
+            switch (primaryActionKind)
             {
-                unequipSelected?.Invoke();
-            }
-            else if (primaryActionUsesItem)
-            {
-                useSelected?.Invoke();
-            }
-            else
-            {
-                equipSelected?.Invoke();
+                case InventoryPrimaryActionKind.Use:
+                case InventoryPrimaryActionKind.Eat:
+                case InventoryPrimaryActionKind.Drink:
+                    useSelected?.Invoke();
+                    break;
+                case InventoryPrimaryActionKind.Equip:
+                    equipSelected?.Invoke();
+                    break;
+                case InventoryPrimaryActionKind.Unequip:
+                    unequipSelected?.Invoke();
+                    break;
             }
         }
 
@@ -1430,12 +1648,14 @@ namespace UnityIsekaiGame.UI.Inventory
             RectTransform statsRect = characterStatsRoot.GetComponent<RectTransform>();
             if (statsRect != null)
             {
-                statsRect.anchorMin = new Vector2(0.49f, 0.04f);
-                statsRect.anchorMax = new Vector2(0.985f, 0.96f);
+                statsRect.anchorMin = new Vector2(0.01f, 0.025f);
+                statsRect.anchorMax = new Vector2(0.99f, 0.975f);
                 statsRect.pivot = new Vector2(0.5f, 0.5f);
                 statsRect.offsetMin = Vector2.zero;
                 statsRect.offsetMax = Vector2.zero;
             }
+
+            characterStatsRoot.transform.SetAsLastSibling();
         }
 
         private void UpdateResponsiveInventoryGrid(bool force = false)
@@ -2099,8 +2319,11 @@ namespace UnityIsekaiGame.UI.Inventory
                 return;
             }
 
+            RectTransform overlayRoot = EnsureInventoryTooltipOverlay();
             bool created = false;
-            Transform existingTooltip = selectedItemDetailsRoot.transform.Find("Equipment Comparison Tooltip");
+            Transform existingTooltip = equipmentComparisonTooltipRoot == null
+                ? FindDescendantTransform(transform, "Equipment Comparison Tooltip")
+                : equipmentComparisonTooltipRoot.transform;
             if (equipmentComparisonTooltipRoot == null)
             {
                 equipmentComparisonTooltipRoot = existingTooltip == null
@@ -2109,28 +2332,31 @@ namespace UnityIsekaiGame.UI.Inventory
                 created = existingTooltip == null;
             }
 
-            if (equipmentComparisonTooltipRoot.transform.parent != selectedItemDetailsRoot.transform)
+            if (equipmentComparisonTooltipRoot.transform.parent != overlayRoot)
             {
-                equipmentComparisonTooltipRoot.transform.SetParent(selectedItemDetailsRoot.transform, false);
+                equipmentComparisonTooltipRoot.transform.SetParent(overlayRoot, false);
             }
 
             Canvas tooltipCanvas = equipmentComparisonTooltipRoot.GetComponent<Canvas>();
-            if (tooltipCanvas == null)
+            if (tooltipCanvas != null)
             {
-                tooltipCanvas = equipmentComparisonTooltipRoot.AddComponent<Canvas>();
+                tooltipCanvas.overrideSorting = false;
             }
-            tooltipCanvas.overrideSorting = true;
-            tooltipCanvas.sortingOrder = 100;
-            if (equipmentComparisonTooltipRoot.GetComponent<GraphicRaycaster>() == null)
+            GraphicRaycaster tooltipRaycaster = equipmentComparisonTooltipRoot.GetComponent<GraphicRaycaster>();
+            if (tooltipRaycaster != null) tooltipRaycaster.enabled = false;
+            CanvasGroup tooltipCanvasGroup = equipmentComparisonTooltipRoot.GetComponent<CanvasGroup>();
+            if (tooltipCanvasGroup == null)
             {
-                equipmentComparisonTooltipRoot.AddComponent<GraphicRaycaster>();
+                tooltipCanvasGroup = equipmentComparisonTooltipRoot.AddComponent<CanvasGroup>();
             }
+            tooltipCanvasGroup.interactable = false;
+            tooltipCanvasGroup.blocksRaycasts = false;
 
             RectTransform tooltipRect = equipmentComparisonTooltipRoot.GetComponent<RectTransform>();
-            tooltipRect.anchorMin = new Vector2(0f, 0.19f);
-            tooltipRect.anchorMax = new Vector2(0f, 0.19f);
+            tooltipRect.anchorMin = new Vector2(0.648f, 0.215f);
+            tooltipRect.anchorMax = new Vector2(0.648f, 0.215f);
             tooltipRect.pivot = new Vector2(1f, 0f);
-            tooltipRect.anchoredPosition = new Vector2(-12f, 0f);
+            tooltipRect.anchoredPosition = Vector2.zero;
             tooltipRect.sizeDelta = new Vector2(380f, 280f);
             Image tooltipImage = equipmentComparisonTooltipRoot.GetComponent<Image>();
             GameUiTheme.StylePanel(tooltipImage, raised: true);
@@ -2139,15 +2365,15 @@ namespace UnityIsekaiGame.UI.Inventory
             EnsureAccentBand(equipmentComparisonTooltipRoot.transform, "Comparison Top Accent", GameUiTheme.Accent, 3f);
 
             Transform existingHeading = equipmentComparisonTooltipRoot.transform.Find("Comparison Heading");
-            Text heading = existingHeading == null
+            equipmentComparisonTooltipHeading = existingHeading == null
                 ? CreateDetailsText("Comparison Heading", equipmentComparisonTooltipRoot.transform, font, 16, FontStyle.Bold, TextAnchor.MiddleLeft)
                 : existingHeading.GetComponent<Text>();
-            heading.text = "EQUIPMENT COMPARISON";
-            heading.fontSize = Mathf.Max(16, heading.fontSize);
-            heading.fontStyle = FontStyle.Bold;
-            heading.color = GameUiTheme.AccentBright;
-            heading.raycastTarget = false;
-            RectTransform headingRect = heading.rectTransform;
+            equipmentComparisonTooltipHeading.text = "EQUIPMENT COMPARISON";
+            equipmentComparisonTooltipHeading.fontSize = Mathf.Max(16, equipmentComparisonTooltipHeading.fontSize);
+            equipmentComparisonTooltipHeading.fontStyle = FontStyle.Bold;
+            equipmentComparisonTooltipHeading.color = GameUiTheme.AccentBright;
+            equipmentComparisonTooltipHeading.raycastTarget = false;
+            RectTransform headingRect = equipmentComparisonTooltipHeading.rectTransform;
             headingRect.anchorMin = new Vector2(0f, 0.84f);
             headingRect.anchorMax = Vector2.one;
             headingRect.offsetMin = new Vector2(16f, 0f);
@@ -2227,6 +2453,49 @@ namespace UnityIsekaiGame.UI.Inventory
             {
                 equipmentComparisonTooltipRoot.SetActive(false);
             }
+        }
+
+        private RectTransform EnsureInventoryTooltipOverlay()
+        {
+            Transform parent = inventoryContentRoot == null ? transform : inventoryContentRoot.transform;
+            if (inventoryTooltipOverlayRoot == null)
+            {
+                Transform existing = parent.Find("Inventory Tooltip Overlay");
+                GameObject overlayObject = existing == null
+                    ? new GameObject("Inventory Tooltip Overlay", typeof(RectTransform), typeof(Canvas), typeof(CanvasGroup))
+                    : existing.gameObject;
+                if (existing == null) overlayObject.transform.SetParent(parent, false);
+                inventoryTooltipOverlayRoot = overlayObject.GetComponent<RectTransform>();
+            }
+
+            inventoryTooltipOverlayRoot.anchorMin = Vector2.zero;
+            inventoryTooltipOverlayRoot.anchorMax = Vector2.one;
+            inventoryTooltipOverlayRoot.offsetMin = Vector2.zero;
+            inventoryTooltipOverlayRoot.offsetMax = Vector2.zero;
+            inventoryTooltipOverlayRoot.SetAsLastSibling();
+
+            Canvas overlayCanvas = inventoryTooltipOverlayRoot.GetComponent<Canvas>()
+                ?? inventoryTooltipOverlayRoot.gameObject.AddComponent<Canvas>();
+            overlayCanvas.overrideSorting = true;
+            overlayCanvas.sortingOrder = 32000;
+
+            CanvasGroup overlayCanvasGroup = inventoryTooltipOverlayRoot.GetComponent<CanvasGroup>()
+                ?? inventoryTooltipOverlayRoot.gameObject.AddComponent<CanvasGroup>();
+            overlayCanvasGroup.interactable = false;
+            overlayCanvasGroup.blocksRaycasts = false;
+            return inventoryTooltipOverlayRoot;
+        }
+
+        private static Transform FindDescendantTransform(Transform root, string objectName)
+        {
+            if (root == null) return null;
+            Transform[] descendants = root.GetComponentsInChildren<Transform>(true);
+            for (int index = 0; index < descendants.Length; index++)
+            {
+                if (descendants[index].name == objectName) return descendants[index];
+            }
+
+            return null;
         }
 
         private void EnsureSelectedItemStatus(Font font)
@@ -2346,8 +2615,10 @@ namespace UnityIsekaiGame.UI.Inventory
             StyleInventoryActionIcon(useButton);
             StyleInventoryActionIcon(dropButton);
             StyleDropAllActionIcon(dropAllButton);
-            dropAllButton.gameObject.SetActive(false);
-            UpdateResponsiveItemActions();
+            // This method is also reached while opening hover cards. Reapply the current
+            // selection's complete action state so a layout check cannot turn a potion into
+            // generic use/equip or hide Drop All for an existing stack.
+            ApplyInventoryActionPresentation();
         }
 
         private Button EnsureDropAllActionButton(Button button, Transform actionParent, Font font)
@@ -2450,26 +2721,41 @@ namespace UnityIsekaiGame.UI.Inventory
             }
         }
 
-        private void RefreshInventoryActionIcons(bool showUnequip)
+        private void RefreshInventoryActionIcons()
         {
-            SetInventoryActionIcon(useButton, showUnequip ? unequipActionIcon : useEquipActionIcon);
+            SetInventoryActionIcon(useButton, ResolvePrimaryActionIcon());
             SetInventoryActionIcon(dropButton, dropActionIcon);
             SetInventoryActionIcon(dropAllButton, dropActionIcon);
+        }
+
+        private Sprite ResolvePrimaryActionIcon()
+        {
+            return primaryActionKind switch
+            {
+                InventoryPrimaryActionKind.Unequip => unequipActionIcon,
+                InventoryPrimaryActionKind.Eat => consumeFoodActionIcon != null ? consumeFoodActionIcon : useEquipActionIcon,
+                InventoryPrimaryActionKind.Drink => consumePotionActionIcon != null ? consumePotionActionIcon : useEquipActionIcon,
+                _ => useEquipActionIcon
+            };
         }
 
         private static void SetInventoryActionIcon(Button button, Sprite sprite)
         {
             Image icon = button == null ? null : button.transform.Find("Icon")?.GetComponent<Image>();
-            if (icon != null) icon.sprite = sprite;
+            if (icon != null)
+            {
+                icon.sprite = sprite;
+                icon.enabled = sprite != null;
+            }
         }
 
-        private Sprite ResolveConsumeActionIcon(ItemDefinition item)
+        private static InventoryPrimaryActionKind ResolveUseActionKind(ItemDefinition item)
         {
             return ResolveConsumablePresentation(item) switch
             {
-                ConsumablePresentationType.Food when consumeFoodActionIcon != null => consumeFoodActionIcon,
-                ConsumablePresentationType.Potion when consumePotionActionIcon != null => consumePotionActionIcon,
-                _ => useEquipActionIcon
+                ConsumablePresentationType.Food => InventoryPrimaryActionKind.Eat,
+                ConsumablePresentationType.Potion => InventoryPrimaryActionKind.Drink,
+                _ => InventoryPrimaryActionKind.Use
             };
         }
 
@@ -2501,106 +2787,351 @@ namespace UnityIsekaiGame.UI.Inventory
                 ? CreateCharacterStatsRoot(parent)
                 : characterStatsRoot;
 
-            if (characterStatsScroll == null)
-            {
-                Transform existingScroll = characterStatsRoot.transform.Find("Character Stats Scroll");
-                GameObject scrollObject;
-                if (existingScroll == null)
-                {
-                    scrollObject = new GameObject("Character Stats Scroll", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
-                    scrollObject.transform.SetParent(characterStatsRoot.transform, false);
-                }
-                else
-                {
-                    scrollObject = existingScroll.gameObject;
-                }
+            Transform legacyScroll = characterStatsRoot.transform.Find("Character Stats Scroll");
+            if (legacyScroll != null) legacyScroll.gameObject.SetActive(false);
+            Transform legacyStatus = characterStatsRoot.transform.Find("Status Effects");
+            if (legacyStatus != null) legacyStatus.gameObject.SetActive(false);
 
-                characterStatsScroll = scrollObject.GetComponent<ScrollRect>();
-                RectTransform scrollRect = scrollObject.GetComponent<RectTransform>();
-                scrollRect.anchorMin = new Vector2(0f, 0.25f);
-                scrollRect.anchorMax = Vector2.one;
-                scrollRect.offsetMin = new Vector2(14f, 8f);
-                scrollRect.offsetMax = new Vector2(-14f, -14f);
-                Image statsBackground = scrollObject.GetComponent<Image>();
-                GameUiTheme.StylePanel(statsBackground);
-                statsBackground.color = new Color(GameUiTheme.SurfaceInset.r, GameUiTheme.SurfaceInset.g, GameUiTheme.SurfaceInset.b, 0.68f);
+            RectTransform firstColumn = EnsureCharacterColumn("Character Column 1", 0f, 0.25f);
+            RectTransform secondColumn = EnsureCharacterColumn("Character Column 2", 0.25f, 0.5f);
+            RectTransform thirdColumn = EnsureCharacterColumn("Character Column 3", 0.5f, 0.75f);
+            RectTransform fourthColumn = EnsureCharacterColumn("Character Column 4", 0.75f, 1f);
 
-                Transform viewportTransform = scrollObject.transform.Find("Viewport");
-                GameObject viewport;
-                if (viewportTransform == null)
-                {
-                    viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
-                    viewport.transform.SetParent(scrollObject.transform, false);
-                }
-                else
-                {
-                    viewport = viewportTransform.gameObject;
-                }
+            RectTransform previewPanel = EnsureCharacterSection(firstColumn, "Character Preview Section", new Vector2(0f, 0.5f), Vector2.one);
+            EnsureSectionHeading(previewPanel, "CHARACTER", font);
+            characterPreviewRoot = EnsureCharacterPreview(previewPanel, font);
 
-                RectTransform viewportRect = viewport.GetComponent<RectTransform>();
-                viewportRect.anchorMin = Vector2.zero;
-                viewportRect.anchorMax = Vector2.one;
-                viewportRect.offsetMin = new Vector2(10f, 8f);
-                viewportRect.offsetMax = new Vector2(-8f, -8f);
-                viewport.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.001f);
+            RectTransform basicPanel = EnsureCharacterSection(firstColumn, "Basic Information Section", Vector2.zero, new Vector2(1f, 0.5f));
+            EnsureSectionHeading(basicPanel, "BASIC INFO", font);
+            characterBasicInfoText = EnsureScrollableSectionText(basicPanel, "Basic Information", font, out _);
 
-                if (characterStatsText == null)
-                {
-                    characterStatsText = CreateDetailsText("Character Stats", viewport.transform, font, 13, FontStyle.Normal, TextAnchor.UpperLeft);
-                }
-                else
-                {
-                    characterStatsText.transform.SetParent(viewport.transform, false);
-                }
+            RectTransform rolesPanel = EnsureCharacterSection(secondColumn, "Roles And Organizations Section", new Vector2(0f, 0.5f), Vector2.one);
+            EnsureSectionHeading(rolesPanel, "ROLES & ORGANIZATIONS", font);
+            characterRolesText = EnsureScrollableSectionText(rolesPanel, "Roles And Organizations", font, out _);
 
-                RectTransform statsTextRect = characterStatsText.rectTransform;
-                statsTextRect.anchorMin = new Vector2(0f, 1f);
-                statsTextRect.anchorMax = new Vector2(1f, 1f);
-                statsTextRect.pivot = new Vector2(0.5f, 1f);
-                statsTextRect.anchoredPosition = Vector2.zero;
-                statsTextRect.sizeDelta = Vector2.zero;
-                characterStatsText.horizontalOverflow = HorizontalWrapMode.Wrap;
-                characterStatsText.verticalOverflow = VerticalWrapMode.Overflow;
-                characterStatsText.fontSize = Mathf.Max(14, characterStatsText.fontSize);
-                characterStatsText.lineSpacing = Mathf.Max(1.05f, characterStatsText.lineSpacing);
-                ContentSizeFitter fitter = characterStatsText.GetComponent<ContentSizeFitter>();
-                if (fitter == null)
-                {
-                    fitter = characterStatsText.gameObject.AddComponent<ContentSizeFitter>();
-                }
-                fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            RectTransform skillsPanel = EnsureCharacterSection(secondColumn, "Skills Section", Vector2.zero, new Vector2(1f, 0.5f));
+            EnsureSectionHeading(skillsPanel, "SKILLS", font);
+            characterSkillsText = EnsureScrollableSectionText(skillsPanel, "Character Skills", font, out _);
 
-                characterStatsScroll.viewport = viewportRect;
-                characterStatsScroll.content = statsTextRect;
-                characterStatsScroll.horizontal = false;
-                characterStatsScroll.vertical = true;
-                characterStatsScroll.movementType = ScrollRect.MovementType.Clamped;
-                characterStatsScroll.scrollSensitivity = 24f;
-                EnsureVerticalScrollbar(characterStatsScroll, viewportRect);
-            }
+            EnsureSectionHeading(thirdColumn, "BASE STATS", font);
+            characterBaseStatsContent = EnsureStatList(thirdColumn, "Base Stats Scroll", out characterStatsScroll);
 
-            if (statusReadoutText == null)
-            {
-                statusReadoutText = CreateDetailsText("Status Effects", characterStatsRoot.transform, font, 14, FontStyle.Normal, TextAnchor.UpperLeft);
-            }
-            RectTransform statusRect = statusReadoutText.rectTransform;
-            statusReadoutText.fontSize = Mathf.Max(14, statusReadoutText.fontSize);
-            statusRect.anchorMin = new Vector2(0f, 0.02f);
-            statusRect.anchorMax = new Vector2(1f, 0.23f);
-            statusRect.offsetMin = new Vector2(18f, 10f);
-            statusRect.offsetMax = new Vector2(-18f, -4f);
+            EnsureSectionHeading(fourthColumn, "ADV STATS", font);
+            characterAdvancedStatsContent = EnsureStatList(fourthColumn, "Advanced Stats Scroll", out _);
 
-            if (statusReadoutView == null)
-            {
-                statusReadoutView = statusReadoutText.GetComponent<StatusEffectReadoutView>();
-                if (statusReadoutView == null)
-                {
-                    statusReadoutView = statusReadoutText.gameObject.AddComponent<StatusEffectReadoutView>();
-                }
-            }
+            EnsureCharacterSeparator("Quarter Separator 1", 0.25f);
+            EnsureCharacterSeparator("Quarter Separator 2", 0.5f);
+            EnsureCharacterSeparator("Quarter Separator 3", 0.75f);
+            EnsureCharacterStatTooltip();
 
             ConfigureCharacterSectionLayout();
+        }
+
+        private RectTransform EnsureCharacterColumn(string name, float minimumX, float maximumX)
+        {
+            Transform existing = characterStatsRoot.transform.Find(name);
+            GameObject columnObject = existing == null
+                ? new GameObject(name, typeof(RectTransform))
+                : existing.gameObject;
+            if (existing == null) columnObject.transform.SetParent(characterStatsRoot.transform, false);
+
+            RectTransform rect = columnObject.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(minimumX, 0f);
+            rect.anchorMax = new Vector2(maximumX, 1f);
+            rect.offsetMin = new Vector2(7f, 7f);
+            rect.offsetMax = new Vector2(-7f, -7f);
+            return rect;
+        }
+
+        private static RectTransform EnsureCharacterSection(RectTransform parent, string name, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            Transform existing = parent.Find(name);
+            GameObject sectionObject = existing == null
+                ? new GameObject(name, typeof(RectTransform), typeof(Image))
+                : existing.gameObject;
+            if (existing == null) sectionObject.transform.SetParent(parent, false);
+
+            RectTransform rect = sectionObject.GetComponent<RectTransform>();
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = new Vector2(3f, 5f);
+            rect.offsetMax = new Vector2(-3f, -5f);
+            Image image = sectionObject.GetComponent<Image>();
+            GameUiTheme.StylePanel(image);
+            image.color = new Color(GameUiTheme.SurfaceInset.r, GameUiTheme.SurfaceInset.g, GameUiTheme.SurfaceInset.b, 0.76f);
+            return rect;
+        }
+
+        private static Text EnsureSectionHeading(RectTransform parent, string heading, Font font)
+        {
+            Transform existing = parent.Find("Section Heading");
+            Text text = existing == null
+                ? CreateDetailsText("Section Heading", parent, font, 16, FontStyle.Bold, TextAnchor.MiddleLeft)
+                : existing.GetComponent<Text>();
+            RectTransform rect = text.rectTransform;
+            rect.anchorMin = new Vector2(0f, 0.86f);
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(12f, 0f);
+            rect.offsetMax = new Vector2(-10f, -2f);
+            text.text = heading;
+            text.color = GameUiTheme.AccentBright;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            return text;
+        }
+
+        private static RectTransform EnsureCharacterPreview(RectTransform parent, Font font)
+        {
+            Transform existing = parent.Find("3D Character Preview");
+            GameObject previewObject = existing == null
+                ? new GameObject("3D Character Preview", typeof(RectTransform), typeof(Image))
+                : existing.gameObject;
+            if (existing == null) previewObject.transform.SetParent(parent, false);
+
+            RectTransform rect = previewObject.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.05f, 0.06f);
+            rect.anchorMax = new Vector2(0.95f, 0.84f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            Image image = previewObject.GetComponent<Image>();
+            GameUiTheme.StylePanel(image, raised: true);
+            image.color = new Color(GameUiTheme.SlotEmpty.r, GameUiTheme.SlotEmpty.g, GameUiTheme.SlotEmpty.b, 0.96f);
+
+            Transform labelTransform = previewObject.transform.Find("Preview Placeholder");
+            Text label = labelTransform == null
+                ? CreateDetailsText("Preview Placeholder", previewObject.transform, font, 15, FontStyle.Bold, TextAnchor.MiddleCenter)
+                : labelTransform.GetComponent<Text>();
+            RectTransform labelRect = label.rectTransform;
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = new Vector2(12f, 12f);
+            labelRect.offsetMax = new Vector2(-12f, -12f);
+            label.text = "3D CHARACTER PREVIEW\n<color=#C2A77A><size=13>Character model coming later</size></color>";
+            label.color = GameUiTheme.TextPrimary;
+            label.raycastTarget = false;
+            return rect;
+        }
+
+        private static Text EnsureScrollableSectionText(RectTransform parent, string textName, Font font, out ScrollRect scroll)
+        {
+            Transform existing = parent.Find(textName + " Scroll");
+            GameObject scrollObject = existing == null
+                ? new GameObject(textName + " Scroll", typeof(RectTransform), typeof(Image), typeof(ScrollRect))
+                : existing.gameObject;
+            if (existing == null) scrollObject.transform.SetParent(parent, false);
+
+            RectTransform scrollRect = scrollObject.GetComponent<RectTransform>();
+            scrollRect.anchorMin = new Vector2(0f, 0f);
+            scrollRect.anchorMax = new Vector2(1f, 0.85f);
+            scrollRect.offsetMin = new Vector2(8f, 8f);
+            scrollRect.offsetMax = new Vector2(-8f, -2f);
+            Image background = scrollObject.GetComponent<Image>();
+            background.color = new Color(1f, 1f, 1f, 0.001f);
+
+            Transform viewportTransform = scrollObject.transform.Find("Viewport");
+            GameObject viewportObject = viewportTransform == null
+                ? new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D))
+                : viewportTransform.gameObject;
+            if (viewportTransform == null) viewportObject.transform.SetParent(scrollObject.transform, false);
+            RectTransform viewport = viewportObject.GetComponent<RectTransform>();
+            viewport.anchorMin = Vector2.zero;
+            viewport.anchorMax = Vector2.one;
+            viewport.offsetMin = new Vector2(5f, 4f);
+            viewport.offsetMax = new Vector2(-13f, -4f);
+            viewportObject.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.001f);
+
+            Transform textTransform = viewportObject.transform.Find(textName);
+            Text text = textTransform == null
+                ? CreateDetailsText(textName, viewportObject.transform, font, 14, FontStyle.Normal, TextAnchor.UpperLeft)
+                : textTransform.GetComponent<Text>();
+            RectTransform textRect = text.rectTransform;
+            textRect.anchorMin = new Vector2(0f, 1f);
+            textRect.anchorMax = new Vector2(1f, 1f);
+            textRect.pivot = new Vector2(0.5f, 1f);
+            textRect.anchoredPosition = Vector2.zero;
+            textRect.sizeDelta = Vector2.zero;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.lineSpacing = 1.08f;
+            text.color = GameUiTheme.TextPrimary;
+            ContentSizeFitter fitter = text.GetComponent<ContentSizeFitter>() ?? text.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            scroll = scrollObject.GetComponent<ScrollRect>();
+            scroll.viewport = viewport;
+            scroll.content = textRect;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 24f;
+            EnsureVerticalScrollbar(scroll, viewport);
+            return text;
+        }
+
+        private static RectTransform EnsureStatList(RectTransform parent, string scrollName, out ScrollRect scroll)
+        {
+            Transform existing = parent.Find(scrollName);
+            GameObject scrollObject = existing == null
+                ? new GameObject(scrollName, typeof(RectTransform), typeof(Image), typeof(ScrollRect))
+                : existing.gameObject;
+            if (existing == null) scrollObject.transform.SetParent(parent, false);
+            RectTransform scrollRect = scrollObject.GetComponent<RectTransform>();
+            scrollRect.anchorMin = Vector2.zero;
+            scrollRect.anchorMax = new Vector2(1f, 0.86f);
+            scrollRect.offsetMin = new Vector2(4f, 5f);
+            scrollRect.offsetMax = new Vector2(-4f, -2f);
+            scrollObject.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.001f);
+
+            Transform viewportTransform = scrollObject.transform.Find("Viewport");
+            GameObject viewportObject = viewportTransform == null
+                ? new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D))
+                : viewportTransform.gameObject;
+            if (viewportTransform == null) viewportObject.transform.SetParent(scrollObject.transform, false);
+            RectTransform viewport = viewportObject.GetComponent<RectTransform>();
+            viewport.anchorMin = Vector2.zero;
+            viewport.anchorMax = Vector2.one;
+            viewport.offsetMin = new Vector2(3f, 3f);
+            viewport.offsetMax = new Vector2(-13f, -3f);
+            viewportObject.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.001f);
+
+            Transform contentTransform = viewportObject.transform.Find("Content");
+            GameObject contentObject = contentTransform == null
+                ? new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter))
+                : contentTransform.gameObject;
+            if (contentTransform == null) contentObject.transform.SetParent(viewportObject.transform, false);
+            RectTransform content = contentObject.GetComponent<RectTransform>();
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = Vector2.one;
+            content.pivot = new Vector2(0.5f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = Vector2.zero;
+            VerticalLayoutGroup layout = contentObject.GetComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(3, 3, 3, 3);
+            layout.spacing = 6f;
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childControlWidth = true;
+            layout.childForceExpandWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandHeight = false;
+            ContentSizeFitter fitter = contentObject.GetComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            scroll = scrollObject.GetComponent<ScrollRect>();
+            scroll.viewport = viewport;
+            scroll.content = content;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 24f;
+            EnsureVerticalScrollbar(scroll, viewport);
+            return content;
+        }
+
+        private void EnsureCharacterSeparator(string name, float normalizedX)
+        {
+            Transform existing = characterStatsRoot.transform.Find(name);
+            GameObject separatorObject = existing == null
+                ? new GameObject(name, typeof(RectTransform), typeof(Image))
+                : existing.gameObject;
+            if (existing == null) separatorObject.transform.SetParent(characterStatsRoot.transform, false);
+            RectTransform rect = separatorObject.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(normalizedX, 0.025f);
+            rect.anchorMax = new Vector2(normalizedX, 0.975f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(2f, 0f);
+            rect.anchoredPosition = Vector2.zero;
+            Image image = separatorObject.GetComponent<Image>();
+            image.color = new Color(GameUiTheme.Accent.r, GameUiTheme.Accent.g, GameUiTheme.Accent.b, 0.62f);
+            image.raycastTarget = false;
+        }
+
+        private CharacterStatRow GetOrCreateCharacterStatRow(RectTransform parent, List<CharacterStatRow> rows, int index)
+        {
+            while (rows.Count <= index)
+            {
+                rows.Add(CreateCharacterStatRow(parent, rows.Count));
+            }
+
+            CharacterStatRow row = rows[index];
+            row.Root.SetActive(true);
+            return row;
+        }
+
+        private static CharacterStatRow CreateCharacterStatRow(RectTransform parent, int index)
+        {
+            GameObject rowObject = new GameObject($"Stat Row {index + 1}", typeof(RectTransform), typeof(Image), typeof(LayoutElement), typeof(EventTrigger));
+            rowObject.transform.SetParent(parent, false);
+            Image background = rowObject.GetComponent<Image>();
+            GameUiTheme.StyleSlot(background, occupied: true, hovered: false, selected: false, GameUiTheme.Accent);
+            LayoutElement layout = rowObject.GetComponent<LayoutElement>();
+            layout.minHeight = 44f;
+            layout.preferredHeight = 44f;
+
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Text label = CreateDetailsText("Stat Name", rowObject.transform, font, 14, FontStyle.Bold, TextAnchor.MiddleLeft);
+            label.rectTransform.anchorMin = Vector2.zero;
+            label.rectTransform.anchorMax = new Vector2(0.72f, 1f);
+            label.rectTransform.offsetMin = new Vector2(10f, 2f);
+            label.rectTransform.offsetMax = new Vector2(-3f, -2f);
+            label.color = GameUiTheme.TextPrimary;
+            label.raycastTarget = false;
+
+            Text value = CreateDetailsText("Stat Value", rowObject.transform, font, 15, FontStyle.Bold, TextAnchor.MiddleRight);
+            value.rectTransform.anchorMin = new Vector2(0.7f, 0f);
+            value.rectTransform.anchorMax = Vector2.one;
+            value.rectTransform.offsetMin = new Vector2(3f, 2f);
+            value.rectTransform.offsetMax = new Vector2(-10f, -2f);
+            value.color = GameUiTheme.AccentBright;
+            value.raycastTarget = false;
+            return new CharacterStatRow(rowObject, background, label, value, rowObject.GetComponent<EventTrigger>());
+        }
+
+        private void EnsureCharacterStatTooltip()
+        {
+            if (characterStatTooltipRoot != null)
+            {
+                return;
+            }
+
+            Transform existing = characterStatsRoot.transform.Find("Character Stat Breakdown Tooltip");
+            characterStatTooltipRoot = existing == null
+                ? new GameObject("Character Stat Breakdown Tooltip", typeof(RectTransform), typeof(Image), typeof(Canvas), typeof(CanvasGroup))
+                : existing.gameObject;
+            if (existing == null) characterStatTooltipRoot.transform.SetParent(characterStatsRoot.transform, false);
+            RectTransform tooltipRect = characterStatTooltipRoot.GetComponent<RectTransform>();
+            tooltipRect.anchorMin = new Vector2(0.27f, 0.2f);
+            tooltipRect.anchorMax = new Vector2(0.73f, 0.8f);
+            tooltipRect.offsetMin = Vector2.zero;
+            tooltipRect.offsetMax = Vector2.zero;
+            Image image = characterStatTooltipRoot.GetComponent<Image>();
+            GameUiTheme.StylePanel(image, raised: true);
+            image.color = new Color(GameUiTheme.PanelRaised.r, GameUiTheme.PanelRaised.g, GameUiTheme.PanelRaised.b, 0.99f);
+            Canvas canvas = characterStatTooltipRoot.GetComponent<Canvas>();
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 80;
+            CanvasGroup group = characterStatTooltipRoot.GetComponent<CanvasGroup>();
+            group.blocksRaycasts = false;
+            group.interactable = false;
+
+            Font font = feedbackText == null ? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") : feedbackText.font;
+            characterStatTooltipHeading = CreateDetailsText("Stat Breakdown Heading", characterStatTooltipRoot.transform, font, 18, FontStyle.Bold, TextAnchor.MiddleLeft);
+            characterStatTooltipHeading.rectTransform.anchorMin = new Vector2(0f, 0.84f);
+            characterStatTooltipHeading.rectTransform.anchorMax = Vector2.one;
+            characterStatTooltipHeading.rectTransform.offsetMin = new Vector2(18f, 0f);
+            characterStatTooltipHeading.rectTransform.offsetMax = new Vector2(-18f, -3f);
+            characterStatTooltipHeading.color = GameUiTheme.AccentBright;
+
+            Text details = EnsureScrollableSectionText(tooltipRect, "Stat Breakdown Details", font, out _);
+            details.transform.parent.parent.name = "Stat Breakdown Scroll";
+            RectTransform detailsScroll = details.transform.parent.parent.GetComponent<RectTransform>();
+            detailsScroll.anchorMin = Vector2.zero;
+            detailsScroll.anchorMax = new Vector2(1f, 0.84f);
+            detailsScroll.offsetMin = new Vector2(12f, 12f);
+            detailsScroll.offsetMax = new Vector2(-12f, -4f);
+            characterStatTooltipText = details;
+            characterStatTooltipRoot.SetActive(false);
         }
 
         private static GameObject CreateCharacterStatsRoot(Transform parent)
@@ -2609,8 +3140,8 @@ namespace UnityIsekaiGame.UI.Inventory
             root.transform.SetParent(parent, false);
 
             RectTransform rectTransform = root.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.49f, 0.04f);
-            rectTransform.anchorMax = new Vector2(0.985f, 0.96f);
+            rectTransform.anchorMin = new Vector2(0.01f, 0.025f);
+            rectTransform.anchorMax = new Vector2(0.99f, 0.975f);
             rectTransform.pivot = new Vector2(0.5f, 0.5f);
             rectTransform.offsetMin = Vector2.zero;
             rectTransform.offsetMax = Vector2.zero;
@@ -2731,6 +3262,51 @@ namespace UnityIsekaiGame.UI.Inventory
             return text;
         }
 
+        private sealed class CharacterStatRow
+        {
+            private readonly Image background;
+            private readonly Text label;
+            private readonly Text value;
+            private readonly EventTrigger trigger;
+
+            public CharacterStatRow(GameObject root, Image background, Text label, Text value, EventTrigger trigger)
+            {
+                Root = root;
+                this.background = background;
+                this.label = label;
+                this.value = value;
+                this.trigger = trigger;
+            }
+
+            public GameObject Root { get; }
+
+            public void Configure(string statName, string displayedValue, Action entered, Action exited)
+            {
+                label.text = statName ?? string.Empty;
+                value.text = displayedValue ?? string.Empty;
+                trigger.triggers ??= new List<EventTrigger.Entry>();
+                trigger.triggers.Clear();
+                AddTrigger(EventTriggerType.PointerEnter, () =>
+                {
+                    GameUiTheme.StyleSlot(background, occupied: true, hovered: true, selected: false, GameUiTheme.Accent);
+                    entered?.Invoke();
+                });
+                AddTrigger(EventTriggerType.PointerExit, () =>
+                {
+                    GameUiTheme.StyleSlot(background, occupied: true, hovered: false, selected: false, GameUiTheme.Accent);
+                    exited?.Invoke();
+                });
+                GameUiTheme.StyleSlot(background, occupied: true, hovered: false, selected: false, GameUiTheme.Accent);
+            }
+
+            private void AddTrigger(EventTriggerType type, Action action)
+            {
+                EventTrigger.Entry entry = new EventTrigger.Entry { eventID = type };
+                entry.callback.AddListener(_ => action?.Invoke());
+                trigger.triggers.Add(entry);
+            }
+        }
+
         private enum InventoryMenuSection
         {
             Inventory,
@@ -2755,6 +3331,186 @@ namespace UnityIsekaiGame.UI.Inventory
             public Button Button { get; }
             public Image ButtonImage { get; }
             public RectTransform ContentRoot { get; }
+        }
+    }
+
+    public static class CharacterStatBreakdownFormatter
+    {
+        private const string PositiveColor = "#91A65C";
+        private const string NegativeColor = "#D96552";
+        private const string MutedColor = "#C2A77A";
+
+        public static string FormatBaseAttribute(
+            RuntimeAttributeValueRecord record,
+            IReadOnlyList<RuntimeAttributeSourceContribution> contributions)
+        {
+            if (record == null)
+            {
+                return "<b>BASE:</b> --";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append("<b>BASE:</b> ");
+            builder.AppendLine(FormatNumber(record.foundationValue));
+
+            IEnumerable<RuntimeAttributeSourceContribution> matching = (contributions ?? Array.Empty<RuntimeAttributeSourceContribution>())
+                .Where(contribution => contribution != null && string.Equals(contribution.attributeId, record.attributeId, StringComparison.Ordinal));
+            bool hasModifier = false;
+            foreach (RuntimeAttributeSourceContribution contribution in matching)
+            {
+                hasModifier = true;
+                AppendModifier(builder, contribution.amount, FormatSource(contribution.sourceId, (CalculatedStatContributionSourceCategory)contribution.sourceCategory), percent: false);
+            }
+
+            if (!Mathf.Approximately(record.growthTotal, 0f))
+            {
+                hasModifier = true;
+                AppendModifier(builder, record.growthTotal, "Training & growth", percent: false);
+            }
+
+            if (!hasModifier)
+            {
+                builder.Append("<color=");
+                builder.Append(MutedColor);
+                builder.Append(">No active modifiers.</color>");
+            }
+
+            return builder.ToString().TrimEnd();
+        }
+
+        public static string FormatCalculatedStat(
+            CalculatedStatEvaluationBreakdown breakdown,
+            PlayerEquipment equipment,
+            float? liveAuthoritativeValue = null)
+        {
+            if (breakdown == null)
+            {
+                return "<b>BASE:</b> --\n<color=#C2A77A>No breakdown is available.</color>";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append("<b>BASE:</b> ");
+            builder.AppendLine(FormatNumber(breakdown.BaseValue + breakdown.AttributeWeightedTotal));
+            if (!Mathf.Approximately(breakdown.AttributeWeightedTotal, 0f))
+            {
+                builder.Append("<color=");
+                builder.Append(MutedColor);
+                builder.Append(">Includes ");
+                builder.Append(FormatSigned(breakdown.AttributeWeightedTotal, false));
+                builder.AppendLine(" from base attributes</color>");
+            }
+
+            IReadOnlyList<RuntimeCalculatedStatContribution> contributions = breakdown.Contributions;
+            if (contributions == null || contributions.Count == 0)
+            {
+                builder.Append("<color=");
+                builder.Append(MutedColor);
+                builder.AppendLine(">No active equipment, effect, or status modifiers.</color>");
+            }
+            else
+            {
+                foreach (RuntimeCalculatedStatContribution contribution in contributions)
+                {
+                    if (contribution == null) continue;
+                    CalculatedStatContributionDirection direction = (CalculatedStatContributionDirection)contribution.direction;
+                    CalculatedStatContributionKind kind = (CalculatedStatContributionKind)contribution.kind;
+                    float signedMagnitude = direction == CalculatedStatContributionDirection.Reduce
+                        ? -Mathf.Abs(contribution.magnitude)
+                        : Mathf.Abs(contribution.magnitude);
+                    string source = ResolveCalculatedSource(contribution, equipment);
+                    AppendModifier(builder, signedMagnitude, source, kind != CalculatedStatContributionKind.Flat);
+                }
+            }
+
+            if (liveAuthoritativeValue.HasValue && !Mathf.Approximately(liveAuthoritativeValue.Value, breakdown.FinalValue))
+            {
+                AppendModifier(
+                    builder,
+                    liveAuthoritativeValue.Value - breakdown.FinalValue,
+                    "Live authoritative resource synchronization",
+                    percent: false);
+            }
+
+            builder.Append("<color=");
+            builder.Append(MutedColor);
+            builder.Append(">Final: ");
+            builder.Append(FormatNumber(liveAuthoritativeValue ?? breakdown.FinalValue));
+            builder.Append("</color>");
+            return builder.ToString().TrimEnd();
+        }
+
+        private static string ResolveCalculatedSource(RuntimeCalculatedStatContribution contribution, PlayerEquipment equipment)
+        {
+            CalculatedStatContributionSourceCategory category = (CalculatedStatContributionSourceCategory)contribution.sourceCategory;
+            const string equipmentPrefix = "equipment.slot.";
+            if (category == CalculatedStatContributionSourceCategory.Equipment
+                && !string.IsNullOrWhiteSpace(contribution.sourceId)
+                && contribution.sourceId.StartsWith(equipmentPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                string slotName = contribution.sourceId.Substring(equipmentPrefix.Length);
+                if (Enum.TryParse(slotName, true, out EquipmentSlotType slotType))
+                {
+                    EquipmentSlotState equipped = equipment?.GetSlot(slotType);
+                    string itemName = equipped == null || equipped.IsEmpty || equipped.Item == null
+                        ? string.Empty
+                        : equipped.Item.DisplayName;
+                    return string.IsNullOrWhiteSpace(itemName)
+                        ? FormatWords(slotName)
+                        : $"{itemName} ({FormatWords(slotName)})";
+                }
+            }
+
+            return FormatSource(contribution.sourceId, category);
+        }
+
+        private static string FormatSource(string sourceId, CalculatedStatContributionSourceCategory category)
+        {
+            string source = FormatWords(sourceId);
+            string categoryName = FormatWords(category.ToString());
+            if (string.IsNullOrWhiteSpace(source)) return categoryName;
+            return source.IndexOf(categoryName, StringComparison.OrdinalIgnoreCase) >= 0
+                ? source
+                : $"{source} ({categoryName})";
+        }
+
+        private static void AppendModifier(StringBuilder builder, float amount, string source, bool percent)
+        {
+            bool positive = amount >= 0f;
+            builder.Append("<color=");
+            builder.Append(positive ? PositiveColor : NegativeColor);
+            builder.Append("><b>");
+            builder.Append(FormatSigned(amount, percent));
+            builder.Append("</b></color>  ");
+            builder.AppendLine(source);
+        }
+
+        private static string FormatSigned(float value, bool percent)
+        {
+            float displayed = percent ? value * 100f : value;
+            return $"{(displayed >= 0f ? "+" : string.Empty)}{displayed:0.##}{(percent ? "%" : string.Empty)}";
+        }
+
+        private static string FormatNumber(float value) => value.ToString("0.##");
+
+        private static string FormatWords(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) return string.Empty;
+            string tail = id.Split('.').LastOrDefault() ?? id;
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < tail.Length; i++)
+            {
+                char current = tail[i];
+                if (current == '-' || current == '_')
+                {
+                    builder.Append(' ');
+                    continue;
+                }
+
+                if (i > 0 && char.IsUpper(current) && char.IsLower(tail[i - 1])) builder.Append(' ');
+                builder.Append(i == 0 ? char.ToUpperInvariant(current) : current);
+            }
+
+            return builder.ToString().Trim();
         }
     }
 

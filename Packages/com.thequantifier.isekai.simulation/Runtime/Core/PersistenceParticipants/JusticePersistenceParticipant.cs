@@ -11,7 +11,7 @@ using UnityIsekaiGame.Organizations;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class JusticePersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class JusticePersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant, IPersistenceRevisionParticipant
     {
         public const string Key = "world.justice";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -64,6 +64,7 @@ namespace UnityIsekaiGame.Persistence
         public bool RequiresSceneReadiness => false;
         public bool RequiresDefinitionRegistry => true;
         public bool RequiresWorldEntityRegistry => false;
+        public long PersistenceRevision => runtime?.Revision ?? -1L;
 
         public PersistenceParticipantSaveResult CapturePayload()
         {
@@ -73,6 +74,16 @@ namespace UnityIsekaiGame.Persistence
             if (prepared == null || !prepared.Succeeded) return PersistenceParticipantSaveResult.Failure(prepared?.Message ?? "Justice snapshot failed validation.");
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(payload);
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null) return DeferredPersistenceParticipantCapture.Failure("Justice runtime is missing.");
+            JusticeRuntimeSaveData saveData = runtime.CreateSaveData();
+            JusticeValidationReport validation = validationService.Validate(saveData, registryProvider?.Invoke(), governmentProvider?.Invoke(), legalProvider?.Invoke(), organizationProvider?.Invoke(), authorityProvider?.Invoke(), crimeProvider?.Invoke(), ownerId, personProvider?.Invoke(), placeProvider?.Invoke());
+            if (!validation.IsValid) return DeferredPersistenceParticipantCapture.Failure(validation.Errors.FirstOrDefault() ?? "Justice snapshot failed validation.");
+            return DeferredPersistenceParticipantCapture.Success(() =>
+                PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData)));
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)

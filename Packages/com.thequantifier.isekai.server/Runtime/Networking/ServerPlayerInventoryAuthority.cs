@@ -13,6 +13,7 @@ namespace UnityIsekaiGame.Networking.Server
     {
         private NetworkPlayerInventory networkInventory;
         private NetworkPlayerVitals networkVitals;
+        private NetworkPlayerActor actor;
         private PlayerInventory inventory;
         private PlayerEquipment equipment;
         private DefinitionRegistry registry;
@@ -26,6 +27,59 @@ namespace UnityIsekaiGame.Networking.Server
         public InventorySaveData CreateInventorySaveData() => inventory?.CreateSaveData();
         public EquipmentSaveData CreateEquipmentSaveData() => equipment?.CreateSaveData();
 
+        public int CountAuthoritativeItem(ItemDefinition item)
+        {
+            return configured && item != null ? inventory.CountItem(item) : 0;
+        }
+
+        /// <summary>
+        /// Commits an item cost owned by another server-authoritative gameplay system. The local
+        /// inventory mutation is kept inside one publication boundary so clients never observe an
+        /// intermediate state and persistence is updated exactly once.
+        /// </summary>
+        public bool TryConsumeAuthoritativeItem(ItemDefinition item, int quantity, out string failure)
+        {
+            if (!configured || inventory == null || networkInventory == null || item == null || quantity <= 0)
+            {
+                failure = "Authoritative inventory is unavailable for the requested item cost.";
+                return false;
+            }
+
+            if (inventory.CountItem(item) < quantity)
+            {
+                failure = $"No {item.DisplayName} available.";
+                return false;
+            }
+
+            bool previousExecutingCommand = executingCommand;
+            InventorySaveData rollback = inventory.CreateSaveData();
+            executingCommand = true;
+            try
+            {
+                if (!inventory.RemoveItem(item, quantity))
+                {
+                    failure = $"Could not consume {item.DisplayName}.";
+                    return false;
+                }
+
+                PublishAndPersist();
+                failure = string.Empty;
+                return true;
+            }
+            catch (Exception exception)
+            {
+                RestoreInventoryRollback(rollback);
+                PersistState();
+                Debug.LogException(exception, this);
+                failure = $"The {item.DisplayName} cost could not be committed; the inventory transaction was rolled back.";
+                return false;
+            }
+            finally
+            {
+                executingCommand = previousExecutingCommand;
+            }
+        }
+
         public void Configure(
             NetworkPlayerInventory replicatedInventory,
             NetworkPlayerVitals replicatedVitals,
@@ -38,6 +92,8 @@ namespace UnityIsekaiGame.Networking.Server
             if (configured) throw new InvalidOperationException("Server inventory authority is already configured.");
             networkInventory = replicatedInventory ?? throw new ArgumentNullException(nameof(replicatedInventory));
             networkVitals = replicatedVitals ?? throw new ArgumentNullException(nameof(replicatedVitals));
+            actor = GetComponent<NetworkPlayerActor>()
+                ?? throw new InvalidOperationException("Server inventory authority requires a NetworkPlayerActor.");
             registry = definitionRegistry ?? throw new ArgumentNullException(nameof(definitionRegistry));
             worldItemAuthority = authoritativeWorldItems ?? throw new ArgumentNullException(nameof(authoritativeWorldItems));
             statePersisted = onStatePersisted;
@@ -78,6 +134,14 @@ namespace UnityIsekaiGame.Networking.Server
 
         private NetworkInventoryCommandResult ExecuteCommand(NetworkInventoryCommand command)
         {
+            if (actor?.IsPausedProtected == true)
+            {
+                return NetworkInventoryCommandResult.Reject(
+                    command.Sequence,
+                    InventoryAuthorityFailure.PlayerPaused,
+                    "Inventory actions are unavailable while the player is paused and protected.");
+            }
+
             executingCommand = true;
             try
             {
@@ -290,6 +354,12 @@ namespace UnityIsekaiGame.Networking.Server
 
         public bool TryCollectWorldPickup(NetworkWorldItemState pickupState, out string message)
         {
+            if (actor?.IsPausedProtected == true)
+            {
+                message = "World pickups are unavailable while the player is paused and protected.";
+                return false;
+            }
+
             if (!configured)
             {
                 message = "Authoritative inventory is not configured.";

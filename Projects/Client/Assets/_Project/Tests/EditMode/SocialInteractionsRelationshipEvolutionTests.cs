@@ -162,6 +162,70 @@ namespace UnityIsekaiGame.Tests
             Assert.That(fixture.Interactions.Count, Is.EqualTo(1));
         }
 
+        [Test]
+        public void IncrementalPersistenceCaptureIsBoundedAndRestartsAfterMutation()
+        {
+            using TestFixture fixture = CreateFixture();
+            Assert.That(fixture.Interactions.Execute(Request(
+                PrototypeSocialInteractionDefinitionFactory.GreetId,
+                "interaction.tx.incremental.first",
+                worldTime: 100d)).Succeeded, Is.True);
+
+            SocialInteractionRuntime.IncrementalSaveDataCapture capture =
+                fixture.Interactions.BeginIncrementalSaveDataCapture(maximumItemsPerFrame: 1, maximumMillisecondsPerFrame: 100d);
+            Assert.That(capture.TryContinue(out string firstFailure), Is.True, firstFailure);
+            Assert.That(capture.IsComplete, Is.False, "One work unit must not clone the whole social snapshot.");
+
+            Assert.That(fixture.Interactions.Execute(Request(
+                PrototypeSocialInteractionDefinitionFactory.ThankId,
+                "interaction.tx.incremental.second",
+                worldTime: 200d)).Succeeded, Is.True);
+
+            int continuations = 0;
+            while (!capture.IsComplete && continuations++ < 100)
+            {
+                Assert.That(capture.TryContinue(out string failure), Is.True, failure);
+            }
+
+            Assert.That(capture.IsComplete, Is.True);
+            Assert.That(capture.RevisionRestarts, Is.EqualTo(1));
+            Assert.That(capture.SaveData.records.Count, Is.EqualTo(2));
+            Assert.That(continuations, Is.GreaterThan(1));
+        }
+
+        [Test]
+        public void IncrementalAttitudeCaptureIsBoundedAndRestartsAfterMutation()
+        {
+            using TestFixture fixture = CreateFixture();
+            Assert.That(fixture.Interactions.Execute(Request(
+                PrototypeSocialInteractionDefinitionFactory.ComplimentId,
+                "interaction.tx.attitude-incremental.first",
+                worldTime: 100d)).Succeeded, Is.True);
+
+            InterpersonalAttitudeRuntime.IncrementalSaveDataCapture capture =
+                fixture.Attitudes.BeginIncrementalSaveDataCapture(maximumItemsPerFrame: 1, maximumMillisecondsPerFrame: 100d);
+            Assert.That(capture.TryContinue(out string firstFailure), Is.True, firstFailure);
+            Assert.That(capture.IsComplete, Is.False, "One work unit must not clone the whole attitude snapshot.");
+
+            Assert.That(fixture.Interactions.Execute(Request(
+                PrototypeSocialInteractionDefinitionFactory.InsultId,
+                "interaction.tx.attitude-incremental.second",
+                worldTime: 200d)).Succeeded, Is.True);
+
+            int continuations = 0;
+            while (!capture.IsComplete && continuations++ < 100)
+            {
+                Assert.That(capture.TryContinue(out string failure), Is.True, failure);
+            }
+
+            Assert.That(capture.IsComplete, Is.True);
+            Assert.That(capture.RevisionRestarts, Is.EqualTo(1));
+            InterpersonalAttitudeRuntimeSaveData expected = fixture.Attitudes.CreateSaveData();
+            Assert.That(capture.SaveData.records, Has.Count.EqualTo(expected.records.Count));
+            Assert.That(capture.SaveData.processedTransactionIds, Has.Count.EqualTo(expected.processedTransactionIds.Count));
+            Assert.That(continuations, Is.GreaterThan(1));
+        }
+
         private static SocialInteractionRequest Request(
             string definitionId,
             string transactionId,

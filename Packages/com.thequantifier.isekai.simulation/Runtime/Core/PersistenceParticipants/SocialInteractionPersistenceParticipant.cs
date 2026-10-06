@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityIsekaiGame.GameData;
 using UnityIsekaiGame.GameData.Persistence;
@@ -7,7 +8,7 @@ using UnityIsekaiGame.Social.Interactions;
 
 namespace UnityIsekaiGame.Persistence
 {
-    public sealed class SocialInteractionPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies
+    public sealed class SocialInteractionPersistenceParticipant : IPersistenceParticipant, IPersistenceParticipantDependencies, IDeferredPersistenceParticipant, IIncrementalPersistenceParticipant, IPersistenceRevisionParticipant
     {
         public const string Key = "world.social-interactions";
         public const int CurrentParticipantSchemaVersion = 1;
@@ -49,6 +50,7 @@ namespace UnityIsekaiGame.Persistence
         public bool RequiresSceneReadiness => false;
         public bool RequiresDefinitionRegistry => true;
         public bool RequiresWorldEntityRegistry => false;
+        public long PersistenceRevision => runtime?.Revision ?? -1L;
 
         public PersistenceParticipantSaveResult CapturePayload()
         {
@@ -66,6 +68,67 @@ namespace UnityIsekaiGame.Persistence
 
             DiscardPreparedPayload(prepared.PreparedPayload);
             return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+        }
+
+        public DeferredPersistenceParticipantCapture CaptureDeferredPayload()
+        {
+            if (runtime == null)
+            {
+                return DeferredPersistenceParticipantCapture.Failure("Social Interaction runtime is missing.");
+            }
+
+            SocialInteractionRuntimeSaveData saveData = runtime.CreateSaveData(deterministicOrder: false);
+            DefinitionRegistry registry = registryProvider?.Invoke();
+            string[] knownPersons = knownPersonProvider?.Invoke();
+
+            return BuildDeferredCapture(saveData, registry, knownPersons);
+        }
+
+        public IIncrementalPersistenceCapture BeginIncrementalCapture()
+        {
+            if (runtime == null) return new FailedIncrementalCapture("Social Interaction runtime is missing.");
+            return new IncrementalCapture(
+                runtime.BeginIncrementalSaveDataCapture(),
+                registryProvider?.Invoke(),
+                knownPersonProvider?.Invoke());
+        }
+
+        private static DeferredPersistenceParticipantCapture BuildDeferredCapture(
+            SocialInteractionRuntimeSaveData saveData,
+            DefinitionRegistry registry,
+            string[] knownPersons)
+        {
+            return DeferredPersistenceParticipantCapture.Success(() =>
+            {
+                saveData.records = saveData.records
+                    .Where(record => record != null)
+                    .OrderBy(record => record.worldTime)
+                    .ThenBy(record => record.interactionDefinitionId, StringComparer.Ordinal)
+                    .ThenBy(record => record.interactionRecordId, StringComparer.Ordinal)
+                    .ToList();
+                saveData.pendingInteractions = saveData.pendingInteractions
+                    .Where(item => item != null)
+                    .OrderBy(item => item.pendingInteractionId, StringComparer.Ordinal)
+                    .ToList();
+                saveData.promises = saveData.promises
+                    .Where(item => item != null)
+                    .OrderBy(item => item.promiseId, StringComparer.Ordinal)
+                    .ToList();
+                saveData.processedTransactions = saveData.processedTransactions
+                    .Where(item => item != null)
+                    .OrderBy(item => item.transactionId, StringComparer.Ordinal)
+                    .ToList();
+                saveData.cooldowns = saveData.cooldowns
+                    .Where(item => item != null)
+                    .OrderBy(item => item.cooldownKey, StringComparer.Ordinal)
+                    .ToList();
+                if (!SocialInteractionRuntime.ValidateSaveData(saveData, registry, knownPersons, out string failureReason))
+                {
+                    return PersistenceParticipantSaveResult.Failure(failureReason);
+                }
+
+                return PersistenceParticipantSaveResult.Success(PersistenceSerialization.Serialize(saveData));
+            });
         }
 
         public PersistenceParticipantPrepareResult PreparePayload(string payloadJson, int payloadSchemaVersion)
@@ -133,6 +196,64 @@ namespace UnityIsekaiGame.Persistence
             }
 
             public SocialInteractionRuntimeSaveData SaveData { get; }
+        }
+
+        private sealed class IncrementalCapture : IIncrementalPersistenceCapture
+        {
+            private readonly SocialInteractionRuntime.IncrementalSaveDataCapture capture;
+            private readonly DefinitionRegistry registry;
+            private readonly string[] knownPersons;
+
+            public IncrementalCapture(
+                SocialInteractionRuntime.IncrementalSaveDataCapture capture,
+                DefinitionRegistry registry,
+                string[] knownPersons)
+            {
+                this.capture = capture;
+                this.registry = registry;
+                this.knownPersons = knownPersons;
+            }
+
+            public bool TryContinue(
+                out bool completed,
+                out DeferredPersistenceParticipantCapture completedCapture,
+                out string failureReason)
+            {
+                completed = false;
+                completedCapture = null;
+                if (capture == null)
+                {
+                    failureReason = "Social Interaction incremental capture is missing.";
+                    return false;
+                }
+
+                if (!capture.TryContinue(out failureReason)) return false;
+                if (!capture.IsComplete) return true;
+                completed = true;
+                completedCapture = BuildDeferredCapture(capture.SaveData, registry, knownPersons);
+                return true;
+            }
+        }
+
+        private sealed class FailedIncrementalCapture : IIncrementalPersistenceCapture
+        {
+            private readonly string message;
+
+            public FailedIncrementalCapture(string message)
+            {
+                this.message = message ?? "Incremental capture failed.";
+            }
+
+            public bool TryContinue(
+                out bool completed,
+                out DeferredPersistenceParticipantCapture completedCapture,
+                out string failureReason)
+            {
+                completed = false;
+                completedCapture = null;
+                failureReason = message;
+                return false;
+            }
         }
     }
 }

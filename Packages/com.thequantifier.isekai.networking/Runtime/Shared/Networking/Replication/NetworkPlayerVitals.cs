@@ -28,6 +28,7 @@ namespace UnityIsekaiGame.Networking
             NetworkVariableWritePermission.Server);
 
         private AuthoritativeVitalsModel model;
+        private NetworkPlayerActor actor;
         private NetworkVitalsState configuredInitialState;
         private bool hasConfiguredInitialState;
         private float authoritativeDefense;
@@ -36,7 +37,11 @@ namespace UnityIsekaiGame.Networking
         public NetworkVitalsState CurrentState => replicatedState.Value;
         public bool HasState => CurrentState.Revision != 0u;
         public bool IsDefeated => CurrentState.IsDefeated;
-        public bool IsAuthoritativeHealthAvailable => IsSpawned && IsServer && model != null;
+        public float SprintRestartThreshold => sprintRestartThreshold;
+        public bool IsAuthoritativeHealthAvailable => IsSpawned
+            && IsServer
+            && model != null
+            && actor?.IsPausedProtected != true;
         public float AuthoritativeCurrentHealth => CurrentState.Health;
         public bool AuthoritativeDefeated => CurrentState.IsDefeated;
 
@@ -87,6 +92,7 @@ namespace UnityIsekaiGame.Networking
 
         public override void OnNetworkSpawn()
         {
+            actor = GetComponent<NetworkPlayerActor>();
             replicatedState.OnValueChanged += OnReplicatedStateChanged;
             if (!IsServer)
             {
@@ -120,7 +126,7 @@ namespace UnityIsekaiGame.Networking
 
         public bool EvaluateSprintServer(bool requested, bool moving, float deltaSeconds)
         {
-            if (!IsSpawned || !IsServer || model == null)
+            if (!IsSpawned || !IsServer || model == null || actor?.IsPausedProtected == true)
             {
                 return false;
             }
@@ -131,20 +137,26 @@ namespace UnityIsekaiGame.Networking
             return allowed;
         }
 
-        public bool TryDamageServer(float amount) => MutateServer(value => value.TryDamage(amount));
+        public bool TryDamageServer(float amount) => MutateWorldInteraction(value => value.TryDamage(amount));
         public bool TryApplyAuthoritativeDamage(float amount, bool defenseApplies, float minimumDamage, out float appliedAmount)
         {
+            if (actor?.IsPausedProtected == true)
+            {
+                appliedAmount = 0f;
+                return false;
+            }
+
             appliedAmount = defenseApplies
                 ? Mathf.Max(Mathf.Max(0f, minimumDamage), amount - authoritativeDefense)
                 : amount;
             return TryDamageServer(appliedAmount);
         }
-        public bool TryHealServer(float amount) => MutateServer(value => value.TryHeal(amount));
-        public bool TrySpendStaminaServer(float amount) => MutateServer(value => value.TrySpendStamina(amount, Time.realtimeSinceStartupAsDouble));
-        public bool TrySpendManaServer(float amount) => MutateServer(value => value.TrySpendMana(amount, Time.realtimeSinceStartupAsDouble));
-        public bool TryRestoreManaServer(float amount) => MutateServer(value => value.TryRestoreMana(amount));
-        public bool TryRestoreStaminaServer(float amount) => MutateServer(value => value.TryRestoreStamina(amount));
-        public bool TryReviveServer() => MutateServer(value => value.ReviveToMaximum());
+        public bool TryHealServer(float amount) => MutateWorldInteraction(value => value.TryHeal(amount));
+        public bool TrySpendStaminaServer(float amount) => MutateWorldInteraction(value => value.TrySpendStamina(amount, Time.realtimeSinceStartupAsDouble));
+        public bool TrySpendManaServer(float amount) => MutateWorldInteraction(value => value.TrySpendMana(amount, Time.realtimeSinceStartupAsDouble));
+        public bool TryRestoreManaServer(float amount) => MutateWorldInteraction(value => value.TryRestoreMana(amount));
+        public bool TryRestoreStaminaServer(float amount) => MutateWorldInteraction(value => value.TryRestoreStamina(amount));
+        public bool TryReviveServer() => MutateWorldInteraction(value => value.ReviveToMaximum());
 
         public bool RestoreStateServer(NetworkVitalsState state)
         {
@@ -165,6 +177,11 @@ namespace UnityIsekaiGame.Networking
             bool changed = mutation(model);
             PublishIfChanged(revision);
             return changed;
+        }
+
+        private bool MutateWorldInteraction(Func<AuthoritativeVitalsModel, bool> mutation)
+        {
+            return actor?.IsPausedProtected == true ? false : MutateServer(mutation);
         }
 
         private void PublishIfChanged(uint previousRevision)

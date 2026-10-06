@@ -1,13 +1,41 @@
+using System.Collections.Generic;
 using System.Text;
 using NUnit.Framework;
 using UnityEngine;
 using UnityIsekaiGame.Networking;
+using UnityIsekaiGame.Networking.Client;
 using UnityIsekaiGame.WorldLocations.SceneBinding;
 
 namespace UnityIsekaiGame.Tests
 {
     public sealed class AuthoritativeNarrativeProtocolTests
     {
+        [Test]
+        public void Commands_reject_unused_fields_and_invalid_party_payloads()
+        {
+            NarrativeCommandValidationResult smuggledSecondary = NetworkNarrativeCommandValidator.Validate(
+                new NetworkNarrativeCommand(1u, NarrativeAuthorityCommandType.Interact, "interaction.desk", "unexpected"),
+                0u);
+            Assert.That(smuggledSecondary.Succeeded, Is.False);
+
+            NarrativeCommandValidationResult invalidReady = NetworkNarrativeCommandValidator.Validate(
+                new NetworkNarrativeCommand(2u, NarrativeAuthorityCommandType.SetPartyReady, "self", value: 2),
+                1u);
+            Assert.That(invalidReady.Succeeded, Is.False);
+
+            int invalidSettings = 4;
+            NarrativeCommandValidationResult invalidEnum = NetworkNarrativeCommandValidator.Validate(
+                new NetworkNarrativeCommand(3u, NarrativeAuthorityCommandType.SetPartySettings, value: invalidSettings),
+                2u);
+            Assert.That(invalidEnum.Succeeded, Is.False);
+
+            int validSettings = 2 | (3 << 8) | (1 << 16) | (5 << 24);
+            NarrativeCommandValidationResult valid = NetworkNarrativeCommandValidator.Validate(
+                new NetworkNarrativeCommand(4u, NarrativeAuthorityCommandType.SetPartySettings, value: validSettings),
+                3u);
+            Assert.That(valid.Succeeded, Is.True, valid.Message);
+        }
+
         [Test]
         public void Commands_reject_replays_invalid_types_and_missing_targets()
         {
@@ -78,6 +106,53 @@ namespace UnityIsekaiGame.Tests
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        [Test]
+        public void Identical_in_flight_interactions_are_deduplicated()
+        {
+            NetworkNarrativeCommand pending = new NetworkNarrativeCommand(
+                17u,
+                NarrativeAuthorityCommandType.Interact,
+                "interaction-point.guild-desk");
+
+            Assert.That(LocalNarrativeAuthorityBridge.RepresentsSamePendingAction(
+                pending,
+                NarrativeAuthorityCommandType.Interact,
+                "interaction-point.guild-desk",
+                string.Empty,
+                0,
+                0), Is.True);
+            Assert.That(LocalNarrativeAuthorityBridge.RepresentsSamePendingAction(
+                pending,
+                NarrativeAuthorityCommandType.Interact,
+                "interaction-point.mayor-desk",
+                string.Empty,
+                0,
+                0), Is.False);
+        }
+
+        [Test]
+        public void Narrative_snapshots_apply_only_when_a_complete_generation_is_present()
+        {
+            System.Random random = new System.Random(8173);
+            StringBuilder body = new StringBuilder(16000);
+            for (int i = 0; i < 16000; i++) body.Append((char)('a' + random.Next(26)));
+            string json = $"{{\"schemaVersion\":1,\"personId\":\"person.test\",\"payload\":\"{body}\"}}";
+            string[] generationSeven = NetworkNarrativeSnapshotCodec.CreateChunks(json, 7u);
+            string[] generationEight = NetworkNarrativeSnapshotCodec.CreateChunks(json.Replace("person.test", "person.next"), 8u);
+
+            Assert.That(generationSeven.Length, Is.GreaterThan(1));
+            Assert.That(NetworkNarrativeSnapshotCodec.TryAssemble(generationSeven, 7u, out string assembled), Is.True);
+            Assert.That(assembled, Is.EqualTo(json));
+
+            List<string> incomplete = new List<string>(generationSeven);
+            incomplete.RemoveAt(incomplete.Count - 1);
+            Assert.That(NetworkNarrativeSnapshotCodec.TryAssemble(incomplete, 7u, out _), Is.False);
+
+            List<string> mixed = new List<string>(generationSeven) { [0] = generationEight[0] };
+            Assert.That(NetworkNarrativeSnapshotCodec.TryAssemble(mixed, 7u, out _), Is.False,
+                "Chunks from an uncommitted generation must never be parsed as a client snapshot.");
         }
     }
 }

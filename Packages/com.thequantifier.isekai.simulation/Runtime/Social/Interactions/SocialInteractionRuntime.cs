@@ -319,16 +319,182 @@ namespace UnityIsekaiGame.Social.Interactions
 
         public SocialInteractionRuntimeSaveData CreateSaveData()
         {
+            return CreateSaveData(deterministicOrder: true);
+        }
+
+        public SocialInteractionRuntimeSaveData CreateSaveData(bool deterministicOrder)
+        {
+            IEnumerable<SocialInteractionRecordData> records = recordsById.Values.Where(record => record != null);
+            IEnumerable<SocialPendingInteractionData> pending = pendingById.Values.Where(item => item != null);
+            IEnumerable<SocialPromiseData> promises = promisesById.Values.Where(item => item != null);
+            IEnumerable<SocialInteractionProcessedTransactionData> transactions = processedTransactions.Values.Where(item => item != null);
+            IEnumerable<SocialInteractionCooldownData> cooldowns = cooldownsByKey.Values.Where(item => item != null);
+            if (deterministicOrder)
+            {
+                records = Ordered(records);
+                pending = pending.OrderBy(item => item.pendingInteractionId, StringComparer.Ordinal);
+                promises = promises.OrderBy(item => item.promiseId, StringComparer.Ordinal);
+                transactions = transactions.OrderBy(item => item.transactionId, StringComparer.Ordinal);
+                cooldowns = cooldowns.OrderBy(item => item.cooldownKey, StringComparer.Ordinal);
+            }
+
             return new SocialInteractionRuntimeSaveData
             {
                 schemaVersion = SocialInteractionRuntimeSaveData.CurrentSchemaVersion,
                 revision = Revision,
-                records = Ordered(recordsById.Values).Select(record => record.Clone()).ToList(),
-                pendingInteractions = pendingById.Values.OrderBy(item => item.pendingInteractionId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
-                promises = promisesById.Values.OrderBy(item => item.promiseId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
-                processedTransactions = processedTransactions.Values.OrderBy(item => item.transactionId, StringComparer.Ordinal).Select(item => item.Clone()).ToList(),
-                cooldowns = cooldownsByKey.Values.OrderBy(item => item.cooldownKey, StringComparer.Ordinal).Select(item => item.Clone()).ToList()
+                records = records.Select(record => record.Clone()).ToList(),
+                pendingInteractions = pending.Select(item => item.Clone()).ToList(),
+                promises = promises.Select(item => item.Clone()).ToList(),
+                processedTransactions = transactions.Select(item => item.Clone()).ToList(),
+                cooldowns = cooldowns.Select(item => item.Clone()).ToList()
             };
+        }
+
+        public IncrementalSaveDataCapture BeginIncrementalSaveDataCapture(
+            int maximumItemsPerFrame = 256,
+            double maximumMillisecondsPerFrame = 2d,
+            int maximumRevisionRestarts = 8)
+        {
+            return new IncrementalSaveDataCapture(
+                this,
+                Math.Max(1, maximumItemsPerFrame),
+                Math.Max(0.1d, maximumMillisecondsPerFrame),
+                Math.Max(0, maximumRevisionRestarts));
+        }
+
+        public sealed class IncrementalSaveDataCapture
+        {
+            private readonly SocialInteractionRuntime runtime;
+            private readonly int maximumItemsPerFrame;
+            private readonly double maximumMillisecondsPerFrame;
+            private readonly int maximumRevisionRestarts;
+            private SocialInteractionRecordData[] records = Array.Empty<SocialInteractionRecordData>();
+            private SocialPendingInteractionData[] pending = Array.Empty<SocialPendingInteractionData>();
+            private SocialPromiseData[] promises = Array.Empty<SocialPromiseData>();
+            private SocialInteractionProcessedTransactionData[] transactions = Array.Empty<SocialInteractionProcessedTransactionData>();
+            private SocialInteractionCooldownData[] cooldowns = Array.Empty<SocialInteractionCooldownData>();
+            private SocialInteractionRuntimeSaveData saveData;
+            private long capturedRevision;
+            private int recordIndex;
+            private int pendingIndex;
+            private int promiseIndex;
+            private int transactionIndex;
+            private int cooldownIndex;
+            private int revisionRestarts;
+
+            internal IncrementalSaveDataCapture(
+                SocialInteractionRuntime runtime,
+                int maximumItemsPerFrame,
+                double maximumMillisecondsPerFrame,
+                int maximumRevisionRestarts)
+            {
+                this.runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+                this.maximumItemsPerFrame = maximumItemsPerFrame;
+                this.maximumMillisecondsPerFrame = maximumMillisecondsPerFrame;
+                this.maximumRevisionRestarts = maximumRevisionRestarts;
+                ResetSnapshot();
+            }
+
+            public SocialInteractionRuntimeSaveData SaveData => IsComplete ? saveData : null;
+            public bool IsComplete { get; private set; }
+            public int RevisionRestarts => revisionRestarts;
+
+            public bool TryContinue(out string failureReason)
+            {
+                failureReason = string.Empty;
+                if (IsComplete) return true;
+                if (runtime.Revision != capturedRevision)
+                {
+                    if (revisionRestarts >= maximumRevisionRestarts)
+                    {
+                        failureReason = $"Social Interaction snapshot changed during capture more than {maximumRevisionRestarts} times.";
+                        return false;
+                    }
+
+                    revisionRestarts++;
+                    ResetSnapshot();
+                }
+
+                var timer = System.Diagnostics.Stopwatch.StartNew();
+                int copied = 0;
+                while (copied < maximumItemsPerFrame && timer.Elapsed.TotalMilliseconds < maximumMillisecondsPerFrame)
+                {
+                    if (recordIndex < records.Length)
+                    {
+                        saveData.records.Add(records[recordIndex++].Clone());
+                    }
+                    else if (pendingIndex < pending.Length)
+                    {
+                        saveData.pendingInteractions.Add(pending[pendingIndex++].Clone());
+                    }
+                    else if (promiseIndex < promises.Length)
+                    {
+                        saveData.promises.Add(promises[promiseIndex++].Clone());
+                    }
+                    else if (transactionIndex < transactions.Length)
+                    {
+                        saveData.processedTransactions.Add(transactions[transactionIndex++].Clone());
+                    }
+                    else if (cooldownIndex < cooldowns.Length)
+                    {
+                        saveData.cooldowns.Add(cooldowns[cooldownIndex++].Clone());
+                    }
+                    else
+                    {
+                        break;
+                    }
+
+                    copied++;
+                }
+
+                bool exhausted = recordIndex >= records.Length
+                    && pendingIndex >= pending.Length
+                    && promiseIndex >= promises.Length
+                    && transactionIndex >= transactions.Length
+                    && cooldownIndex >= cooldowns.Length;
+                if (!exhausted) return true;
+                if (runtime.Revision != capturedRevision)
+                {
+                    if (revisionRestarts >= maximumRevisionRestarts)
+                    {
+                        failureReason = $"Social Interaction snapshot changed during capture more than {maximumRevisionRestarts} times.";
+                        return false;
+                    }
+
+                    revisionRestarts++;
+                    ResetSnapshot();
+                    return true;
+                }
+
+                IsComplete = true;
+                return true;
+            }
+
+            private void ResetSnapshot()
+            {
+                capturedRevision = runtime.Revision;
+                records = runtime.recordsById.Values.Where(item => item != null).ToArray();
+                pending = runtime.pendingById.Values.Where(item => item != null).ToArray();
+                promises = runtime.promisesById.Values.Where(item => item != null).ToArray();
+                transactions = runtime.processedTransactions.Values.Where(item => item != null).ToArray();
+                cooldowns = runtime.cooldownsByKey.Values.Where(item => item != null).ToArray();
+                saveData = new SocialInteractionRuntimeSaveData
+                {
+                    schemaVersion = SocialInteractionRuntimeSaveData.CurrentSchemaVersion,
+                    revision = capturedRevision,
+                    records = new List<SocialInteractionRecordData>(records.Length),
+                    pendingInteractions = new List<SocialPendingInteractionData>(pending.Length),
+                    promises = new List<SocialPromiseData>(promises.Length),
+                    processedTransactions = new List<SocialInteractionProcessedTransactionData>(transactions.Length),
+                    cooldowns = new List<SocialInteractionCooldownData>(cooldowns.Length)
+                };
+                recordIndex = 0;
+                pendingIndex = 0;
+                promiseIndex = 0;
+                transactionIndex = 0;
+                cooldownIndex = 0;
+                IsComplete = false;
+            }
         }
 
         public int PruneHistory(int maximumRecords, int maximumTransactions)
@@ -352,25 +518,30 @@ namespace UnityIsekaiGame.Social.Interactions
             }
 
             HashSet<string> retainedRecordIds = new HashSet<string>(recordsById.Keys, StringComparer.Ordinal);
+            int retainedTransactionCount = processedTransactions.Values.Count(item =>
+                item != null && retainedRecordIds.Contains(item.interactionRecordId));
+            int historicalTransactionBudget = Math.Max(0, maximumTransactions - retainedTransactionCount);
+            int removedTransactions = 0;
             foreach (string transactionId in processedTransactions.Values
-                .Where(item => !retainedRecordIds.Contains(item.interactionRecordId))
+                .Where(item => item != null && !retainedRecordIds.Contains(item.interactionRecordId))
                 .OrderByDescending(item => item.revision)
-                .Skip(maximumTransactions)
+                .Skip(historicalTransactionBudget)
                 .Select(item => item.transactionId)
                 .ToArray())
             {
-                processedTransactions.Remove(transactionId);
+                if (processedTransactions.Remove(transactionId)) removedTransactions++;
             }
 
+            int removedCooldowns = 0;
             foreach (string cooldownKey in cooldownsByKey.Values
                 .Where(item => !retainedRecordIds.Contains(item.sourceInteractionRecordId))
                 .Select(item => item.cooldownKey)
                 .ToArray())
             {
-                cooldownsByKey.Remove(cooldownKey);
+                if (cooldownsByKey.Remove(cooldownKey)) removedCooldowns++;
             }
 
-            if (removable.Length > 0)
+            if (removable.Length > 0 || removedTransactions > 0 || removedCooldowns > 0)
             {
                 Revision++;
                 IsDirty = true;
