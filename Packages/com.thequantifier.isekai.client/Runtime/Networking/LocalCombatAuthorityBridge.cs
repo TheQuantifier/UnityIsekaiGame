@@ -28,6 +28,7 @@ namespace UnityIsekaiGame.Networking.Client
         private readonly List<NetworkCombatantState> snapshot = new List<NetworkCombatantState>();
         private readonly Dictionary<string, ClientCombatantBinding> combatants = new Dictionary<string, ClientCombatantBinding>(StringComparer.Ordinal);
         private readonly Dictionary<uint, SpellProjectile> predictedSpellProjectiles = new Dictionary<uint, SpellProjectile>();
+        private readonly Dictionary<uint, SpellProjectile> predictedRangedProjectiles = new Dictionary<uint, SpellProjectile>();
         private NetworkPlayerCombat networkCombat;
         private NetworkCombatWorldState worldState;
         private uint pendingSnapshotRevision;
@@ -76,7 +77,10 @@ namespace UnityIsekaiGame.Networking.Client
             if (input == null || input.GameplayInputBlocked) return;
 
             Vector3 aim = ResolveAimDirection();
-            if (input.ConsumeAttack()) networkCombat.RequestPrimaryAttack(aim);
+            if (input.ConsumeAttack() && networkCombat.RequestPrimaryAttack(aim))
+            {
+                SpawnPredictedRangedProjectile(networkCombat.LastSubmittedCommandSequence, aim);
+            }
             if (input.ConsumeCastPrimarySpell())
             {
                 SpellDefinition spell = spellLoadout == null ? null : spellLoadout.SelectedSpell;
@@ -245,6 +249,13 @@ namespace UnityIsekaiGame.Networking.Client
                 Destroy(rejectedProjectile.gameObject);
             }
 
+            if (!result.Succeeded && predictedRangedProjectiles.Remove(result.Sequence, out SpellProjectile rejectedRangedProjectile)
+                && rejectedRangedProjectile != null)
+            {
+                rejectedRangedProjectile.Completed -= OnPredictedRangedProjectileCompleted;
+                Destroy(rejectedRangedProjectile.gameObject);
+            }
+
             PublishFeedback(result.MessageText, !result.Succeeded);
             if (smokeEnabled && result.Succeeded && result.AppliedAmount > 0f)
             {
@@ -347,6 +358,54 @@ namespace UnityIsekaiGame.Networking.Client
             Debug.Log($"[Network Combat] Spawned {spell.DisplayName} projectile presentation for command {sequence}.", this);
         }
 
+        private void SpawnPredictedRangedProjectile(uint sequence, Vector3 direction)
+        {
+            RangedWeaponData weapon = localMeleeCombat == null ? null : localMeleeCombat.EquippedRangedWeapon;
+            if (sequence == 0u || weapon?.IsWeapon != true) return;
+
+            Transform origin = aimOrigin == null && Camera.main != null ? Camera.main.transform : aimOrigin;
+            Vector3 spawnPosition = origin == null
+                ? transform.position + Vector3.up * 1.4f
+                : origin.TransformPoint(weapon.LaunchOffset);
+            Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);
+            SpellProjectile projectile = weapon.ProjectilePrefab == null
+                ? CreatePresentationProjectile(spawnPosition, rotation, weapon.ProjectileHitRadius, weapon.AttackName)
+                : Instantiate(weapon.ProjectilePrefab, spawnPosition, rotation);
+            if (projectile == null) return;
+
+            projectile.name = $"Predicted {weapon.AttackName} Projectile";
+            if (weapon.ProjectileVisualPrefab != null)
+            {
+                GameObject visual = Instantiate(weapon.ProjectileVisualPrefab, projectile.transform);
+                visual.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            }
+
+            projectile.Initialize(
+                input == null ? gameObject : input.gameObject,
+                direction,
+                weapon.ProjectileSpeed,
+                weapon.ProjectileLifetime,
+                (_, _) => { });
+            projectile.Completed += OnPredictedRangedProjectileCompleted;
+            predictedRangedProjectiles[sequence] = projectile;
+            Debug.Log($"[Network Combat] Spawned {weapon.AttackName} projectile presentation for command {sequence}.", this);
+        }
+
+        private static SpellProjectile CreatePresentationProjectile(
+            Vector3 position,
+            Quaternion rotation,
+            float hitRadius,
+            string attackName)
+        {
+            GameObject projectileObject = new GameObject($"{attackName} Projectile Presentation");
+            projectileObject.transform.SetPositionAndRotation(position, rotation);
+            projectileObject.AddComponent<SphereCollider>().radius = Mathf.Max(0.01f, hitRadius);
+            Rigidbody body = projectileObject.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.useGravity = false;
+            return projectileObject.AddComponent<SpellProjectile>();
+        }
+
         private void OnPredictedSpellProjectileCompleted(SpellProjectile projectile)
         {
             if (projectile == null) return;
@@ -362,6 +421,21 @@ namespace UnityIsekaiGame.Networking.Client
             if (sequence != 0u) predictedSpellProjectiles.Remove(sequence);
         }
 
+        private void OnPredictedRangedProjectileCompleted(SpellProjectile projectile)
+        {
+            if (projectile == null) return;
+            projectile.Completed -= OnPredictedRangedProjectileCompleted;
+            uint sequence = 0u;
+            foreach (KeyValuePair<uint, SpellProjectile> entry in predictedRangedProjectiles)
+            {
+                if (!ReferenceEquals(entry.Value, projectile)) continue;
+                sequence = entry.Key;
+                break;
+            }
+
+            if (sequence != 0u) predictedRangedProjectiles.Remove(sequence);
+        }
+
         private void ClearPredictedSpellProjectiles()
         {
             foreach (SpellProjectile projectile in predictedSpellProjectiles.Values)
@@ -372,6 +446,14 @@ namespace UnityIsekaiGame.Networking.Client
             }
 
             predictedSpellProjectiles.Clear();
+            foreach (SpellProjectile projectile in predictedRangedProjectiles.Values)
+            {
+                if (projectile == null) continue;
+                projectile.Completed -= OnPredictedRangedProjectileCompleted;
+                Destroy(projectile.gameObject);
+            }
+
+            predictedRangedProjectiles.Clear();
         }
 
         private void ResolveReferences()

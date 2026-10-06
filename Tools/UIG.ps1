@@ -18,6 +18,9 @@ $script:UigMovementMonitorReadyPath = Join-Path $script:UigRuntimeLogDirectory '
 $script:UigMovementLatencyCsvPath = Join-Path $script:UigRuntimeLogDirectory 'action-trace.csv'
 $script:UigServerFrameStallCsvPath = Join-Path $script:UigRuntimeLogDirectory 'server-frame-stalls.csv'
 $script:UigMovementMonitorStartupErrorPath = Join-Path $script:UigRuntimeLogDirectory 'movement-latency-monitor-startup-error.log'
+$script:UigTraceStatusPath = Join-Path $script:UigRuntimeLogDirectory 'action-trace-status.json'
+$script:UigTraceArchiveDirectory = Join-Path $script:UigRuntimeLogDirectory 'TraceArchive'
+$script:UigTraceArchiveRetention = 30
 
 function Get-UigAuthenticationToken {
     $directory = Split-Path -Parent $script:UigAuthenticationTokenPath
@@ -299,6 +302,40 @@ function Get-UigMovementMonitorProcess {
     $process
 }
 
+function Move-UigTraceSessionToArchive {
+    $traceFiles = @(
+        [pscustomobject]@{ Path = $script:UigMovementLatencyCsvPath; Prefix = 'action-trace' },
+        [pscustomobject]@{ Path = $script:UigServerFrameStallCsvPath; Prefix = 'server-frame-stalls' },
+        [pscustomobject]@{ Path = $script:UigMovementMonitorStartupErrorPath; Prefix = 'monitor-errors' }
+    )
+    $existing = @($traceFiles | Where-Object {
+        (Test-Path -LiteralPath $_.Path -PathType Leaf) -and (Get-Item -LiteralPath $_.Path).Length -gt 0
+    })
+    if ($existing.Count -eq 0) { return }
+
+    New-Item -ItemType Directory -Path $script:UigTraceArchiveDirectory -Force | Out-Null
+    $stamp = [DateTime]::Now.ToString('yyyyMMdd-HHmmss')
+    foreach ($entry in $existing) {
+        $extension = [System.IO.Path]::GetExtension($entry.Path)
+        $destination = Join-Path $script:UigTraceArchiveDirectory "$($entry.Prefix)-$stamp$extension"
+        $suffix = 1
+        while (Test-Path -LiteralPath $destination) {
+            $destination = Join-Path $script:UigTraceArchiveDirectory "$($entry.Prefix)-$stamp-$suffix$extension"
+            $suffix++
+        }
+        Move-Item -LiteralPath $entry.Path -Destination $destination
+    }
+
+    foreach ($prefix in @('action-trace', 'server-frame-stalls', 'monitor-errors')) {
+        $archives = @(Get-ChildItem -LiteralPath $script:UigTraceArchiveDirectory -Filter "$prefix-*" -File |
+            Sort-Object LastWriteTime -Descending)
+        if ($archives.Count -gt $script:UigTraceArchiveRetention) {
+            $archives | Select-Object -Skip $script:UigTraceArchiveRetention |
+                Remove-Item -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 function Start-UigMovementMonitor {
     param([switch]$Reset)
 
@@ -317,8 +354,8 @@ function Start-UigMovementMonitor {
 
     New-Item -ItemType Directory -Path $script:UigRuntimeLogDirectory -Force | Out-Null
     if ($Reset) {
-        Remove-Item -LiteralPath $script:UigMovementLatencyCsvPath -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $script:UigServerFrameStallCsvPath -Force -ErrorAction SilentlyContinue
+        Move-UigTraceSessionToArchive
+        Remove-Item -LiteralPath $script:UigTraceStatusPath -Force -ErrorAction SilentlyContinue
     }
     Remove-Item -LiteralPath $script:UigMovementMonitorReadyPath -Force -ErrorAction SilentlyContinue
 
@@ -398,6 +435,107 @@ function Show-UigMovementMonitorStatus {
     Write-Host "Sample history: $script:UigMovementLatencyCsvPath"
 }
 
+function Get-UigTraceStatusRecord {
+    if (-not (Test-Path -LiteralPath $script:UigTraceStatusPath -PathType Leaf)) { return $null }
+    try {
+        Get-Content -LiteralPath $script:UigTraceStatusPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        return $null
+    }
+}
+
+function Show-UigTraceHealth {
+    $status = Get-UigTraceStatusRecord
+    if ($null -eq $status) {
+        Write-Host 'No monitor heartbeat is available yet.' -ForegroundColor Yellow
+        return
+    }
+
+    $updated = [DateTimeOffset]::Parse($status.updatedUtc).UtcDateTime
+    $ageSeconds = [Math]::Max(0d, ([DateTime]::UtcNow - $updated).TotalSeconds)
+    $lastSampleAge = 'never'
+    if ($null -ne $status.PSObject.Properties['lastMatchedSampleUtc'] -and
+        -not [string]::IsNullOrWhiteSpace([string]$status.lastMatchedSampleUtc)) {
+        $lastSampleUtc = [DateTimeOffset]::Parse($status.lastMatchedSampleUtc).UtcDateTime
+        $lastSampleAge = '{0:F1}s ago' -f [Math]::Max(0d, ([DateTime]::UtcNow - $lastSampleUtc).TotalSeconds)
+    }
+    $clientBacklog = if ($null -ne $status.PSObject.Properties['clientLogBacklogBytes']) { $status.clientLogBacklogBytes } else { 0 }
+    $serverBacklog = if ($null -ne $status.PSObject.Properties['serverLogBacklogBytes']) { $status.serverLogBacklogBytes } else { 0 }
+    $monitorErrors = if ($null -ne $status.PSObject.Properties['monitorErrors']) { $status.monitorErrors } else { 0 }
+    $heartbeatColor = if ($ageSeconds -le 3d) { 'Green' } elseif ($ageSeconds -le 10d) { 'Yellow' } else { 'Red' }
+    Write-Host ("Monitor heartbeat: {0} ({1:F1}s old)" -f $status.state, $ageSeconds) -ForegroundColor $heartbeatColor
+    [pscustomobject]@{
+        Server = if ($status.serverRunning) { 'running' } else { 'stopped' }
+        Client = if ($status.clientRunning) { 'running' } else { 'stopped' }
+        Samples = $status.sessionSamples
+        RatePerSec = $status.samplesPerSecond
+        LastSample = $lastSampleAge
+        CurrentMs = $status.currentMs
+        MeanMs = $status.meanMs
+        P95Ms = $status.p95Ms
+        MaxMs = $status.maximumMs
+        Pending = "$($status.pendingClient)/$($status.pendingServer)"
+        BacklogBytes = "$clientBacklog/$serverBacklog"
+        Expired = "$($status.expiredClient)/$($status.expiredServer)"
+        Warnings = $status.warningSamples
+        Critical = $status.criticalSamples
+        ServerStalls = $status.serverStalls
+        MonitorErrors = $monitorErrors
+    } | Format-List
+}
+
+function Show-UigTraceSummary {
+    param([string]$Path = $script:UigMovementLatencyCsvPath)
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        Write-Host "No action trace samples exist at '$Path'." -ForegroundColor Yellow
+        return
+    }
+    $rows = @(Import-Csv -LiteralPath $Path)
+    if ($rows.Count -eq 0) {
+        Write-Host 'The action trace contains no matched samples yet.' -ForegroundColor Yellow
+        return
+    }
+
+    $summary = foreach ($group in ($rows | Group-Object Category | Sort-Object Name)) {
+        [double[]]$values = @($group.Group | ForEach-Object {
+            [double]::Parse($_.LatencyMs, [Globalization.CultureInfo]::InvariantCulture)
+        } | Sort-Object)
+        $measure = $values | Measure-Object -Average -Maximum
+        $p95Index = [Math]::Max(0, [Math]::Min($values.Count - 1, [int][Math]::Ceiling($values.Count * 0.95d) - 1))
+        [pscustomobject]@{
+            Family = $group.Name
+            Samples = $values.Count
+            MeanMs = [Math]::Round($measure.Average, 3)
+            P95Ms = [Math]::Round($values[$p95Index], 3)
+            MaxMs = [Math]::Round($measure.Maximum, 3)
+        }
+    }
+    Write-Host "Trace summary: $Path" -ForegroundColor Cyan
+    $summary | Format-Table -AutoSize
+
+    $gameRows = @($rows | Where-Object { $_.Background -ne 'true' })
+    $backgroundRows = @($rows | Where-Object { $_.Background -eq 'true' })
+    if ($gameRows.Count -gt 0 -and $backgroundRows.Count -gt 0) {
+        $gameMean = (@($gameRows | ForEach-Object { [double]$_.LatencyMs }) | Measure-Object -Average).Average
+        $backgroundMean = (@($backgroundRows | ForEach-Object { [double]$_.LatencyMs }) | Measure-Object -Average).Average
+        Write-Host ('Overall game response change: {0:F3} ms ({1:F3} total - {2:F3} background)' -f
+            [Math]::Max(0d, $gameMean - $backgroundMean), $gameMean, $backgroundMean) -ForegroundColor Cyan
+    }
+}
+
+function Show-UigTraceArchives {
+    if (-not (Test-Path -LiteralPath $script:UigTraceArchiveDirectory -PathType Container)) {
+        Write-Host 'No archived trace sessions exist yet.' -ForegroundColor Yellow
+        return
+    }
+    Get-ChildItem -LiteralPath $script:UigTraceArchiveDirectory -File |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object LastWriteTime, Length, Name |
+        Format-Table -AutoSize
+}
+
 function Archive-UigServerCaptureMetrics {
     $logPath = Join-Path $script:UigRuntimeLogDirectory 'server.log'
     if (-not (Test-Path -LiteralPath $logPath -PathType Leaf)) {
@@ -464,14 +602,36 @@ function Assert-UigRuntimeTraceCapable {
 }
 
 function Start-UigTrace {
+    param([switch]$NewSession)
+
     $servers = @(Get-UigProcesses $script:UigServerExecutable)
     $clients = @(Get-UigTrackedClientProcess 'default')
     if ($servers.Count -gt 0) { Assert-UigRuntimeTraceCapable $servers 'server' }
     if ($clients.Count -gt 0) { Assert-UigRuntimeTraceCapable $clients 'client' }
 
+    $wasEnabled = Test-UigTraceEnabled
+    $monitorRunning = @(Get-UigMovementMonitorProcess).Count -gt 0
+    if ($wasEnabled -and $monitorRunning -and -not $NewSession) {
+        Write-Host 'Runtime tracing and the action graph are already active.' -ForegroundColor Green
+        Show-UigTraceHealth
+        return
+    }
+
+    # Establish the monitor's log offsets before enabling runtime emission. This avoids
+    # dropping the first burst of trace events when attaching to an active game.
+    Remove-Item -LiteralPath $script:UigTraceControlPath -Force -ErrorAction SilentlyContinue
+    try {
+        Start-UigMovementMonitor -Reset:($NewSession -or -not $wasEnabled)
+    }
+    catch {
+        if ($wasEnabled) {
+            New-Item -ItemType Directory -Path (Split-Path -Parent $script:UigTraceControlPath) -Force | Out-Null
+            Set-Content -LiteralPath $script:UigTraceControlPath -Value ([DateTime]::UtcNow.ToString('O')) -NoNewline
+        }
+        throw
+    }
     New-Item -ItemType Directory -Path (Split-Path -Parent $script:UigTraceControlPath) -Force | Out-Null
     Set-Content -LiteralPath $script:UigTraceControlPath -Value ([DateTime]::UtcNow.ToString('O')) -NoNewline
-    Start-UigMovementMonitor -Reset
     if ($servers.Count -gt 0 -and $clients.Count -gt 0) {
         Write-Host 'Runtime tracing enabled for the active server and client.' -ForegroundColor Green
     }
@@ -494,6 +654,7 @@ function Show-UigTraceStatus {
     Show-UigServerStatus
     Show-UigClients
     Show-UigMovementMonitorStatus
+    Show-UigTraceHealth
 }
 
 function Start-UigGame {
@@ -679,6 +840,7 @@ function Show-UigPaths {
     Write-Host "Runtime logs: $script:UigRuntimeLogDirectory"
     Write-Host "Action response samples: $script:UigMovementLatencyCsvPath"
     Write-Host "Server frame stalls: $script:UigServerFrameStallCsvPath"
+    Write-Host "Trace session archive: $script:UigTraceArchiveDirectory"
 }
 
 function Test-UigSetup {
@@ -814,12 +976,15 @@ function Show-UigTraceHelp {
     Write-Host '  uig trace end'
     Write-Host '  uig trace restart'
     Write-Host '  uig trace status'
+    Write-Host '  uig trace summary'
+    Write-Host '  uig trace sessions'
     Write-Host '  uig trace logs [lines]'
     Write-Host '  uig trace graph <start|end|status>'
     Write-Host '  uig trace help'
     Write-Host ''
     Write-Host 'Trace start opens and arms full action logging. It can run before the game and connects automatically when server/client processes appear.'
     Write-Host 'Use the graph toggles to isolate movement, interactions, UI, inventory, combat, authentication, or system traffic.'
+    Write-Host 'Starting a new session archives the previous CSVs; restart explicitly rotates the active session.'
     Write-Host 'Trace end disables tracing without stopping the game.'
 }
 
@@ -857,6 +1022,7 @@ function Show-UigHelp {
     Write-Host ''
     Write-Host 'Runtime tracing:' -ForegroundColor Cyan
     Write-Host '  uig trace <start|end|status>'
+    Write-Host '  uig trace <summary|sessions>'
     Write-Host '  uig trace logs [lines]'
     Write-Host '  uig trace graph <start|end|status>'
     Write-Host '  uig trace help'
@@ -989,7 +1155,7 @@ function uig {
             if ($Command.Count -gt 2) {
                 throw "Usage: uig trace $traceAction"
             }
-            Start-UigTrace
+            Start-UigTrace -NewSession:($traceAction -eq 'restart')
             return
         }
         if ($traceAction -in @('stop', 'end')) {
@@ -998,6 +1164,14 @@ function uig {
         }
         if ($traceAction -eq 'status') {
             Show-UigTraceStatus
+            return
+        }
+        if ($traceAction -in @('summary', 'report')) {
+            Show-UigTraceSummary
+            return
+        }
+        if ($traceAction -in @('session', 'sessions', 'archives')) {
+            Show-UigTraceArchives
             return
         }
         if ($traceAction -in @('graph', 'monitor')) {
@@ -1010,7 +1184,7 @@ function uig {
             }
         }
         if ($traceAction -notin @('log', 'logs')) {
-            throw 'Usage: uig trace <start|end|restart|status|logs|graph|help>'
+            throw 'Usage: uig trace <start|end|restart|status|summary|sessions|logs|graph|help>'
         }
         $lineCount = 200
         if ($Command.Count -gt 2) {

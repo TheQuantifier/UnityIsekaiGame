@@ -22,6 +22,7 @@ namespace UnityIsekaiGame.Networking
         [SerializeField, Min(0f)] private float gravity = 30f;
         [SerializeField, Min(0f)] private float groundedStickForce = 2f;
         [SerializeField, Min(1f)] private float fallRecoveryDistance = 50f;
+        [SerializeField, Min(0f)] private float fallRecoveryNearbyRadius = AuthoritativeFallRecovery.DefaultNearbySearchRadius;
 
         // Server-local validation cursor. Clients receive the acknowledged sequence only as
         // part of authoritativeState, atomically paired with the position it produced.
@@ -77,6 +78,7 @@ namespace UnityIsekaiGame.Networking
         public float Gravity => gravity;
         public float GroundedStickForce => groundedStickForce;
         public float FallRecoveryDistance => fallRecoveryDistance;
+        public float FallRecoveryNearbyRadius => fallRecoveryNearbyRadius;
         public bool HasAuthoritativeState => authoritativeState.Value.IsInitialized;
         public NetworkMovementState AuthoritativeState => authoritativeState.Value;
         public Vector3 AuthoritativePosition => authoritativeState.Value.IsInitialized
@@ -498,8 +500,22 @@ namespace UnityIsekaiGame.Networking
         private void RecoverFromInvalidFall()
         {
             Vector3 invalidPosition = transform.position;
+            bool foundRecoverySurface = AuthoritativeFallRecovery.TryResolve(
+                invalidPosition,
+                transform,
+                fallRecoveryNearbyRadius,
+                out Vector3 recoveryPosition,
+                out string recoveryReason);
+            if (!foundRecoverySurface)
+            {
+                // spawnPosition is established from the server's validated spawn before the
+                // NetworkObject is spawned, so it is the final trusted preset location.
+                recoveryPosition = spawnPosition;
+                recoveryReason = $"SafePresetSpawn:{recoveryReason}";
+            }
+
             controller.enabled = false;
-            transform.SetPositionAndRotation(spawnPosition, transform.rotation);
+            transform.SetPositionAndRotation(recoveryPosition, transform.rotation);
             controller.enabled = true;
             latestInput.Move = Vector2.zero;
             latestInput.Sprint = false;
@@ -509,9 +525,9 @@ namespace UnityIsekaiGame.Networking
             authoritativeSimulationTick++;
             PublishAuthoritativeState(lastAcceptedSequence);
             NetworkPlayerActor actor = GetComponent<NetworkPlayerActor>();
-            Debug.LogError(
+            Debug.LogWarning(
                 $"[Network Movement] Recovered actor '{actor?.ActorId ?? name}' from invalid fall position {invalidPosition} " +
-                $"to authoritative spawn {spawnPosition}. Verify server collision if this repeats.",
+                $"to {recoveryPosition} using {recoveryReason}. Verify server collision if this repeats.",
                 this);
         }
 

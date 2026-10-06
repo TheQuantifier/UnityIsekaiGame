@@ -20,6 +20,13 @@ namespace UnityIsekaiGame.Tests
                 "Assets/_Project/Presentation/Login/Resources/Login/backgroundimage-v2.png"), Is.Not.Null);
             Assert.That(AssetDatabase.LoadAssetAtPath<Texture2D>(
                 "Assets/_Project/Presentation/Login/Resources/Login/isekai-reality-crest.png"), Is.Not.Null);
+            Assert.That(AssetDatabase.LoadAssetAtPath<Font>(
+                "Assets/_Project/Presentation/Login/Resources/Login/Fonts/CinzelDecorative-Bold.ttf"), Is.Not.Null);
+            Assert.That(AssetDatabase.LoadAssetAtPath<Font>(
+                "Assets/_Project/Presentation/Login/Resources/Login/Fonts/CinzelDecorative-Regular.ttf"), Is.Not.Null);
+            Assert.That(File.Exists(Path.Combine(
+                Application.dataPath,
+                "_Project/Presentation/Login/ThirdParty/CinzelDecorative-OFL.txt")), Is.True);
             Assert.That(File.Exists(Path.Combine(Application.streamingAssetsPath, "Startup/startup_scene.mp4")), Is.True);
         }
 
@@ -79,17 +86,64 @@ namespace UnityIsekaiGame.Tests
         }
 
         [Test]
-        public void Login_form_routes_enter_from_both_fields_through_the_login_button()
+        public void Login_form_routes_username_enter_to_password_and_password_enter_to_login()
         {
             string repositoryRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".."));
             string source = File.ReadAllText(Path.Combine(
                 repositoryRoot,
                 "Packages/com.thequantifier.isekai.client/Runtime/UI/Authentication/AccountLoginScreenController.cs"));
 
-            StringAssert.Contains("usernameSubmit.Submitted += InvokeLoginButton", source);
+            StringAssert.Contains("usernameSubmit.Submitted += FocusPasswordField", source);
             StringAssert.Contains("passwordSubmit.Submitted += InvokeLoginButton", source);
             StringAssert.Contains("loginButton.onClick.Invoke()", source);
+            StringAssert.Contains("passwordField.ActivateInputField()", source);
             StringAssert.Contains("root.gameObject.AddComponent<ExplicitSubmitInputField>()", source);
+        }
+
+        [Test]
+        public void Login_title_effect_preserves_layout_while_adding_configurable_embossed_depth()
+        {
+            var textObject = new GameObject("Embossed Login Title", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Text));
+            try
+            {
+                LoginEmbossedTextEffect effect = textObject.AddComponent<LoginEmbossedTextEffect>();
+                effect.Configure(3.5f, 0.9f, 4, 0.045f);
+
+                Assert.That(effect.ExtrusionDepth, Is.EqualTo(3.5f).Within(0.001f));
+                Assert.That(effect.OutlineWidth, Is.EqualTo(0.9f).Within(0.001f));
+                Assert.That(effect.MiddleSeamWidth, Is.EqualTo(0.045f).Within(0.001f));
+
+                string repositoryRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".."));
+                string source = File.ReadAllText(Path.Combine(
+                    repositoryRoot,
+                    "Packages/com.thequantifier.isekai.client/Runtime/UI/Authentication/AccountLoginScreenController.cs"));
+                StringAssert.Contains("LoadLoginFont(MedievalTitleFontResourcePath", source);
+                StringAssert.Contains("LoadLoginFont(MedievalSubtitleFontResourcePath", source);
+                Assert.That(
+                    source.Split(new[] { "ApplyMedievalButtonFont(" }, System.StringSplitOptions.None).Length - 1,
+                    Is.GreaterThanOrEqualTo(3),
+                    "Both authentication buttons must apply the medieval font through the shared helper.");
+                StringAssert.Contains("AddComponent<LoginEmbossedTextEffect>().Configure(3.5f, 0.9f, 4, 0.045f)", source);
+                StringAssert.Contains("AddComponent<LoginEmbossedTextEffect>().Configure(1.75f, 0.5f, 2, 0.055f)", source);
+            }
+            finally
+            {
+                Object.DestroyImmediate(textObject);
+            }
+        }
+
+        [Test]
+        public void Login_escape_toggles_settings_in_both_directions()
+        {
+            string repositoryRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".."));
+            string source = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.client/Runtime/UI/Authentication/AccountLoginScreenController.cs"));
+
+            StringAssert.Contains("escapeKey.wasPressedThisFrame", source);
+            StringAssert.Contains("ToggleSettings();", source);
+            StringAssert.Contains("if (settingsOverlay.activeSelf) CloseSettings();", source);
+            StringAssert.Contains("else OpenSettings();", source);
         }
 
         [Test]

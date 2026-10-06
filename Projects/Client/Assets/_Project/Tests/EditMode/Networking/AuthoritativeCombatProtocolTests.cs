@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityIsekaiGame.Combat;
@@ -135,6 +136,30 @@ namespace UnityIsekaiGame.Tests
             Assert.That(oneSixtieth, Is.GreaterThan(0f).And.LessThan(1f));
             Assert.That(twoSixtieths, Is.EqualTo(composed).Within(0.0001f));
             Assert.That(LocalCombatAuthorityBridge.CalculateReplicaInterpolationFactor(18f, 0f), Is.Zero);
+        }
+
+        [Test]
+        public void Online_ranged_attacks_use_authoritative_ammunition_and_projectile_simulation()
+        {
+            string repositoryRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".."));
+            string serverCombat = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.server/Runtime/Networking/ServerPlayerCombatAuthority.cs"));
+            string serverInventory = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.server/Runtime/Networking/ServerPlayerInventoryAuthority.cs"));
+            string clientCombat = File.ReadAllText(Path.Combine(
+                repositoryRoot,
+                "Packages/com.thequantifier.isekai.client/Runtime/Networking/LocalCombatAuthorityBridge.cs"));
+
+            StringAssert.DoesNotContain("Online ranged weapon attacks remain disabled", serverCombat);
+            StringAssert.Contains("CountAuthoritativeItem(ammunition)", serverCombat);
+            StringAssert.Contains("TryConsumeAuthoritativeItem(ammunition, 1", serverCombat);
+            StringAssert.Contains("PendingProjectile.ForRangedWeapon", serverCombat);
+            StringAssert.Contains("projectile.RangedWeapon.DamageType", serverCombat);
+            StringAssert.Contains("PublishAndPersist();", serverInventory);
+            StringAssert.Contains("SpawnPredictedRangedProjectile", clientCombat);
+            StringAssert.Contains("ProjectileVisualPrefab", clientCombat);
         }
     }
 }

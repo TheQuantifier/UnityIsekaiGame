@@ -28,6 +28,7 @@ namespace UnityIsekaiGame.Combat
 
         public event Action<MeleeAttackResult> AttackResolved;
         public MeleeWeaponData UnarmedAttack => unarmedAttack;
+        public RangedWeaponData EquippedRangedWeapon => GetCurrentWeaponData().RangedWeapon;
         public bool ExternalAuthorityActive => externalAuthorityActive;
 
         private CombatExecutionService Execution => runtimeServices == null ? null : runtimeServices.CombatExecution;

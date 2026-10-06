@@ -172,6 +172,7 @@ MonoBehaviour:
   gravity: 30
   groundedStickForce: 2
   fallRecoveryDistance: 50
+  fallRecoveryNearbyRadius: 10
 --- !u!114 &3654913487725053500
 MonoBehaviour:
   m_ObjectHideFlags: 0

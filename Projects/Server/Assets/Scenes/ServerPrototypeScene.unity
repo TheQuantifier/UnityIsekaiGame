@@ -4258,8 +4258,10 @@ MonoBehaviour:
   registerWorldPartyOperations: 1
   socialSimulationSettings:
     autonomousNpcDecisions: 1
+    peopleRefreshIntervalSeconds: 5
     decisionIntervalSeconds: 2
     maximumNpcDecisionsPerTick: 1
+    maximumAutonomousContextTargets: 16
     maintenanceIntervalSeconds: 60
     maximumInteractionHistory: 2000
     maximumDecisionHistoryPerPerson: 32

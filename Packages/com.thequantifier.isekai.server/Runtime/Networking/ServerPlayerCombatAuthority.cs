@@ -78,7 +78,7 @@ namespace UnityIsekaiGame.Networking.Server
                 if (now >= projectile.ExpiresAt)
                 {
                     networkCombat.PublishServerResult(NetworkCombatCommandResult.Success(
-                        projectile.CommandSequence, projectile.Spell.Id, string.Empty, 0f, $"{projectile.Spell.DisplayName} expired without hitting a target."));
+                        projectile.CommandSequence, projectile.ActionId, string.Empty, 0f, $"{projectile.DisplayName} expired without hitting a target."));
                     projectiles.RemoveAt(i);
                     continue;
                 }
@@ -139,8 +139,7 @@ namespace UnityIsekaiGame.Networking.Server
 
             if (selection.IsRanged)
             {
-                return Reject(command, CombatAuthorityFailure.DeferredTransaction,
-                    "Online ranged weapon attacks remain disabled until authoritative ammunition and world-projectile transactions are enabled.");
+                return ExecuteRangedAttack(command, selection.Ranged);
             }
 
             double now = Time.realtimeSinceStartupAsDouble;
@@ -170,6 +169,56 @@ namespace UnityIsekaiGame.Networking.Server
             return result.Applied
                 ? NetworkCombatCommandResult.Success(command.Sequence, selection.Execution.Id, targetId, result.AppliedAmount, result.Message)
                 : Reject(command, CombatAuthorityFailure.InvalidTarget, result.Message);
+        }
+
+        private NetworkCombatCommandResult ExecuteRangedAttack(NetworkCombatCommand command, RangedWeaponData weapon)
+        {
+            if (weapon == null || weapon.Execution == null || weapon.DamageType == null)
+            {
+                return Reject(command, CombatAuthorityFailure.ActionUnavailable, "The authoritative ranged weapon configuration is incomplete.");
+            }
+
+            ItemDefinition ammunition = weapon.AmmoItem;
+            if (ammunition != null && inventoryAuthority.CountAuthoritativeItem(ammunition) < 1)
+            {
+                return Reject(command, CombatAuthorityFailure.InsufficientResource, $"No {ammunition.DisplayName} available.");
+            }
+
+            double now = Time.realtimeSinceStartupAsDouble;
+            if (!TryBeginCooldown(weapon.Execution, now, out string cooldownFailure))
+            {
+                return Reject(command, CombatAuthorityFailure.CooldownActive, cooldownFailure);
+            }
+
+            float staminaCost = weapon.StaminaCost;
+            if (staminaCost > 0f && !networkVitals.TrySpendStaminaServer(staminaCost))
+            {
+                CancelCooldown(weapon.Execution);
+                return Reject(command, CombatAuthorityFailure.InsufficientResource, "Not enough stamina for that attack.");
+            }
+
+            if (ammunition != null
+                && !inventoryAuthority.TryConsumeAuthoritativeItem(ammunition, 1, out string ammunitionFailure))
+            {
+                if (staminaCost > 0f) networkVitals.TryRestoreStaminaServer(staminaCost);
+                CancelCooldown(weapon.Execution);
+                return Reject(command, CombatAuthorityFailure.InsufficientResource, ammunitionFailure);
+            }
+
+            Vector3 direction = command.AimDirection.normalized;
+            Vector3 origin = ResolveRangedLaunchOrigin(direction, weapon.LaunchOffset);
+            projectiles.Add(PendingProjectile.ForRangedWeapon(
+                command.Sequence,
+                weapon,
+                origin,
+                direction,
+                now + weapon.ProjectileLifetime));
+            return NetworkCombatCommandResult.Success(
+                command.Sequence,
+                weapon.Execution.Id,
+                string.Empty,
+                0f,
+                $"{weapon.AttackName} fired.");
         }
 
         private NetworkCombatCommandResult ExecuteAbility(NetworkCombatCommand command)
@@ -208,7 +257,7 @@ namespace UnityIsekaiGame.Networking.Server
                     return Reject(command, CombatAuthorityFailure.ActionUnavailable, $"{spell.DisplayName} has no projectile delivery configuration.");
                 }
 
-                projectiles.Add(new PendingProjectile(
+                projectiles.Add(PendingProjectile.ForSpell(
                     command.Sequence,
                     spell,
                     origin,
@@ -238,7 +287,30 @@ namespace UnityIsekaiGame.Networking.Server
             if (!worldAuthority.TryResolveCombatant(hit.collider, out EnemyHealth target, out string targetId))
             {
                 networkCombat.PublishServerResult(NetworkCombatCommandResult.Success(
-                    projectile.CommandSequence, projectile.Spell.Id, string.Empty, 0f, $"{projectile.Spell.DisplayName} was blocked."));
+                    projectile.CommandSequence, projectile.ActionId, string.Empty, 0f, $"{projectile.DisplayName} was blocked."));
+                return;
+            }
+
+            if (projectile.RangedWeapon != null)
+            {
+                float amount = Mathf.Max(0f, projectile.RangedWeapon.BaseDamage + sourceAttackPower);
+                DamagePacket packet = DamagePacket.Single(
+                    gameObject,
+                    new DamageComponent(projectile.RangedWeapon.DamageType, amount));
+                DamageResult rangedResult = target.ApplyDamage(new DamageInfo(packet, hit.point, projectile.Direction));
+                worldAuthority.PublishSnapshotNow();
+                networkCombat.PublishServerResult(rangedResult.Applied
+                    ? NetworkCombatCommandResult.Success(
+                        projectile.CommandSequence,
+                        projectile.ActionId,
+                        targetId,
+                        rangedResult.AppliedAmount,
+                        rangedResult.Message)
+                    : NetworkCombatCommandResult.Reject(
+                        projectile.CommandSequence,
+                        CombatAuthorityFailure.InvalidTarget,
+                        rangedResult.Message,
+                        projectile.ActionId));
                 return;
             }
 
@@ -248,6 +320,19 @@ namespace UnityIsekaiGame.Networking.Server
             networkCombat.PublishServerResult(result.Succeeded
                 ? NetworkCombatCommandResult.Success(projectile.CommandSequence, projectile.Spell.Id, targetId, appliedAmount, result.Message)
                 : NetworkCombatCommandResult.Reject(projectile.CommandSequence, CombatAuthorityFailure.InvalidTarget, result.Message, projectile.Spell.Id));
+        }
+
+        private Vector3 ResolveRangedLaunchOrigin(Vector3 direction, Vector3 launchOffset)
+        {
+            Vector3 normalizedDirection = direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
+            Vector3 right = Vector3.Cross(Vector3.up, normalizedDirection);
+            if (right.sqrMagnitude <= 0.0001f) right = transform.right;
+            else right.Normalize();
+            return transform.position
+                + Vector3.up * AttackOriginHeight
+                + right * launchOffset.x
+                + Vector3.up * launchOffset.y
+                + normalizedDirection * launchOffset.z;
         }
 
         private AbilityExecutionResult ExecuteAbilityEffects(uint sequence, SpellDefinition spell, EnemyHealth target, Vector3 hitPoint, Vector3 direction, out float appliedAmount)
@@ -372,10 +457,19 @@ namespace UnityIsekaiGame.Networking.Server
 
         private struct PendingProjectile
         {
-            public PendingProjectile(uint commandSequence, SpellDefinition spell, Vector3 position, Vector3 direction, float speed, float radius, double expiresAt)
+            private PendingProjectile(
+                uint commandSequence,
+                SpellDefinition spell,
+                RangedWeaponData rangedWeapon,
+                Vector3 position,
+                Vector3 direction,
+                float speed,
+                float radius,
+                double expiresAt)
             {
                 CommandSequence = commandSequence;
                 Spell = spell;
+                RangedWeapon = rangedWeapon;
                 Position = position;
                 Direction = direction.normalized;
                 Speed = Mathf.Max(0.1f, speed);
@@ -384,11 +478,45 @@ namespace UnityIsekaiGame.Networking.Server
             }
             public uint CommandSequence;
             public SpellDefinition Spell;
+            public RangedWeaponData RangedWeapon;
             public Vector3 Position;
             public Vector3 Direction;
             public float Speed;
             public float Radius;
             public double ExpiresAt;
+            public string ActionId => Spell != null ? Spell.Id : RangedWeapon?.Execution?.Id ?? string.Empty;
+            public string DisplayName => Spell != null ? Spell.DisplayName : RangedWeapon?.AttackName ?? "Projectile";
+
+            public static PendingProjectile ForSpell(
+                uint commandSequence,
+                SpellDefinition spell,
+                Vector3 position,
+                Vector3 direction,
+                float speed,
+                float radius,
+                double expiresAt)
+            {
+                return new PendingProjectile(
+                    commandSequence, spell, null, position, direction, speed, radius, expiresAt);
+            }
+
+            public static PendingProjectile ForRangedWeapon(
+                uint commandSequence,
+                RangedWeaponData weapon,
+                Vector3 position,
+                Vector3 direction,
+                double expiresAt)
+            {
+                return new PendingProjectile(
+                    commandSequence,
+                    null,
+                    weapon,
+                    position,
+                    direction,
+                    weapon.ProjectileSpeed,
+                    weapon.ProjectileHitRadius,
+                    expiresAt);
+            }
         }
     }
 }

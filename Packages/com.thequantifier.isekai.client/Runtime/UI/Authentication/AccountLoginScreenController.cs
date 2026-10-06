@@ -22,6 +22,8 @@ namespace UnityIsekaiGame.UI.Authentication
     {
         private const string BackgroundResourcePath = "Login/backgroundimage-v2";
         private const string CrestResourcePath = "Login/isekai-reality-crest";
+        private const string MedievalTitleFontResourcePath = "Login/Fonts/CinzelDecorative-Bold";
+        private const string MedievalSubtitleFontResourcePath = "Login/Fonts/CinzelDecorative-Regular";
         private static bool hooksInstalled;
 
         private readonly List<Canvas> hiddenCanvases = new List<Canvas>();
@@ -155,12 +157,9 @@ namespace UnityIsekaiGame.UI.Authentication
 
         private void LateUpdate()
         {
-            if (settingsOverlay != null
-                && settingsOverlay.activeSelf
-                && Keyboard.current != null
-                && Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
-                CloseSettings();
+                ToggleSettings();
             }
 
             if (Time.unscaledTime >= nextCanvasSuppressionAt)
@@ -274,20 +273,24 @@ namespace UnityIsekaiGame.UI.Authentication
             crest.raycastTarget = false;
 
             Text title = CreateText("Login Title", form, "ISEKAI REALITY", 43, FontStyle.Bold, GameUiTheme.AccentBright);
+            title.font = LoadLoginFont(MedievalTitleFontResourcePath, title.font);
+            title.fontStyle = FontStyle.Normal;
             title.alignment = TextAnchor.MiddleCenter;
             title.resizeTextForBestFit = true;
             title.resizeTextMinSize = 27;
             title.resizeTextMaxSize = 43;
             title.horizontalOverflow = HorizontalWrapMode.Overflow;
             Place(title.rectTransform, new Vector2(0.02f, 0.655f), new Vector2(0.98f, 0.755f));
-            GameUiTheme.EnsureTextShadow(title, 2f);
+            title.gameObject.AddComponent<LoginEmbossedTextEffect>().Configure(3.5f, 0.9f, 4, 0.045f);
 
             Text subtitle = CreateText("Login Subtitle", form, "E N T E R   T H E   W O R L D", 14, FontStyle.Normal, GameUiTheme.AccentBright);
+            subtitle.font = LoadLoginFont(MedievalSubtitleFontResourcePath, subtitle.font);
             subtitle.alignment = TextAnchor.MiddleCenter;
             subtitle.resizeTextForBestFit = true;
             subtitle.resizeTextMinSize = 10;
             subtitle.resizeTextMaxSize = 14;
             Place(subtitle.rectTransform, new Vector2(0.08f, 0.605f), new Vector2(0.92f, 0.655f));
+            subtitle.gameObject.AddComponent<LoginEmbossedTextEffect>().Configure(1.75f, 0.5f, 2, 0.055f);
 
             CreateSeparator("Title Separator", form, new Vector2(0.08f, 0.575f), new Vector2(0.92f, 0.605f));
 
@@ -299,12 +302,14 @@ namespace UnityIsekaiGame.UI.Authentication
             passwordField.characterLimit = LocalConnectionProtocol.MaximumPasswordLength;
 
             loginButton = CreateButton("Login Button", form, "LOGIN", () => Submit(false), GameUiButtonTone.Primary);
+            ApplyMedievalButtonFont(loginButton);
             Place(loginButton.GetComponent<RectTransform>(), new Vector2(0.04f, 0.275f), new Vector2(0.96f, 0.35f));
             createAccountButton = CreateButton("Register Account Button", form, "CREATE ACCOUNT", () => Submit(true), GameUiButtonTone.Neutral);
+            ApplyMedievalButtonFont(createAccountButton);
             Place(createAccountButton.GetComponent<RectTransform>(), new Vector2(0.04f, 0.185f), new Vector2(0.96f, 0.25f));
             if (usernameField is ExplicitSubmitInputField usernameSubmit)
             {
-                usernameSubmit.Submitted += InvokeLoginButton;
+                usernameSubmit.Submitted += FocusPasswordField;
             }
             if (passwordField is ExplicitSubmitInputField passwordSubmit)
             {
@@ -533,6 +538,13 @@ namespace UnityIsekaiGame.UI.Authentication
             EventSystem.current?.SetSelectedGameObject(resolutionDropdown.gameObject);
         }
 
+        private void ToggleSettings()
+        {
+            if (settingsOverlay == null) return;
+            if (settingsOverlay.activeSelf) CloseSettings();
+            else OpenSettings();
+        }
+
         private void ApplyDisplaySettings()
         {
             if (resolutionDropdown == null
@@ -621,6 +633,14 @@ namespace UnityIsekaiGame.UI.Authentication
             {
                 loginButton.onClick.Invoke();
             }
+        }
+
+        private void FocusPasswordField()
+        {
+            if (passwordField == null || enteringWorld || !passwordField.IsInteractable()) return;
+            EventSystem.current?.SetSelectedGameObject(passwordField.gameObject);
+            passwordField.Select();
+            passwordField.ActivateInputField();
         }
 
         private void OnStatusChanged(LocalConnectionStatus status) => ApplyStatus(status);
@@ -846,6 +866,24 @@ namespace UnityIsekaiGame.UI.Authentication
             text.color = color;
             text.supportRichText = false;
             return text;
+        }
+
+        private static Font LoadLoginFont(string resourcePath, Font fallback)
+        {
+            Font font = Resources.Load<Font>(resourcePath);
+            return font == null ? fallback : font;
+        }
+
+        private static void ApplyMedievalButtonFont(Button button)
+        {
+            Text label = button == null ? null : button.GetComponentInChildren<Text>(true);
+            if (label == null)
+            {
+                return;
+            }
+
+            label.font = LoadLoginFont(MedievalTitleFontResourcePath, label.font);
+            label.fontStyle = FontStyle.Normal;
         }
 
         private static InputField CreateInputField(string name, Transform parent, string placeholderValue, bool password)

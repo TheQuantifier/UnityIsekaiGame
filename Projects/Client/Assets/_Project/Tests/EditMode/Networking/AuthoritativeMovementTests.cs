@@ -64,6 +64,7 @@ namespace UnityIsekaiGame.Tests
             NetworkPlayerMovement movement = prefab.GetComponent<NetworkPlayerMovement>();
             Assert.That(movement, Is.Not.Null);
             Assert.That(movement.FallRecoveryDistance, Is.GreaterThanOrEqualTo(1f));
+            Assert.That(movement.FallRecoveryNearbyRadius, Is.EqualTo(10f).Within(0.001f));
             NetworkTransform networkTransform = prefab.GetComponent<NetworkTransform>();
             Assert.That(networkTransform, Is.Not.Null);
             Assert.That(networkTransform.Interpolate, Is.True,
@@ -78,6 +79,139 @@ namespace UnityIsekaiGame.Tests
         {
             Assert.That(LocalServerEndpoint.DefaultTickRate, Is.EqualTo(60u));
             Assert.That(1f / LocalServerEndpoint.DefaultTickRate, Is.EqualTo(1f / 60f).Within(0.000001f));
+        }
+
+        [Test]
+        public void Fall_recovery_uses_the_nearest_surface_below_at_the_correct_controller_height()
+        {
+            GameObject player = new GameObject("Recovery Player");
+            GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                CharacterController controller = player.AddComponent<CharacterController>();
+                controller.height = 2f;
+                controller.center = new Vector3(0f, 1f, 0f);
+                player.transform.position = new Vector3(0f, 8f, 0f);
+                ground.name = "Ground Below";
+                ground.transform.SetPositionAndRotation(new Vector3(0f, 2f, 0f), Quaternion.identity);
+                ground.transform.localScale = new Vector3(5f, 1f, 5f);
+                Physics.SyncTransforms();
+
+                bool recovered = AuthoritativeFallRecovery.TryResolve(
+                    player.transform.position,
+                    player.transform,
+                    10f,
+                    out Vector3 position,
+                    out string reason);
+
+                Assert.That(recovered, Is.True, reason);
+                Assert.That(position.x, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(position.z, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(position.y, Is.EqualTo(2.52f).Within(0.01f));
+                Assert.That(reason, Does.StartWith("SurfaceBelow:"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(player);
+                Object.DestroyImmediate(ground);
+            }
+        }
+
+        [Test]
+        public void Fall_recovery_moves_up_to_a_surface_above_when_the_column_has_nothing_below()
+        {
+            GameObject player = new GameObject("Recovery Player");
+            GameObject platform = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                CharacterController controller = player.AddComponent<CharacterController>();
+                controller.height = 2f;
+                controller.center = new Vector3(0f, 1f, 0f);
+                player.transform.position = new Vector3(0f, -5f, 0f);
+                platform.name = "Platform Above";
+                platform.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                platform.transform.localScale = new Vector3(5f, 1f, 5f);
+                Physics.SyncTransforms();
+
+                bool recovered = AuthoritativeFallRecovery.TryResolve(
+                    player.transform.position,
+                    player.transform,
+                    10f,
+                    out Vector3 position,
+                    out string reason);
+
+                Assert.That(recovered, Is.True, reason);
+                Assert.That(position.y, Is.EqualTo(0.52f).Within(0.01f));
+                Assert.That(reason, Does.StartWith("SurfaceAbove:"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(player);
+                Object.DestroyImmediate(platform);
+            }
+        }
+
+        [Test]
+        public void Fall_recovery_searches_nearby_columns_when_the_current_column_is_empty()
+        {
+            GameObject player = new GameObject("Recovery Player");
+            GameObject platform = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                CharacterController controller = player.AddComponent<CharacterController>();
+                controller.height = 2f;
+                controller.center = new Vector3(0f, 1f, 0f);
+                player.transform.position = new Vector3(0f, -5f, 0f);
+                platform.name = "Nearby Platform";
+                platform.transform.SetPositionAndRotation(new Vector3(5f, 0f, 0f), Quaternion.identity);
+                platform.transform.localScale = new Vector3(2f, 1f, 2f);
+                Physics.SyncTransforms();
+
+                bool recovered = AuthoritativeFallRecovery.TryResolve(
+                    player.transform.position,
+                    player.transform,
+                    10f,
+                    out Vector3 position,
+                    out string reason);
+
+                Assert.That(recovered, Is.True, reason);
+                Assert.That(Vector2.Distance(Vector2.zero, new Vector2(position.x, position.z)), Is.LessThanOrEqualTo(10.001f));
+                Assert.That(position.x, Is.GreaterThan(3.9f));
+                Assert.That(position.y, Is.EqualTo(0.52f).Within(0.01f));
+                Assert.That(reason, Does.StartWith("NearbySurface:"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(player);
+                Object.DestroyImmediate(platform);
+            }
+        }
+
+        [Test]
+        public void Fall_recovery_returns_false_when_no_surface_exists_for_safe_preset_fallback()
+        {
+            GameObject player = new GameObject("Recovery Player");
+            try
+            {
+                player.AddComponent<CharacterController>();
+                player.transform.position = new Vector3(2500f, -500f, 2500f);
+                Physics.SyncTransforms();
+
+                bool recovered = AuthoritativeFallRecovery.TryResolve(
+                    player.transform.position,
+                    player.transform,
+                    10f,
+                    out Vector3 position,
+                    out string reason);
+
+                Assert.That(recovered, Is.False);
+                Assert.That(position, Is.EqualTo(player.transform.position));
+                Assert.That(reason, Does.StartWith("NoSolidSurfaceWithin"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(player);
+            }
         }
 
         [Test]

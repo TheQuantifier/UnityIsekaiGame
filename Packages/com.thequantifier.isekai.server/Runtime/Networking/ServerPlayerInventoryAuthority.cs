@@ -27,6 +27,59 @@ namespace UnityIsekaiGame.Networking.Server
         public InventorySaveData CreateInventorySaveData() => inventory?.CreateSaveData();
         public EquipmentSaveData CreateEquipmentSaveData() => equipment?.CreateSaveData();
 
+        public int CountAuthoritativeItem(ItemDefinition item)
+        {
+            return configured && item != null ? inventory.CountItem(item) : 0;
+        }
+
+        /// <summary>
+        /// Commits an item cost owned by another server-authoritative gameplay system. The local
+        /// inventory mutation is kept inside one publication boundary so clients never observe an
+        /// intermediate state and persistence is updated exactly once.
+        /// </summary>
+        public bool TryConsumeAuthoritativeItem(ItemDefinition item, int quantity, out string failure)
+        {
+            if (!configured || inventory == null || networkInventory == null || item == null || quantity <= 0)
+            {
+                failure = "Authoritative inventory is unavailable for the requested item cost.";
+                return false;
+            }
+
+            if (inventory.CountItem(item) < quantity)
+            {
+                failure = $"No {item.DisplayName} available.";
+                return false;
+            }
+
+            bool previousExecutingCommand = executingCommand;
+            InventorySaveData rollback = inventory.CreateSaveData();
+            executingCommand = true;
+            try
+            {
+                if (!inventory.RemoveItem(item, quantity))
+                {
+                    failure = $"Could not consume {item.DisplayName}.";
+                    return false;
+                }
+
+                PublishAndPersist();
+                failure = string.Empty;
+                return true;
+            }
+            catch (Exception exception)
+            {
+                RestoreInventoryRollback(rollback);
+                PersistState();
+                Debug.LogException(exception, this);
+                failure = $"The {item.DisplayName} cost could not be committed; the inventory transaction was rolled back.";
+                return false;
+            }
+            finally
+            {
+                executingCommand = previousExecutingCommand;
+            }
+        }
+
         public void Configure(
             NetworkPlayerInventory replicatedInventory,
             NetworkPlayerVitals replicatedVitals,

@@ -3,7 +3,10 @@ param(
     [string]$RepositoryRoot,
     [int]$PollMilliseconds = 200,
     [int]$WindowSeconds = 120,
-    [int]$MaximumPoints = 1200
+    [int]$MaximumPoints = 1200,
+    [int]$MaximumReadBytesPerTick = 262144,
+    [double]$WarningMilliseconds = 50d,
+    [double]$CriticalMilliseconds = 100d
 )
 
 Set-StrictMode -Version Latest
@@ -18,6 +21,7 @@ $stallCsvPath = Join-Path $runtimeLogDirectory 'server-frame-stalls.csv'
 $pidPath = Join-Path $runtimeLogDirectory 'movement-latency-monitor.pid'
 $readyPath = Join-Path $runtimeLogDirectory 'movement-latency-monitor.ready'
 $errorLogPath = Join-Path $runtimeLogDirectory 'movement-latency-monitor-error.log'
+$statusPath = Join-Path $runtimeLogDirectory 'action-trace-status.json'
 
 New-Item -ItemType Directory -Path $runtimeLogDirectory -Force | Out-Null
 
@@ -42,7 +46,7 @@ function New-TraceTailState {
 function Read-NewTraceLines {
     param([Parameter(Mandatory = $true)][hashtable]$State)
 
-    $result = [pscustomobject]@{ Lines = @(); Reset = $false }
+    $result = [pscustomobject]@{ Lines = @(); Reset = $false; BacklogBytes = 0L }
     if (-not (Test-Path -LiteralPath $State.Path -PathType Leaf)) {
         if ($State.WasPresent) {
             $State.Offset = 0L
@@ -70,10 +74,13 @@ function Read-NewTraceLines {
         }
 
         $stream.Position = $State.Offset
-        $remaining = [int]($stream.Length - $stream.Position)
-        $buffer = New-Object byte[] $remaining
+        $remaining = [Math]::Min(
+            [long][Math]::Max(4096, $MaximumReadBytesPerTick),
+            $stream.Length - $stream.Position)
+        $buffer = New-Object byte[] ([int]$remaining)
         $read = $stream.Read($buffer, 0, $buffer.Length)
         $State.Offset = $stream.Position
+        $result.BacklogBytes = [Math]::Max(0L, $stream.Length - $State.Offset)
         if ($read -le 0) {
             return $result
         }
@@ -264,6 +271,25 @@ $chartArea.AxisY.MinorGrid.Enabled = $true
 $chartArea.AxisY.MinorGrid.Interval = 1d
 $chartArea.AxisY.MinorGrid.LineColor = [System.Drawing.Color]::FromArgb(50, 38, 28)
 $chartArea.AxisY.MinorGrid.LineDashStyle = [System.Windows.Forms.DataVisualization.Charting.ChartDashStyle]::Dot
+$warningLine = New-Object System.Windows.Forms.DataVisualization.Charting.StripLine
+$warningLine.IntervalOffset = $WarningMilliseconds
+$warningLine.StripWidth = 0d
+$warningLine.BorderWidth = 1
+$warningLine.BorderColor = [System.Drawing.Color]::FromArgb(255, 177, 52)
+$warningLine.BorderDashStyle = [System.Windows.Forms.DataVisualization.Charting.ChartDashStyle]::Dash
+$warningLine.Text = "Warning $WarningMilliseconds ms"
+$warningLine.ForeColor = [System.Drawing.Color]::FromArgb(255, 177, 52)
+$warningLine.TextAlignment = [System.Drawing.StringAlignment]::Near
+[void]$chartArea.AxisY.StripLines.Add($warningLine)
+$criticalLine = New-Object System.Windows.Forms.DataVisualization.Charting.StripLine
+$criticalLine.IntervalOffset = [Math]::Min(99.5d, $CriticalMilliseconds)
+$criticalLine.StripWidth = 0d
+$criticalLine.BorderWidth = 2
+$criticalLine.BorderColor = [System.Drawing.Color]::FromArgb(238, 98, 82)
+$criticalLine.Text = "Critical $CriticalMilliseconds ms"
+$criticalLine.ForeColor = [System.Drawing.Color]::FromArgb(238, 98, 82)
+$criticalLine.TextAlignment = [System.Drawing.StringAlignment]::Near
+[void]$chartArea.AxisY.StripLines.Add($criticalLine)
 $chart.ChartAreas.Add($chartArea)
 
 $categorySeries = @{}
@@ -319,7 +345,7 @@ foreach ($category in $traceFilters) {
         $selectedCategory = [string]$this.Tag
         $categoryEnabled[$selectedCategory] = $this.Checked
         Update-SeriesVisibility
-        Update-VisibleSamples
+        Update-VisibleSamples -Force
     })
 }
 
@@ -339,6 +365,42 @@ $samples = New-Object System.Collections.ArrayList
 $expiredClientSamples = 0
 $expiredServerSamples = 0
 $nextConnectionCheck = [DateTime]::MinValue
+$nextMetricsRefresh = [DateTime]::MinValue
+$nextWriterFlush = [DateTime]::MinValue
+$sessionStartedUtc = [DateTime]::UtcNow
+$lastMatchedSampleUtc = [DateTime]::MinValue
+$sessionSampleCount = 0L
+$warningSampleCount = 0L
+$criticalSampleCount = 0L
+$serverStallCount = 0L
+$monitorErrorCount = 0L
+$lastMonitorError = ''
+$nextErrorLogAt = [DateTime]::MinValue
+$recentGameLatencies = New-Object 'System.Collections.Generic.Queue[double]'
+$recentBackgroundLatencies = New-Object 'System.Collections.Generic.Queue[double]'
+$recentGameLatencySum = 0d
+$recentBackgroundLatencySum = 0d
+$recentSampleTimes = New-Object 'System.Collections.Generic.Queue[DateTime]'
+$serverRunning = $false
+$clientRunning = $false
+$clientBacklogBytes = 0L
+$serverBacklogBytes = 0L
+
+$clientActionRegex = New-Object System.Text.RegularExpressions.Regex(
+    '\[Action Timing\]\[ClientSend\] utc=([^ ]+) category=([^ ]+) action=([^ ]+) correlation=([^ ]+) client=([^ ]+) delivery=([^ ]+)',
+    [System.Text.RegularExpressions.RegexOptions]::Compiled)
+$clientMovementRegex = New-Object System.Text.RegularExpressions.Regex(
+    '\[Movement Timing\]\[ClientSend\] utc=([^ ]+) actor=([^ ]+) seq=([0-9]+)',
+    [System.Text.RegularExpressions.RegexOptions]::Compiled)
+$serverActionRegex = New-Object System.Text.RegularExpressions.Regex(
+    '\[Action Timing\]\[ServerReceive\] utc=([^ ]+) category=([^ ]+) action=([^ ]+) correlation=([^ ]+) client=([^ ]+) delivery=([^ ]+)',
+    [System.Text.RegularExpressions.RegexOptions]::Compiled)
+$serverMovementRegex = New-Object System.Text.RegularExpressions.Regex(
+    '\[Movement Timing\]\[ServerReceive\] utc=([^ ]+) actor=([^ ]+) client=([^ ]+) seq=([0-9]+) delivery=([^ ]+)',
+    [System.Text.RegularExpressions.RegexOptions]::Compiled)
+$serverStallRegex = New-Object System.Text.RegularExpressions.Regex(
+    '\[Server Frame Stall\] utc=([^ ]+) frame=([0-9]+) frameGapMs=([0-9.]+).*source=([^ ]+).*longestPhase=([^ ]+) phaseMs=([0-9.]+) gc0=([0-9-]+) gc1=([0-9-]+) gc2=([0-9-]+).*networkInputs=([0-9]+) reliableInputs=([0-9]+) firstSeq=([0-9]+) lastSeq=([0-9]+) sequenceSpan=([0-9]+)',
+    [System.Text.RegularExpressions.RegexOptions]::Compiled)
 
 function Test-UigTraceProcess {
     param([Parameter(Mandatory = $true)][string]$ProcessName, [string]$PidFile)
@@ -360,8 +422,8 @@ function Update-ConnectionBanner {
     if ($now -lt $script:nextConnectionCheck) { return }
     $script:nextConnectionCheck = $now.AddSeconds(1)
 
-    $serverRunning = Test-UigTraceProcess 'UnityIsekaiServer'
-    $clientRunning = Test-UigTraceProcess 'UnityIsekaiClient' $clientPidPath
+    $script:serverRunning = Test-UigTraceProcess 'UnityIsekaiServer'
+    $script:clientRunning = Test-UigTraceProcess 'UnityIsekaiClient' $clientPidPath
     if ($serverRunning -and $clientRunning) {
         $connectionLabel.Text = 'CONNECTED - server and client are running; matching action traffic automatically.'
         $connectionLabel.ForeColor = [System.Drawing.Color]::FromArgb(116, 214, 126)
@@ -387,7 +449,7 @@ $csvStream = New-Object System.IO.FileStream(
     [System.IO.FileAccess]::Write,
     [System.IO.FileShare]::ReadWrite)
 $csvWriter = New-Object System.IO.StreamWriter($csvStream, (New-Object System.Text.UTF8Encoding($false)))
-$csvWriter.AutoFlush = $true
+$csvWriter.AutoFlush = $false
 if ($csvStream.Length -eq 0) {
     $csvWriter.WriteLine('ClientUtc,ServerUtc,Category,Action,Correlation,Client,Delivery,Background,LatencyMs')
 }
@@ -398,7 +460,7 @@ $stallCsvStream = New-Object System.IO.FileStream(
     [System.IO.FileAccess]::Write,
     [System.IO.FileShare]::ReadWrite)
 $stallCsvWriter = New-Object System.IO.StreamWriter($stallCsvStream, (New-Object System.Text.UTF8Encoding($false)))
-$stallCsvWriter.AutoFlush = $true
+$stallCsvWriter.AutoFlush = $false
 if ($stallCsvStream.Length -eq 0) {
     $stallCsvWriter.WriteLine('Utc,Frame,FrameGapMs,Source,LongestPhase,PhaseMs,Gc0,Gc1,Gc2,NetworkInputs,ReliableInputs,FirstSequence,LastSequence,SequenceSpan')
 }
@@ -426,6 +488,11 @@ function Add-MatchedDeliverySample {
         GameChangePointAdded = $false
     }
     [void]$samples.Add($sample)
+    $script:sessionSampleCount++
+    $script:lastMatchedSampleUtc = [DateTime]::UtcNow
+    $recentSampleTimes.Enqueue($script:lastMatchedSampleUtc)
+    if ($sample.LatencyMs -ge $WarningMilliseconds) { $script:warningSampleCount++ }
+    if ($sample.LatencyMs -ge $CriticalMilliseconds) { $script:criticalSampleCount++ }
     $categoryLine = if ($categorySeries.ContainsKey($sample.Category)) {
         $categorySeries[$sample.Category]
     }
@@ -436,19 +503,31 @@ function Add-MatchedDeliverySample {
     $categoryLine.Points[$pointIndex].ToolTip = '{0} / {1} | {2} | {3:F2} ms' -f
         $sample.Category, $sample.Action, $sample.Correlation, $sample.LatencyMs
 
-    $recentGame = @($samples | Where-Object { -not $_.IsBackground } | Select-Object -Last 30)
-    $recentBackground = @($samples | Where-Object { $_.IsBackground } | Select-Object -Last 20)
-    if ($recentGame.Count -gt 0) {
-        $total = ($recentGame | Measure-Object -Property LatencyMs -Average).Average
+    if ($sample.IsBackground) {
+        $recentBackgroundLatencies.Enqueue($sample.LatencyMs)
+        $script:recentBackgroundLatencySum += $sample.LatencyMs
+        while ($recentBackgroundLatencies.Count -gt 20) {
+            $script:recentBackgroundLatencySum -= $recentBackgroundLatencies.Dequeue()
+        }
+    }
+    else {
+        $recentGameLatencies.Enqueue($sample.LatencyMs)
+        $script:recentGameLatencySum += $sample.LatencyMs
+        while ($recentGameLatencies.Count -gt 30) {
+            $script:recentGameLatencySum -= $recentGameLatencies.Dequeue()
+        }
+    }
+    if ($recentGameLatencies.Count -gt 0) {
+        $total = $script:recentGameLatencySum / $recentGameLatencies.Count
         [void]$totalSeries.Points.AddXY($sample.ServerUtc, $total)
         $sample.TotalPointAdded = $true
     }
-    if ($recentBackground.Count -gt 0) {
-        $background = ($recentBackground | Measure-Object -Property LatencyMs -Average).Average
+    if ($recentBackgroundLatencies.Count -gt 0) {
+        $background = $script:recentBackgroundLatencySum / $recentBackgroundLatencies.Count
         [void]$backgroundSeries.Points.AddXY($sample.ServerUtc, $background)
         $sample.BackgroundPointAdded = $true
     }
-    if ($recentGame.Count -gt 0 -and $recentBackground.Count -gt 0) {
+    if ($recentGameLatencies.Count -gt 0 -and $recentBackgroundLatencies.Count -gt 0) {
         $gameChange = [Math]::Max(0d, $total - $background)
         [void]$gameChangeSeries.Points.AddXY($sample.ServerUtc, $gameChange)
         $sample.GameChangePointAdded = $true
@@ -467,36 +546,71 @@ function Add-MatchedDeliverySample {
     $csvWriter.WriteLine($csvLine)
 }
 
+function Get-OrCreatePendingQueue {
+    param([Parameter(Mandatory = $true)][hashtable]$Table, [Parameter(Mandatory = $true)][string]$Key)
+
+    if (-not $Table.ContainsKey($Key)) {
+        $Table[$Key] = New-Object 'System.Collections.Generic.Queue[object]'
+    }
+    return ,$Table[$Key]
+}
+
+function Try-TakePendingSample {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Table,
+        [Parameter(Mandatory = $true)][string]$Key,
+        [ref]$Sample
+    )
+
+    if (-not $Table.ContainsKey($Key)) { return $false }
+    $queue = $Table[$Key]
+    if ($queue.Count -eq 0) {
+        $Table.Remove($Key)
+        return $false
+    }
+    $Sample.Value = $queue.Dequeue()
+    if ($queue.Count -eq 0) { $Table.Remove($Key) }
+    return $true
+}
+
 function Add-PendingClientSample {
     param([Parameter(Mandatory = $true)][string]$Key, [Parameter(Mandatory = $true)]$Sample)
 
-    if ($serverReceives.ContainsKey($Key)) {
-        Add-MatchedDeliverySample $Sample $serverReceives[$Key]
-        $serverReceives.Remove($Key)
+    $matched = $null
+    if (Try-TakePendingSample $serverReceives $Key ([ref]$matched)) {
+        Add-MatchedDeliverySample $Sample $matched
     }
     else {
-        $clientSends[$Key] = $Sample
+        $queue = Get-OrCreatePendingQueue $clientSends $Key
+        if ($queue.Count -ge 64) {
+            [void]$queue.Dequeue()
+            $script:expiredClientSamples++
+        }
+        $queue.Enqueue($Sample)
     }
 }
 
 function Add-PendingServerSample {
     param([Parameter(Mandatory = $true)][string]$Key, [Parameter(Mandatory = $true)]$Sample)
 
-    if ($clientSends.ContainsKey($Key)) {
-        Add-MatchedDeliverySample $clientSends[$Key] $Sample
-        $clientSends.Remove($Key)
+    $matched = $null
+    if (Try-TakePendingSample $clientSends $Key ([ref]$matched)) {
+        Add-MatchedDeliverySample $matched $Sample
     }
     else {
-        $serverReceives[$Key] = $Sample
+        $queue = Get-OrCreatePendingQueue $serverReceives $Key
+        if ($queue.Count -ge 64) {
+            [void]$queue.Dequeue()
+            $script:expiredServerSamples++
+        }
+        $queue.Enqueue($Sample)
     }
 }
 
 function Add-ClientTraceLine {
     param([Parameter(Mandatory = $true)][string]$Line)
 
-    $actionMatch = [regex]::Match(
-        $Line,
-        '\[Action Timing\]\[ClientSend\] utc=([^ ]+) category=([^ ]+) action=([^ ]+) correlation=([^ ]+) client=([^ ]+) delivery=([^ ]+)')
+    $actionMatch = $clientActionRegex.Match($Line)
     if ($actionMatch.Success) {
         $category = $actionMatch.Groups[2].Value
         $action = $actionMatch.Groups[3].Value
@@ -513,9 +627,7 @@ function Add-ClientTraceLine {
         return
     }
 
-    $movementMatch = [regex]::Match(
-        $Line,
-        '\[Movement Timing\]\[ClientSend\] utc=([^ ]+) actor=([^ ]+) seq=([0-9]+)')
+    $movementMatch = $clientMovementRegex.Match($Line)
     if (-not $movementMatch.Success) { return }
     $actor = $movementMatch.Groups[2].Value
     $sequence = $movementMatch.Groups[3].Value
@@ -533,6 +645,7 @@ function Add-ClientTraceLine {
 function Write-ServerStallSample {
     param([Parameter(Mandatory = $true)][System.Text.RegularExpressions.Match]$Match)
 
+    $script:serverStallCount++
     $stall = [pscustomobject]@{
         Utc = Convert-ToUtcDateTime $Match.Groups[1].Value
         Frame = [int]$Match.Groups[2].Value
@@ -570,17 +683,13 @@ function Write-ServerStallSample {
 function Add-ServerTraceLine {
     param([Parameter(Mandatory = $true)][string]$Line)
 
-    $stallMatch = [regex]::Match(
-        $Line,
-        '\[Server Frame Stall\] utc=([^ ]+) frame=([0-9]+) frameGapMs=([0-9.]+).*source=([^ ]+).*longestPhase=([^ ]+) phaseMs=([0-9.]+) gc0=([0-9-]+) gc1=([0-9-]+) gc2=([0-9-]+).*networkInputs=([0-9]+) reliableInputs=([0-9]+) firstSeq=([0-9]+) lastSeq=([0-9]+) sequenceSpan=([0-9]+)')
+    $stallMatch = $serverStallRegex.Match($Line)
     if ($stallMatch.Success) {
         Write-ServerStallSample $stallMatch
         return
     }
 
-    $actionMatch = [regex]::Match(
-        $Line,
-        '\[Action Timing\]\[ServerReceive\] utc=([^ ]+) category=([^ ]+) action=([^ ]+) correlation=([^ ]+) client=([^ ]+) delivery=([^ ]+)')
+    $actionMatch = $serverActionRegex.Match($Line)
     if ($actionMatch.Success) {
         $category = $actionMatch.Groups[2].Value
         $action = $actionMatch.Groups[3].Value
@@ -598,9 +707,7 @@ function Add-ServerTraceLine {
         return
     }
 
-    $movementMatch = [regex]::Match(
-        $Line,
-        '\[Movement Timing\]\[ServerReceive\] utc=([^ ]+) actor=([^ ]+) client=([^ ]+) seq=([0-9]+) delivery=([^ ]+)')
+    $movementMatch = $serverMovementRegex.Match($Line)
     if (-not $movementMatch.Success) { return }
     $actor = $movementMatch.Groups[2].Value
     $sequence = $movementMatch.Groups[4].Value
@@ -619,20 +726,82 @@ function Add-ServerTraceLine {
 function Remove-ExpiredPendingSamples {
     $cutoff = [DateTime]::UtcNow.AddSeconds(-10)
     foreach ($key in @($clientSends.Keys)) {
-        if ($clientSends[$key].AddedAt -lt $cutoff) {
-            $clientSends.Remove($key)
+        $queue = $clientSends[$key]
+        while ($queue.Count -gt 0 -and $queue.Peek().AddedAt -lt $cutoff) {
+            [void]$queue.Dequeue()
             $script:expiredClientSamples++
+        }
+        if ($queue.Count -eq 0) {
+            $clientSends.Remove($key)
         }
     }
     foreach ($key in @($serverReceives.Keys)) {
-        if ($serverReceives[$key].AddedAt -lt $cutoff) {
-            $serverReceives.Remove($key)
+        $queue = $serverReceives[$key]
+        while ($queue.Count -gt 0 -and $queue.Peek().AddedAt -lt $cutoff) {
+            [void]$queue.Dequeue()
             $script:expiredServerSamples++
+        }
+        if ($queue.Count -eq 0) {
+            $serverReceives.Remove($key)
         }
     }
 }
 
+function Get-PendingSampleCount {
+    param([Parameter(Mandatory = $true)][hashtable]$Table)
+
+    $count = 0
+    foreach ($queue in $Table.Values) { $count += $queue.Count }
+    return $count
+}
+
+function Write-MonitorHeartbeat {
+    param(
+        [Parameter(Mandatory = $true)][string]$State,
+        [double]$Current = 0d,
+        [double]$Mean = 0d,
+        [double]$P95 = 0d,
+        [double]$Maximum = 0d,
+        [double]$RatePerSecond = 0d
+    )
+
+    $heartbeat = [ordered]@{
+        state = $State
+        updatedUtc = [DateTime]::UtcNow.ToString('O')
+        startedUtc = $sessionStartedUtc.ToString('O')
+        serverRunning = $script:serverRunning
+        clientRunning = $script:clientRunning
+        sessionSamples = $script:sessionSampleCount
+        windowSamples = $samples.Count
+        samplesPerSecond = [Math]::Round($RatePerSecond, 2)
+        currentMs = [Math]::Round($Current, 3)
+        meanMs = [Math]::Round($Mean, 3)
+        p95Ms = [Math]::Round($P95, 3)
+        maximumMs = [Math]::Round($Maximum, 3)
+        lastMatchedSampleUtc = if ($script:lastMatchedSampleUtc -eq [DateTime]::MinValue) { $null } else { $script:lastMatchedSampleUtc.ToString('O') }
+        pendingClient = Get-PendingSampleCount $clientSends
+        pendingServer = Get-PendingSampleCount $serverReceives
+        clientLogBacklogBytes = $script:clientBacklogBytes
+        serverLogBacklogBytes = $script:serverBacklogBytes
+        expiredClient = $script:expiredClientSamples
+        expiredServer = $script:expiredServerSamples
+        warningSamples = $script:warningSampleCount
+        criticalSamples = $script:criticalSampleCount
+        serverStalls = $script:serverStallCount
+        monitorErrors = $script:monitorErrorCount
+        warningThresholdMs = $WarningMilliseconds
+        criticalThresholdMs = $CriticalMilliseconds
+        csvPath = $csvPath
+    }
+    [System.IO.File]::WriteAllText(
+        $statusPath,
+        ($heartbeat | ConvertTo-Json -Compress),
+        (New-Object System.Text.UTF8Encoding($false)))
+}
+
 function Update-VisibleSamples {
+    param([switch]$Force)
+
     $cutoff = [DateTime]::UtcNow.AddSeconds(-$WindowSeconds)
     while ($samples.Count -gt 0 -and
            ($samples[0].ServerUtc -lt $cutoff -or $samples.Count -gt $MaximumPoints)) {
@@ -650,15 +819,32 @@ function Update-VisibleSamples {
         if ($expiredSample.GameChangePointAdded -and $gameChangeSeries.Points.Count -gt 0) { $gameChangeSeries.Points.RemoveAt(0) }
     }
 
+    $now = [DateTime]::UtcNow
+    if (-not $Force -and $now -lt $script:nextMetricsRefresh) { return }
+    $script:nextMetricsRefresh = $now.AddSeconds(1)
+    $rateCutoff = $now.AddSeconds(-10)
+    while ($recentSampleTimes.Count -gt 0 -and $recentSampleTimes.Peek() -lt $rateCutoff) {
+        [void]$recentSampleTimes.Dequeue()
+    }
+    $rateWindowSeconds = [Math]::Min(10d, [Math]::Max(1d, ($now - $sessionStartedUtc).TotalSeconds))
+    $sampleRate = $recentSampleTimes.Count / $rateWindowSeconds
+
     if ($samples.Count -eq 0) {
         $statsLabel.Text = 'Waiting for matching client-send/server-receive samples...'
-        $statusLabel.Text = 'Select action families and summary lines above. Server-only timings are recorded separately and never plotted here.'
+        $pendingClient = Get-PendingSampleCount $clientSends
+        $pendingServer = Get-PendingSampleCount $serverReceives
+        $statusLabel.Text = "Rate 0.0/s | pending $pendingClient/$pendingServer | backlog $clientBacklogBytes/$serverBacklogBytes B | expired $expiredClientSamples/$expiredServerSamples"
+        $statusLabel.ForeColor = [System.Drawing.Color]::FromArgb(196, 167, 114)
+        $state = if ($script:serverRunning -and $script:clientRunning) { 'connected-awaiting-samples' } else { 'waiting-for-game' }
+        Write-MonitorHeartbeat $state -RatePerSecond $sampleRate
         return
     }
 
     $visibleSamples = @($samples | Where-Object { $categoryEnabled[$_.Category] -ne $false })
     if ($visibleSamples.Count -eq 0) {
         $statsLabel.Text = 'No samples are visible with the current action-family filters.'
+        $filteredState = if ($script:serverRunning -and $script:clientRunning) { 'connected-filtered' } else { 'disconnected-with-history' }
+        Write-MonitorHeartbeat $filteredState -RatePerSecond $sampleRate
         return
     }
     [double[]]$values = @($visibleSamples | ForEach-Object { [double]$_.LatencyMs } | Sort-Object)
@@ -674,7 +860,31 @@ function Update-VisibleSamples {
     $statsLabel.Text =
         'CURRENT {0,7:F2} ms   MEAN {1,7:F2} ms   MEDIAN {2,7:F2} ms   P95 {3,7:F2} ms   MAX {4,7:F2} ms   N {5}' -f
             $current, $measure.Average, $median, $p95, $measure.Maximum, $visibleSamples.Count
-    $statusLabel.Text = 'Family lines = raw client-to-server difference. Game Response Change = rolling total action response - rolling background response.'
+    $pendingClient = Get-PendingSampleCount $clientSends
+    $pendingServer = Get-PendingSampleCount $serverReceives
+    $statusLabel.Text = 'Rate {0:F1}/s | pending {1}/{2} | backlog {3}/{4} B | expired {5}/{6} | >= {7:F0}ms: {8} | >= {9:F0}ms: {10}' -f
+        $sampleRate,
+        $pendingClient,
+        $pendingServer,
+        $clientBacklogBytes,
+        $serverBacklogBytes,
+        $expiredClientSamples,
+        $expiredServerSamples,
+        $WarningMilliseconds,
+        $warningSampleCount,
+        $CriticalMilliseconds,
+        $criticalSampleCount
+    if ($current -ge $CriticalMilliseconds -or $p95 -ge $CriticalMilliseconds) {
+        $statusLabel.ForeColor = [System.Drawing.Color]::FromArgb(238, 98, 82)
+    }
+    elseif ($current -ge $WarningMilliseconds -or $p95 -ge $WarningMilliseconds) {
+        $statusLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 177, 52)
+    }
+    else {
+        $statusLabel.ForeColor = [System.Drawing.Color]::FromArgb(116, 214, 126)
+    }
+    $state = if ($script:serverRunning -and $script:clientRunning) { 'connected' } else { 'disconnected-with-history' }
+    Write-MonitorHeartbeat $state $current $measure.Average $p95 $measure.Maximum $sampleRate
 }
 
 $timer = New-Object System.Windows.Forms.Timer
@@ -684,26 +894,49 @@ $timer.Add_Tick({
         Update-ConnectionBanner
         $clientResult = Read-NewTraceLines $clientTail
         $serverResult = Read-NewTraceLines $serverTail
+        $script:clientBacklogBytes = $clientResult.BacklogBytes
+        $script:serverBacklogBytes = $serverResult.BacklogBytes
         if ($clientResult.Reset -or $serverResult.Reset) {
             $clientSends.Clear()
             $serverReceives.Clear()
+            $recentGameLatencies.Clear()
+            $recentBackgroundLatencies.Clear()
+            $script:recentGameLatencySum = 0d
+            $script:recentBackgroundLatencySum = 0d
         }
         foreach ($line in $clientResult.Lines) { Add-ClientTraceLine $line }
         foreach ($line in $serverResult.Lines) { Add-ServerTraceLine $line }
         Remove-ExpiredPendingSamples
         Update-VisibleSamples
+        $now = [DateTime]::UtcNow
+        if ($now -ge $script:nextWriterFlush) {
+            $csvWriter.Flush()
+            $stallCsvWriter.Flush()
+            $script:nextWriterFlush = $now.AddSeconds(1)
+        }
     }
     catch {
+        $script:monitorErrorCount++
         $statusLabel.Text = "Monitor error: $($_.Exception.Message)"
         $statusLabel.ForeColor = [System.Drawing.Color]::FromArgb(238, 98, 82)
-        Add-Content -LiteralPath $errorLogPath -Value (
-            '[{0:O}] {1}{2}{3}' -f [DateTime]::UtcNow, $_.Exception, [Environment]::NewLine, $_.ScriptStackTrace)
+        try { Write-MonitorHeartbeat 'error' } catch { }
+        $now = [DateTime]::UtcNow
+        $signature = $_.Exception.GetType().FullName + '|' + $_.Exception.Message
+        if ($signature -ne $script:lastMonitorError -or $now -ge $script:nextErrorLogAt) {
+            Add-Content -LiteralPath $errorLogPath -Value (
+                '[{0:O}] count={1} {2}{3}{4}' -f $now, $monitorErrorCount, $_.Exception, [Environment]::NewLine, $_.ScriptStackTrace)
+            $script:lastMonitorError = $signature
+            $script:nextErrorLogAt = $now.AddSeconds(30)
+        }
     }
 })
 
 $form.Add_FormClosed({
     $timer.Stop()
     $timer.Dispose()
+    $csvWriter.Flush()
+    $stallCsvWriter.Flush()
+    Write-MonitorHeartbeat 'stopped'
     $csvWriter.Dispose()
     $csvStream.Dispose()
     $stallCsvWriter.Dispose()
@@ -714,5 +947,7 @@ $form.Add_FormClosed({
 
 Set-Content -LiteralPath $pidPath -Value $PID -NoNewline
 Set-Content -LiteralPath $readyPath -Value $PID -NoNewline
+Update-ConnectionBanner
+Write-MonitorHeartbeat 'starting'
 $timer.Start()
 [System.Windows.Forms.Application]::Run($form)

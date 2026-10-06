@@ -166,7 +166,10 @@ namespace UnityIsekaiGame.Networking
             }
 
             nextBackgroundTraceAt = now + BackgroundTraceIntervalSeconds;
-            uint sequence = ++backgroundTraceSequence;
+            backgroundTraceSequence = backgroundTraceSequence == uint.MaxValue
+                ? 1u
+                : backgroundTraceSequence + 1u;
+            uint sequence = backgroundTraceSequence;
             string correlation = NetworkActionTrace.Correlation(ActorId, sequence);
             NetworkActionTrace.ClientSend(
                 NetworkActionTraceCategory.System,

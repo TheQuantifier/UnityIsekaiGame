@@ -60,26 +60,30 @@ The dedicated server is the only world-simulation and persistence authority duri
 
 `uig server start` waits until the authoritative scene and checkpoint have loaded and the transport is listening. `uig server status` distinguishes a merely running process from a ready server, and `uig client start` refuses to launch into the short startup window that would otherwise cause a connection timeout. Account authentication happens only through the client's login screen; launcher commands never accept or prefill a username or user ID.
 
-## Movement diagnostics
+The server owns a real-time idle-lifetime policy: when no remote transport client has been connected for 120 continuous seconds, it saves authoritative state, stops networking, and exits. App-authenticated clients on the login screen count as active connections, so account entry is not interrupted. The countdown resets after every connection and begins again only after the last remote client leaves.
 
-Reload the launcher and enable tracing on both processes before reproducing movement problems:
+## Live action and movement diagnostics
+
+Reload the launcher and open tracing before or after starting the game:
 
 ```powershell
 . $PROFILE
-uig movement start
+uig trace start
 ```
 
-`uig movement start` safely stops tracked clients and the local server, then starts both with movement tracing enabled. The individual equivalents are `uig server start trace` and `uig client start trace`. Direct executable launches accept `--movement-trace` on both sides.
+`uig trace start` does not restart the game. It opens the monitor, then enables runtime emission through the shared trace-control file. When launched before the game, it waits and attaches automatically. When recovering a closed monitor, it briefly gates emission until the monitor has established log offsets so the initial event burst is not lost.
 
 Walk, sprint, release movement, and jump several times, then inspect the filtered logs:
 
 ```powershell
-uig movement logs 200
+uig trace logs 200
+uig trace status
+uig trace summary
 ```
 
-The command displays the last matching entries from the server and `client-default.log` under `Logs/Runtime`. Trace entries contain a UTC timestamp, actor ID, and input sequence. Client entries show submitted movement/yaw, requested and predicted sprint authorization, predicted position, the atomic authoritative state, sequence-replay error/correction, speed, grounding, pending stop sequence, and round-trip time. Server entries show received/accepted or rejected input, reliable stop/jump delivery, buffered/executed/rejected jump outcomes, authoritative simulation ticks, actual displacement/collision flags, sprint authorization, and input age/timeouts.
+The monitor correlates FIFO client-send and server-receive records across movement, interaction, UI, inventory, combat, authentication, and system families. It displays raw one-way differences, a background probe baseline, and game response change after subtracting that baseline. `uig trace status` reports heartbeat freshness, rates, pending and expired correlations, log backlog, warning/critical counts, and server stalls. `uig trace summary` prints per-family mean, p95, and maximum values.
 
-Movement transitions and correction changes are logged immediately; active movement is sampled every 0.2 seconds. Compare matching input sequences and nearby UTC times across the two files. Position reconciliation compares authority with the stored prediction for that same acknowledged sequence, shifts the still-unacknowledged prediction history by the resulting correction, and never waits for movement to stop. Jump intent travels atomically with its input sequence; the authoritative state reports the last processed and last executed jump sequences so a rejected prediction can end immediately. Tracing is disabled for ordinary launches.
+Movement transitions and correction changes are logged immediately; active movement is sampled every 0.2 seconds. Position reconciliation compares authority with the stored prediction for that same acknowledged sequence, shifts the still-unacknowledged prediction history by the resulting correction, and never waits for movement to stop. Jump intent travels atomically with its input sequence; the authoritative state reports the last processed and last executed jump sequences so a rejected prediction can end immediately. Matched samples are buffered to `Logs/Runtime/action-trace.csv`; restarting tracing archives the previous session under `Logs/Runtime/TraceArchive` with bounded retention. Tracing is disabled for ordinary launches.
 
 ## World-checkpoint capture diagnostics
 

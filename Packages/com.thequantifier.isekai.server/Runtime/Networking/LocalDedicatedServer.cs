@@ -59,6 +59,7 @@ namespace UnityIsekaiGame.Networking.Server
         [SerializeField, Min(0.1f)] private float captureWarningMilliseconds = 8f;
         [SerializeField, Min(0.1f)] private float captureCriticalMilliseconds = 16.667f;
         [SerializeField, Min(1024)] private long captureAllocationWarningBytes = 1048576L;
+        [SerializeField, Min(0f)] private float idleShutdownSeconds = ServerIdleShutdownPolicy.DefaultTimeoutSeconds;
 
         private readonly Dictionary<ulong, string> connectedPlayerIds = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, ConnectionRequestPayload> pendingConnections = new Dictionary<ulong, ConnectionRequestPayload>();
@@ -69,6 +70,7 @@ namespace UnityIsekaiGame.Networking.Server
         private readonly Dictionary<ulong, double> authenticationStartedAt = new Dictionary<ulong, double>();
         private readonly ConcurrentQueue<AccountAuthenticationWorkResult> authenticationResults = new ConcurrentQueue<AccountAuthenticationWorkResult>();
         private readonly ConcurrentQueue<PlayerProfileLoadWorkResult> playerProfileLoadResults = new ConcurrentQueue<PlayerProfileLoadWorkResult>();
+        private readonly ServerIdleShutdownPolicy idleShutdownPolicy = new ServerIdleShutdownPolicy();
         private readonly Dictionary<ulong, NetworkPlayerActor> playerActors = new Dictionary<ulong, NetworkPlayerActor>();
         private readonly PlayerSessionRegistry playerSessions = new PlayerSessionRegistry();
         private readonly Dictionary<string, ServerPlayerProfileData> playerProfiles = new Dictionary<string, ServerPlayerProfileData>(StringComparer.OrdinalIgnoreCase);
@@ -117,6 +119,7 @@ namespace UnityIsekaiGame.Networking.Server
         public Vector3 PlayerSpawnPosition => playerSpawnPosition;
         public float PlayerSpawnYaw => playerSpawnYaw;
         public bool StartAutomaticallyInServerBuild => startAutomaticallyInServerBuild;
+        public float IdleShutdownSeconds => idleShutdownSeconds;
 
         private void Awake()
         {
@@ -171,6 +174,7 @@ namespace UnityIsekaiGame.Networking.Server
                 DrainPlayerProfileLoadResults();
             }
             if (!ownsServerSession || networkManager == null || !networkManager.IsServer) return;
+            if (AdvanceIdleShutdown()) return;
             using (NetworkMovementTrace.MeasureServerPhase("ConnectionExpiry"))
             {
                 ExpireUnauthenticatedConnections();
@@ -401,11 +405,13 @@ namespace UnityIsekaiGame.Networking.Server
             Debug.Log($"[World Items] Published {scenePickupCount} scene-authored pickup(s) through server authority.", this);
 
             SetStatus(new LocalConnectionStatus(LocalConnectionPhase.Listening, $"Local server is listening on {endpoint}.", endpoint));
+            idleShutdownPolicy.Reset();
             return true;
         }
 
         public void StopServer()
         {
+            idleShutdownPolicy.Reset();
             if (!ownsServerSession || networkManager == null)
             {
                 DisposeProfileWriteQueue();
@@ -532,6 +538,7 @@ namespace UnityIsekaiGame.Networking.Server
                 return;
             }
 
+            idleShutdownPolicy.Reset();
             if (!pendingConnections.TryGetValue(clientId, out ConnectionRequestPayload request))
             {
                 DisconnectClient(clientId, "The approved connection request could not be resolved.");
@@ -1117,6 +1124,54 @@ namespace UnityIsekaiGame.Networking.Server
             {
                 DisconnectClient(expired[i].ClientId, expired[i].Reason);
             }
+        }
+
+        private bool AdvanceIdleShutdown()
+        {
+            bool hasRemoteClients = HasRemoteClients();
+            bool wasCountingDown = idleShutdownPolicy.IsCountingDown;
+            double now = Time.realtimeSinceStartupAsDouble;
+            bool shouldShutdown = idleShutdownPolicy.Observe(now, hasRemoteClients, idleShutdownSeconds);
+            if (!wasCountingDown && idleShutdownPolicy.IsCountingDown)
+            {
+                Debug.Log(
+                    $"[Local Server] No remote clients are connected. The server will stop after "
+                    + $"{idleShutdownSeconds:0.#} seconds of inactivity.",
+                    this);
+            }
+
+            if (!shouldShutdown)
+            {
+                return false;
+            }
+
+            Debug.LogWarning(
+                $"[Local Server] No remote clients connected for {idleShutdownSeconds:0.#} seconds. "
+                + "Saving authoritative state and shutting down the idle server.",
+                this);
+            StopServer();
+#if !UNITY_EDITOR
+            Application.Quit(0);
+#endif
+            return true;
+        }
+
+        private bool HasRemoteClients()
+        {
+            if (networkManager == null || !networkManager.IsServer)
+            {
+                return false;
+            }
+
+            foreach (ulong clientId in networkManager.ConnectedClientsIds)
+            {
+                if (clientId != NetworkManager.ServerClientId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ResolveReferences()
